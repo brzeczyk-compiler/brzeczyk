@@ -1,0 +1,60 @@
+# Use the latest 2.1 version of CircleCI pipeline process engine.
+# See: https://circleci.com/docs/2.0/configuration-reference
+version: 2.1
+
+# Define a job to be invoked later in a workflow.
+# See: https://circleci.com/docs/2.0/configuration-reference/#jobs
+jobs:
+  build:
+    docker:
+      - image: cimg/openjdk:11.0
+    steps:
+      - checkout
+      - restore_cache:
+          name: Restore Gradle
+          keys: 
+            - gradle-dotfiles-{{ checksum "gradlew" }}
+      - run:
+          name: "Build project"
+          command: ./gradlew build
+      - save_cache:
+          name: Save Gradle to cache
+          key: gradle-dotfiles-{{ checksum "gradlew" }}
+          paths:
+            - ~/.gradle/wrapper
+            - ~/.gradle/caches
+
+  test:
+    docker:
+      - image: cimg/openjdk:11.0
+    steps:
+      - checkout
+      - restore_cache:
+          name: Restore Gradle
+          keys: 
+            - gradle-dotfiles-{{ checksum "gradlew" }}
+      - run:
+          name: "Test project"
+          command: |
+            ./gradlew test
+
+  lint:
+    docker:
+      - image: cimg/openjdk:11.0
+    steps:
+      - checkout
+      - restore_cache:
+          name: Restore Gradle
+          keys: 
+            - gradle-dotfiles-{{ checksum "gradlew" }}
+      - run:
+          name: "Lint project"
+          command: |
+            ./gradlew ktlint
+
+workflows:
+  build_test_lint:
+    jobs:
+      - build
+      - test
+      - lint

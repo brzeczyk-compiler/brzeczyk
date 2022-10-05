@@ -5,9 +5,7 @@ package compiler
 
 class App {
     val greeting: String
-        get() {
-            return "Hello World!"
-        }
+        get() { return "Hello World!" }
 }
 
 fun main() {

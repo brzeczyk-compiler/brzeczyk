@@ -5,25 +5,6 @@ version: 2.1
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 jobs:
-  build:
-    docker:
-      - image: cimg/openjdk:11.0
-    steps:
-      - checkout
-      - restore_cache:
-          name: Restore Gradle
-          keys: 
-            - gradle-dotfiles-{{ checksum "gradlew" }}
-      - run:
-          name: "Build project"
-          command: ./gradlew build
-      - save_cache:
-          name: Save Gradle to cache
-          key: gradle-dotfiles-{{ checksum "gradlew" }}
-          paths:
-            - ~/.gradle/wrapper
-            - ~/.gradle/caches
-
   test:
     docker:
       - image: cimg/openjdk:11.0
@@ -31,12 +12,42 @@ jobs:
       - checkout
       - restore_cache:
           name: Restore Gradle
-          keys: 
-            - gradle-dotfiles-{{ checksum "gradlew" }}
+          keys:
+            - gradle-dotfiles-{{ checksum "gradle.properties" }}-{{ checksum "app/build.gradle" }}-{{ checksum "settings.gradle" }}
+      - restore_cache:
+          keys:
+            - gradle-build-caches-{{ .Revision }}
+            - gradle-build-caches
       - run:
-          name: "Test project"
+          name: Restore Gradle build cache
           command: |
-            ./gradlew test
+            if [[ -d ~/gradle-build-caches ]]; then
+              ls ~/gradle-build-caches
+              rm -rf ~/.gradle/caches/build-cache-*
+              mv ~/gradle-build-caches/* ~/.gradle/caches/
+            fi
+      - run:
+          name: Test project
+          command: |
+            ./gradlew --no-daemon test
+      - save_cache:
+          name: Save Gradle to cache
+          key: gradle-dotfiles-{{ checksum "gradle.properties" }}-{{ checksum "app/build.gradle" }}-{{ checksum "settings.gradle" }}
+          paths:
+            - ~/.gradle/wrapper
+            - ~/.gradle/caches
+      - run:
+          name: Collect Gradle build caches
+          command: |
+            mkdir -p ~/gradle-build-caches
+            mv ~/.gradle/caches/build-cache-* ~/gradle-build-caches
+          when: always
+      - save_cache:
+          name: Save Gradle build cache
+          key: gradle-build-caches-{{ .Revision }}
+          paths:
+            - ~/gradle-build-caches
+          when: always
 
   lint:
     docker:
@@ -45,16 +56,15 @@ jobs:
       - checkout
       - restore_cache:
           name: Restore Gradle
-          keys: 
-            - gradle-dotfiles-{{ checksum "gradlew" }}
+          keys:
+            - gradle-dotfiles-{{ checksum "gradle.properties" }}-{{ checksum "app/build.gradle" }}-{{ checksum "settings.gradle" }}
       - run:
           name: "Lint project"
           command: |
-            ./gradlew ktlint
+            ./gradlew --no-daemon ktlint
 
 workflows:
   build_test_lint:
     jobs:
-      - build
       - test
       - lint

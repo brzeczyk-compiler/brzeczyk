@@ -1,0 +1,63 @@
+czynność poprawneLiterałyLiczbowe() {
+    zm n: Liczba = 10234
+    n = 0
+    n = -0
+    n = -56789
+    n = +56789
+    n = 2147483647
+    n = -2147483648
+}
+
+czynność poprawneLiterałyDlaCzy() {
+    zm x: Czy = Prawda
+    x = Fałsz
+}
+
+czynność przypisaniaDoTychSamychTypów() {
+    zm x: Liczba = 5
+    zm y: Liczba = x
+
+    zm a: Czy = Prawda
+    zm b: Czy = a
+}
+
+
+// Niepoprawne kody - błąd kompilacji
+
+czynność niepoprawnyLiterałZZeremWiodącym() {
+    zm n: Liczba = 013
+}
+
+czynność niepoprawnyLiterałZKropką() {
+    zm n: Liczba = 10.4
+}
+
+czynność zaDużaLiczba() {
+    zm n: Liczba = 2147483648
+}
+
+czynność zaMałaLiczba() {
+    zm n: Liczba = -2147483649
+}
+
+czynność oWieleZaDużaLiczba() {
+    zm n: Liczba = 123456789123456789123456789123456789123456789123456789
+}
+
+czynność literałyDlaCzySąCaseSensitive() {
+    zm b: Czy = prawda
+}
+
+czynność typCzyNieMożePrzyjmowaćLiterałuLiczbowego() {
+    zm b: Czy = 1
+}
+
+czynność typLiczbaNieMOżePrzyjmowaćLiterałuDlaCzy() {
+    zm x: Liczba = Prawda
+}
+
+czynność przypisanieDoZłegoTypu() {
+    zm x: Liczba = 5
+    zm b: Czy = x
+}
+

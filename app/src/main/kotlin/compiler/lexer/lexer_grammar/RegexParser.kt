@@ -7,6 +7,6 @@ class RegexParser {
 
     fun parseStringToRegex(string: String): Regex {
         // TODO
-        return RegexFactory().createEmpty()
+        return RegexFactory.createEmpty()
     }
 }

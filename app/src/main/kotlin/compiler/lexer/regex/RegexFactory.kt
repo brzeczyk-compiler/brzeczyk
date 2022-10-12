@@ -1,6 +1,6 @@
 package compiler.lexer.regex
 
-class RegexFactory {
+object RegexFactory {
 
     fun createEmpty(): Regex {
         return Regex.Empty()

@@ -13,6 +13,10 @@ class FileInput : Input {
         // TODO
     }
 
+    override fun flush() {
+        // TODO
+    }
+
     override fun hasNext(): Boolean {
         // TODO
         return true

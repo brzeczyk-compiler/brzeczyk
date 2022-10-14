@@ -2,7 +2,7 @@ package compiler.lexer.input
 
 import compiler.lexer.Location
 
-class FileInput : Input {
+class InputImpl : Input {
 
     override fun getLocation(): Location {
         // TODO

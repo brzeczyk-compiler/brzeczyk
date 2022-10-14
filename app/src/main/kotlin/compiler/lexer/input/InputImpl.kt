@@ -1,8 +1,9 @@
 package compiler.lexer.input
 
 import compiler.lexer.Location
+import java.io.Reader
 
-class InputImpl : Input {
+class InputImpl(source: Reader) : Input {
 
     override fun getLocation(): Location {
         // TODO

@@ -1,12 +1,12 @@
 package compiler.lexer
 
-import kotlin.test.Test
-import kotlin.test.assertContentEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertContains
-import compiler.lexer.input.Input
 import compiler.lexer.dfa.Dfa
 import compiler.lexer.dfa.DfaWalk
+import compiler.lexer.input.Input
+import kotlin.test.Test
+import kotlin.test.assertContains
+import kotlin.test.assertContentEquals
+import kotlin.test.assertFailsWith
 
 class LexerTest {
     private class TestInput(val string: String) : Input {

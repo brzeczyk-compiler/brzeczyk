@@ -14,7 +14,7 @@ abstract class UniversalRegexParser<T> {
             "\\l" to "aąbcćdeęfghijklłmnńoópqrsśtuvwxyzźż".toSet(),
             "\\u" to "AĄBCĆDEĘFGHIJKLŁMNŃOÓPQRSŚTUVWXYZŹŻ".toSet(),
             "\\d" to "0123456789".toSet(),
-            "\\c" to "{}(),.<>:;?/+=-_".toSet()
+            "\\c" to "{}(),.<>:;?/+=-_!%^&*|~".toSet()
         )
     }
 
@@ -123,4 +123,4 @@ abstract class UniversalRegexParser<T> {
         }
         return stack.peek()
     }
-} //
+}

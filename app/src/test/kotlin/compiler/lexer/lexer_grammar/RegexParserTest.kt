@@ -76,7 +76,7 @@ internal class RegexParserTest {
         assertEquals("(&abcdefghijklmnopqrstuvwxyzóąćęłńśźż&)", polLower)
         assertEquals("(&ABCDEFGHIJKLMNOPQRSTUVWXYZÓĄĆĘŁŃŚŹŻ&)", polUpper)
         assertEquals("(&0123456789&)", numbers)
-        assertEquals("(&()+,-./:;<=>?_{}&)", special)
+        assertEquals("(&!%&()*+,-./:;<=>?^_{|}~&)", special)
 
         for (c in "\\?|()[]*") {
             assertEquals(c.toString(), PARSER.parseStringToRegex("\\" + c))

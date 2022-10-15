@@ -2,7 +2,6 @@ package compiler.lexer.lexer_grammar
 
 import compiler.lexer.dfa.Dfa
 import compiler.lexer.dfa.DfaWalk
-import compiler.lexer.lexer_grammar.TokenType.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -10,7 +9,7 @@ import kotlin.test.assertNull
 
 class TokensTest {
 
-    private class MockDfaWalk(val regex : Regex) : DfaWalk {
+    private class MockDfaWalk(val regex: Regex) : DfaWalk {
         private var currentString = StringBuilder()
 
         override fun isAccepted(): Boolean {
@@ -18,7 +17,7 @@ class TokensTest {
         }
 
         override fun isDead(): Boolean {
-            return false;
+            return false
         }
 
         override fun step(a: Char) {
@@ -27,23 +26,23 @@ class TokensTest {
     }
 
     private class MockDfa(regexString: String) : Dfa {
-        private val regex : Regex;
+        private val regex: Regex
 
         init {
             // Change the format of regex to one used by Kotlin
             // Escape special characters not used in our parser
             // Replace our special characters with their counterparts
-            val filtered : String = regexString
-                    .replace("{", "\\{")
-                    .replace("}", "\\}")
-                    .replace("+", "\\+")
-                    .replace("-", "\\-")
-                    .replace("/", "\\/")
-                    .replace("^", "\\^")
-                    .replace("\\l", "[a-ząćęłńóśźż]")
-                    .replace("\\u", "[A-ZĄĆĘŁŃÓŚŹŻ]")
-                    .replace("\\d", "[0-9]")
-                    .replace("\\c", """[\{\}\(\),\.<>:;\?\/\+=\-_!%\^&\*\|~]""")
+            val filtered: String = regexString
+                .replace("{", "\\{")
+                .replace("}", "\\}")
+                .replace("+", "\\+")
+                .replace("-", "\\-")
+                .replace("/", "\\/")
+                .replace("^", "\\^")
+                .replace("\\l", "[a-ząćęłńóśźż]")
+                .replace("\\u", "[A-ZĄĆĘŁŃÓŚŹŻ]")
+                .replace("\\d", "[0-9]")
+                .replace("\\c", """[\{\}\(\),\.<>:;\?\/\+=\-_!%\^&\*\|~]""")
             // Remove nested square brackets
             var level = 0
             val pattern = StringBuilder()
@@ -82,7 +81,7 @@ class TokensTest {
         return walk.isAccepted()
     }
 
-    private fun firstMatch(tokens: List<Pair<TokenType, Dfa>>, string: String) : TokenType? {
+    private fun firstMatch(tokens: List<Pair<TokenType, Dfa>>, string: String): TokenType? {
         for ((type, dfa) in tokens) {
             if (accepts(dfa, string))
                 return type
@@ -93,62 +92,62 @@ class TokensTest {
     @Test fun keywordsTest() {
         val tokens = Tokens(MockDfaFactory()).getTokens()
 
-        assertEquals(firstMatch(tokens, "jeśli"), IF)
-        assertEquals(firstMatch(tokens, "zaś gdy"), ELSE_IF)
-        assertEquals(firstMatch(tokens, "wpp"), ELSE)
-        assertEquals(firstMatch(tokens, "dopóki"), WHILE)
-        assertEquals(firstMatch(tokens, "przerwij"), BREAK)
-        assertEquals(firstMatch(tokens, "pomiń"), CONTINUE)
-        assertEquals(firstMatch(tokens, "czynność"), FUNCTION)
-        assertEquals(firstMatch(tokens, "zwróć"), RETURN)
-        assertEquals(firstMatch(tokens, "zakończ"), RETURN_UNIT)
-        assertEquals(firstMatch(tokens, "zm"), VARIABLE)
-        assertEquals(firstMatch(tokens, "wart"), VALUE)
-        assertEquals(firstMatch(tokens, "stała"), CONSTANT)
-        assertEquals(firstMatch(tokens, "prawda"), TRUE_CONSTANT)
-        assertEquals(firstMatch(tokens, "fałsz"), FALSE_CONSTANT)
+        assertEquals(firstMatch(tokens, "jeśli"), TokenType.IF)
+        assertEquals(firstMatch(tokens, "zaś gdy"), TokenType.ELSE_IF)
+        assertEquals(firstMatch(tokens, "wpp"), TokenType.ELSE)
+        assertEquals(firstMatch(tokens, "dopóki"), TokenType.WHILE)
+        assertEquals(firstMatch(tokens, "przerwij"), TokenType.BREAK)
+        assertEquals(firstMatch(tokens, "pomiń"), TokenType.CONTINUE)
+        assertEquals(firstMatch(tokens, "czynność"), TokenType.FUNCTION)
+        assertEquals(firstMatch(tokens, "zwróć"), TokenType.RETURN)
+        assertEquals(firstMatch(tokens, "zakończ"), TokenType.RETURN_UNIT)
+        assertEquals(firstMatch(tokens, "zm"), TokenType.VARIABLE)
+        assertEquals(firstMatch(tokens, "wart"), TokenType.VALUE)
+        assertEquals(firstMatch(tokens, "stała"), TokenType.CONSTANT)
+        assertEquals(firstMatch(tokens, "prawda"), TokenType.TRUE_CONSTANT)
+        assertEquals(firstMatch(tokens, "fałsz"), TokenType.FALSE_CONSTANT)
     }
 
     @Test fun specialSymbolsTest() {
         val tokens = Tokens(MockDfaFactory()).getTokens()
 
-        assertEquals(firstMatch(tokens, "("), LEFT_PAREN)
-        assertEquals(firstMatch(tokens, ")"), RIGHT_PAREN)
-        assertEquals(firstMatch(tokens, "{"), LEFT_BRACE)
-        assertEquals(firstMatch(tokens, "}"), RIGHT_BRACE)
-        assertEquals(firstMatch(tokens, ":"), COLON)
-        assertEquals(firstMatch(tokens, ","), COMMA)
-        assertEquals(firstMatch(tokens, ";"), SEMICOLON)
-        assertEquals(firstMatch(tokens, "\n"), NEWLINE)
-        assertEquals(firstMatch(tokens, "?"), QUESTION_MARK)
+        assertEquals(firstMatch(tokens, "("), TokenType.LEFT_PAREN)
+        assertEquals(firstMatch(tokens, ")"), TokenType.RIGHT_PAREN)
+        assertEquals(firstMatch(tokens, "{"), TokenType.LEFT_BRACE)
+        assertEquals(firstMatch(tokens, "}"), TokenType.RIGHT_BRACE)
+        assertEquals(firstMatch(tokens, ":"), TokenType.COLON)
+        assertEquals(firstMatch(tokens, ","), TokenType.COMMA)
+        assertEquals(firstMatch(tokens, ";"), TokenType.SEMICOLON)
+        assertEquals(firstMatch(tokens, "\n"), TokenType.NEWLINE)
+        assertEquals(firstMatch(tokens, "?"), TokenType.QUESTION_MARK)
     }
 
     @Test fun operatorsTest() {
         val tokens = Tokens(MockDfaFactory()).getTokens()
 
-        assertEquals(firstMatch(tokens, "+"), PLUS)
-        assertEquals(firstMatch(tokens, "-"), MINUS)
-        assertEquals(firstMatch(tokens, "*"), MULTIPLY)
-        assertEquals(firstMatch(tokens, "/"), DIVIDE)
-        assertEquals(firstMatch(tokens, "%"), MODULO)
-        assertEquals(firstMatch(tokens, "++"), INCREMENT)
-        assertEquals(firstMatch(tokens, "--"), DECREMENT)
-        assertEquals(firstMatch(tokens, "~"), BIT_NOT)
-        assertEquals(firstMatch(tokens, "|"), BIT_OR)
-        assertEquals(firstMatch(tokens, "&"), BIT_AND)
-        assertEquals(firstMatch(tokens, "^"), BIT_XOR)
-        assertEquals(firstMatch(tokens, "<<"), SHIFT_LEFT)
-        assertEquals(firstMatch(tokens, ">>"), SHIFT_RIGHT)
-        assertEquals(firstMatch(tokens, "=="), EQUAL)
-        assertEquals(firstMatch(tokens, "!="), NOT_EQUAL)
-        assertEquals(firstMatch(tokens, "<"), LESS_THAN)
-        assertEquals(firstMatch(tokens, "<="), LESS_THAN_EQ)
-        assertEquals(firstMatch(tokens, ">"), GREATER_THAN)
-        assertEquals(firstMatch(tokens, ">="), GREATER_THAN_EQ)
-        assertEquals(firstMatch(tokens, "="), ASSIGNMENT)
-        assertEquals(firstMatch(tokens, "nie"), NOT)
-        assertEquals(firstMatch(tokens, "lub"), OR)
-        assertEquals(firstMatch(tokens, "oraz"), AND)
+        assertEquals(firstMatch(tokens, "+"), TokenType.PLUS)
+        assertEquals(firstMatch(tokens, "-"), TokenType.MINUS)
+        assertEquals(firstMatch(tokens, "*"), TokenType.MULTIPLY)
+        assertEquals(firstMatch(tokens, "/"), TokenType.DIVIDE)
+        assertEquals(firstMatch(tokens, "%"), TokenType.MODULO)
+        assertEquals(firstMatch(tokens, "++"), TokenType.INCREMENT)
+        assertEquals(firstMatch(tokens, "--"), TokenType.DECREMENT)
+        assertEquals(firstMatch(tokens, "~"), TokenType.BIT_NOT)
+        assertEquals(firstMatch(tokens, "|"), TokenType.BIT_OR)
+        assertEquals(firstMatch(tokens, "&"), TokenType.BIT_AND)
+        assertEquals(firstMatch(tokens, "^"), TokenType.BIT_XOR)
+        assertEquals(firstMatch(tokens, "<<"), TokenType.SHIFT_LEFT)
+        assertEquals(firstMatch(tokens, ">>"), TokenType.SHIFT_RIGHT)
+        assertEquals(firstMatch(tokens, "=="), TokenType.EQUAL)
+        assertEquals(firstMatch(tokens, "!="), TokenType.NOT_EQUAL)
+        assertEquals(firstMatch(tokens, "<"), TokenType.LESS_THAN)
+        assertEquals(firstMatch(tokens, "<="), TokenType.LESS_THAN_EQ)
+        assertEquals(firstMatch(tokens, ">"), TokenType.GREATER_THAN)
+        assertEquals(firstMatch(tokens, ">="), TokenType.GREATER_THAN_EQ)
+        assertEquals(firstMatch(tokens, "="), TokenType.ASSIGNMENT)
+        assertEquals(firstMatch(tokens, "nie"), TokenType.NOT)
+        assertEquals(firstMatch(tokens, "lub"), TokenType.OR)
+        assertEquals(firstMatch(tokens, "oraz"), TokenType.AND)
 
         assertNull(firstMatch(tokens, "&&"))
         assertNull(firstMatch(tokens, "||"))
@@ -161,49 +160,49 @@ class TokensTest {
     @Test fun integerTest() {
         val tokens = Tokens(MockDfaFactory()).getTokens()
 
-        assertEquals(firstMatch(tokens, "0"), INTEGER)
-        assertEquals(firstMatch(tokens, "1"), INTEGER)
-        assertEquals(firstMatch(tokens, "3"), INTEGER)
-        assertEquals(firstMatch(tokens, "5934"), INTEGER)
-        assertEquals(firstMatch(tokens, "1234567890"), INTEGER)
-        assertEquals(firstMatch(tokens, "00343"), INTEGER)
-        assertEquals(firstMatch(tokens, "000"), INTEGER)
+        assertEquals(firstMatch(tokens, "0"), TokenType.INTEGER)
+        assertEquals(firstMatch(tokens, "1"), TokenType.INTEGER)
+        assertEquals(firstMatch(tokens, "3"), TokenType.INTEGER)
+        assertEquals(firstMatch(tokens, "5934"), TokenType.INTEGER)
+        assertEquals(firstMatch(tokens, "1234567890"), TokenType.INTEGER)
+        assertEquals(firstMatch(tokens, "00343"), TokenType.INTEGER)
+        assertEquals(firstMatch(tokens, "000"), TokenType.INTEGER)
 
-        assertNotEquals(firstMatch(tokens, "-0"), INTEGER)
-        assertNotEquals(firstMatch(tokens, "-1"), INTEGER)
-        assertNotEquals(firstMatch(tokens, "-234"), INTEGER)
-        assertNotEquals(firstMatch(tokens, "-04343"), INTEGER)
-        assertNotEquals(firstMatch(tokens, "3.14"), INTEGER)
-        assertNotEquals(firstMatch(tokens, ".34"), INTEGER)
-        assertNotEquals(firstMatch(tokens, "234."), INTEGER)
-        assertNotEquals(firstMatch(tokens, "1.343e-10"), INTEGER)
-        assertNotEquals(firstMatch(tokens, "-1e+345"), INTEGER)
-        assertNotEquals(firstMatch(tokens, "1324ryhvjx"), INTEGER)
-        assertNotEquals(firstMatch(tokens, "12324_343"), INTEGER)
-        assertNotEquals(firstMatch(tokens, "1,000,000"), INTEGER)
+        assertNotEquals(firstMatch(tokens, "-0"), TokenType.INTEGER)
+        assertNotEquals(firstMatch(tokens, "-1"), TokenType.INTEGER)
+        assertNotEquals(firstMatch(tokens, "-234"), TokenType.INTEGER)
+        assertNotEquals(firstMatch(tokens, "-04343"), TokenType.INTEGER)
+        assertNotEquals(firstMatch(tokens, "3.14"), TokenType.INTEGER)
+        assertNotEquals(firstMatch(tokens, ".34"), TokenType.INTEGER)
+        assertNotEquals(firstMatch(tokens, "234."), TokenType.INTEGER)
+        assertNotEquals(firstMatch(tokens, "1.343e-10"), TokenType.INTEGER)
+        assertNotEquals(firstMatch(tokens, "-1e+345"), TokenType.INTEGER)
+        assertNotEquals(firstMatch(tokens, "1324ryhvjx"), TokenType.INTEGER)
+        assertNotEquals(firstMatch(tokens, "12324_343"), TokenType.INTEGER)
+        assertNotEquals(firstMatch(tokens, "1,000,000"), TokenType.INTEGER)
     }
 
     @Test fun identifierTest() {
         val tokens = Tokens(MockDfaFactory()).getTokens()
 
-        assertEquals(firstMatch(tokens, "x"), IDENTIFIER)
-        assertEquals(firstMatch(tokens, "i"), IDENTIFIER)
-        assertEquals(firstMatch(tokens, "żółć"), IDENTIFIER)
-        assertEquals(firstMatch(tokens, "prawd"), IDENTIFIER)
-        assertEquals(firstMatch(tokens, "prawda0123456789__"), IDENTIFIER)
-        assertEquals(firstMatch(tokens, "fałszerstwo"), IDENTIFIER)
-        assertEquals(firstMatch(tokens, "jęśliby"), IDENTIFIER)
-        assertEquals(firstMatch(tokens, "pchnąć_w_tę_łódź_jeża_lub_ośm_skrzyń_fig"), IDENTIFIER)
-        assertEquals(firstMatch(tokens, "pójdźżeKińTęChmurnośćWGłąbFlaszy"), IDENTIFIER)
+        assertEquals(firstMatch(tokens, "x"), TokenType.IDENTIFIER)
+        assertEquals(firstMatch(tokens, "i"), TokenType.IDENTIFIER)
+        assertEquals(firstMatch(tokens, "żółć"), TokenType.IDENTIFIER)
+        assertEquals(firstMatch(tokens, "prawd"), TokenType.IDENTIFIER)
+        assertEquals(firstMatch(tokens, "prawda0123456789__"), TokenType.IDENTIFIER)
+        assertEquals(firstMatch(tokens, "fałszerstwo"), TokenType.IDENTIFIER)
+        assertEquals(firstMatch(tokens, "jęśliby"), TokenType.IDENTIFIER)
+        assertEquals(firstMatch(tokens, "pchnąć_w_tę_łódź_jeża_lub_ośm_skrzyń_fig"), TokenType.IDENTIFIER)
+        assertEquals(firstMatch(tokens, "pójdźżeKińTęChmurnośćWGłąbFlaszy"), TokenType.IDENTIFIER)
 
-        assertEquals(firstMatch(tokens, "Liczba"), TYPE_IDENTIFIER)
-        assertEquals(firstMatch(tokens, "Czy"), TYPE_IDENTIFIER)
-        assertEquals(firstMatch(tokens, "Nic"), TYPE_IDENTIFIER)
-        assertEquals(firstMatch(tokens, "Prawda"), TYPE_IDENTIFIER)
-        assertEquals(firstMatch(tokens, "Fałsz"), TYPE_IDENTIFIER)
-        assertEquals(firstMatch(tokens, "TypeIdentifier"), TYPE_IDENTIFIER)
-        assertEquals(firstMatch(tokens, "Typ_z_cyframi_7639"), TYPE_IDENTIFIER)
-        assertEquals(firstMatch(tokens, "W_niżach_mógł_zjeść_truflę_koń_bądź_psy"), TYPE_IDENTIFIER)
+        assertEquals(firstMatch(tokens, "Liczba"), TokenType.TYPE_IDENTIFIER)
+        assertEquals(firstMatch(tokens, "Czy"), TokenType.TYPE_IDENTIFIER)
+        assertEquals(firstMatch(tokens, "Nic"), TokenType.TYPE_IDENTIFIER)
+        assertEquals(firstMatch(tokens, "Prawda"), TokenType.TYPE_IDENTIFIER)
+        assertEquals(firstMatch(tokens, "Fałsz"), TokenType.TYPE_IDENTIFIER)
+        assertEquals(firstMatch(tokens, "TypeIdentifier"), TokenType.TYPE_IDENTIFIER)
+        assertEquals(firstMatch(tokens, "Typ_z_cyframi_7639"), TokenType.TYPE_IDENTIFIER)
+        assertEquals(firstMatch(tokens, "W_niżach_mógł_zjeść_truflę_koń_bądź_psy"), TokenType.TYPE_IDENTIFIER)
 
         assertNull(firstMatch(tokens, "2erere"))
         assertNull(firstMatch(tokens, "_sdf02"))
@@ -215,19 +214,19 @@ class TokensTest {
     @Test fun whitespaceTest() {
         val tokens = Tokens(MockDfaFactory()).getTokens()
 
-        assertEquals(firstMatch(tokens, " "), WHITESPACE)
-        assertEquals(firstMatch(tokens, "     "), WHITESPACE)
-        assertEquals(firstMatch(tokens, "\t"), WHITESPACE)
-        assertEquals(firstMatch(tokens, "  \t  "), WHITESPACE)
-        assertEquals(firstMatch(tokens, "\t \t"), WHITESPACE)
-        assertEquals(firstMatch(tokens, "// no comment"), WHITESPACE)
-        assertEquals(firstMatch(tokens, "//   \t   \t "), WHITESPACE)
-        assertEquals(firstMatch(tokens, "// jeśli (x == 10 oraz (y * 3 != żółć) { asdf = xyz > 3 ? a + b : c % d; }"), WHITESPACE)
-        assertEquals(firstMatch(tokens, "// \taąbcćdeęfghijklłmnńoópqrsśtuvwxyzźżAĄBCĆDEĘFGHIJKLŁMNŃOÓPQRSŚTUVWXYZŹŻ0123456789{}(),.<>:;?/+=-_!%^&*|~"), WHITESPACE)
+        assertEquals(firstMatch(tokens, " "), TokenType.WHITESPACE)
+        assertEquals(firstMatch(tokens, "     "), TokenType.WHITESPACE)
+        assertEquals(firstMatch(tokens, "\t"), TokenType.WHITESPACE)
+        assertEquals(firstMatch(tokens, "  \t  "), TokenType.WHITESPACE)
+        assertEquals(firstMatch(tokens, "\t \t"), TokenType.WHITESPACE)
+        assertEquals(firstMatch(tokens, "// no comment"), TokenType.WHITESPACE)
+        assertEquals(firstMatch(tokens, "//   \t   \t "), TokenType.WHITESPACE)
+        assertEquals(firstMatch(tokens, "// jeśli (x == 10 oraz (y * 3 != żółć) { asdf = xyz > 3 ? a + b : c % d; }"), TokenType.WHITESPACE)
+        assertEquals(firstMatch(tokens, "// \taąbcćdeęfghijklłmnńoópqrsśtuvwxyzźżAĄBCĆDEĘFGHIJKLŁMNŃOÓPQRSŚTUVWXYZŹŻ0123456789{}(),.<>:;?/+=-_!%^&*|~"), TokenType.WHITESPACE)
 
-        assertNotEquals(firstMatch(tokens, "      E    "), WHITESPACE)
-        assertNotEquals(firstMatch(tokens, " \t \n"), WHITESPACE)
-        assertNotEquals(firstMatch(tokens, "// comments end with newline\n"), WHITESPACE)
-        assertNotEquals(firstMatch(tokens, "/* no multiline\n\tcomments allowed */"), WHITESPACE)
+        assertNotEquals(firstMatch(tokens, "      E    "), TokenType.WHITESPACE)
+        assertNotEquals(firstMatch(tokens, " \t \n"), TokenType.WHITESPACE)
+        assertNotEquals(firstMatch(tokens, "// comments end with newline\n"), TokenType.WHITESPACE)
+        assertNotEquals(firstMatch(tokens, "/* no multiline\n\tcomments allowed */"), TokenType.WHITESPACE)
     }
 }

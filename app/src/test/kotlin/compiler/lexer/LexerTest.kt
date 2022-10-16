@@ -7,20 +7,23 @@ import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertContentEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.fail
 
 class LexerTest {
     private class TestInput(val string: String) : Input {
         var index = 0
-        val flushed = ArrayList<Int>()
+        val flushed = mutableListOf(0)
 
         override fun getLocation() = Location(1, index + 1)
 
         override fun hasNext() = index < string.length
 
-        override fun next() = string[index++]
+        override fun next() = if (hasNext()) string[index++] else fail()
 
         override fun rewind(count: Int) {
             index -= count
+            if (flushed.any { index < it })
+                fail()
         }
 
         override fun flush() {

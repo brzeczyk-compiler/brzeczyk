@@ -83,14 +83,27 @@ class LexerTest {
         val input = TestInput("aaa")
         val dfa1 = TestDfa("a")
         val dfa2 = TestDfa("aa")
-        val dfa3 = TestDfa("aab")
-        val lexer = Lexer<Int>(listOf(Pair(dfa1, 1), Pair(dfa2, 2), Pair(dfa3, 3)))
+        val lexer = Lexer<Int>(listOf(Pair(dfa1, 1), Pair(dfa2, 2)))
 
         val result = lexer.process(input)
 
         val token1 = Token(2, "aa", Location(1, 1), Location(1, 2))
         val token2 = Token(1, "a", Location(1, 3), Location(1, 3))
         assertContentEquals(sequenceOf(token1, token2), result)
+    }
+
+    @Test fun `the lexer can correctly rewind input`() {
+        val input = TestInput("aaa")
+        val dfa1 = TestDfa("a")
+        val dfa2 = TestDfa("aab")
+        val lexer = Lexer<Int>(listOf(Pair(dfa1, 1), Pair(dfa2, 2)))
+
+        val result = lexer.process(input)
+
+        val token1 = Token(1, "a", Location(1, 1), Location(1, 1))
+        val token2 = Token(1, "a", Location(1, 2), Location(1, 2))
+        val token3 = Token(1, "a", Location(1, 3), Location(1, 3))
+        assertContentEquals(sequenceOf(token1, token2, token3), result)
     }
 
     @Test fun `a token category earlier in the list has higher priority`() {

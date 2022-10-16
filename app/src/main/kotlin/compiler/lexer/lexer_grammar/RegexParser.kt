@@ -3,7 +3,7 @@ package compiler.lexer.lexer_grammar
 import compiler.lexer.regex.Regex
 import compiler.lexer.regex.RegexFactory
 
-class RegexParser : UniversalRegexParser<Regex>() {
+object RegexParser : UniversalRegexParser<Regex>() {
 
     override fun performStar(child: Regex): Regex {
         return RegexFactory.createStar(child)

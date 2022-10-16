@@ -30,18 +30,18 @@ class LexerTest {
 
     private class TestDfa(val pattern: String) : Dfa {
         override fun newWalk() = object : DfaWalk {
-            var index = 0
+            var state = 0
 
             override fun step(a: Char) {
-                if (index < pattern.length && a == pattern[index])
-                    index++
+                if (state < pattern.length && a == pattern[state])
+                    state++
                 else
-                    index = pattern.length + 1
+                    state = pattern.length + 1
             }
 
-            override fun isAccepted() = index == pattern.length
+            override fun isAccepted() = state == pattern.length
 
-            override fun isDead() = index == pattern.length + 1
+            override fun isDead() = state == pattern.length + 1
         }
     }
 
@@ -69,13 +69,13 @@ class LexerTest {
         val input = TestInput("aaabab")
         val dfa1 = TestDfa("aa")
         val dfa2 = TestDfa("ab")
-        val lexer = Lexer<Boolean>(listOf(Pair(dfa1, true), Pair(dfa2, false)))
+        val lexer = Lexer<Int>(listOf(Pair(dfa1, 1), Pair(dfa2, 2)))
 
         val result = lexer.process(input)
 
-        val token1 = Token(true, "aa", Location(1, 1), Location(1, 2))
-        val token2 = Token(false, "ab", Location(1, 3), Location(1, 4))
-        val token3 = Token(false, "ab", Location(1, 5), Location(1, 6))
+        val token1 = Token(1, "aa", Location(1, 1), Location(1, 2))
+        val token2 = Token(2, "ab", Location(1, 3), Location(1, 4))
+        val token3 = Token(2, "ab", Location(1, 5), Location(1, 6))
         assertContentEquals(sequenceOf(token1, token2, token3), result)
     }
 
@@ -97,14 +97,14 @@ class LexerTest {
         val input1 = TestInput("ab")
         val input2 = TestInput("ab")
         val dfa = TestDfa("ab")
-        val lexer1 = Lexer<Boolean>(listOf(Pair(dfa, true), Pair(dfa, false)))
-        val lexer2 = Lexer<Boolean>(listOf(Pair(dfa, false), Pair(dfa, true)))
+        val lexer1 = Lexer<Int>(listOf(Pair(dfa, 1), Pair(dfa, 2)))
+        val lexer2 = Lexer<Int>(listOf(Pair(dfa, 2), Pair(dfa, 1)))
 
         val result1 = lexer1.process(input1)
         val result2 = lexer2.process(input2)
 
-        val token1 = Token(true, "ab", Location(1, 1), Location(1, 2))
-        val token2 = Token(false, "ab", Location(1, 1), Location(1, 2))
+        val token1 = Token(1, "ab", Location(1, 1), Location(1, 2))
+        val token2 = Token(2, "ab", Location(1, 1), Location(1, 2))
         assertContentEquals(sequenceOf(token1), result1)
         assertContentEquals(sequenceOf(token2), result2)
     }

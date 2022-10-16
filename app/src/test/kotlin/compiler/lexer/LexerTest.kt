@@ -114,7 +114,7 @@ class LexerTest {
         val dfa = TestDfa("a")
         val lexer = Lexer<Unit>(listOf(Pair(dfa, Unit)))
 
-        assertFailsWith(Lexer.Fail::class) {
+        assertFailsWith(Lexer.FailedToMatchToken::class) {
             lexer.process(input).count()
         }
     }

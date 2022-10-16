@@ -8,7 +8,7 @@ import compiler.lexer.input.Input
 // The priority of a DFA is given by its position in the list, with earlier positions having higher priority.
 class Lexer<TCat>(val dfas: List<Pair<Dfa, TCat>>) {
     // Thrown when none of the DFAs accepted the input.
-    class Fail : Throwable()
+    class FailedToMatchToken : Throwable()
 
     // Splits the given input into a sequence of tokens.
     // The input is read lazily as consecutive tokens are requested.
@@ -46,7 +46,7 @@ class Lexer<TCat>(val dfas: List<Pair<Dfa, TCat>>) {
             }
 
             if (tokenEnd == null || tokenCategory == null)
-                throw Fail() // Throw an error when no token matches the remaining input.
+                throw FailedToMatchToken() // Throw an error when no token matches the remaining input.
 
             // Undo the reading of characters after the last matched token.
             val tokenContent = buffer.dropLast(excess).toString()

@@ -18,11 +18,11 @@ abstract class UniversalRegexParser<T> {
         )
     }
 
-    protected abstract fun starBehaviour(a: T): T
-    protected abstract fun concatBehaviour(a: T, b: T): T
-    protected abstract fun unionBehaviour(a: T, b: T): T
+    protected abstract fun performStar(child: T): T
+    protected abstract fun performConcat(left: T, right: T): T
+    protected abstract fun performUnion(left: T, right: T): T
     protected abstract fun getEmpty(): T
-    protected abstract fun getAtomic(s: Set<Char>): T
+    protected abstract fun getAtomic(charSet: Set<Char>): T
 
     private class SymbolSeq(private val text: String) : Iterable<String> {
         override fun iterator(): Iterator<String> {
@@ -34,6 +34,7 @@ abstract class UniversalRegexParser<T> {
                         '[' -> {
                             val begin = position
                             position = text.indexOf(']', begin) + 1
+                            if (position == 0) throw IllegalArgumentException("The square bracket at position $begin has no corresponding closing bracket")
                             text.substring(begin, position)
                         }
 
@@ -53,31 +54,33 @@ abstract class UniversalRegexParser<T> {
         }
     }
 
-    private fun parseSymbol(a: String): T {
-        return when (a[0]) {
+    private fun parseSymbol(symbol: String): T {
+        return when (symbol[0]) {
             '[' -> {
-                var out = getEmpty()
-                for (symbol in SymbolSeq(a.substring(1, a.length - 1))) {
-                    out = unionBehaviour(out, parseSymbol(symbol))
+                var result = getEmpty()
+                for (insideSymbol in SymbolSeq(symbol.substring(1, symbol.length - 1))) {
+                    result = performUnion(result, parseSymbol(insideSymbol))
                 }
-                out
+                result
             }
 
-            '\\' -> when (a) {
-                in SPECIAL_SYMBOLS.keys -> getAtomic(SPECIAL_SYMBOLS[a]!!)
-                else -> getAtomic(setOf(a[1]))
+            '\\' -> when (symbol) {
+                in SPECIAL_SYMBOLS.keys -> getAtomic(SPECIAL_SYMBOLS[symbol]!!)
+                else -> getAtomic(setOf(symbol[1]))
             }
 
-            else -> getAtomic(setOf(a[0]))
+            else -> getAtomic(setOf(symbol[0]))
         }
     }
 
-    private fun generateRPN(string: String): String {
+    private fun generateReversePolishNotation(string: String): String {
         if (string.isEmpty()) return "[]" // empty set
-        var out = ""
+        var result = ""
         val stack = Stack<Char>()
         fun putOperatorOnStack(x: Char) {
-            while (!stack.isEmpty() && (OPERATOR_PRIORITY[stack.peek()]!! >= OPERATOR_PRIORITY[x]!!)) out += stack.pop()
+            while (!stack.isEmpty() && (OPERATOR_PRIORITY[stack.peek()]!! >= OPERATOR_PRIORITY[x]!!)) {
+                result += stack.pop()
+            }
             stack.push(x)
         }
 
@@ -90,7 +93,8 @@ abstract class UniversalRegexParser<T> {
             when (c) {
                 '(' -> stack.push(c)
                 ')' -> {
-                    while (stack.peek() != '(') out += stack.pop()
+                    while (!stack.isEmpty() && stack.peek() != '(') result += stack.pop()
+                    if (stack.isEmpty()) throw IllegalArgumentException("The string contains a closing parenthesis that does not have a corresponding opening parenthesis")
                     stack.pop()
                     didTokenEndInPrevStep = true
                 }
@@ -101,23 +105,32 @@ abstract class UniversalRegexParser<T> {
                 }
 
                 else -> {
-                    out += next
+                    result += next
                     didTokenEndInPrevStep = true
                 }
             }
         }
-        while (!stack.isEmpty()) out += stack.pop()
-        return out
+        while (!stack.isEmpty()) result += stack.pop()
+        return result
     }
 
     fun parseStringToRegex(string: String): T {
-        val rpn = generateRPN(string)
+        val rpn = generateReversePolishNotation(string)
         val stack = Stack<T>()
         for (next in SymbolSeq(rpn)) {
             when (next[0]) {
-                '*' -> stack.push(starBehaviour(stack.pop()))
-                '|' -> stack.push(unionBehaviour(stack.pop(), stack.pop()))
-                '?' -> stack.push(concatBehaviour(stack.pop(), stack.pop()))
+                '*' -> stack.push(performStar(stack.pop()))
+                '|' -> {
+                    val right = stack.pop()
+                    val left = stack.pop()
+                    stack.push(performUnion(left, right))
+                }
+                '?' -> {
+                    val right = stack.pop()
+                    val left = stack.pop()
+                    stack.push(performConcat(left, right))
+                }
+
                 else -> stack.push(parseSymbol(next))
             }
         }

@@ -5,23 +5,23 @@ import compiler.lexer.regex.RegexFactory
 
 class RegexParser : UniversalRegexParser<Regex>() {
 
-    override fun starBehaviour(a: Regex): Regex {
-        return RegexFactory.createStar(a)
+    override fun performStar(child: Regex): Regex {
+        return RegexFactory.createStar(child)
     }
 
-    override fun concatBehaviour(a: Regex, b: Regex): Regex {
-        return RegexFactory.createConcat(a, b)
+    override fun performConcat(left: Regex, right: Regex): Regex {
+        return RegexFactory.createConcat(left, right)
     }
 
-    override fun unionBehaviour(a: Regex, b: Regex): Regex {
-        return RegexFactory.createUnion(a, b)
+    override fun performUnion(left: Regex, right: Regex): Regex {
+        return RegexFactory.createUnion(left, right)
     }
 
     override fun getEmpty(): Regex {
         return RegexFactory.createEmpty()
     }
 
-    override fun getAtomic(s: Set<Char>): Regex {
-        return RegexFactory.createAtomic(s)
+    override fun getAtomic(charSet: Set<Char>): Regex {
+        return RegexFactory.createAtomic(charSet)
     }
 }

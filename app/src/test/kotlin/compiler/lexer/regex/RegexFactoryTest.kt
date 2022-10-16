@@ -14,6 +14,7 @@ class RegexFactoryTest {
     @Test fun testUnionNormalizeBasicRules() {
         assertEquals(RegexFactory.createUnion(CONCAT_AB, CONCAT_AB), CONCAT_AB)
         assertEquals(RegexFactory.createUnion(CONCAT_AB, CONCAT_AC), RegexFactory.createUnion(CONCAT_AC, CONCAT_AB))
+
         val union1 = RegexFactory.createUnion(CONCAT_AB, CONCAT_AC)
         val union2 = RegexFactory.createUnion(CONCAT_AC, CONCAT_BC)
         assertEquals(RegexFactory.createUnion(union1, CONCAT_BC), RegexFactory.createUnion(CONCAT_AB, union2))
@@ -67,6 +68,16 @@ class RegexFactoryTest {
         val atomicBc = RegexFactory.createAtomic(setOf('c', 'b'))
         val atomicAbc = RegexFactory.createAtomic(setOf('c', 'a', 'b'))
         assertEquals(RegexFactory.createUnion(atomicAb, atomicBc), atomicAbc)
+
+        val atomicAbConcatAb = RegexFactory.createUnion(atomicAb, CONCAT_AB)
+        val atomicBcConcatBc = RegexFactory.createUnion(atomicBc, CONCAT_BC)
+        val all1 = RegexFactory.createUnion(atomicAbConcatAb, atomicBcConcatBc)
+        val concats = RegexFactory.createUnion(CONCAT_BC, CONCAT_AB)
+        val all2 = RegexFactory.createUnion(atomicAb, RegexFactory.createUnion(atomicBc, concats))
+        val allAtomicsMerged = RegexFactory.createUnion(atomicAbc, concats)
+
+        assertEquals(all1, all2)
+        assertEquals(all2, allAtomicsMerged)
     }
 
     @Test fun testConcatNormalize() {
@@ -84,7 +95,10 @@ class RegexFactoryTest {
         var concatRight = RegexFactory.createConcat(CONCAT_BC, CONCAT_CD)
         concatRight = RegexFactory.createConcat(CONCAT_AC, concatRight)
         concatRight = RegexFactory.createConcat(CONCAT_AB, concatRight)
-        val concatSymmetrical = RegexFactory.createConcat(RegexFactory.createConcat(CONCAT_AB, CONCAT_AC), RegexFactory.createConcat(CONCAT_BC, CONCAT_CD))
+        val concatSymmetrical = RegexFactory.createConcat(
+            RegexFactory.createConcat(CONCAT_AB, CONCAT_AC),
+            RegexFactory.createConcat(CONCAT_BC, CONCAT_CD)
+        )
         var concatMixed = RegexFactory.createConcat(CONCAT_AC, CONCAT_BC)
         concatMixed = RegexFactory.createConcat(CONCAT_AB, concatMixed)
         concatMixed = RegexFactory.createConcat(concatMixed, CONCAT_CD)

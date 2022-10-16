@@ -25,15 +25,13 @@ object RegexFactory {
     }
 
     fun createUnion(left: Regex, right: Regex): Regex {
-        // we maintain two invariants:
-        // right child is never a Union
+        // we maintain three invariants:
+        // right child of a Union is never a Union
         // nested Unions are sorted (with the smallest element being the leftmost one)
+        // there is at most one atomic in Union (this is possible as we can freely merge atomics in Unions)
         if (left == right) return left
         if (left is Regex.Empty || right is Regex.Empty) {
             return Regex.Empty()
-        }
-        if (left is Regex.Atomic && right is Regex.Atomic) {
-            return Regex.Atomic(left.atomic + right.atomic)
         }
         fun goLeft(regex: Regex): Sequence<Regex> {
             return sequence {
@@ -72,13 +70,18 @@ object RegexFactory {
                 }
             }
         }.iterator()
-        val initialUnion = Regex.Union(elemsSorted.next(), elemsSorted.next())
+        val smallestElem = elemsSorted.next()
+        val secondSmallestElem = elemsSorted.next()
+        // if there are two atomics (one from left and one from right), we need to merge them
+        // they are the smallest elements so they will be first
+        val initialUnion = if (smallestElem is Regex.Atomic && secondSmallestElem is Regex.Atomic)
+            Regex.Atomic(smallestElem.atomic + secondSmallestElem.atomic)
+        else Regex.Union(smallestElem, secondSmallestElem)
         return elemsSorted.asSequence().fold(initialUnion) { union, elem -> Regex.Union(union, elem) }
     }
 
     fun createConcat(left: Regex, right: Regex): Regex {
-        // we maintain the invariant that the right child of Concat is not a Concat
-        // TODO: normalize
+        // we maintain the invariant that the right child of a Concat is not a Concat
         if (left is Regex.Empty || right is Regex.Empty) {
             return Regex.Empty()
         }

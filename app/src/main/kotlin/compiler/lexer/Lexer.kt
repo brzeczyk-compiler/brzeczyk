@@ -32,8 +32,7 @@ class Lexer<TCat>(val dfas: List<Pair<Dfa, TCat>>) {
                 buffer.append(char)
                 excess++
 
-                for (walk in walks)
-                    walk.step(char)
+                walks.forEach { it.step(char) }
 
                 for ((index, walk) in walks.withIndex()) {
                     if (walk.isAccepted()) { // Match a token with category corresponding to the first accepting DFA.

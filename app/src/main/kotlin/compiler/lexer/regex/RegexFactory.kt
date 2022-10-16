@@ -25,63 +25,90 @@ object RegexFactory {
     }
 
     fun createUnion(left: Regex, right: Regex): Regex {
-        // we maintain three invariants:
+        // we maintain five invariants:
         // right child of a Union is never a Union
         // nested Unions are sorted (with the smallest element being the leftmost one)
         // there is at most one atomic in Union (this is possible as we can freely merge atomics in Unions)
-        if (left == right) return left
-        if (left is Regex.Empty || right is Regex.Empty) {
-            return Regex.Empty()
+        // Empty cannot be a part of Union
+        // there are no duplicates among all children of one Union
+        if (left is Regex.Empty) {
+            return right
         }
-        fun goLeft(regex: Regex): Sequence<Regex> {
+        if (right is Regex.Empty) {
+            return left
+        }
+        fun traverseFromLeft(regex: Regex): Sequence<Regex> {
             return sequence {
                 if (regex !is Regex.Union) {
                     yield(regex)
                 } else {
-                    yieldAll(goLeft(regex.left))
+                    yieldAll(traverseFromLeft(regex.left))
                     yield(regex.right)
                 }
             }
         }
-        val elemsSorted = sequence {
-            val leftElemsSorted = goLeft(left).iterator()
-            val rightElemsSorted = goLeft(right).iterator()
-            var currLeft = leftElemsSorted.next()
-            var currRight = rightElemsSorted.next()
+        val summandsSorted = sequence {
+            val leftSummandsSorted = traverseFromLeft(left).iterator()
+            val rightSummandsSorted = traverseFromLeft(right).iterator()
+            var currentLeft = leftSummandsSorted.next()
+            var currentRight = rightSummandsSorted.next()
             while (true) {
-                if (currLeft < currRight) {
-                    yield(currLeft)
-                    if (leftElemsSorted.hasNext()) {
-                        currLeft = leftElemsSorted.next()
+                if (currentLeft < currentRight) {
+                    yield(currentLeft)
+                    if (leftSummandsSorted.hasNext()) {
+                        currentLeft = leftSummandsSorted.next()
                         continue
                     }
-                    yield(currRight)
-                    yieldAll(rightElemsSorted)
+                    yield(currentRight)
+                    yieldAll(rightSummandsSorted)
                     break
-                } else {
-                    yield(currRight)
-                    if (rightElemsSorted.hasNext()) {
-                        currRight = rightElemsSorted.next()
+                } else if (currentRight < currentLeft) {
+                    yield(currentRight)
+                    if (rightSummandsSorted.hasNext()) {
+                        currentRight = rightSummandsSorted.next()
                         continue
                     }
-                    yield(currLeft)
-                    yieldAll(leftElemsSorted)
+                    yield(currentLeft)
+                    yieldAll(leftSummandsSorted)
+                    break
+                } else if (currentLeft == currentRight) {
+                    if (rightSummandsSorted.hasNext()) {
+                        currentRight = rightSummandsSorted.next()
+                        continue
+                    }
+                    if (leftSummandsSorted.hasNext()) {
+                        currentLeft = leftSummandsSorted.next()
+                        continue
+                    }
+                    // both sequences are consumed aside from the last element
+                    yield(currentLeft)
                     break
                 }
             }
         }.iterator()
-        val smallestElem = elemsSorted.next()
-        val secondSmallestElem = elemsSorted.next()
+        val smallestElem = summandsSorted.next()
+        if (!summandsSorted.hasNext()) {
+            // possible when performing X u X, where X is not a Union
+            return smallestElem
+        }
+        val secondSmallestElem = summandsSorted.next()
         // if there are two atomics (one from left and one from right), we need to merge them
         // they are the smallest elements so they will be first
-        val initialUnion = if (smallestElem is Regex.Atomic && secondSmallestElem is Regex.Atomic)
-            Regex.Atomic(smallestElem.atomic + secondSmallestElem.atomic)
-        else Regex.Union(smallestElem, secondSmallestElem)
-        return elemsSorted.asSequence().fold(initialUnion) { union, elem -> Regex.Union(union, elem) }
+        val leftmostElement = if (smallestElem is Regex.Atomic && secondSmallestElem is Regex.Atomic)
+            Regex.Atomic(smallestElem.atomic + secondSmallestElem.atomic) else Regex.Union(smallestElem, secondSmallestElem)
+        return summandsSorted.asSequence().fold(leftmostElement) { union, elem -> Regex.Union(union, elem) }
+    }
+
+    private fun addLeftmostChildToConcat(parent: Regex.Concat, child: Regex): Regex.Concat {
+        val updatedLeftChild = if (parent.left is Regex.Concat) addLeftmostChildToConcat(parent.left, child)
+        else Regex.Concat(child, parent.left)
+        return Regex.Concat(updatedLeftChild, parent.right)
     }
 
     fun createConcat(left: Regex, right: Regex): Regex {
-        // we maintain the invariant that the right child of a Concat is not a Concat
+        // we maintain two invariants:
+        // the right child of a Concat is never a Concat
+        // Epsilon or Empty cannot be a part of Concat
         if (left is Regex.Empty || right is Regex.Empty) {
             return Regex.Empty()
         }
@@ -91,13 +118,8 @@ object RegexFactory {
         if (right is Regex.Epsilon) {
             return left
         }
-        fun addLeftmostChild(concat: Regex.Concat, child: Regex): Regex.Concat {
-            val updatedLeftChild = if (concat.left is Regex.Concat) addLeftmostChild(concat.left, child)
-            else Regex.Concat(child, concat.left)
-            return Regex.Concat(updatedLeftChild, concat.right)
-        }
         if (right is Regex.Concat) {
-            return addLeftmostChild(right, left)
+            return addLeftmostChildToConcat(right, left)
         }
         return Regex.Concat(left, right)
     }

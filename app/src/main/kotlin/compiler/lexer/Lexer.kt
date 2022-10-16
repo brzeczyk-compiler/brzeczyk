@@ -19,9 +19,9 @@ class Lexer<TCat>(val dfas: List<Pair<Dfa, TCat>>) {
             input.flush() // Tell the input source that previous characters can be discarded.
 
             val buffer = StringBuilder() // The content of a token currently attempted to be matched.
-            val start = input.getLocation() // The start location of a token currently attempted to be matched.
-            var end: Location? = null // The end location of the last matched token, if any.
-            var category: TCat? = null // The category of the last matched token, if any.
+            val tokenStart = input.getLocation() // The start location of a token currently attempted to be matched.
+            var tokenEnd: Location? = null // The end location of the last matched token, if any.
+            var tokenCategory: TCat? = null // The category of the last matched token, if any.
             var excess = 0 // The number of characters added to the buffer after the last matched token, if any.
 
             val walks = dfas.map { it.first.newWalk() }
@@ -37,23 +37,23 @@ class Lexer<TCat>(val dfas: List<Pair<Dfa, TCat>>) {
 
                 for ((index, walk) in walks.withIndex()) {
                     if (walk.isAccepted()) { // Match a token with category corresponding to the first accepting DFA.
-                        end = location
-                        category = dfas[index].second
+                        tokenEnd = location
+                        tokenCategory = dfas[index].second
                         excess = 0
                         break
                     }
                 }
             }
 
-            if (end == null || category == null)
+            if (tokenEnd == null || tokenCategory == null)
                 throw Fail() // Throw an error when no token matches the remaining input.
 
             // Undo the reading of characters after the last matched token.
-            val content = buffer.dropLast(excess).toString()
+            val tokenContent = buffer.dropLast(excess).toString()
             input.rewind(excess)
 
             // Pass the matched token to the reader of this sequence and wait until the next token is requested.
-            yield(Token(category, content, start, end))
+            yield(Token(tokenCategory, tokenContent, tokenStart, tokenEnd))
         }
     }
 }

@@ -20,27 +20,27 @@ private val UNION_EP_EM = Regex.Union(EPSILON, EMPTY)
 private val UNION_EM_EP = Regex.Union(EMPTY, EPSILON)
 
 class RegexTest {
-    @Test fun emptyDoesNotContainEpsilon() {
+    @Test fun testEmptyDoesNotContainEpsilon() {
         val reg = Regex.Empty()
         assertFalse(reg.containsEpsilon())
     }
 
-    @Test fun epsilonContainsEpsilon() {
+    @Test fun testEpsilonContainsEpsilon() {
         val reg = Regex.Epsilon()
         assertTrue(reg.containsEpsilon())
     }
 
-    @Test fun atomicDoesNotContainEpsilon() {
+    @Test fun testAtomicDoesNotContainEpsilon() {
         val reg = Regex.Atomic(setOf('a', 'b', 'c'))
         assertFalse(reg.containsEpsilon())
     }
 
-    @Test fun starContainsEpsilon() {
+    @Test fun testStarContainsEpsilon() {
         val reg = Regex.Star(Regex.Empty())
         assertTrue(reg.containsEpsilon())
     }
 
-    @Test fun unionContainsEpsilon() {
+    @Test fun testUnionsWithEpsilon() {
         val reg1 = Regex.Union(
             Regex.Epsilon(),
             Regex.Atomic(setOf('d', 'e', 'f')),
@@ -54,7 +54,7 @@ class RegexTest {
         assertTrue(reg2.containsEpsilon())
     }
 
-    @Test fun unionDoesNotContainEpsilon() {
+    @Test fun testUnionsWithNoEpsilon() {
         val reg1 = Regex.Union(
             Regex.Atomic(setOf('a', 'b', 'c')),
             Regex.Atomic(setOf('d', 'e', 'f')),
@@ -68,7 +68,7 @@ class RegexTest {
         assertFalse(reg2.containsEpsilon())
     }
 
-    @Test fun concatContainsEpsilon() {
+    @Test fun testConcatsWithEpsilon() {
         val reg1 = Regex.Concat(
             Regex.Epsilon(),
             Regex.Epsilon(),
@@ -82,7 +82,7 @@ class RegexTest {
         assertTrue(reg2.containsEpsilon())
     }
 
-    @Test fun concatDoesNotContainEpsilon() {
+    @Test fun testConcatsWithNoEpsilon() {
         val reg1 = Regex.Concat(
             Regex.Epsilon(),
             Regex.Atomic(setOf('d', 'e', 'f')),
@@ -96,22 +96,22 @@ class RegexTest {
         assertFalse(reg2.containsEpsilon())
     }
 
-    @Test fun emptyDerivativeIsEmpty() {
+    @Test fun testDerivativeOfEmptyIsEmpty() {
         val reg = RegexFactory.createEmpty()
         assertTrue(reg.derivative('a') is Regex.Empty)
     }
 
-    @Test fun epsilonDerivativeIsEmpty() {
+    @Test fun testDerivativeOfEpsilonIsEmpty() {
         val reg = RegexFactory.createEpsilon()
         assertTrue(reg.derivative('a') is Regex.Empty)
     }
 
-    @Test fun atomicDerivativeIsEpsilon() {
+    @Test fun testDerivativeOfAtomicWithProperAtomIsEpsilon() {
         val reg = RegexFactory.createAtomic(setOf('a'))
         assertTrue(reg.derivative('a') is Regex.Epsilon)
     }
 
-    @Test fun atomicDerivativeIsEmpty() {
+    @Test fun testDerivativeOfAtomicWithNoProperAtomIsEmpty() {
         val reg = RegexFactory.createAtomic(setOf('a'))
         assertTrue(reg.derivative('b') is Regex.Empty)
     }

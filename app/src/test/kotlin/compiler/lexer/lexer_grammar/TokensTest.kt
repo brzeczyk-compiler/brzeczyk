@@ -9,6 +9,9 @@ import kotlin.test.assertNull
 
 class TokensTest {
 
+    // Uses Kotlin regex to simulate a DFA
+    // builds the current string with each step
+    // and tries to match it to regex when isAccepted is called
     private class MockDfaWalk(val regex: Regex) : DfaWalk {
         private var currentString = StringBuilder()
 
@@ -26,40 +29,26 @@ class TokensTest {
     }
 
     private class MockDfa(regexString: String) : Dfa {
+        // Kotlin regex equivalent to regexString
         private val regex: Regex
 
         init {
             // Change the format of regex to one used by Kotlin
             // Escape special characters not used in our parser
             // Replace our special characters with their counterparts
-            val filtered: String = regexString
-                .replace("{", "\\{")
-                .replace("}", "\\}")
-                .replace("+", "\\+")
-                .replace("-", "\\-")
-                .replace("/", "\\/")
-                .replace("^", "\\^")
-                .replace("\\l", "[a-ząćęłńóśźż]")
-                .replace("\\u", "[A-ZĄĆĘŁŃÓŚŹŻ]")
-                .replace("\\d", "[0-9]")
-                .replace("\\c", """[\{\}\(\),\.<>:;\?\/\+=\-_!%\^&\*\|~]""")
-            // Remove nested square brackets
-            var level = 0
-            val pattern = StringBuilder()
-            for (character in filtered) {
-                when (character) {
-                    '[' -> {
-                        if (level == 0) pattern.append('[')
-                        level += 1
-                    }
-                    ']' -> {
-                        level -= 1
-                        if (level == 0) pattern.append(']')
-                    }
-                    else -> pattern.append(character)
-                }
-            }
-            regex = Regex(pattern.toString())
+            regex = Regex(
+                regexString
+                    .replace("{", "\\{")
+                    .replace("}", "\\}")
+                    .replace("+", "\\+")
+                    .replace("-", "\\-")
+                    .replace("/", "\\/")
+                    .replace("^", "\\^")
+                    .replace("\\l", "[a-ząćęłńóśźż]")
+                    .replace("\\u", "[A-ZĄĆĘŁŃÓŚŹŻ]")
+                    .replace("\\d", "[0-9]")
+                    .replace("\\c", """[\{\}\(\),\.<>:;\?\/\+=\-_!%\^&\*\|~]""")
+            )
         }
 
         override fun newWalk(): DfaWalk {
@@ -75,9 +64,7 @@ class TokensTest {
 
     private fun accepts(dfa: Dfa, string: String): Boolean {
         val walk = dfa.newWalk()
-        for (character in string) {
-            walk.step(character)
-        }
+        string.forEach { walk.step(it) }
         return walk.isAccepted()
     }
 
@@ -89,7 +76,7 @@ class TokensTest {
         return null
     }
 
-    @Test fun keywordsTest() {
+    @Test fun `test keywords`() {
         val tokens = Tokens(MockDfaFactory()).getTokens()
 
         assertEquals(firstMatch(tokens, "jeśli"), TokenType.IF)
@@ -108,7 +95,7 @@ class TokensTest {
         assertEquals(firstMatch(tokens, "fałsz"), TokenType.FALSE_CONSTANT)
     }
 
-    @Test fun specialSymbolsTest() {
+    @Test fun `test special symbols`() {
         val tokens = Tokens(MockDfaFactory()).getTokens()
 
         assertEquals(firstMatch(tokens, "("), TokenType.LEFT_PAREN)
@@ -122,7 +109,7 @@ class TokensTest {
         assertEquals(firstMatch(tokens, "?"), TokenType.QUESTION_MARK)
     }
 
-    @Test fun operatorsTest() {
+    @Test fun `test operators`() {
         val tokens = Tokens(MockDfaFactory()).getTokens()
 
         assertEquals(firstMatch(tokens, "+"), TokenType.PLUS)
@@ -157,7 +144,7 @@ class TokensTest {
         assertNull(firstMatch(tokens, "/="))
     }
 
-    @Test fun integerTest() {
+    @Test fun `test integers`() {
         val tokens = Tokens(MockDfaFactory()).getTokens()
 
         assertEquals(firstMatch(tokens, "0"), TokenType.INTEGER)
@@ -182,7 +169,7 @@ class TokensTest {
         assertNotEquals(firstMatch(tokens, "1,000,000"), TokenType.INTEGER)
     }
 
-    @Test fun identifierTest() {
+    @Test fun `test identifiers and built-in types`() {
         val tokens = Tokens(MockDfaFactory()).getTokens()
 
         assertEquals(firstMatch(tokens, "x"), TokenType.IDENTIFIER)
@@ -195,15 +182,15 @@ class TokensTest {
         assertEquals(firstMatch(tokens, "pchnąć_w_tę_łódź_jeża_lub_ośm_skrzyń_fig"), TokenType.IDENTIFIER)
         assertEquals(firstMatch(tokens, "pójdźżeKińTęChmurnośćWGłąbFlaszy"), TokenType.IDENTIFIER)
 
-        assertEquals(firstMatch(tokens, "Liczba"), TokenType.TYPE_IDENTIFIER)
-        assertEquals(firstMatch(tokens, "Czy"), TokenType.TYPE_IDENTIFIER)
-        assertEquals(firstMatch(tokens, "Nic"), TokenType.TYPE_IDENTIFIER)
-        assertEquals(firstMatch(tokens, "Prawda"), TokenType.TYPE_IDENTIFIER)
-        assertEquals(firstMatch(tokens, "Fałsz"), TokenType.TYPE_IDENTIFIER)
-        assertEquals(firstMatch(tokens, "TypeIdentifier"), TokenType.TYPE_IDENTIFIER)
-        assertEquals(firstMatch(tokens, "Typ_z_cyframi_7639"), TokenType.TYPE_IDENTIFIER)
-        assertEquals(firstMatch(tokens, "W_niżach_mógł_zjeść_truflę_koń_bądź_psy"), TokenType.TYPE_IDENTIFIER)
+        assertEquals(firstMatch(tokens, "Liczba"), TokenType.TYPE_INTEGER)
+        assertEquals(firstMatch(tokens, "Czy"), TokenType.TYPE_BOOLEAN)
+        assertEquals(firstMatch(tokens, "Nic"), TokenType.TYPE_UNIT)
 
+        assertNull(firstMatch(tokens, "Prawda"))
+        assertNull(firstMatch(tokens, "Fałsz"))
+        assertNull(firstMatch(tokens, "TypeIdentifier"))
+        assertNull(firstMatch(tokens, "Typ_z_cyframi_7639"))
+        assertNull(firstMatch(tokens, "W_niżach_mógł_zjeść_truflę_koń_bądź_psy"))
         assertNull(firstMatch(tokens, "2erere"))
         assertNull(firstMatch(tokens, "_sdf02"))
         assertNull(firstMatch(tokens, "asdf+34"))
@@ -211,22 +198,22 @@ class TokensTest {
         assertNull(firstMatch(tokens, "hmm?"))
     }
 
-    @Test fun whitespaceTest() {
+    @Test fun `test whitespace and comments`() {
         val tokens = Tokens(MockDfaFactory()).getTokens()
 
-        assertEquals(firstMatch(tokens, " "), TokenType.WHITESPACE)
-        assertEquals(firstMatch(tokens, "     "), TokenType.WHITESPACE)
-        assertEquals(firstMatch(tokens, "\t"), TokenType.WHITESPACE)
-        assertEquals(firstMatch(tokens, "  \t  "), TokenType.WHITESPACE)
-        assertEquals(firstMatch(tokens, "\t \t"), TokenType.WHITESPACE)
-        assertEquals(firstMatch(tokens, "// no comment"), TokenType.WHITESPACE)
-        assertEquals(firstMatch(tokens, "//   \t   \t "), TokenType.WHITESPACE)
-        assertEquals(firstMatch(tokens, "// jeśli (x == 10 oraz (y * 3 != żółć) { asdf = xyz > 3 ? a + b : c % d; }"), TokenType.WHITESPACE)
-        assertEquals(firstMatch(tokens, "// \taąbcćdeęfghijklłmnńoópqrsśtuvwxyzźżAĄBCĆDEĘFGHIJKLŁMNŃOÓPQRSŚTUVWXYZŹŻ0123456789{}(),.<>:;?/+=-_!%^&*|~"), TokenType.WHITESPACE)
+        assertEquals(firstMatch(tokens, " "), TokenType.TO_IGNORE)
+        assertEquals(firstMatch(tokens, "     "), TokenType.TO_IGNORE)
+        assertEquals(firstMatch(tokens, "\t"), TokenType.TO_IGNORE)
+        assertEquals(firstMatch(tokens, "  \t  "), TokenType.TO_IGNORE)
+        assertEquals(firstMatch(tokens, "\t \t"), TokenType.TO_IGNORE)
+        assertEquals(firstMatch(tokens, "// no comment"), TokenType.TO_IGNORE)
+        assertEquals(firstMatch(tokens, "//   \t   \t "), TokenType.TO_IGNORE)
+        assertEquals(firstMatch(tokens, "// jeśli (x == 10 oraz (y * 3 != żółć) { asdf = xyz > 3 ? a + b : c % d; }"), TokenType.TO_IGNORE)
+        assertEquals(firstMatch(tokens, "// \taąbcćdeęfghijklłmnńoópqrsśtuvwxyzźżAĄBCĆDEĘFGHIJKLŁMNŃOÓPQRSŚTUVWXYZŹŻ0123456789{}(),.<>:;?/+=-_!%^&*|~"), TokenType.TO_IGNORE)
 
-        assertNotEquals(firstMatch(tokens, "      E    "), TokenType.WHITESPACE)
-        assertNotEquals(firstMatch(tokens, " \t \n"), TokenType.WHITESPACE)
-        assertNotEquals(firstMatch(tokens, "// comments end with newline\n"), TokenType.WHITESPACE)
-        assertNotEquals(firstMatch(tokens, "/* no multiline\n\tcomments allowed */"), TokenType.WHITESPACE)
+        assertNotEquals(firstMatch(tokens, "      E    "), TokenType.TO_IGNORE)
+        assertNotEquals(firstMatch(tokens, " \t \n"), TokenType.TO_IGNORE)
+        assertNotEquals(firstMatch(tokens, "// comments end with newline\n"), TokenType.TO_IGNORE)
+        assertNotEquals(firstMatch(tokens, "/* no multiline\n\tcomments allowed */"), TokenType.TO_IGNORE)
     }
 }

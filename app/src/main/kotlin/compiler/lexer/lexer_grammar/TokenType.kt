@@ -30,10 +30,14 @@ enum class TokenType {
     // Integers
     INTEGER,
     // Identifiers
-    IDENTIFIER, TYPE_IDENTIFIER,
+    IDENTIFIER,
+    // Built in types
+    TYPE_INTEGER, TYPE_BOOLEAN, TYPE_UNIT,
+    // Currently, there are no user defined types
+    // TYPE_IDENTIFIER,
+
     // Whitespace and comments
-    // Technically not real token
-    // Should whitespace and comments be handled this way
-    // or should they be filtered out in another way?
-    WHITESPACE,
+    // Technically not real tokens
+    // Should be filtered out before syntax analysis
+    TO_IGNORE,
 }

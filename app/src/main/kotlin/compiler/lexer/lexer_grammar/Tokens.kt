@@ -97,17 +97,19 @@ class Tokens(private val dfaFactory: DfaFactory = RegexDfaFactory()) {
             Pair(TokenType.IDENTIFIER, """\l[\l\u\d_]*"""),
 
             // Type identifiers - names of types
-            // Have to start with uppercase letter
+            // Includes built in types Liczba, Czy and Nic
+            Pair(TokenType.TYPE_INTEGER, "Liczba"),
+            Pair(TokenType.TYPE_BOOLEAN, "Czy"),
+            Pair(TokenType.TYPE_UNIT, "Nic"),
+            // User defined types have to start with uppercase letter
             // Can include alphanumeric characters and underscore
-            // Includes Liczba, Czy and Nic
-            // Maybe built-in types should have their own tokens?
-            // Currently, there are no user defined types
-            Pair(TokenType.TYPE_IDENTIFIER, """\u[\l\u\d_]*"""),
+            // Currently unused as there are no user defined types
+            // Pair(TokenType.TYPE_IDENTIFIER, """\u[\l\u\d_]*"""),
 
             // Whitespace and comments
             // Technically not real tokens
             // Should be filtered out before syntax analysis
-            Pair(TokenType.WHITESPACE, "[ \t]*|//[ \t\\l\\u\\d\\c]*")
+            Pair(TokenType.TO_IGNORE, "([ \t]*)|(//[ \t\\l\\u\\d\\c]*)")
         )
 
         return list.map {

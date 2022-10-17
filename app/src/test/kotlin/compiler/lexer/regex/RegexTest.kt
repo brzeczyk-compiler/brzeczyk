@@ -41,11 +41,11 @@ class RegexTest {
         assertNotEquals(controlElement, notEqualElement)
     }
 
-    @Test fun `regexes of different kind are not equal`() {
+    @Test fun `test regexes of different kind are not equal`() {
         assertAllNotEqual(listOf(ATOMIC_AB, CONCAT_EP_EM, EMPTY, EPSILON, UNION_EP_EM, STAR_AB))
     }
 
-    @Test fun `equals operator is well defined for regexes of same kind`() {
+    @Test fun `test equals operator is well defined for regexes of same kind`() {
         assertEquals<Regex>(EMPTY, Regex.Empty())
 
         assertEquals<Regex>(EPSILON, Regex.Epsilon())
@@ -59,24 +59,24 @@ class RegexTest {
         assertEqualsWellDefined(CONCAT_EP_EM, Regex.Concat(EPSILON, EMPTY), CONCAT_EM_EP)
     }
 
-    @Test fun `regexes are sorted lexicographically by type`() {
+    @Test fun `test regexes are sorted lexicographically by type`() {
         // also ensures atomic is the smallest, which is important for us
         assertOrdered(listOf(ATOMIC_AB, CONCAT_EP_EM, EMPTY, EPSILON, STAR_AB, UNION_EP_EM))
     }
 
-    @Test fun `atomics are sorted lexicographically by chars`() {
+    @Test fun `test atomics are sorted lexicographically by chars`() {
         assertOrdered(listOf(Regex.Atomic(setOf('a')), ATOMIC_AB, ATOMIC_AC))
     }
 
-    @Test fun `concats are sorted lexicographically by children`() {
+    @Test fun `test concats are sorted lexicographically by children`() {
         assertOrdered(listOf(CONCAT_EM_EP, Regex.Concat(EPSILON, ATOMIC_AB), Regex.Concat(EPSILON, ATOMIC_AC), CONCAT_EP_EM))
     }
 
-    @Test fun `stars are sorted by children`() {
+    @Test fun `test stars are sorted by children`() {
         assertOrdered(listOf(STAR_AB, Regex.Star(ATOMIC_AC), Regex.Star(EPSILON)))
     }
 
-    @Test fun `unions are sorted lexicographically by children`() {
+    @Test fun `test unions are sorted lexicographically by children`() {
         assertOrdered(listOf(UNION_EM_EP, Regex.Union(EPSILON, ATOMIC_AB), Regex.Union(EPSILON, ATOMIC_AC), UNION_EP_EM))
     }
 }

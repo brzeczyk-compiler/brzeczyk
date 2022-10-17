@@ -20,31 +20,31 @@ class RegexFactoryTest {
         elements.forEach { assertEquals(it, elements[0]) }
     }
 
-    @Test fun `concat preserves order`() {
+    @Test fun `test concat preserves order`() {
         assertEquals(RegexFactory.createConcat(ATOMIC_BC, ATOMIC_AB), Regex.Concat(ATOMIC_BC, ATOMIC_AB))
     }
 
-    @Test fun `concat handles empty set`() {
+    @Test fun `test concat handles empty set`() {
         assertEquals(RegexFactory.createConcat(CONCAT_AB, EMPTY), EMPTY)
         assertEquals(RegexFactory.createConcat(EMPTY, CONCAT_AB), EMPTY)
     }
 
-    @Test fun `concat handles epsilon`() {
+    @Test fun `test concat handles epsilon`() {
         assertEquals(RegexFactory.createConcat(CONCAT_AB, EPSILON), CONCAT_AB)
         assertEquals(RegexFactory.createConcat(EPSILON, CONCAT_AB), CONCAT_AB)
     }
 
-    @Test fun `concat is associative`() {
+    @Test fun `test concat is associative`() {
         val concat1 = RegexFactory.createConcat(CONCAT_AB, CONCAT_AC)
         val concat2 = RegexFactory.createConcat(CONCAT_AC, CONCAT_BC)
         assertEquals(RegexFactory.createConcat(concat1, CONCAT_BC), RegexFactory.createConcat(CONCAT_AB, concat2))
     }
 
-    @Test fun `concat is not commutative`() {
+    @Test fun `test concat is not commutative`() {
         assertNotEquals(RegexFactory.createConcat(ATOMIC_AB, ATOMIC_BC), RegexFactory.createConcat(ATOMIC_BC, ATOMIC_AB))
     }
 
-    @Test fun `long concats are associative`() {
+    @Test fun `test long concats are associative`() {
         // from theoretical point of view, the previous test should be sufficient
         // however, practically, it is very easy to write code that only works for the shortest case
         val concatLeft = RegexFactory.createConcat(
@@ -79,32 +79,32 @@ class RegexFactoryTest {
         assertAllEqual(listOf(concatLeft, concatRight, concatSymmetrical, concatMixed))
     }
 
-    @Test fun `star operator is collapsable`() {
+    @Test fun `test star operator is collapsable`() {
         val starAtomicAb = RegexFactory.createStar(CONCAT_AB)
         assertEquals(RegexFactory.createStar(starAtomicAb), starAtomicAb)
         assertEquals(RegexFactory.createStar(RegexFactory.createStar(starAtomicAb)), starAtomicAb)
     }
 
-    @Test fun `epsilon star is epsilon`() {
+    @Test fun `test epsilon star is epsilon`() {
         assertEquals(RegexFactory.createStar(EPSILON), EPSILON)
     }
 
-    @Test fun `empty star is epsilon`() {
+    @Test fun `test empty star is epsilon`() {
         assertEquals(RegexFactory.createStar(EMPTY), EPSILON)
     }
 
-    @Test fun `union handles empty set`() {
+    @Test fun `test union handles empty set`() {
         assertEquals(RegexFactory.createUnion(CONCAT_AB, EMPTY), CONCAT_AB)
         assertEquals(RegexFactory.createUnion(EMPTY, CONCAT_AB), CONCAT_AB)
     }
 
-    @Test fun `union is associative`() {
+    @Test fun `test union is associative`() {
         val union1 = RegexFactory.createUnion(CONCAT_AB, CONCAT_AC)
         val union2 = RegexFactory.createUnion(CONCAT_AC, CONCAT_BC)
         assertEquals(RegexFactory.createUnion(union1, CONCAT_BC), RegexFactory.createUnion(CONCAT_AB, union2))
     }
 
-    @Test fun `long unions are associative`() {
+    @Test fun `test long unions are associative`() {
         // from theoretical point of view, the previous test should be sufficient
         // however, practically, it is very easy to write code that only works for the shortest case
         val unionLeft = RegexFactory.createUnion(
@@ -138,14 +138,14 @@ class RegexFactoryTest {
         assertAllEqual(listOf(unionLeft, unionRight, unionSymmetrical, unionMixed))
     }
 
-    @Test fun `union is commutative`() {
+    @Test fun `test union is commutative`() {
         assertEquals(
             RegexFactory.createUnion(CONCAT_AB, CONCAT_AC),
             RegexFactory.createUnion(CONCAT_AC, CONCAT_AB)
         )
     }
 
-    @Test fun `long unions are commutative`() {
+    @Test fun `test long unions are commutative`() {
         // from theoretical point of view, the previous test should be sufficient
         // however, practically, it is very easy to write code that only works for the shortest case
         val unionAB_AC_BC = RegexFactory.createUnion(
@@ -175,11 +175,11 @@ class RegexFactoryTest {
         assertAllEqual(listOf(unionAB_AC_BC, unionAB_BC_AC, unionAC_AB_BC, unionAC_BC_AB, unionBC_AB_AC, unionBC_AC_AB))
     }
 
-    @Test fun `union removes repetitions`() {
+    @Test fun `test union removes repetitions`() {
         assertEquals(RegexFactory.createUnion(CONCAT_AB, CONCAT_AB), CONCAT_AB)
     }
 
-    @Test fun `nested union removes repetitions`() {
+    @Test fun `test nested union removes repetitions`() {
         // from theoretical point of view, the previous test should be sufficient
         // however, practically, it is very easy to write code that only works for the simplest case
         val nestedUnionWithRepetition = RegexFactory.createUnion(
@@ -190,11 +190,11 @@ class RegexFactoryTest {
         assertEquals(nestedUnionWithRepetition, unionWithoutRepetitions)
     }
 
-    @Test fun `union merges atomics`() {
+    @Test fun `test union merges atomics`() {
         assertEquals(RegexFactory.createUnion(ATOMIC_AB, ATOMIC_BC), ATOMIC_ABC)
     }
 
-    @Test fun `complex union merges atomics`() {
+    @Test fun `test complex union merges atomics`() {
         // from theoretical point of view, the previous test should be sufficient
         // however, practically, it is very easy to write code that only works for the simplest case
         val oneAtomicHidden = RegexFactory.createUnion(

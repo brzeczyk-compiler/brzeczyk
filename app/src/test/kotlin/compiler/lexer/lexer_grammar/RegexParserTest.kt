@@ -54,8 +54,7 @@ internal class RegexParserTest {
         val expressionsParsed = expressionsToConcatenate.map { PARSER.parseStringToRegex(it) }
 
         val concatenationParsed = PARSER.parseStringToRegex(expressionsToConcatenate.joinToString(""))
-        var expectedResult = expressionsParsed[0]
-        for (i in 1 until expressionsParsed.size) expectedResult = PARSER.performConcat(expectedResult, expressionsParsed[i])
+        val expectedResult = expressionsParsed.reduce { acc, next -> PARSER.performConcat(acc, next) }
 
         assertEquals(expectedResult, concatenationParsed)
     }

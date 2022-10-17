@@ -85,7 +85,7 @@ class RegexDfaTest {
             val walk = regexDfa.newWalk()
             word.forEach { walk.step(it) }
 
-            val shouldStateBeAccepting = word.lastOrNull() == 'b' && word.all {setOf('a', 'b').contains(it) }
+            val shouldStateBeAccepting = word.lastOrNull() == 'b' && word.all { setOf('a', 'b').contains(it) }
             assertEquals(shouldStateBeAccepting, walk.isAccepted(), "Is walk over $word accepted?")
         }
     }

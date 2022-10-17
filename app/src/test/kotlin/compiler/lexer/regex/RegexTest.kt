@@ -5,9 +5,9 @@ package compiler.lexer.regex
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
-import kotlin.test.assertFalse
 
 private val ATOMIC_AB = Regex.Atomic(setOf('a', 'b'))
 private val ATOMIC_AC = Regex.Atomic(setOf('a', 'c'))

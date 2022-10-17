@@ -11,7 +11,7 @@ class Tokens(private val dfaFactory: DfaFactory = RegexDfaFactory()) {
 
     private class RegexDfaFactory : DfaFactory {
         override fun fromRegexString(regexString: String): Dfa {
-            return RegexDfa(RegexParser().parseStringToRegex(regexString))
+            return RegexDfa(RegexParser.parseStringToRegex(regexString))
         }
     }
 

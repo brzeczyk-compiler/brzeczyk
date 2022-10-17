@@ -20,13 +20,11 @@ sealed class Regex : Comparable<Regex> {
 
     class Empty internal constructor() : Regex() {
         override fun containsEpsilon(): Boolean {
-            // TODO
-            return true
+            return false
         }
 
         override fun derivative(a: Char): Regex {
-            // TODO
-            return this
+            return RegexFactory.createEmpty()
         }
 
         override fun compareTo(other: Regex): Int {
@@ -43,13 +41,11 @@ sealed class Regex : Comparable<Regex> {
 
     class Epsilon internal constructor() : Regex() {
         override fun containsEpsilon(): Boolean {
-            // TODO
             return true
         }
 
         override fun derivative(a: Char): Regex {
-            // TODO
-            return this
+            return RegexFactory.createEmpty()
         }
 
         override fun compareTo(other: Regex): Int {
@@ -66,13 +62,11 @@ sealed class Regex : Comparable<Regex> {
 
     class Atomic internal constructor(val atomic: Set<Char>) : Regex() {
         override fun containsEpsilon(): Boolean {
-            // TODO
-            return true
+            return false
         }
 
         override fun derivative(a: Char): Regex {
-            // TODO
-            return this
+            return if (atomic.contains(a)) RegexFactory.createEpsilon() else RegexFactory.createEmpty()
         }
 
         override fun compareTo(other: Regex): Int {
@@ -91,13 +85,11 @@ sealed class Regex : Comparable<Regex> {
 
     class Star internal constructor(val child: Regex) : Regex() {
         override fun containsEpsilon(): Boolean {
-            // TODO
             return true
         }
 
         override fun derivative(a: Char): Regex {
-            // TODO
-            return this
+            return RegexFactory.createConcat(child.derivative(a), RegexFactory.createStar(child))
         }
 
         override fun compareTo(other: Regex): Int {
@@ -114,13 +106,11 @@ sealed class Regex : Comparable<Regex> {
 
     class Union internal constructor(val left: Regex, val right: Regex) : Regex() {
         override fun containsEpsilon(): Boolean {
-            // TODO
-            return true
+            return left.containsEpsilon() || right.containsEpsilon()
         }
 
         override fun derivative(a: Char): Regex {
-            // TODO
-            return this
+            return RegexFactory.createUnion(left.derivative(a), right.derivative(a))
         }
 
         override fun compareTo(other: Regex): Int {
@@ -137,13 +127,13 @@ sealed class Regex : Comparable<Regex> {
 
     class Concat internal constructor(val left: Regex, val right: Regex) : Regex() {
         override fun containsEpsilon(): Boolean {
-            // TODO
-            return true
+            return left.containsEpsilon() && right.containsEpsilon()
         }
 
         override fun derivative(a: Char): Regex {
-            // TODO
-            return this
+            return if (left.containsEpsilon())
+                RegexFactory.createUnion(RegexFactory.createConcat(left.derivative(a), right), right.derivative(a)) else
+                RegexFactory.createConcat(left.derivative(a), right)
         }
 
         override fun compareTo(other: Regex): Int {

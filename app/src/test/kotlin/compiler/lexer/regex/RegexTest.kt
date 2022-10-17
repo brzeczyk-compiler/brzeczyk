@@ -5,6 +5,7 @@ package compiler.lexer.regex
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
@@ -19,6 +20,102 @@ private val UNION_EP_EM = Regex.Union(EPSILON, EMPTY)
 private val UNION_EM_EP = Regex.Union(EMPTY, EPSILON)
 
 class RegexTest {
+    @Test fun `test empty does not contain epsilon`() {
+        val reg = Regex.Empty()
+        assertFalse(reg.containsEpsilon())
+    }
+
+    @Test fun `test epsilon contains epsilon`() {
+        val reg = Regex.Epsilon()
+        assertTrue(reg.containsEpsilon())
+    }
+
+    @Test fun `test atomic does not contain epsilon`() {
+        val reg = Regex.Atomic(setOf('a', 'b', 'c'))
+        assertFalse(reg.containsEpsilon())
+    }
+
+    @Test fun `test star contains epsilon`() {
+        val reg = Regex.Star(Regex.Empty())
+        assertTrue(reg.containsEpsilon())
+    }
+
+    @Test fun `test unions with epsilon`() {
+        val reg1 = Regex.Union(
+            Regex.Epsilon(),
+            Regex.Atomic(setOf('d', 'e', 'f')),
+        )
+        val reg2 = Regex.Union(
+            Regex.Atomic(setOf('d', 'e', 'f')),
+            Regex.Star(Regex.Empty()),
+        )
+
+        assertTrue(reg1.containsEpsilon())
+        assertTrue(reg2.containsEpsilon())
+    }
+
+    @Test fun `test unions with no epsilon`() {
+        val reg1 = Regex.Union(
+            Regex.Atomic(setOf('a', 'b', 'c')),
+            Regex.Atomic(setOf('d', 'e', 'f')),
+        )
+        val reg2 = Regex.Union(
+            Regex.Concat(Regex.Epsilon(), Regex.Atomic(setOf('x'))),
+            Regex.Concat(Regex.Atomic(setOf('y')), Regex.Star(Regex.Empty())),
+        )
+
+        assertFalse(reg1.containsEpsilon())
+        assertFalse(reg2.containsEpsilon())
+    }
+
+    @Test fun `test concats with epsilon`() {
+        val reg1 = Regex.Concat(
+            Regex.Epsilon(),
+            Regex.Epsilon(),
+        )
+        val reg2 = Regex.Concat(
+            Regex.Star(Regex.Atomic(setOf('q'))),
+            Regex.Union(Regex.Epsilon(), Regex.Atomic(setOf('w')))
+        )
+
+        assertTrue(reg1.containsEpsilon())
+        assertTrue(reg2.containsEpsilon())
+    }
+
+    @Test fun `test concats with no epsilon`() {
+        val reg1 = Regex.Concat(
+            Regex.Epsilon(),
+            Regex.Atomic(setOf('d', 'e', 'f')),
+        )
+        val reg2 = Regex.Concat(
+            Regex.Empty(),
+            Regex.Star(Regex.Empty()),
+        )
+
+        assertFalse(reg1.containsEpsilon())
+        assertFalse(reg2.containsEpsilon())
+    }
+
+    @Test fun `test derivative of empty is empty`() {
+        val reg = RegexFactory.createEmpty()
+        assertTrue(reg.derivative('a') is Regex.Empty)
+    }
+
+    @Test fun `test derivative of epsilon is empty`() {
+        val reg = RegexFactory.createEpsilon()
+        assertTrue(reg.derivative('a') is Regex.Empty)
+    }
+
+    @Test fun `test derivative of atomic with proper atom is epsilon`() {
+        val reg = RegexFactory.createAtomic(setOf('a'))
+        assertTrue(reg.derivative('a') is Regex.Epsilon)
+    }
+
+    @Test fun `test derivative of atomic with no proper atom is empty`() {
+        val reg = RegexFactory.createAtomic(setOf('a'))
+        assertTrue(reg.derivative('b') is Regex.Empty)
+    }
+
     private fun <T : Comparable<T>> assertOrdered(desiredOrder: List<T>) {
         for (i in 0..(desiredOrder.size - 1)) {
             for (j in 0..(desiredOrder.size - 1)) {

@@ -5,8 +5,8 @@ import compiler.lexer.regex.RegexFactory
 
 class RegexDfa(private val regex: Regex) : Dfa {
     override fun newWalk(): DfaWalk {
-        var currentStateRegex = regex
         return object : DfaWalk {
+            var currentStateRegex = regex
             override fun isAccepted(): Boolean {
                 return currentStateRegex.containsEpsilon()
             }

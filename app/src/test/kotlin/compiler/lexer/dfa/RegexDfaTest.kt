@@ -15,21 +15,21 @@ class RegexDfaTest {
         )
     }
 
-    @Test fun walkOnEmptyRegexIsDead() {
+    @Test fun `walk on empty regex is dead`() {
         val regexDfa = RegexDfa(RegexFactory.createEmpty())
         val walk = regexDfa.newWalk()
         assert(walk.isDead())
         assert(!walk.isAccepted())
     }
 
-    @Test fun walkOnEpsilonRegexIsAccepted() {
+    @Test fun `walk on epsilon regex is accepted`() {
         val regexDfa = RegexDfa(RegexFactory.createEpsilon())
         val walk = regexDfa.newWalk()
         assert(!walk.isDead())
         assert(walk.isAccepted())
     }
 
-    @Test fun walksAreIndependent() {
+    @Test fun `walks are independent`() {
         val regexDfa = abRegexDfa()
         val walk1 = regexDfa.newWalk()
         val walk2 = regexDfa.newWalk()
@@ -45,9 +45,8 @@ class RegexDfaTest {
 
         for (word in words) {
             val walk = regexDfa.newWalk()
-            for (char in word) {
-                walk.step(char)
-            }
+            word.forEach { walk.step(it) }
+
             if (walk.isAccepted())
                 assertEquals("ab", word)
             else
@@ -57,15 +56,14 @@ class RegexDfaTest {
 
     @Test fun `walk on ab RegexDfa correctly computes dead states`() {
         val words = listOf("aa", "ab", "ac", "ba", "bb", "aba", "abab", "a", "b", "")
-        val notDeadWalks = listOf("ab", "a", "")
+        val wordsToNotBeDead = listOf("ab", "a", "")
         val regexDfa = abRegexDfa()
 
         for (word in words) {
             val walk = regexDfa.newWalk()
-            for (char in word) {
-                walk.step(char)
-            }
-            val shouldStateBeAlive = notDeadWalks.contains(word)
+            word.forEach { walk.step(it) }
+
+            val shouldStateBeAlive = wordsToNotBeDead.contains(word)
             assertEquals(shouldStateBeAlive, !walk.isDead(), "After walk over $word is state alive?")
         }
     }
@@ -85,9 +83,7 @@ class RegexDfaTest {
 
         for (word in words) {
             val walk = regexDfa.newWalk()
-            for (char in word) {
-                walk.step(char)
-            }
+            word.forEach { walk.step(it) }
 
             val shouldStateBeAccepting = word.all { char: Char -> setOf('a', 'b').contains(char) } && word.last() == 'b'
             assertEquals(shouldStateBeAccepting, walk.isAccepted(), "Is walk over $word accepted?")

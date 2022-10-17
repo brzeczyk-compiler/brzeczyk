@@ -2,7 +2,11 @@ package compiler.lexer.regex
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 
+private val ATOMIC_AB = RegexFactory.createAtomic(setOf('a', 'b'))
+private val ATOMIC_BC = RegexFactory.createAtomic(setOf('c', 'b'))
+private val ATOMIC_ABC = RegexFactory.createAtomic(setOf('c', 'a', 'b'))
 private val CONCAT_AB = RegexFactory.createConcat(RegexFactory.createAtomic(setOf('a')), RegexFactory.createAtomic(setOf('b')))
 private val CONCAT_AC = RegexFactory.createConcat(RegexFactory.createAtomic(setOf('a')), RegexFactory.createAtomic(setOf('c')))
 private val CONCAT_BC = RegexFactory.createConcat(RegexFactory.createAtomic(setOf('b')), RegexFactory.createAtomic(setOf('c')))
@@ -11,107 +15,201 @@ private val EMPTY = RegexFactory.createEmpty()
 private val EPSILON = RegexFactory.createEpsilon()
 
 class RegexFactoryTest {
-    @Test fun testUnionNormalizeBasicRules() {
-        assertEquals(RegexFactory.createUnion(CONCAT_AB, CONCAT_AB), CONCAT_AB)
-        assertEquals(RegexFactory.createUnion(CONCAT_AB, CONCAT_AC), RegexFactory.createUnion(CONCAT_AC, CONCAT_AB))
-
-        val union1 = RegexFactory.createUnion(CONCAT_AB, CONCAT_AC)
-        val union2 = RegexFactory.createUnion(CONCAT_AC, CONCAT_BC)
-        assertEquals(RegexFactory.createUnion(union1, CONCAT_BC), RegexFactory.createUnion(CONCAT_AB, union2))
-        assertEquals(RegexFactory.createUnion(CONCAT_AB, EMPTY), EMPTY)
-        assertEquals(RegexFactory.createUnion(EMPTY, CONCAT_AB), EMPTY)
+    private fun <T> assertAllEqual(elements: List<T>) {
+        if (elements.size == 0) return
+        elements.forEach { assertEquals(it, elements[0]) }
     }
 
-    @Test fun testUnionNormalizeOrdering() {
-        var unionLeftOrdered = RegexFactory.createUnion(CONCAT_AB, CONCAT_AC)
-        unionLeftOrdered = RegexFactory.createUnion(unionLeftOrdered, CONCAT_BC)
-        unionLeftOrdered = RegexFactory.createUnion(unionLeftOrdered, CONCAT_CD)
-        var unionLeftReversed = RegexFactory.createUnion(CONCAT_CD, CONCAT_BC)
-        unionLeftReversed = RegexFactory.createUnion(unionLeftReversed, CONCAT_AC)
-        unionLeftReversed = RegexFactory.createUnion(unionLeftReversed, CONCAT_AB)
-        var unionLeftRandom = RegexFactory.createUnion(CONCAT_AC, CONCAT_BC)
-        unionLeftRandom = RegexFactory.createUnion(unionLeftRandom, CONCAT_AB)
-        unionLeftRandom = RegexFactory.createUnion(unionLeftRandom, CONCAT_CD)
-
-        var unionRightOrdered = RegexFactory.createUnion(CONCAT_AC, CONCAT_AB)
-        unionRightOrdered = RegexFactory.createUnion(CONCAT_BC, unionRightOrdered)
-        unionRightOrdered = RegexFactory.createUnion(CONCAT_CD, unionRightOrdered)
-        var unionRightReversed = RegexFactory.createUnion(CONCAT_BC, CONCAT_CD)
-        unionRightReversed = RegexFactory.createUnion(CONCAT_AC, unionRightReversed)
-        unionRightReversed = RegexFactory.createUnion(CONCAT_AB, unionRightReversed)
-        var unionRightRandom = RegexFactory.createUnion(CONCAT_BC, CONCAT_AC)
-        unionRightRandom = RegexFactory.createUnion(CONCAT_AB, unionRightRandom)
-        unionRightRandom = RegexFactory.createUnion(CONCAT_CD, unionRightRandom)
-
-        var unionUnorganized1 = RegexFactory.createUnion(CONCAT_BC, RegexFactory.createUnion(CONCAT_CD, CONCAT_AB))
-        unionUnorganized1 = RegexFactory.createUnion(unionUnorganized1, CONCAT_AC)
-        var unionUnorganized2 = RegexFactory.createUnion(RegexFactory.createUnion(CONCAT_AC, CONCAT_AB), RegexFactory.createUnion(CONCAT_CD, CONCAT_BC))
-        var unionUnorganized3 = RegexFactory.createUnion(RegexFactory.createUnion(CONCAT_AB, CONCAT_BC), RegexFactory.createUnion(CONCAT_AC, CONCAT_CD))
-        var unionUnorganized4 = RegexFactory.createUnion(RegexFactory.createUnion(CONCAT_CD, CONCAT_AB), CONCAT_AC)
-        unionUnorganized4 = RegexFactory.createUnion(CONCAT_BC, unionUnorganized4)
-
-        assertEquals(unionLeftOrdered, unionLeftReversed)
-        assertEquals(unionLeftReversed, unionLeftRandom)
-        println(unionRightOrdered)
-        assertEquals(unionLeftRandom, unionRightOrdered)
-        assertEquals(unionRightOrdered, unionRightReversed)
-        assertEquals(unionRightReversed, unionRightRandom)
-        assertEquals(unionRightRandom, unionUnorganized1)
-        assertEquals(unionUnorganized1, unionUnorganized2)
-        assertEquals(unionUnorganized2, unionUnorganized3)
-        assertEquals(unionUnorganized3, unionUnorganized4)
-        assertEquals(unionUnorganized4, Regex.Union(Regex.Union(Regex.Union(CONCAT_AB, CONCAT_AC), CONCAT_BC), CONCAT_CD))
+    @Test fun `test concat preserves order`() {
+        assertEquals(RegexFactory.createConcat(ATOMIC_BC, ATOMIC_AB), Regex.Concat(ATOMIC_BC, ATOMIC_AB))
     }
 
-    @Test fun testUnionMergeAtomics() {
-        val atomicAb = RegexFactory.createAtomic(setOf('a', 'b'))
-        val atomicBc = RegexFactory.createAtomic(setOf('c', 'b'))
-        val atomicAbc = RegexFactory.createAtomic(setOf('c', 'a', 'b'))
-        assertEquals(RegexFactory.createUnion(atomicAb, atomicBc), atomicAbc)
-
-        val atomicAbConcatAb = RegexFactory.createUnion(atomicAb, CONCAT_AB)
-        val atomicBcConcatBc = RegexFactory.createUnion(atomicBc, CONCAT_BC)
-        val all1 = RegexFactory.createUnion(atomicAbConcatAb, atomicBcConcatBc)
-        val concats = RegexFactory.createUnion(CONCAT_BC, CONCAT_AB)
-        val all2 = RegexFactory.createUnion(atomicAb, RegexFactory.createUnion(atomicBc, concats))
-        val allAtomicsMerged = RegexFactory.createUnion(atomicAbc, concats)
-
-        assertEquals(all1, all2)
-        assertEquals(all2, allAtomicsMerged)
+    @Test fun `test concat handles empty set`() {
+        assertEquals(RegexFactory.createConcat(CONCAT_AB, EMPTY), EMPTY)
+        assertEquals(RegexFactory.createConcat(EMPTY, CONCAT_AB), EMPTY)
     }
 
-    @Test fun testConcatNormalize() {
+    @Test fun `test concat handles epsilon`() {
+        assertEquals(RegexFactory.createConcat(CONCAT_AB, EPSILON), CONCAT_AB)
+        assertEquals(RegexFactory.createConcat(EPSILON, CONCAT_AB), CONCAT_AB)
+    }
+
+    @Test fun `test concat is associative`() {
         val concat1 = RegexFactory.createConcat(CONCAT_AB, CONCAT_AC)
         val concat2 = RegexFactory.createConcat(CONCAT_AC, CONCAT_BC)
         assertEquals(RegexFactory.createConcat(concat1, CONCAT_BC), RegexFactory.createConcat(CONCAT_AB, concat2))
-        assertEquals(RegexFactory.createConcat(CONCAT_AB, EMPTY), EMPTY)
-        assertEquals(RegexFactory.createConcat(EMPTY, CONCAT_AB), EMPTY)
-        assertEquals(RegexFactory.createConcat(CONCAT_AB, EPSILON), CONCAT_AB)
-        assertEquals(RegexFactory.createConcat(EPSILON, CONCAT_AB), CONCAT_AB)
+    }
 
-        var concatLeft = RegexFactory.createConcat(CONCAT_AB, CONCAT_AC)
-        concatLeft = RegexFactory.createConcat(concatLeft, CONCAT_BC)
-        concatLeft = RegexFactory.createConcat(concatLeft, CONCAT_CD)
-        var concatRight = RegexFactory.createConcat(CONCAT_BC, CONCAT_CD)
-        concatRight = RegexFactory.createConcat(CONCAT_AC, concatRight)
-        concatRight = RegexFactory.createConcat(CONCAT_AB, concatRight)
+    @Test fun `test concat is not commutative`() {
+        assertNotEquals(RegexFactory.createConcat(ATOMIC_AB, ATOMIC_BC), RegexFactory.createConcat(ATOMIC_BC, ATOMIC_AB))
+    }
+
+    @Test fun `test long concats are associative`() {
+        // from theoretical point of view, the previous test should be sufficient
+        // however, practically, it is very easy to write code that only works for the shortest case
+        val concatLeft = RegexFactory.createConcat(
+            RegexFactory.createConcat(
+                RegexFactory.createConcat(
+                    CONCAT_AB,
+                    CONCAT_AC
+                ),
+                CONCAT_BC
+            ),
+            CONCAT_CD
+        )
+        val concatRight = RegexFactory.createConcat(
+            CONCAT_AB,
+            RegexFactory.createConcat(
+                CONCAT_AC,
+                RegexFactory.createConcat(CONCAT_BC, CONCAT_CD)
+            )
+        )
         val concatSymmetrical = RegexFactory.createConcat(
             RegexFactory.createConcat(CONCAT_AB, CONCAT_AC),
             RegexFactory.createConcat(CONCAT_BC, CONCAT_CD)
         )
-        var concatMixed = RegexFactory.createConcat(CONCAT_AC, CONCAT_BC)
-        concatMixed = RegexFactory.createConcat(CONCAT_AB, concatMixed)
-        concatMixed = RegexFactory.createConcat(concatMixed, CONCAT_CD)
+        val concatMixed = RegexFactory.createConcat(
+            RegexFactory.createConcat(
+                CONCAT_AB,
+                RegexFactory.createConcat(CONCAT_AC, CONCAT_BC)
+            ),
+            CONCAT_CD
+        )
 
-        assertEquals(concatLeft, concatRight)
-        assertEquals(concatRight, concatSymmetrical)
-        assertEquals(concatSymmetrical, concatMixed)
+        assertAllEqual(listOf(concatLeft, concatRight, concatSymmetrical, concatMixed))
     }
-    @Test fun testStarNormalize() {
+
+    @Test fun `test star operator is collapsable`() {
         val starAtomicAb = RegexFactory.createStar(CONCAT_AB)
         assertEquals(RegexFactory.createStar(starAtomicAb), starAtomicAb)
         assertEquals(RegexFactory.createStar(RegexFactory.createStar(starAtomicAb)), starAtomicAb)
-        assertEquals(RegexFactory.createStar(EMPTY), EPSILON)
+    }
+
+    @Test fun `test epsilon star is epsilon`() {
         assertEquals(RegexFactory.createStar(EPSILON), EPSILON)
+    }
+
+    @Test fun `test empty star is epsilon`() {
+        assertEquals(RegexFactory.createStar(EMPTY), EPSILON)
+    }
+
+    @Test fun `test union handles empty set`() {
+        assertEquals(RegexFactory.createUnion(CONCAT_AB, EMPTY), CONCAT_AB)
+        assertEquals(RegexFactory.createUnion(EMPTY, CONCAT_AB), CONCAT_AB)
+    }
+
+    @Test fun `test union is associative`() {
+        val union1 = RegexFactory.createUnion(CONCAT_AB, CONCAT_AC)
+        val union2 = RegexFactory.createUnion(CONCAT_AC, CONCAT_BC)
+        assertEquals(RegexFactory.createUnion(union1, CONCAT_BC), RegexFactory.createUnion(CONCAT_AB, union2))
+    }
+
+    @Test fun `test long unions are associative`() {
+        // from theoretical point of view, the previous test should be sufficient
+        // however, practically, it is very easy to write code that only works for the shortest case
+        val unionLeft = RegexFactory.createUnion(
+            RegexFactory.createUnion(
+                RegexFactory.createUnion(
+                    CONCAT_AB,
+                    CONCAT_AC
+                ),
+                CONCAT_BC
+            ),
+            CONCAT_CD
+        )
+        val unionRight = RegexFactory.createUnion(
+            CONCAT_AB,
+            RegexFactory.createUnion(
+                CONCAT_AC,
+                RegexFactory.createUnion(CONCAT_BC, CONCAT_CD)
+            )
+        )
+        val unionSymmetrical = RegexFactory.createUnion(
+            RegexFactory.createUnion(CONCAT_AB, CONCAT_AC),
+            RegexFactory.createUnion(CONCAT_BC, CONCAT_CD)
+        )
+        val unionMixed = RegexFactory.createUnion(
+            RegexFactory.createUnion(
+                CONCAT_AB,
+                RegexFactory.createUnion(CONCAT_AC, CONCAT_BC)
+            ),
+            CONCAT_CD
+        )
+        assertAllEqual(listOf(unionLeft, unionRight, unionSymmetrical, unionMixed))
+    }
+
+    @Test fun `test union is commutative`() {
+        assertEquals(
+            RegexFactory.createUnion(CONCAT_AB, CONCAT_AC),
+            RegexFactory.createUnion(CONCAT_AC, CONCAT_AB)
+        )
+    }
+
+    @Test fun `test long unions are commutative`() {
+        // from theoretical point of view, the previous test should be sufficient
+        // however, practically, it is very easy to write code that only works for the shortest case
+        val unionAB_AC_BC = RegexFactory.createUnion(
+            RegexFactory.createUnion(CONCAT_AB, CONCAT_AC),
+            CONCAT_BC
+        )
+        val unionAB_BC_AC = RegexFactory.createUnion(
+            RegexFactory.createUnion(CONCAT_AB, CONCAT_BC),
+            CONCAT_AC
+        )
+        val unionAC_AB_BC = RegexFactory.createUnion(
+            RegexFactory.createUnion(CONCAT_AC, CONCAT_AB),
+            CONCAT_BC
+        )
+        val unionAC_BC_AB = RegexFactory.createUnion(
+            RegexFactory.createUnion(CONCAT_AC, CONCAT_BC),
+            CONCAT_AB
+        )
+        val unionBC_AB_AC = RegexFactory.createUnion(
+            RegexFactory.createUnion(CONCAT_BC, CONCAT_AB),
+            CONCAT_AC
+        )
+        val unionBC_AC_AB = RegexFactory.createUnion(
+            RegexFactory.createUnion(CONCAT_BC, CONCAT_AC),
+            CONCAT_AB
+        )
+        assertAllEqual(listOf(unionAB_AC_BC, unionAB_BC_AC, unionAC_AB_BC, unionAC_BC_AB, unionBC_AB_AC, unionBC_AC_AB))
+    }
+
+    @Test fun `test union removes repetitions`() {
+        assertEquals(RegexFactory.createUnion(CONCAT_AB, CONCAT_AB), CONCAT_AB)
+    }
+
+    @Test fun `test nested union removes repetitions`() {
+        // from theoretical point of view, the previous test should be sufficient
+        // however, practically, it is very easy to write code that only works for the simplest case
+        val nestedUnionWithRepetition = RegexFactory.createUnion(
+            RegexFactory.createUnion(CONCAT_AB, CONCAT_BC),
+            RegexFactory.createUnion(CONCAT_BC, CONCAT_AB)
+        )
+        val unionWithoutRepetitions = RegexFactory.createUnion(CONCAT_AB, CONCAT_BC)
+        assertEquals(nestedUnionWithRepetition, unionWithoutRepetitions)
+    }
+
+    @Test fun `test union merges atomics`() {
+        assertEquals(RegexFactory.createUnion(ATOMIC_AB, ATOMIC_BC), ATOMIC_ABC)
+    }
+
+    @Test fun `test complex union merges atomics`() {
+        // from theoretical point of view, the previous test should be sufficient
+        // however, practically, it is very easy to write code that only works for the simplest case
+        val oneAtomicHidden = RegexFactory.createUnion(
+            ATOMIC_AB,
+            RegexFactory.createUnion(
+                ATOMIC_BC,
+                RegexFactory.createUnion(CONCAT_BC, CONCAT_AB)
+            )
+        )
+        val bothAtomicsHidden = RegexFactory.createUnion(
+            RegexFactory.createUnion(ATOMIC_AB, CONCAT_BC),
+            RegexFactory.createUnion(CONCAT_AB, ATOMIC_BC)
+        )
+        val atomicsPremerged = RegexFactory.createUnion(ATOMIC_ABC, RegexFactory.createUnion(CONCAT_BC, CONCAT_AB))
+
+        assertAllEqual(listOf(oneAtomicHidden, bothAtomicsHidden, atomicsPremerged))
     }
 }

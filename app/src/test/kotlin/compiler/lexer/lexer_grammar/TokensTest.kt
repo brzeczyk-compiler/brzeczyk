@@ -2,7 +2,7 @@ package compiler.lexer.lexer_grammar
 
 import compiler.common.dfa.Dfa
 import compiler.common.dfa.DfaWalk
-import compiler.common.dfa.state_dfa.PlainDfaStateType
+import compiler.common.dfa.state_dfa.SingleAcceptingState
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -13,13 +13,13 @@ class TokensTest {
     // Uses Kotlin regex to simulate a DFA
     // builds the current string with each step
     // and tries to match it to regex when isAccepted is called
-    private class MockDfaWalk(val regex: Regex) : DfaWalk<Char, PlainDfaStateType> {
+    private class MockDfaWalk(val regex: Regex) : DfaWalk<Char, SingleAcceptingState> {
         private var currentString = StringBuilder()
 
-        override fun getResult(): PlainDfaStateType {
+        override fun getAcceptingStateTypeOrNull(): SingleAcceptingState? {
             if (regex.matches(currentString.toString()))
-                return PlainDfaStateType.ACCEPTING
-            return PlainDfaStateType.NON_ACCEPTING
+                return SingleAcceptingState.ACCEPTING
+            return null
         }
 
         override fun isDead(): Boolean {
@@ -31,7 +31,7 @@ class TokensTest {
         }
     }
 
-    private class MockDfa(regexString: String) : Dfa<Char, PlainDfaStateType> {
+    private class MockDfa(regexString: String) : Dfa<Char, SingleAcceptingState> {
         // Kotlin regex equivalent to regexString
         private val regex: Regex
 
@@ -54,24 +54,24 @@ class TokensTest {
             )
         }
 
-        override fun newWalk(): DfaWalk<Char, PlainDfaStateType> {
+        override fun newWalk(): DfaWalk<Char, SingleAcceptingState> {
             return MockDfaWalk(regex)
         }
     }
 
     private class MockDfaFactory : Tokens.DfaFactory {
-        override fun fromRegexString(regexString: String): Dfa<Char, PlainDfaStateType> {
+        override fun fromRegexString(regexString: String): Dfa<Char, SingleAcceptingState> {
             return MockDfa(regexString)
         }
     }
 
-    private fun accepts(dfa: Dfa<Char, PlainDfaStateType>, string: String): Boolean {
+    private fun accepts(dfa: Dfa<Char, SingleAcceptingState>, string: String): Boolean {
         val walk = dfa.newWalk()
         string.forEach { walk.step(it) }
-        return walk.getResult() == PlainDfaStateType.ACCEPTING
+        return walk.isAccepting()
     }
 
-    private fun firstMatch(tokens: List<Pair<TokenType, Dfa<Char, PlainDfaStateType>>>, string: String): TokenType? {
+    private fun firstMatch(tokens: List<Pair<TokenType, Dfa<Char, SingleAcceptingState>>>, string: String): TokenType? {
         for ((type, dfa) in tokens) {
             if (accepts(dfa, string))
                 return type

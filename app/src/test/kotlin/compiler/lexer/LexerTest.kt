@@ -2,6 +2,7 @@ package compiler.lexer
 
 import compiler.common.dfa.Dfa
 import compiler.common.dfa.DfaWalk
+import compiler.common.dfa.state_dfa.SingleAcceptingState
 import compiler.lexer.input.Input
 import kotlin.test.Test
 import kotlin.test.assertContains
@@ -31,8 +32,8 @@ class LexerTest {
         }
     }
 
-    private class TestDfa(val pattern: String) : Dfa<Char, Boolean> {
-        override fun newWalk() = object : DfaWalk<Char, Boolean> {
+    private class TestDfa(val pattern: String) : Dfa<Char, SingleAcceptingState> {
+        override fun newWalk() = object : DfaWalk<Char, SingleAcceptingState> {
             var state = 0
 
             override fun step(a: Char) {
@@ -42,7 +43,11 @@ class LexerTest {
                     state = pattern.length + 1
             }
 
-            override fun getResult() = state == pattern.length
+            override fun getAcceptingStateTypeOrNull(): SingleAcceptingState? {
+                if (state == pattern.length)
+                    return SingleAcceptingState.ACCEPTING
+                return null
+            }
 
             override fun isDead() = state == pattern.length + 1
         }

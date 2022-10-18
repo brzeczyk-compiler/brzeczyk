@@ -1,7 +1,11 @@
 package compiler.common.dfa
 
 interface DfaWalk<A, R> {
-    fun getResult(): R
+    fun getAcceptingStateTypeOrNull(): R?
+
+    fun isAccepting(): Boolean {
+        return getAcceptingStateTypeOrNull() != null
+    }
 
     fun isDead(): Boolean
 

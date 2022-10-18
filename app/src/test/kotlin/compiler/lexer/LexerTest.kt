@@ -31,8 +31,8 @@ class LexerTest {
         }
     }
 
-    private class TestDfa(val pattern: String) : Dfa {
-        override fun newWalk() = object : DfaWalk {
+    private class TestDfa(val pattern: String) : Dfa<Char, Boolean> {
+        override fun newWalk() = object : DfaWalk<Char, Boolean> {
             var state = 0
 
             override fun step(a: Char) {
@@ -42,7 +42,7 @@ class LexerTest {
                     state = pattern.length + 1
             }
 
-            override fun isAccepted() = state == pattern.length
+            override fun getResult() = state == pattern.length
 
             override fun isDead() = state == pattern.length + 1
         }

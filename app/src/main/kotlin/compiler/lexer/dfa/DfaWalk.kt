@@ -1,10 +1,9 @@
 package compiler.lexer.dfa
 
-interface DfaWalk {
-
-    fun isAccepted(): Boolean
+interface DfaWalk<A, R> {
+    fun getResult(): R
 
     fun isDead(): Boolean
 
-    fun step(a: Char)
+    fun step(a: A)
 }

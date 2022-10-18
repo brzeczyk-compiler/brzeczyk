@@ -6,7 +6,7 @@ import compiler.lexer.input.Input
 // Used to turn a sequence of characters into a sequence of tokens.
 // The DFAs given are used to recognize the corresponding token categories.
 // The priority of a DFA is given by its position in the list, with earlier positions having higher priority.
-class Lexer<TCat>(val dfas: List<Pair<Dfa, TCat>>) {
+class Lexer<TCat>(val dfas: List<Pair<Dfa<Char, Boolean>, TCat>>) {
     // Thrown when none of the DFAs accepted the input.
     class FailedToMatchToken : Throwable()
 
@@ -35,7 +35,7 @@ class Lexer<TCat>(val dfas: List<Pair<Dfa, TCat>>) {
                 walks.forEach { it.step(char) }
 
                 for ((index, walk) in walks.withIndex()) {
-                    if (walk.isAccepted()) { // Match a token with category corresponding to the first accepting DFA.
+                    if (walk.getResult()) { // Match a token with category corresponding to the first accepting DFA.
                         tokenEnd = location
                         tokenCategory = dfas[index].second
                         excess = 0

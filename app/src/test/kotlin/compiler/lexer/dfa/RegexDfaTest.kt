@@ -1,4 +1,5 @@
 package compiler.lexer.dfa
+import compiler.lexer.dfa.state_dfa.PlainDfaStateType
 import compiler.lexer.regex.Regex
 import compiler.lexer.regex.RegexFactory
 import kotlin.test.Test
@@ -19,14 +20,14 @@ class RegexDfaTest {
         val regexDfa = RegexDfa(RegexFactory.createEmpty())
         val walk = regexDfa.newWalk()
         assert(walk.isDead())
-        assert(!walk.isAccepted())
+        assert(walk.getResult() == PlainDfaStateType.NON_ACCEPTING)
     }
 
     @Test fun `walk on epsilon regex is accepted`() {
         val regexDfa = RegexDfa(RegexFactory.createEpsilon())
         val walk = regexDfa.newWalk()
         assert(!walk.isDead())
-        assert(walk.isAccepted())
+        assert(walk.getResult() == PlainDfaStateType.ACCEPTING)
     }
 
     @Test fun `walks are independent`() {
@@ -47,7 +48,7 @@ class RegexDfaTest {
             val walk = regexDfa.newWalk()
             word.forEach { walk.step(it) }
 
-            if (walk.isAccepted())
+            if (walk.getResult() == PlainDfaStateType.ACCEPTING)
                 assertEquals("ab", word)
             else
                 assertNotEquals("ab", word)
@@ -86,7 +87,11 @@ class RegexDfaTest {
             word.forEach { walk.step(it) }
 
             val shouldStateBeAccepting = word.lastOrNull() == 'b' && word.all { setOf('a', 'b').contains(it) }
-            assertEquals(shouldStateBeAccepting, walk.isAccepted(), "Is walk over $word accepted?")
+            assertEquals(
+                shouldStateBeAccepting,
+                walk.getResult() == PlainDfaStateType.ACCEPTING,
+                "Is walk over $word accepted?"
+            )
         }
     }
 }

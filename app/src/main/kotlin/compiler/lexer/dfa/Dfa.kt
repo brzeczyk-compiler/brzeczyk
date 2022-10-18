@@ -1,6 +1,5 @@
 package compiler.lexer.dfa
 
-interface Dfa {
-
-    fun newWalk(): DfaWalk
+interface Dfa<A, R> {
+    fun newWalk(): DfaWalk<A, R>
 }

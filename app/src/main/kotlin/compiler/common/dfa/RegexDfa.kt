@@ -1,8 +1,8 @@
 package compiler.common.dfa
 
 import compiler.common.dfa.state_dfa.DfaState
-import compiler.common.dfa.state_dfa.TransparentDfa
 import compiler.common.dfa.state_dfa.PlainDfaStateType
+import compiler.common.dfa.state_dfa.TransparentDfa
 import compiler.common.regex.Regex
 import compiler.common.regex.RegexFactory
 

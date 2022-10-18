@@ -1,8 +1,8 @@
 package compiler.lexer.lexer_grammar
 
-import compiler.lexer.dfa.Dfa
-import compiler.lexer.dfa.RegexDfa
-import compiler.lexer.dfa.state_dfa.PlainDfaStateType
+import compiler.common.dfa.Dfa
+import compiler.common.dfa.RegexDfa
+import compiler.common.dfa.state_dfa.PlainDfaStateType
 
 class Tokens(private val dfaFactory: DfaFactory = RegexDfaFactory()) {
 

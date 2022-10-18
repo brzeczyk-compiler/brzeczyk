@@ -1,4 +1,4 @@
-package compiler.lexer.dfa.state_dfa
+package compiler.common.dfa.state_dfa
 
 interface DfaState<A, R> {
     val result: R

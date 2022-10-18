@@ -1,6 +1,6 @@
-package compiler.lexer.dfa
+package compiler.common.dfa
 
-import compiler.lexer.dfa.state_dfa.DfaState
+import compiler.common.dfa.state_dfa.DfaState
 
 class RegexDfaState<A, R> : DfaState<A, R> {
     override val result: R

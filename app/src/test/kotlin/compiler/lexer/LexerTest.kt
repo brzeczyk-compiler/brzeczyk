@@ -1,7 +1,7 @@
 package compiler.lexer
 
-import compiler.lexer.dfa.Dfa
-import compiler.lexer.dfa.DfaWalk
+import compiler.common.dfa.Dfa
+import compiler.common.dfa.DfaWalk
 import compiler.lexer.input.Input
 import kotlin.test.Test
 import kotlin.test.assertContains

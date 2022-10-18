@@ -1,7 +1,8 @@
 package compiler.lexer.dfa
-import compiler.lexer.dfa.state_dfa.PlainDfaStateType
-import compiler.lexer.regex.Regex
-import compiler.lexer.regex.RegexFactory
+import compiler.common.dfa.RegexDfa
+import compiler.common.dfa.state_dfa.PlainDfaStateType
+import compiler.common.regex.Regex
+import compiler.common.regex.RegexFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals

@@ -1,4 +1,4 @@
-package compiler.lexer.regex
+package compiler.common.regex
 
 object RegexFactory {
 
@@ -95,7 +95,10 @@ object RegexFactory {
         // if there are two atomics (one from left and one from right), we need to merge them
         // they are the smallest elements so they will be first
         val leftmostElement = if (smallestElem is Regex.Atomic && secondSmallestElem is Regex.Atomic)
-            Regex.Atomic(smallestElem.atomic + secondSmallestElem.atomic) else Regex.Union(smallestElem, secondSmallestElem)
+            Regex.Atomic(smallestElem.atomic + secondSmallestElem.atomic) else Regex.Union(
+            smallestElem,
+            secondSmallestElem
+        )
         return summandsSorted.asSequence().fold(leftmostElement) { union, elem -> Regex.Union(union, elem) }
     }
 

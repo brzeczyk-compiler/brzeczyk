@@ -1,4 +1,4 @@
-package compiler.lexer.dfa
+package compiler.common.dfa
 
 interface DfaWalk<A, R> {
     fun getResult(): R

@@ -1,6 +1,6 @@
 package compiler.lexer
 
-import compiler.lexer.dfa.Dfa
+import compiler.common.dfa.Dfa
 import compiler.lexer.input.Input
 
 // Used to turn a sequence of characters into a sequence of tokens.

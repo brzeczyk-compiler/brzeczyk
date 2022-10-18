@@ -1,7 +1,7 @@
 package compiler.lexer.lexer_grammar
 
-import compiler.lexer.regex.Regex
-import compiler.lexer.regex.RegexFactory
+import compiler.common.regex.Regex
+import compiler.common.regex.RegexFactory
 
 object RegexParser : UniversalRegexParser<Regex<Char>>() {
 

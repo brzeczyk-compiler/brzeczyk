@@ -1,10 +1,10 @@
-package compiler.lexer.dfa
+package compiler.common.dfa
 
-import compiler.lexer.dfa.state_dfa.DfaState
-import compiler.lexer.dfa.state_dfa.DfaWithStates
-import compiler.lexer.dfa.state_dfa.PlainDfaStateType
-import compiler.lexer.regex.Regex
-import compiler.lexer.regex.RegexFactory
+import compiler.common.dfa.state_dfa.DfaState
+import compiler.common.dfa.state_dfa.DfaWithStates
+import compiler.common.dfa.state_dfa.PlainDfaStateType
+import compiler.common.regex.Regex
+import compiler.common.regex.RegexFactory
 
 // TODO: replace Char with A and NormalDfaStateType with R
 class RegexDfa(private val regex: Regex<Char>) : DfaWithStates<Char, PlainDfaStateType> {

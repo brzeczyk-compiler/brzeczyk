@@ -1,5 +1,7 @@
 package compiler.lexer.regex
 
+import compiler.common.regex.Regex
+import compiler.common.regex.RegexFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals

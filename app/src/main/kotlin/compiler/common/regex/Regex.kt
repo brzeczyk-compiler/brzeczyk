@@ -1,4 +1,4 @@
-package compiler.lexer.regex
+package compiler.common.regex
 
 const val EQUALS = 0
 

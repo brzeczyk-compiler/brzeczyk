@@ -3,7 +3,7 @@ package compiler.lexer.dfa
 import compiler.lexer.regex.Regex
 import compiler.lexer.regex.RegexFactory
 
-class RegexDfa(private val regex: Regex) : Dfa {
+class RegexDfa(private val regex: Regex<Char/*TODO: Replace with generic type*/>) : Dfa {
     override fun newWalk(): DfaWalk {
         return object : DfaWalk {
             var currentStateRegex = regex
@@ -12,7 +12,7 @@ class RegexDfa(private val regex: Regex) : Dfa {
             }
 
             override fun isDead(): Boolean {
-                return currentStateRegex == RegexFactory.createEmpty()
+                return currentStateRegex == RegexFactory.createEmpty<Char>()
             }
 
             override fun step(a: Char) {

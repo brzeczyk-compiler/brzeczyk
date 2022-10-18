@@ -2,19 +2,19 @@ package compiler.lexer.regex
 
 object RegexFactory {
 
-    fun createEmpty(): Regex {
+    fun <A : Comparable<A>> createEmpty(): Regex<A> {
         return Regex.Empty()
     }
 
-    fun createEpsilon(): Regex {
+    fun <A : Comparable<A>> createEpsilon(): Regex<A> {
         return Regex.Epsilon()
     }
 
-    fun createAtomic(atoms: Set<Char>): Regex {
+    fun <A : Comparable<A>> createAtomic(atoms: Set<A>): Regex<A> {
         return Regex.Atomic(atoms)
     }
 
-    fun createStar(child: Regex): Regex {
+    fun <A : Comparable<A>> createStar(child: Regex<A>): Regex<A> {
         if (child is Regex.Empty || child is Regex.Epsilon) {
             return Regex.Epsilon()
         }
@@ -24,7 +24,7 @@ object RegexFactory {
         return Regex.Star(child)
     }
 
-    fun createUnion(left: Regex, right: Regex): Regex {
+    fun <A : Comparable<A>> createUnion(left: Regex<A>, right: Regex<A>): Regex<A> {
         // we maintain five invariants:
         // right child of a Union is never a Union
         // nested Unions are sorted (with the smallest element being the leftmost one)
@@ -37,7 +37,7 @@ object RegexFactory {
         if (right is Regex.Empty) {
             return left
         }
-        fun traverseFromLeft(regex: Regex): Sequence<Regex> {
+        fun traverseFromLeft(regex: Regex<A>): Sequence<Regex<A>> {
             return sequence {
                 if (regex !is Regex.Union) {
                     yield(regex)
@@ -99,13 +99,13 @@ object RegexFactory {
         return summandsSorted.asSequence().fold(leftmostElement) { union, elem -> Regex.Union(union, elem) }
     }
 
-    private fun addLeftmostChildToConcat(parent: Regex.Concat, child: Regex): Regex.Concat {
+    private fun <A : Comparable<A>> addLeftmostChildToConcat(parent: Regex.Concat<A>, child: Regex<A>): Regex.Concat<A> {
         val updatedLeftChild = if (parent.left is Regex.Concat) addLeftmostChildToConcat(parent.left, child)
         else Regex.Concat(child, parent.left)
         return Regex.Concat(updatedLeftChild, parent.right)
     }
 
-    fun createConcat(left: Regex, right: Regex): Regex {
+    fun <A : Comparable<A>> createConcat(left: Regex<A>, right: Regex<A>): Regex<A> {
         // we maintain two invariants:
         // the right child of a Concat is never a Concat
         // Epsilon or Empty cannot be a part of Concat

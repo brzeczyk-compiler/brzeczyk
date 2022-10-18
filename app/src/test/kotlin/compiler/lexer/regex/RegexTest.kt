@@ -11,8 +11,8 @@ import kotlin.test.assertTrue
 
 private val ATOMIC_AB = Regex.Atomic(setOf('a', 'b'))
 private val ATOMIC_AC = Regex.Atomic(setOf('a', 'c'))
-private val EMPTY = Regex.Empty()
-private val EPSILON = Regex.Epsilon()
+private val EMPTY = Regex.Empty<Char>()
+private val EPSILON = Regex.Epsilon<Char>()
 private val CONCAT_EP_EM = Regex.Concat(EPSILON, EMPTY)
 private val CONCAT_EM_EP = Regex.Concat(EMPTY, EPSILON)
 private val STAR_AB = Regex.Star(ATOMIC_AB)
@@ -21,12 +21,12 @@ private val UNION_EM_EP = Regex.Union(EMPTY, EPSILON)
 
 class RegexTest {
     @Test fun `test empty does not contain epsilon`() {
-        val reg = Regex.Empty()
+        val reg = Regex.Empty<Char>()
         assertFalse(reg.containsEpsilon())
     }
 
     @Test fun `test epsilon contains epsilon`() {
-        val reg = Regex.Epsilon()
+        val reg = Regex.Epsilon<Char>()
         assertTrue(reg.containsEpsilon())
     }
 
@@ -36,7 +36,7 @@ class RegexTest {
     }
 
     @Test fun `test star contains epsilon`() {
-        val reg = Regex.Star(Regex.Empty())
+        val reg = Regex.Star(Regex.Empty<Char>())
         assertTrue(reg.containsEpsilon())
     }
 
@@ -69,7 +69,7 @@ class RegexTest {
     }
 
     @Test fun `test concats with epsilon`() {
-        val reg1 = Regex.Concat(
+        val reg1 = Regex.Concat<Char>(
             Regex.Epsilon(),
             Regex.Epsilon(),
         )
@@ -87,7 +87,7 @@ class RegexTest {
             Regex.Epsilon(),
             Regex.Atomic(setOf('d', 'e', 'f')),
         )
-        val reg2 = Regex.Concat(
+        val reg2 = Regex.Concat<Char>(
             Regex.Empty(),
             Regex.Star(Regex.Empty()),
         )
@@ -97,12 +97,12 @@ class RegexTest {
     }
 
     @Test fun `test derivative of empty is empty`() {
-        val reg = RegexFactory.createEmpty()
+        val reg = RegexFactory.createEmpty<Char>()
         assertTrue(reg.derivative('a') is Regex.Empty)
     }
 
     @Test fun `test derivative of epsilon is empty`() {
-        val reg = RegexFactory.createEpsilon()
+        val reg = RegexFactory.createEpsilon<Char>()
         assertTrue(reg.derivative('a') is Regex.Empty)
     }
 
@@ -143,9 +143,9 @@ class RegexTest {
     }
 
     @Test fun `test equals operator is well defined for regexes of same kind`() {
-        assertEquals<Regex>(EMPTY, Regex.Empty())
+        assertEquals<Regex<Char>>(EMPTY, Regex.Empty())
 
-        assertEquals<Regex>(EPSILON, Regex.Epsilon())
+        assertEquals<Regex<Char>>(EPSILON, Regex.Epsilon())
 
         assertEqualsWellDefined(ATOMIC_AB, Regex.Atomic(setOf('a', 'b')), ATOMIC_AC)
 

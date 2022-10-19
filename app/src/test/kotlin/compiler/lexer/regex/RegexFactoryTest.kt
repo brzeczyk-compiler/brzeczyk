@@ -1,5 +1,7 @@
 package compiler.lexer.regex
 
+import compiler.common.regex.Regex
+import compiler.common.regex.RegexFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -11,8 +13,8 @@ private val CONCAT_AB = RegexFactory.createConcat(RegexFactory.createAtomic(setO
 private val CONCAT_AC = RegexFactory.createConcat(RegexFactory.createAtomic(setOf('a')), RegexFactory.createAtomic(setOf('c')))
 private val CONCAT_BC = RegexFactory.createConcat(RegexFactory.createAtomic(setOf('b')), RegexFactory.createAtomic(setOf('c')))
 private val CONCAT_CD = RegexFactory.createConcat(RegexFactory.createAtomic(setOf('c')), RegexFactory.createAtomic(setOf('d')))
-private val EMPTY = RegexFactory.createEmpty()
-private val EPSILON = RegexFactory.createEpsilon()
+private val EMPTY = RegexFactory.createEmpty<Char>()
+private val EPSILON = RegexFactory.createEpsilon<Char>()
 
 class RegexFactoryTest {
     private fun <T> assertAllEqual(elements: List<T>) {

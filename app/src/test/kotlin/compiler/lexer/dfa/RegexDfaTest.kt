@@ -1,6 +1,6 @@
 package compiler.lexer.dfa
 import compiler.common.dfa.RegexDfa
-import compiler.common.dfa.state_dfa.SingleAcceptingState
+import compiler.common.dfa.isAccepting
 import compiler.common.regex.Regex
 import compiler.common.regex.RegexFactory
 import kotlin.test.Test
@@ -49,7 +49,7 @@ class RegexDfaTest {
             val walk = regexDfa.newWalk()
             word.forEach { walk.step(it) }
 
-            if (walk.getAcceptingStateTypeOrNull() == SingleAcceptingState.ACCEPTING)
+            if (walk.isAccepting())
                 assertEquals("ab", word)
             else
                 assertNotEquals("ab", word)

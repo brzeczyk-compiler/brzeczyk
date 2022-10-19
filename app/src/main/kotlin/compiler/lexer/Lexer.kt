@@ -1,13 +1,13 @@
 package compiler.lexer
 
-import compiler.common.dfa.Dfa
-import compiler.common.dfa.state_dfa.SingleAcceptingState
+import compiler.common.dfa.AbstractDfa
+import compiler.common.dfa.isAccepting
 import compiler.lexer.input.Input
 
 // Used to turn a sequence of characters into a sequence of tokens.
 // The DFAs given are used to recognize the corresponding token categories.
 // The priority of a DFA is given by its position in the list, with earlier positions having higher priority.
-class Lexer<TCat>(val dfas: List<Pair<Dfa<Char, SingleAcceptingState>, TCat>>) {
+class Lexer<TCat>(val dfas: List<Pair<AbstractDfa<Char, Unit>, TCat>>) {
     // Thrown when none of the DFAs accepted the input.
     class FailedToMatchToken : Throwable()
 

@@ -1,8 +1,8 @@
 package compiler.common.dfa.state_dfa
 
-import compiler.common.dfa.Dfa
+import compiler.common.dfa.AbstractDfa
 
-interface TransparentDfa<A, R> : Dfa<A, R> {
+interface Dfa<A, R> : AbstractDfa<A, R> {
     val startState: DfaState<A, R>
 
     // TODO: possibly create default implementation or override just in RegexDfa instead

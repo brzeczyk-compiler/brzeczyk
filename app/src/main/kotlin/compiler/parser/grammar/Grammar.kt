@@ -1,10 +1,8 @@
 package compiler.parser.grammar
 
 class Grammar<S : Comparable<S>> {
-    fun getStart(): S {
-        return TODO()
-    }
-    fun getProductions(): Collection<Production<S>> {
-        return TODO()
-    }
+    val start: S
+        get() = TODO()
+    val productions: Collection<Production<S>>
+        get() = TODO()
 }

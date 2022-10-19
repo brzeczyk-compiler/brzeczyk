@@ -1,24 +1,23 @@
 package compiler.common.dfa
 
+import compiler.common.dfa.state_dfa.Dfa
 import compiler.common.dfa.state_dfa.DfaState
-import compiler.common.dfa.state_dfa.SingleAcceptingState
-import compiler.common.dfa.state_dfa.TransparentDfa
 import compiler.common.regex.Regex
 import compiler.common.regex.RegexFactory
 
 // TODO: replace Char with A and PlainDfaStateType with R
 // it should be possible to use RegexDfa in AutomatonGrammar
-class RegexDfa(private val regex: Regex<Char>) : TransparentDfa<Char, SingleAcceptingState> {
-    override val startState: DfaState<Char, SingleAcceptingState>
+class RegexDfa(private val regex: Regex<Char>) : Dfa<Char, Unit> {
+    override val startState: DfaState<Char, Unit>
         get() = TODO("Not yet implemented")
 
     // TODO: remove if decided to create default implementation in TransparentDfa
-    override fun newWalk(): DfaWalk<Char, SingleAcceptingState> {
-        return object : DfaWalk<Char, SingleAcceptingState> {
+    override fun newWalk(): DfaWalk<Char, Unit> {
+        return object : DfaWalk<Char, Unit> {
             var currentStateRegex = regex
-            override fun getAcceptingStateTypeOrNull(): SingleAcceptingState? {
+            override fun getAcceptingStateTypeOrNull(): Unit? {
                 if (currentStateRegex.containsEpsilon())
-                    return SingleAcceptingState.ACCEPTING
+                    return Unit
                 return null
             }
 

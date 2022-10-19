@@ -1,22 +1,21 @@
 package compiler.lexer.lexer_grammar
 
-import compiler.common.dfa.Dfa
+import compiler.common.dfa.AbstractDfa
 import compiler.common.dfa.RegexDfa
-import compiler.common.dfa.state_dfa.SingleAcceptingState
 
 class Tokens(private val dfaFactory: DfaFactory = RegexDfaFactory()) {
 
     interface DfaFactory {
-        fun fromRegexString(regexString: String): Dfa<Char, SingleAcceptingState>
+        fun fromRegexString(regexString: String): AbstractDfa<Char, Unit>
     }
 
     private class RegexDfaFactory : DfaFactory {
-        override fun fromRegexString(regexString: String): Dfa<Char, SingleAcceptingState> {
+        override fun fromRegexString(regexString: String): AbstractDfa<Char, Unit> {
             return RegexDfa(RegexParser.parseStringToRegex(regexString))
         }
     }
 
-    fun getTokens(): List<Pair<TokenType, Dfa<Char, SingleAcceptingState>>> {
+    fun getTokens(): List<Pair<TokenType, AbstractDfa<Char, Unit>>> {
         val list = listOf(
             // Parenthesis and braces
             Pair(TokenType.LEFT_PAREN, "\\("),

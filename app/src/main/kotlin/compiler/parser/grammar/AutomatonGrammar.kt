@@ -1,11 +1,9 @@
 package compiler.parser.grammar
-import compiler.common.dfa.state_dfa.TransparentDfa
+import compiler.common.dfa.state_dfa.Dfa
 
 class AutomatonGrammar<S : Comparable<S>> {
-    fun getStartState(): S {
-        return TODO()
-    }
-    fun getProductions(): Map<S, TransparentDfa<S, Production<S>>> {
-        return TODO()
-    }
+    val startState: S
+        get() = return TODO()
+    val productions: Map<S, Dfa<S, Production<S>>>
+        get() = return TODO()
 }

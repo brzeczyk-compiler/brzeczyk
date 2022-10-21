@@ -1,7 +1,6 @@
 package compiler.lexer.lexer_grammar
 
 import compiler.common.dfa.AbstractDfa
-import compiler.common.dfa.DfaWalk
 import compiler.common.dfa.isAccepting
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -9,61 +8,7 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 
 class TokensTest {
-
-    // Uses Kotlin regex to simulate a DFA
-    // builds the current string with each step
-    // and tries to match it to regex when isAccepted is called
-    private class MockDfaWalk(val regex: Regex) : DfaWalk<Char, Unit> {
-        private var currentString = StringBuilder()
-
-        override fun getAcceptingStateTypeOrNull(): Unit? {
-            if (regex.matches(currentString.toString()))
-                return Unit
-            return null
-        }
-
-        override fun isDead(): Boolean {
-            return false
-        }
-
-        override fun step(a: Char) {
-            currentString.append(a)
-        }
-    }
-
-    private class MockDfa(regexString: String) : AbstractDfa<Char, Unit> {
-        // Kotlin regex equivalent to regexString
-        private val regex: Regex
-
-        init {
-            // Change the format of regex to one used by Kotlin
-            // Escape special characters not used in our parser
-            // Replace our special characters with their counterparts
-            regex = Regex(
-                regexString
-                    .replace("{", "\\{")
-                    .replace("}", "\\}")
-                    .replace("+", "\\+")
-                    .replace("-", "\\-")
-                    .replace("/", "\\/")
-                    .replace("^", "\\^")
-                    .replace("\\l", "[a-ząćęłńóśźż]")
-                    .replace("\\u", "[A-ZĄĆĘŁŃÓŚŹŻ]")
-                    .replace("\\d", "[0-9]")
-                    .replace("\\c", """[\{\}\(\),\.<>:;\?\/\+=\-_!%\^&\*\|~]""")
-            )
-        }
-
-        override fun newWalk(): DfaWalk<Char, Unit> {
-            return MockDfaWalk(regex)
-        }
-    }
-
-    private class MockDfaFactory : Tokens.DfaFactory {
-        override fun fromRegexString(regexString: String): AbstractDfa<Char, Unit> {
-            return MockDfa(regexString)
-        }
-    }
+    private val tokens = Tokens().getTokens()
 
     private fun accepts(dfa: AbstractDfa<Char, Unit>, string: String): Boolean {
         val walk = dfa.newWalk()
@@ -71,8 +16,8 @@ class TokensTest {
         return walk.isAccepting()
     }
 
-    private fun firstMatch(tokens: List<Pair<TokenType, AbstractDfa<Char, Unit>>>, string: String): TokenType? {
-        for ((type, dfa) in tokens) {
+    private fun firstMatch(tokens: List<Pair<AbstractDfa<Char, Unit>, TokenType>>, string: String): TokenType? {
+        for ((dfa, type) in tokens) {
             if (accepts(dfa, string))
                 return type
         }
@@ -80,8 +25,6 @@ class TokensTest {
     }
 
     @Test fun `test keywords`() {
-        val tokens = Tokens(MockDfaFactory()).getTokens()
-
         assertEquals(firstMatch(tokens, "jeśli"), TokenType.IF)
         assertEquals(firstMatch(tokens, "zaś gdy"), TokenType.ELSE_IF)
         assertEquals(firstMatch(tokens, "wpp"), TokenType.ELSE)
@@ -99,8 +42,6 @@ class TokensTest {
     }
 
     @Test fun `test special symbols`() {
-        val tokens = Tokens(MockDfaFactory()).getTokens()
-
         assertEquals(firstMatch(tokens, "("), TokenType.LEFT_PAREN)
         assertEquals(firstMatch(tokens, ")"), TokenType.RIGHT_PAREN)
         assertEquals(firstMatch(tokens, "{"), TokenType.LEFT_BRACE)
@@ -113,8 +54,6 @@ class TokensTest {
     }
 
     @Test fun `test operators`() {
-        val tokens = Tokens(MockDfaFactory()).getTokens()
-
         assertEquals(firstMatch(tokens, "+"), TokenType.PLUS)
         assertEquals(firstMatch(tokens, "-"), TokenType.MINUS)
         assertEquals(firstMatch(tokens, "*"), TokenType.MULTIPLY)
@@ -148,8 +87,6 @@ class TokensTest {
     }
 
     @Test fun `test integers`() {
-        val tokens = Tokens(MockDfaFactory()).getTokens()
-
         assertEquals(firstMatch(tokens, "0"), TokenType.INTEGER)
         assertEquals(firstMatch(tokens, "1"), TokenType.INTEGER)
         assertEquals(firstMatch(tokens, "3"), TokenType.INTEGER)
@@ -173,8 +110,6 @@ class TokensTest {
     }
 
     @Test fun `test identifiers and built-in types`() {
-        val tokens = Tokens(MockDfaFactory()).getTokens()
-
         assertEquals(firstMatch(tokens, "x"), TokenType.IDENTIFIER)
         assertEquals(firstMatch(tokens, "i"), TokenType.IDENTIFIER)
         assertEquals(firstMatch(tokens, "żółć"), TokenType.IDENTIFIER)
@@ -202,8 +137,6 @@ class TokensTest {
     }
 
     @Test fun `test whitespace and comments`() {
-        val tokens = Tokens(MockDfaFactory()).getTokens()
-
         assertEquals(firstMatch(tokens, " "), TokenType.TO_IGNORE)
         assertEquals(firstMatch(tokens, "     "), TokenType.TO_IGNORE)
         assertEquals(firstMatch(tokens, "\t"), TokenType.TO_IGNORE)

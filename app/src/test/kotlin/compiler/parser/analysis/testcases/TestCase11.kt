@@ -38,12 +38,12 @@ class TestCase11 {
         symt to setOf(symt),
     )
 
-    private val expectedFollow: Map<GrammarSymbol, Set<GrammarSymbol>> = mapOf(
-        start to setOf(start, symQ, symR, syms, symt),
+    private val expectedFollow = mapOf(
+        start to setOf(),
         symQ to setOf(start, symQ, symR, syms, symt),
         symR to setOf(start, symQ, symR, syms, symt),
         syms to setOf(start, symQ, symR, syms, symt),
-        symt to setOf(start, symQ, syms),
+        symt to setOf(symQ, syms),
     )
 
     private val dfaCNNG = DfaFactory.createDfa(

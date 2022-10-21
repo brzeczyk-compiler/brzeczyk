@@ -27,7 +27,7 @@ class TestCase04 {
     )
 
     private val expectedFirst = mapOf(
-        start to setOf(start),
+        start to setOf(start, syme),
         syme to setOf(syme),
     )
 

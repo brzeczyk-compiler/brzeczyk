@@ -25,7 +25,7 @@ class TestCase03 {
 
     private val expectedNullable = setOf(
         start,
-        symc,
+        symD,
     )
 
     private val expectedFirst = mapOf(

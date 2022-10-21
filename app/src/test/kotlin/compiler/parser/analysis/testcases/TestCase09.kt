@@ -47,7 +47,7 @@ class TestCase09 {
     )
 
     private val expectedFollow: Map<GrammarSymbol, Set<GrammarSymbol>> = mapOf(
-        start to setOf(),
+        start to setOf(symp),
         symL to setOf(start, symL, symM, symN, symo, symp),
         symM to setOf(start, symL, symM, symN, symo, symp),
         symN to setOf(start, symL, symM, symN, symo, symp),

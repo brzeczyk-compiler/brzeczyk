@@ -24,7 +24,6 @@ class TestCase03 {
     private val symD = "D"
 
     private val expectedNullable = setOf(
-        start,
         symD,
     )
 

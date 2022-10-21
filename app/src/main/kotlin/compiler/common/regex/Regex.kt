@@ -1,5 +1,7 @@
 package compiler.common.regex
 
+import kotlin.math.min
+
 const val EQUALS = 0
 
 sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
@@ -74,9 +76,14 @@ sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
             if (other !is Atomic) {
                 return this.javaClass.name.compareTo(other.javaClass.name)
             }
-            val thisAtomicString = this.atomic.toSortedSet().joinToString("")
-            val otherAtomicString = other.atomic.toSortedSet().joinToString("")
-            return thisAtomicString.compareTo(otherAtomicString)
+            val thisAtomicList = this.atomic.toSortedSet().toList()
+            val otherAtomicList = other.atomic.toSortedSet().toList()
+            for (i in 0 until min(thisAtomicList.size, otherAtomicList.size)) {
+                compareValues(thisAtomicList[i], otherAtomicList[i]).let {
+                    if (it != EQUALS) return it
+                }
+            }
+            return compareValues(thisAtomicList.size, otherAtomicList.size)
         }
 
         override fun equals(other: Any?): Boolean {

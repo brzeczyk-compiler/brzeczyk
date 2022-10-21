@@ -178,4 +178,10 @@ class RegexTest {
     @Test fun `test unions are sorted lexicographically by children`() {
         assertOrdered(listOf(UNION_EM_EP, Regex.Union(EPSILON, ATOMIC_AB), Regex.Union(EPSILON, ATOMIC_AC), UNION_EP_EM))
     }
+
+    @Test fun `test atomics comparisons work for strings`() {
+        val A: Regex<String> = Regex.Atomic(setOf("ab", "c"))
+        val B: Regex<String> = Regex.Atomic(setOf("a", "bc"))
+        assertTrue(A > B)
+    }
 }

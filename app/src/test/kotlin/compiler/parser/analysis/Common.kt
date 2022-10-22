@@ -40,8 +40,8 @@ class GrammarAnalysisTest {
 
         override val result = if (name.startsWith("acc")) R() else null
         override val possibleSteps: Map<GrammarSymbol, TestDfaState>
-                get() = transitionFunction.filter { it.key.first == name }.entries
-                    .associate { it.key.second to if (it.value == name) this else TestDfaState(it.value, transitionFunction) }
+            get() = transitionFunction.filter { it.key.first == name }.entries
+                .associate { it.key.second to if (it.value == name) this else TestDfaState(it.value, transitionFunction) }
 
         override fun equals(other: Any?): Boolean = other is TestDfaState && name == other.name
         override fun hashCode(): Int = name.hashCode()

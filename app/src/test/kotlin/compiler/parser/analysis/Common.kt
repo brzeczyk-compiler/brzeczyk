@@ -24,7 +24,7 @@ class GrammarAnalysisTest {
         private val dfaDescription: Map<Pair<TestDfaState, GrammarSymbol>, TestDfaState>
     ) : DfaWalk<GrammarSymbol, R> {
 
-        override fun getAcceptingStateTypeOrNull(): R? = if (currentState.isAccepting()) R() else null
+        override fun getAcceptingStateTypeOrNull(): R? = currentState.result
 
         override fun isDead(): Boolean = !dfaDescription.keys.map { it.first }.contains(currentState)
 
@@ -33,12 +33,10 @@ class GrammarAnalysisTest {
         }
     }
 
-    class TestDfaState(private val name: String) : DfaState<GrammarSymbol, R> {
+    class TestDfaState(name: String) : DfaState<GrammarSymbol, R> {
 
-        override val result: R = R()
+        override val result = if (name.startsWith("acc")) R() else null
         override val possibleSteps: Map<GrammarSymbol, TestDfaState> = mapOf()
-
-        fun isAccepting(): Boolean = name.startsWith("acc")
     }
 
     object DfaFactory {

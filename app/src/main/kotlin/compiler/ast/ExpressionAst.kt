@@ -23,8 +23,9 @@ sealed class ExpressionAst {
     ) : ExpressionAst() {
         enum class Kind {
             NOT,
-            NEG,
-            BIT_NOT,
+            PLUS,
+            MINUS,
+            BIT_NOT
         }
     }
 
@@ -37,21 +38,21 @@ sealed class ExpressionAst {
             AND,
             OR,
             ADD,
-            SUB,
-            MUL,
-            DIV,
-            MOD,
+            SUBTRACT,
+            MULTIPLY,
+            DIVIDE,
+            MODULO,
             BIT_AND,
             BIT_OR,
             BIT_XOR,
-            BIT_SHL,
-            BIT_SHR,
-            EQ,
-            NEQ,
-            LT,
-            LTEQ,
-            GT,
-            GTEQ,
+            BIT_SHIFT_LEFT,
+            BIT_SHIFT_RIGHT,
+            EQUALS,
+            NOT_EQUALS,
+            LESS_THAN,
+            LESS_THAN_OR_EQUALS,
+            GREATER_THAN,
+            GREATER_THAN_OR_EQUALS
         }
     }
 

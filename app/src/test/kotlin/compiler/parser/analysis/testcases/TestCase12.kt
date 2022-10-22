@@ -1,6 +1,5 @@
 package compiler.parser.analysis.testcases
 
-import compiler.parser.analysis.EPSILON
 import compiler.parser.analysis.GrammarAnalysis
 import compiler.parser.analysis.GrammarAnalysisTest.DfaFactory
 import compiler.parser.analysis.GrammarSymbol
@@ -67,14 +66,13 @@ class TestCase12 {
     )
 
     private val dfaV = DfaFactory.createDfa(
-        "startState",
-        listOf("startState", "state1", "state2", "accState"),
+        "accStartState",
+        listOf("accStartState", "state1", "accState1", "accState2"),
         mapOf(
-            Pair("startState", symy) to "state1",
-            Pair("state1", symz) to "accState",
-            Pair("startState", EPSILON) to "state2",
-            Pair("state2", symz) to "state2",
-            Pair("state2", EPSILON) to "accState",
+            Pair("accStartState", symy) to "state1",
+            Pair("state1", symz) to "accState1",
+            Pair("accStartState", symz) to "accState2",
+            Pair("accState2", symz) to "accState2",
         )
     )
 

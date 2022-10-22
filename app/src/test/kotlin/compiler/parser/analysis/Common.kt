@@ -7,7 +7,6 @@ import compiler.parser.grammar.Production
 
 typealias R = Production<GrammarSymbol>
 typealias GrammarSymbol = String
-const val EPSILON = ""
 
 class GrammarAnalysisTest {
 

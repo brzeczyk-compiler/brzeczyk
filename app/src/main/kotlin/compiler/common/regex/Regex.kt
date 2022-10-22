@@ -57,7 +57,7 @@ sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
         }
 
         override fun toString(): String {
-            return "\u2205"
+            return "\\empty"
         }
     }
 
@@ -89,6 +89,10 @@ sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
             // Not sure if this is the best option
             // Is there a way to make this class a singleton?
             return this.javaClass.hashCode()
+        }
+
+        override fun toString(): String {
+            return "\\eps"
         }
     }
 
@@ -126,6 +130,12 @@ sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
         override fun hashCode(): Int {
             return Objects.hash(atomic)
         }
+
+        override fun toString(): String {
+            return if (atomic.size > 1)
+                ("[" + atomic.toSortedSet().joinToString(";") + "]") else
+                (atomic.toList()[0].toString())
+        }
     }
 
     class Star<A : Comparable<A>> internal constructor(val child: Regex<A>) : Regex<A>() {
@@ -155,6 +165,10 @@ sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
         override fun hashCode(): Int {
             // Is there a better way to make this hash different from that of child
             return Objects.hash(child, this.javaClass)
+        }
+
+        override fun toString(): String {
+            return "($child)*"
         }
     }
 
@@ -186,6 +200,10 @@ sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
             // Is there a better way to make this hash different from that of concat(left, right)?
             return Objects.hash(left, right, this.javaClass)
         }
+
+        override fun toString(): String {
+            return "($left|$right)"
+        }
     }
 
     class Concat<A : Comparable<A>> internal constructor(val left: Regex<A>, val right: Regex<A>) : Regex<A>() {
@@ -194,7 +212,7 @@ sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
         }
 
         override fun first(): Set<A> {
-            return if (left.containsEpsilon()) left.first() else left.first() union right.first()
+            return if (left.containsEpsilon()) left.first() union right.first() else left.first()
         }
 
         override fun derivative(a: A): Regex<A> {
@@ -217,6 +235,10 @@ sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
         override fun hashCode(): Int {
             // Is there a better way to make this hash different from that of union(left, right)?
             return Objects.hash(left, right, this.javaClass)
+        }
+
+        override fun toString(): String {
+            return "($left+$right)"
         }
     }
 }

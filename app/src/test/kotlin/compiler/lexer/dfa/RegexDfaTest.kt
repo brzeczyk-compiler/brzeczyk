@@ -1,11 +1,13 @@
 package compiler.lexer.dfa
 import compiler.common.dfa.RegexDfa
+import compiler.common.dfa.RegexDfaState
 import compiler.common.dfa.isAccepting
 import compiler.common.regex.Regex
 import compiler.common.regex.RegexFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNull
 
 class RegexDfaTest {
     private fun abRegexDfa(): RegexDfa<Char> {
@@ -90,5 +92,68 @@ class RegexDfaTest {
             val shouldStateBeAccepting = word.lastOrNull() == 'b' && word.all { setOf('a', 'b').contains(it) }
             assertEquals(shouldStateBeAccepting, walk.isAccepting(), "Is walk over $word accepted?")
         }
+    }
+
+    @Test fun `test possible states and results on example regex`() {
+        val regex: Regex<Char> = RegexFactory.createUnion(
+            RegexFactory.createConcat(
+                RegexFactory.createConcat(
+                    RegexFactory.createAtomic(setOf('a')),
+                    RegexFactory.createAtomic(setOf('b'))
+                ),
+                RegexFactory.createAtomic(setOf('c'))
+            ),
+            RegexFactory.createConcat(
+                RegexFactory.createConcat(
+                    RegexFactory.createAtomic(setOf('c')),
+                    RegexFactory.createStar(
+                        RegexFactory.createAtomic(setOf('a', 'b'))
+                    )
+                ),
+                RegexFactory.createAtomic(setOf('c'))
+            )
+        )
+
+        val regexDfa = RegexDfa(regex)
+
+        val stateBC = RegexDfaState(
+            RegexFactory.createConcat(
+                RegexFactory.createAtomic(setOf('b')),
+                RegexFactory.createAtomic(setOf('c'))
+            )
+        )
+        val stateC = RegexDfaState(RegexFactory.createAtomic(setOf('c')))
+        val stateEPS = RegexDfaState(RegexFactory.createEpsilon<Char>())
+        val stateABStarC = RegexDfaState(
+            RegexFactory.createConcat(
+                RegexFactory.createStar(
+                    RegexFactory.createAtomic(setOf('a', 'b'))
+                ),
+                RegexFactory.createAtomic(setOf('c')),
+            )
+        )
+
+        assertEquals(
+            regexDfa.startState.possibleSteps,
+            mapOf(
+                'a' to stateBC,
+                'c' to stateABStarC
+            )
+        )
+        assertEquals(stateBC.possibleSteps, mapOf('b' to stateC,))
+        assertEquals(stateC.possibleSteps, mapOf('c' to stateEPS))
+        assertEquals(stateEPS.possibleSteps, emptyMap())
+        assertEquals(
+            stateABStarC.possibleSteps,
+            mapOf(
+                'a' to stateABStarC,
+                'b' to stateABStarC,
+                'c' to stateEPS
+            )
+        )
+        assertNull(stateBC.result)
+        assertNull(stateC.result)
+        assertEquals(stateEPS.result, Unit)
+        assertNull(stateABStarC.result)
     }
 }

@@ -187,4 +187,27 @@ class RegexTest {
         val B: Regex<String> = Regex.Atomic(setOf("a", "bc"))
         assertTrue(A > B)
     }
+
+    @Test fun `test first method`() {
+        val union_AB_AC = Regex.Union(ATOMIC_AB, ATOMIC_AC)
+        val concat_EPS_AB = Regex.Concat(EPSILON, ATOMIC_AB)
+        val concat_AB_EPS = Regex.Concat(ATOMIC_AB, EPSILON)
+        val union_AB_EPS = Regex.Union(ATOMIC_AB, EPSILON)
+        val concat_empty_AB = Regex.Concat(EMPTY, ATOMIC_AB)
+
+        assertEquals(ATOMIC_AB.first(), setOf('a', 'b'))
+        assertEquals(ATOMIC_AC.first(), setOf('a', 'c'))
+        assertEquals(EMPTY.first(), emptySet())
+        assertEquals(EPSILON.first(), emptySet())
+        assertEquals(CONCAT_EP_EM.first(), emptySet())
+        assertEquals(CONCAT_EM_EP.first(), emptySet())
+        assertEquals(STAR_AB.first(), setOf('a', 'b'))
+        assertEquals(UNION_EP_EM.first(), emptySet())
+        assertEquals(UNION_EM_EP.first(), emptySet())
+        assertEquals(union_AB_AC.first(), setOf('a', 'b', 'c'))
+        assertEquals(concat_EPS_AB.first(), setOf('a', 'b'))
+        assertEquals(concat_AB_EPS.first(), setOf('a', 'b'))
+        assertEquals(union_AB_EPS.first(), setOf('a', 'b'))
+        assertEquals(concat_empty_AB.first(), emptySet())
+    }
 }

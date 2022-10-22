@@ -19,4 +19,8 @@ class RegexDfaState<A : Comparable<A>>(private val regex: Regex<A>) : DfaState<A
     override fun hashCode(): Int {
         return regex.hashCode()
     }
+
+    override fun toString(): String {
+        return regex.toString()
+    }
 }

@@ -35,11 +35,13 @@ class GrammarAnalysisTest {
 
     class TestDfaState(
         private val name: DfaStateName,
-        transitionFunction: Map<Pair<DfaStateName, GrammarSymbol>, DfaStateName>
+        private val transitionFunction: Map<Pair<DfaStateName, GrammarSymbol>, DfaStateName>
     ) : DfaState<GrammarSymbol, R> {
 
         override val result = if (name.startsWith("acc")) R() else null
-        override val possibleSteps: Map<GrammarSymbol, TestDfaState> = transitionFunction.filter { it.key.first == name }.entries.associate { it.key.second to TestDfaState(it.value, transitionFunction) }
+        override val possibleSteps: Map<GrammarSymbol, TestDfaState>
+                get() = transitionFunction.filter { it.key.first == name }.entries
+                    .associate { it.key.second to if (it.value == name) this else TestDfaState(it.value, transitionFunction) }
 
         override fun equals(other: Any?): Boolean = other is TestDfaState && name == other.name
         override fun hashCode(): Int = name.hashCode()

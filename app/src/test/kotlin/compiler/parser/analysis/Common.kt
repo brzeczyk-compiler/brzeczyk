@@ -7,6 +7,7 @@ import compiler.parser.grammar.Production
 
 typealias R = Production<GrammarSymbol>
 typealias GrammarSymbol = String
+typealias DfaStateName = String
 
 class GrammarAnalysisTest {
 
@@ -32,22 +33,28 @@ class GrammarAnalysisTest {
         }
     }
 
-    class TestDfaState(name: String) : DfaState<GrammarSymbol, R> {
+    class TestDfaState(
+        private val name: DfaStateName,
+        transitionFunction: Map<Pair<DfaStateName, GrammarSymbol>, DfaStateName>
+    ) : DfaState<GrammarSymbol, R> {
 
         override val result = if (name.startsWith("acc")) R() else null
-        override val possibleSteps: Map<GrammarSymbol, TestDfaState> = mapOf()
+        override val possibleSteps: Map<GrammarSymbol, TestDfaState> = transitionFunction.filter { it.key.first == name }.entries.associate { it.key.second to TestDfaState(it.value, transitionFunction) }
+
+        override fun equals(other: Any?): Boolean = other is TestDfaState && name == other.name
+        override fun hashCode(): Int = name.hashCode()
     }
 
     object DfaFactory {
 
-        fun getTrivialDfa(): TestDfa = TestDfa(TestDfaState("accStartDfa"), mapOf())
+        fun getTrivialDfa(): TestDfa = TestDfa(TestDfaState("accStartDfa", mapOf()), mapOf())
 
         fun createDfa(
-            startState: String,
-            dfaStates: List<String>,
-            transitionFunction: Map<Pair<String, GrammarSymbol>, String>
+            startState: DfaStateName,
+            dfaStates: List<DfaStateName>,
+            transitionFunction: Map<Pair<DfaStateName, GrammarSymbol>, DfaStateName>
         ): TestDfa {
-            val dfaStatesObjects = dfaStates.associateWith { TestDfaState(it) }
+            val dfaStatesObjects = dfaStates.associateWith { TestDfaState(it, transitionFunction) }
             return TestDfa(
                 dfaStatesObjects[startState]!!,
                 transitionFunction.entries.associate { Pair(dfaStatesObjects[it.key.first]!!, it.key.second) to dfaStatesObjects[it.value]!! }

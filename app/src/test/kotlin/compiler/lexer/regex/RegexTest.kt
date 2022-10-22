@@ -137,6 +137,7 @@ class RegexTest {
 
     private fun <T> assertEqualsWellDefined(controlElement: T, equalElement: T, notEqualElement: T) {
         assertEquals(controlElement, equalElement)
+        assertEquals(controlElement.hashCode(), equalElement.hashCode())
         assertNotEquals(controlElement, notEqualElement)
     }
 
@@ -146,8 +147,10 @@ class RegexTest {
 
     @Test fun `test equals operator is well defined for regexes of same kind`() {
         assertEquals<Regex<Char>>(EMPTY, Regex.Empty())
+        assertEquals(EMPTY.hashCode(), Regex.Empty<Char>().hashCode())
 
         assertEquals<Regex<Char>>(EPSILON, Regex.Epsilon())
+        assertEquals(EPSILON.hashCode(), Regex.Epsilon<Char>().hashCode())
 
         assertEqualsWellDefined(ATOMIC_AB, Regex.Atomic(setOf('a', 'b')), ATOMIC_AC)
 

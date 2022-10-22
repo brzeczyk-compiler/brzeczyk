@@ -1,5 +1,6 @@
 package compiler.common.regex
 
+import java.util.Objects
 import kotlin.math.min
 
 const val EQUALS = 0
@@ -13,17 +14,25 @@ sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
 
     abstract fun containsEpsilon(): Boolean
 
+    abstract fun first(): Set<A>
+
     abstract fun derivative(a: A): Regex<A>
 
     abstract override fun compareTo(other: Regex<A>): Int
 
     abstract override fun equals(other: Any?): Boolean
 
+    abstract override fun hashCode(): Int
+
 // -------------------------------- Subclasses --------------------------------
 
     class Empty<A : Comparable<A>> internal constructor() : Regex<A>() {
         override fun containsEpsilon(): Boolean {
             return false
+        }
+
+        override fun first(): Set<A> {
+            return emptySet()
         }
 
         override fun derivative(a: A): Regex<A> {
@@ -40,11 +49,25 @@ sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
         override fun equals(other: Any?): Boolean {
             return other is Empty<*>
         }
+
+        override fun hashCode(): Int {
+            // Not sure if this is the best option
+            // Is there a way to make this class a singleton?
+            return this.javaClass.hashCode()
+        }
+
+        override fun toString(): String {
+            return "\u2205"
+        }
     }
 
     class Epsilon<A : Comparable<A>> internal constructor() : Regex<A>() {
         override fun containsEpsilon(): Boolean {
             return true
+        }
+
+        override fun first(): Set<A> {
+            return emptySet()
         }
 
         override fun derivative(a: A): Regex<A> {
@@ -61,11 +84,21 @@ sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
         override fun equals(other: Any?): Boolean {
             return other is Epsilon<*>
         }
+
+        override fun hashCode(): Int {
+            // Not sure if this is the best option
+            // Is there a way to make this class a singleton?
+            return this.javaClass.hashCode()
+        }
     }
 
     class Atomic<A : Comparable<A>> internal constructor(val atomic: Set<A>) : Regex<A>() {
         override fun containsEpsilon(): Boolean {
             return false
+        }
+
+        override fun first(): Set<A> {
+            return atomic
         }
 
         override fun derivative(a: A): Regex<A> {
@@ -89,11 +122,19 @@ sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
         override fun equals(other: Any?): Boolean {
             return other is Atomic<*> && (this.atomic == other.atomic)
         }
+
+        override fun hashCode(): Int {
+            return Objects.hash(atomic)
+        }
     }
 
     class Star<A : Comparable<A>> internal constructor(val child: Regex<A>) : Regex<A>() {
         override fun containsEpsilon(): Boolean {
             return true
+        }
+
+        override fun first(): Set<A> {
+            return child.first()
         }
 
         override fun derivative(a: A): Regex<A> {
@@ -110,11 +151,20 @@ sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
         override fun equals(other: Any?): Boolean {
             return other is Star<*> && (this.child == other.child)
         }
+
+        override fun hashCode(): Int {
+            // Is there a better way to make this hash different from that of child
+            return Objects.hash(child, this.javaClass)
+        }
     }
 
     class Union<A : Comparable<A>> internal constructor(val left: Regex<A>, val right: Regex<A>) : Regex<A>() {
         override fun containsEpsilon(): Boolean {
             return left.containsEpsilon() || right.containsEpsilon()
+        }
+
+        override fun first(): Set<A> {
+            return left.first() union right.first()
         }
 
         override fun derivative(a: A): Regex<A> {
@@ -131,11 +181,20 @@ sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
         override fun equals(other: Any?): Boolean {
             return other is Union<*> && (this.left == other.left && this.right == other.right)
         }
+
+        override fun hashCode(): Int {
+            // Is there a better way to make this hash different from that of concat(left, right)?
+            return Objects.hash(left, right, this.javaClass)
+        }
     }
 
     class Concat<A : Comparable<A>> internal constructor(val left: Regex<A>, val right: Regex<A>) : Regex<A>() {
         override fun containsEpsilon(): Boolean {
             return left.containsEpsilon() && right.containsEpsilon()
+        }
+
+        override fun first(): Set<A> {
+            return if (left.containsEpsilon()) left.first() else left.first() union right.first()
         }
 
         override fun derivative(a: A): Regex<A> {
@@ -153,6 +212,11 @@ sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
 
         override fun equals(other: Any?): Boolean {
             return other is Concat<*> && (this.left == other.left && this.right == other.right)
+        }
+
+        override fun hashCode(): Int {
+            // Is there a better way to make this hash different from that of union(left, right)?
+            return Objects.hash(left, right, this.javaClass)
         }
     }
 }

@@ -8,7 +8,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
 class RegexDfaTest {
-    private fun abRegexDfa(): RegexDfa {
+    private fun abRegexDfa(): RegexDfa<Char> {
         return RegexDfa(
             RegexFactory.createConcat(
                 RegexFactory.createAtomic(setOf('a')),
@@ -18,14 +18,14 @@ class RegexDfaTest {
     }
 
     @Test fun `walk on empty regex is dead`() {
-        val regexDfa = RegexDfa(RegexFactory.createEmpty())
+        val regexDfa = RegexDfa<Char>(RegexFactory.createEmpty())
         val walk = regexDfa.newWalk()
         assert(walk.isDead())
         assert(!walk.isAccepting())
     }
 
     @Test fun `walk on epsilon regex is accepted`() {
-        val regexDfa = RegexDfa(RegexFactory.createEpsilon())
+        val regexDfa = RegexDfa<Char>(RegexFactory.createEpsilon())
         val walk = regexDfa.newWalk()
         assert(!walk.isDead())
         assert(walk.isAccepting())

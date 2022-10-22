@@ -50,10 +50,13 @@ sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
             return other is Empty<*>
         }
 
+        private companion object HashObject
         override fun hashCode(): Int {
-            // Not sure if this is a good option
-            // Making this a singleton would help but is problematic with the generic type
-            return this.javaClass.hashCode()
+            // Not sure if this is a good solution
+            // Ideally, we would make Empty a singleton,
+            // but it's hard due to the generic type
+            // Could just returning a set value be better?
+            return HashObject.hashCode()
         }
 
         override fun toString(): String {
@@ -85,10 +88,13 @@ sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
             return other is Epsilon<*>
         }
 
+        private companion object HashObject
         override fun hashCode(): Int {
-            // Not sure if this is the best option
-            // Making this a singleton would help but is problematic with the generic type
-            return this.javaClass.hashCode()
+            // Not sure if this is a good solution
+            // Ideally, we would make Epsilon a singleton,
+            // but it's hard due to the generic type
+            // Could just returning a set value be better?
+            return HashObject.hashCode()
         }
 
         override fun toString(): String {
@@ -163,8 +169,8 @@ sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
         }
 
         override fun hashCode(): Int {
-            // Is there a better way to make this hash different from that of child
-            return Objects.hash(child, this.javaClass)
+            // Multiply so it doesn't clash with child hash
+            return 37 * Objects.hash(child)
         }
 
         override fun toString(): String {
@@ -197,8 +203,7 @@ sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
         }
 
         override fun hashCode(): Int {
-            // Is there a better way to make this hash different from that of concat(left, right)?
-            return Objects.hash(left, right, this.javaClass)
+            return Objects.hash(left, right)
         }
 
         override fun toString(): String {
@@ -233,8 +238,8 @@ sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
         }
 
         override fun hashCode(): Int {
-            // Is there a better way to make this hash different from that of union(left, right)?
-            return Objects.hash(left, right, this.javaClass)
+            // Multiply so it doesn't clash with union(left, right) hash
+            return 37 * Objects.hash(left, right)
         }
 
         override fun toString(): String {

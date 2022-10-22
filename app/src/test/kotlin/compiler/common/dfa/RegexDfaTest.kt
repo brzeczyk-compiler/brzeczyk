@@ -1,7 +1,4 @@
-package compiler.lexer.dfa
-import compiler.common.dfa.RegexDfa
-import compiler.common.dfa.RegexDfaState
-import compiler.common.dfa.isAccepting
+package compiler.common.dfa
 import compiler.common.regex.Regex
 import compiler.common.regex.RegexFactory
 import compiler.lexer.lexer_grammar.RegexParser
@@ -95,7 +92,7 @@ class RegexDfaTest {
         }
     }
 
-    @Test fun `test possible states and results on example regex`() {
+    @Test fun `test possible steps, results and predecessors on an example regex`() {
         val regex: Regex<Char> = RegexFactory.createUnion(
             RegexFactory.createConcat(
                 RegexFactory.createConcat(
@@ -183,7 +180,7 @@ class RegexDfaTest {
         assertNull(stateABStarC.result)
     }
 
-    @Test fun `test possible states and results on example regex 2`() {
+    @Test fun `test possible steps, results and predecessors on example regex 2`() {
         val regex: Regex<Char> = RegexParser.parseStringToRegex("([ab][cd])*a*")
 
         val regexDfa = RegexDfa(regex)

@@ -17,21 +17,21 @@ interface Dfa<A, R> : AbstractDfa<A, R> {
         dfs(startState)
     }
 
-    fun getPredecessors(state: DfaState<A, R>): Map<A, Set<DfaState<A, R>>> {
+    fun getPredecessors(state: DfaState<A, R>): Map<A, Collection<DfaState<A, R>>> {
         val predecessors: MutableMap<A, HashSet<DfaState<A, R>>> = HashMap()
-        dfs({ visitedState ->
+        dfs { visitedState ->
             for ((edge, neighbour) in visitedState.possibleSteps) {
                 if (neighbour == state) {
                     predecessors.getOrPut(edge) { HashSet() }.add(visitedState)
                 }
             }
-        })
+        }
         return predecessors
     }
 
-    fun getAcceptingStates(): Set<DfaState<A, R>> {
+    fun getAcceptingStates(): Collection<DfaState<A, R>> {
         val acceptingStates: MutableSet<DfaState<A, R>> = HashSet()
-        dfs({ visitedState -> visitedState.result?.let { acceptingStates.add(visitedState) } })
+        dfs { visitedState -> visitedState.result?.let { acceptingStates.add(visitedState) } }
         return acceptingStates
     }
 }

@@ -42,7 +42,7 @@ class TestCase13 {
 
     private val expectedFollow = mapOf(
         start to setOf(),
-        syma to setOf(syma, symB, symD),
+        syma to setOf(syma, symB, symc, symD),
         symB to setOf(symc),
         symc to setOf(syma, symB, symD),
         symD to setOf(symc),

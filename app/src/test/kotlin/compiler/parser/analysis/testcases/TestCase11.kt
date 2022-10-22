@@ -67,7 +67,7 @@ class TestCase11 {
     )
 
     private val dfaQ = DfaFactory.createDfa(
-        "accStartState",
+        "startState",
         listOf("startState", "accState"),
         mapOf(
             Pair("startState", syms) to "accState",
@@ -75,8 +75,8 @@ class TestCase11 {
     )
 
     private val dfaR = DfaFactory.createDfa(
-        "accStartState",
-        listOf("accStartState", "state1", "accState"),
+        "startState",
+        listOf("startState", "state1", "accState"),
         mapOf(
             Pair("startState", symQ) to "state1",
             Pair("state1", symQ) to "accState",

@@ -4,6 +4,7 @@ import compiler.common.dfa.RegexDfaState
 import compiler.common.dfa.isAccepting
 import compiler.common.regex.Regex
 import compiler.common.regex.RegexFactory
+import compiler.lexer.lexer_grammar.RegexParser
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -116,6 +117,7 @@ class RegexDfaTest {
 
         val regexDfa = RegexDfa(regex)
 
+        val stateStart = regexDfa.startState
         val stateBC = RegexDfaState(
             RegexFactory.createConcat(
                 RegexFactory.createAtomic(setOf('b')),
@@ -134,13 +136,13 @@ class RegexDfaTest {
         )
 
         assertEquals(
-            regexDfa.startState.possibleSteps,
+            stateStart.possibleSteps,
             mapOf(
                 'a' to stateBC,
                 'c' to stateABStarC
             )
         )
-        assertEquals(stateBC.possibleSteps, mapOf('b' to stateC,))
+        assertEquals(stateBC.possibleSteps, mapOf('b' to stateC))
         assertEquals(stateC.possibleSteps, mapOf('c' to stateEPS))
         assertEquals(stateEPS.possibleSteps, emptyMap())
         assertEquals(
@@ -151,9 +153,93 @@ class RegexDfaTest {
                 'c' to stateEPS
             )
         )
+
+        assertEquals(regexDfa.getPredecessors(stateStart), emptyMap())
+        assertEquals(
+            regexDfa.getPredecessors(stateBC),
+            mapOf('a' to setOf(stateStart))
+        )
+        assertEquals(
+            regexDfa.getPredecessors(stateC),
+            mapOf('b' to setOf(stateBC))
+        )
+        assertEquals(
+            regexDfa.getPredecessors(stateEPS),
+            mapOf('c' to setOf(stateABStarC, stateC))
+        )
+        assertEquals(
+            regexDfa.getPredecessors(stateABStarC),
+            mapOf(
+                'a' to setOf(stateABStarC),
+                'b' to setOf(stateABStarC),
+                'c' to setOf(stateStart)
+            )
+        )
+
+        assertEquals(regexDfa.getAcceptingStates(), setOf(stateEPS))
         assertNull(stateBC.result)
         assertNull(stateC.result)
         assertEquals(stateEPS.result, Unit)
         assertNull(stateABStarC.result)
+    }
+
+    @Test fun `test possible states and results on example regex 2`() {
+        val regex: Regex<Char> = RegexParser.parseStringToRegex("([ab][cd])*a*")
+
+        val regexDfa = RegexDfa(regex)
+        val stateStart = regexDfa.startState
+        val state1 = RegexDfaState(RegexParser.parseStringToRegex("([cd]([ab][cd])*a*)|a*"))
+        val state2 = RegexDfaState(RegexParser.parseStringToRegex("([cd]([ab][cd])*a*)"))
+        val state3 = RegexDfaState(RegexParser.parseStringToRegex("a*"))
+
+        assertEquals(
+            stateStart.possibleSteps,
+            mapOf(
+                'a' to state1,
+                'b' to state2
+            )
+        )
+        assertEquals(
+            state1.possibleSteps,
+            mapOf(
+                'a' to state3,
+                'c' to stateStart,
+                'd' to stateStart
+            )
+        )
+        assertEquals(
+            state2.possibleSteps,
+            mapOf(
+                'c' to stateStart,
+                'd' to stateStart
+            )
+        )
+        assertEquals(state3.possibleSteps, mapOf('a' to state3))
+
+        assertEquals(
+            regexDfa.getPredecessors(stateStart),
+            mapOf(
+                'c' to setOf(state1, state2),
+                'd' to setOf(state1, state2)
+            )
+        )
+        assertEquals(
+            regexDfa.getPredecessors(state1),
+            mapOf('a' to setOf(stateStart))
+        )
+        assertEquals(
+            regexDfa.getPredecessors(state2),
+            mapOf('b' to setOf(stateStart))
+        )
+        assertEquals(
+            regexDfa.getPredecessors(state3),
+            mapOf('a' to setOf(state1, state3))
+        )
+
+        assertEquals(regexDfa.getAcceptingStates(), setOf(stateStart, state1, state3))
+        assertEquals(stateStart.result, Unit)
+        assertEquals(state1.result, Unit)
+        assertNull(state2.result)
+        assertEquals(state3.result, Unit)
     }
 }

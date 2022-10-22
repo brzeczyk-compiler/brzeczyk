@@ -51,8 +51,8 @@ sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
         }
 
         override fun hashCode(): Int {
-            // Not sure if this is the best option
-            // Is there a way to make this class a singleton?
+            // Not sure if this is a good option
+            // Making this a singleton would help but is problematic with the generic type
             return this.javaClass.hashCode()
         }
 
@@ -87,7 +87,7 @@ sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
 
         override fun hashCode(): Int {
             // Not sure if this is the best option
-            // Is there a way to make this class a singleton?
+            // Making this a singleton would help but is problematic with the generic type
             return this.javaClass.hashCode()
         }
 

@@ -92,151 +92,127 @@ class RegexDfaTest {
         }
     }
 
-    @Test fun `test possible steps, results and predecessors on an example regex`() {
-        val regex: Regex<Char> = RegexFactory.createUnion(
-            RegexFactory.createConcat(
-                RegexFactory.createConcat(
-                    RegexFactory.createAtomic(setOf('a')),
-                    RegexFactory.createAtomic(setOf('b'))
-                ),
-                RegexFactory.createAtomic(setOf('c'))
-            ),
-            RegexFactory.createConcat(
-                RegexFactory.createConcat(
-                    RegexFactory.createAtomic(setOf('c')),
-                    RegexFactory.createStar(
-                        RegexFactory.createAtomic(setOf('a', 'b'))
-                    )
-                ),
-                RegexFactory.createAtomic(setOf('c'))
-            )
-        )
+    // Example RegexDfa for ((abc)|(c(a|b)*c)
+    private val dfa1 = RegexDfa(RegexParser.parseStringToRegex("(abc)|(c(a|b)*c)"))
+    private val dfa1StateStart = dfa1.startState
+    private val dfa1StateBC = RegexDfaState(RegexParser.parseStringToRegex("bc"))
+    private val dfa1StateC = RegexDfaState(RegexParser.parseStringToRegex("c"))
+    private val dfa1StateEPS = RegexDfaState(RegexFactory.createEpsilon<Char>())
+    private val dfa1StateABStarC = RegexDfaState(RegexParser.parseStringToRegex("(a|b)*c"))
 
-        val regexDfa = RegexDfa(regex)
+    // Example RegexDfa for ([ab][cd])*a*
+    private val dfa2 = RegexDfa(RegexParser.parseStringToRegex("([ab][cd])*a*"))
+    private val dfa2StateStart = dfa2.startState
+    private val dfa2State1 = RegexDfaState(RegexParser.parseStringToRegex("([cd]([ab][cd])*a*)|a*"))
+    private val dfa2State2 = RegexDfaState(RegexParser.parseStringToRegex("([cd]([ab][cd])*a*)"))
+    private val dfa2State3 = RegexDfaState(RegexParser.parseStringToRegex("a*"))
 
-        val stateStart = regexDfa.startState
-        val stateBC = RegexDfaState(
-            RegexFactory.createConcat(
-                RegexFactory.createAtomic(setOf('b')),
-                RegexFactory.createAtomic(setOf('c'))
-            )
-        )
-        val stateC = RegexDfaState(RegexFactory.createAtomic(setOf('c')))
-        val stateEPS = RegexDfaState(RegexFactory.createEpsilon<Char>())
-        val stateABStarC = RegexDfaState(
-            RegexFactory.createConcat(
-                RegexFactory.createStar(
-                    RegexFactory.createAtomic(setOf('a', 'b'))
-                ),
-                RegexFactory.createAtomic(setOf('c')),
-            )
-        )
-
+    @Test fun `test possible steps for states of example automata`() {
+        // dfa1
         assertEquals(
-            stateStart.possibleSteps,
+            dfa1StateStart.possibleSteps,
             mapOf(
-                'a' to stateBC,
-                'c' to stateABStarC
+                'a' to dfa1StateBC,
+                'c' to dfa1StateABStarC
             )
         )
-        assertEquals(stateBC.possibleSteps, mapOf('b' to stateC))
-        assertEquals(stateC.possibleSteps, mapOf('c' to stateEPS))
-        assertEquals(stateEPS.possibleSteps, emptyMap())
+        assertEquals(dfa1StateBC.possibleSteps, mapOf('b' to dfa1StateC))
+        assertEquals(dfa1StateC.possibleSteps, mapOf('c' to dfa1StateEPS))
+        assertEquals(dfa1StateEPS.possibleSteps, emptyMap())
         assertEquals(
-            stateABStarC.possibleSteps,
+            dfa1StateABStarC.possibleSteps,
             mapOf(
-                'a' to stateABStarC,
-                'b' to stateABStarC,
-                'c' to stateEPS
+                'a' to dfa1StateABStarC,
+                'b' to dfa1StateABStarC,
+                'c' to dfa1StateEPS
             )
         )
 
-        assertEquals(regexDfa.getPredecessors(stateStart), emptyMap())
+        // dfa2
         assertEquals(
-            regexDfa.getPredecessors(stateBC),
-            mapOf('a' to setOf(stateStart))
-        )
-        assertEquals(
-            regexDfa.getPredecessors(stateC),
-            mapOf('b' to setOf(stateBC))
-        )
-        assertEquals(
-            regexDfa.getPredecessors(stateEPS),
-            mapOf('c' to setOf(stateABStarC, stateC))
-        )
-        assertEquals(
-            regexDfa.getPredecessors(stateABStarC),
+            dfa2StateStart.possibleSteps,
             mapOf(
-                'a' to setOf(stateABStarC),
-                'b' to setOf(stateABStarC),
-                'c' to setOf(stateStart)
+                'a' to dfa2State1,
+                'b' to dfa2State2
             )
         )
-
-        assertEquals(regexDfa.getAcceptingStates(), setOf(stateEPS))
-        assertNull(stateBC.result)
-        assertNull(stateC.result)
-        assertEquals(stateEPS.result, Unit)
-        assertNull(stateABStarC.result)
+        assertEquals(
+            dfa2State1.possibleSteps,
+            mapOf(
+                'a' to dfa2State3,
+                'c' to dfa2StateStart,
+                'd' to dfa2StateStart
+            )
+        )
+        assertEquals(
+            dfa2State2.possibleSteps,
+            mapOf(
+                'c' to dfa2StateStart,
+                'd' to dfa2StateStart
+            )
+        )
+        assertEquals(dfa2State3.possibleSteps, mapOf('a' to dfa2State3))
     }
 
-    @Test fun `test possible steps, results and predecessors on example regex 2`() {
-        val regex: Regex<Char> = RegexParser.parseStringToRegex("([ab][cd])*a*")
-
-        val regexDfa = RegexDfa(regex)
-        val stateStart = regexDfa.startState
-        val state1 = RegexDfaState(RegexParser.parseStringToRegex("([cd]([ab][cd])*a*)|a*"))
-        val state2 = RegexDfaState(RegexParser.parseStringToRegex("([cd]([ab][cd])*a*)"))
-        val state3 = RegexDfaState(RegexParser.parseStringToRegex("a*"))
-
+    @Test fun `test predecessors for states of example automata`() {
+        // dfa1
+        assertEquals(dfa1.getPredecessors(dfa1StateStart), emptyMap())
         assertEquals(
-            stateStart.possibleSteps,
+            dfa1.getPredecessors(dfa1StateBC),
+            mapOf('a' to setOf(dfa1StateStart))
+        )
+        assertEquals(
+            dfa1.getPredecessors(dfa1StateC),
+            mapOf('b' to setOf(dfa1StateBC))
+        )
+        assertEquals(
+            dfa1.getPredecessors(dfa1StateEPS),
+            mapOf('c' to setOf(dfa1StateABStarC, dfa1StateC))
+        )
+        assertEquals(
+            dfa1.getPredecessors(dfa1StateABStarC),
             mapOf(
-                'a' to state1,
-                'b' to state2
+                'a' to setOf(dfa1StateABStarC),
+                'b' to setOf(dfa1StateABStarC),
+                'c' to setOf(dfa1StateStart)
+            )
+        )
+
+        // dfa2
+        assertEquals(
+            dfa2.getPredecessors(dfa2StateStart),
+            mapOf(
+                'c' to setOf(dfa2State1, dfa2State2),
+                'd' to setOf(dfa2State1, dfa2State2)
             )
         )
         assertEquals(
-            state1.possibleSteps,
-            mapOf(
-                'a' to state3,
-                'c' to stateStart,
-                'd' to stateStart
-            )
+            dfa2.getPredecessors(dfa2State1),
+            mapOf('a' to setOf(dfa2StateStart))
         )
         assertEquals(
-            state2.possibleSteps,
-            mapOf(
-                'c' to stateStart,
-                'd' to stateStart
-            )
+            dfa2.getPredecessors(dfa2State2),
+            mapOf('b' to setOf(dfa2StateStart))
         )
-        assertEquals(state3.possibleSteps, mapOf('a' to state3))
+        assertEquals(
+            dfa2.getPredecessors(dfa2State3),
+            mapOf('a' to setOf(dfa2State1, dfa2State3))
+        )
+    }
 
-        assertEquals(
-            regexDfa.getPredecessors(stateStart),
-            mapOf(
-                'c' to setOf(state1, state2),
-                'd' to setOf(state1, state2)
-            )
-        )
-        assertEquals(
-            regexDfa.getPredecessors(state1),
-            mapOf('a' to setOf(stateStart))
-        )
-        assertEquals(
-            regexDfa.getPredecessors(state2),
-            mapOf('b' to setOf(stateStart))
-        )
-        assertEquals(
-            regexDfa.getPredecessors(state3),
-            mapOf('a' to setOf(state1, state3))
-        )
+    @Test fun `test results for states of example automata`() {
+        // dfa1
+        assertEquals(dfa1.getAcceptingStates(), setOf(dfa1StateEPS))
+        assertNull(dfa1StateBC.result)
+        assertNull(dfa1StateC.result)
+        assertEquals(dfa1StateEPS.result, Unit)
+        assertNull(dfa1StateABStarC.result)
 
-        assertEquals(regexDfa.getAcceptingStates(), setOf(stateStart, state1, state3))
-        assertEquals(stateStart.result, Unit)
-        assertEquals(state1.result, Unit)
-        assertNull(state2.result)
-        assertEquals(state3.result, Unit)
+        // dfa2
+        assertEquals(dfa2.getAcceptingStates(), setOf(dfa2StateStart, dfa2State1, dfa2State3))
+        assertEquals(dfa2StateStart.result, Unit)
+        assertEquals(dfa2State1.result, Unit)
+        assertNull(dfa2State2.result)
+        assertEquals(dfa2State3.result, Unit)
     }
 }

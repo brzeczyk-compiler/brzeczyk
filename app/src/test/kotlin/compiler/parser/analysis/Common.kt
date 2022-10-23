@@ -62,7 +62,7 @@ class GrammarAnalysisTest {
             val dfaStatesObjects = dfaStates.associateWith { TestDfaState(it.plus(dfaUniqueName), transitionFunctionProperNames) }
             return TestDfa(
                 dfaStatesObjects[startState]!!,
-                transitionFunctionProperNames.entries.associate { Pair(dfaStatesObjects[it.key.first]!!, it.key.second) to dfaStatesObjects[it.value]!! }
+                transitionFunction.entries.associate { Pair(dfaStatesObjects[it.key.first]!!, it.key.second) to dfaStatesObjects[it.value]!! }
             )
         }
     }

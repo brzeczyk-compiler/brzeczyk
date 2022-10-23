@@ -1,7 +1,6 @@
 package compiler.common.regex
 
 import java.util.Objects
-import kotlin.math.min
 
 const val EQUALS = 0
 
@@ -52,10 +51,6 @@ sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
 
         private companion object HashObject
         override fun hashCode(): Int {
-            // Not sure if this is a good solution
-            // Ideally, we would make Empty a singleton,
-            // but it's hard due to the generic type
-            // Could just returning a set value be better?
             return HashObject.hashCode()
         }
 
@@ -90,10 +85,6 @@ sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
 
         private companion object HashObject
         override fun hashCode(): Int {
-            // Not sure if this is a good solution
-            // Ideally, we would make Epsilon a singleton,
-            // but it's hard due to the generic type
-            // Could just returning a set value be better?
             return HashObject.hashCode()
         }
 
@@ -121,8 +112,8 @@ sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
             }
             val thisAtomicList = this.atomic.toSortedSet().toList()
             val otherAtomicList = other.atomic.toSortedSet().toList()
-            for (i in 0 until min(thisAtomicList.size, otherAtomicList.size)) {
-                compareValues(thisAtomicList[i], otherAtomicList[i]).let {
+            for ((atom1, atom2) in thisAtomicList zip otherAtomicList) {
+                compareValues(atom1, atom2).let {
                     if (it != EQUALS) return it
                 }
             }
@@ -138,9 +129,9 @@ sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
         }
 
         override fun toString(): String {
-            return if (atomic.size > 1)
-                ("[" + atomic.toSortedSet().joinToString(";") + "]") else
-                (atomic.toList()[0].toString())
+            return if (atomic.size != 1)
+                ("[${atomic.toSortedSet().joinToString(";")}]") else
+                (atomic.first().toString())
         }
     }
 
@@ -169,8 +160,7 @@ sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
         }
 
         override fun hashCode(): Int {
-            // Multiply so it doesn't clash with child hash
-            return 37 * Objects.hash(child)
+            return Objects.hash(child)
         }
 
         override fun toString(): String {

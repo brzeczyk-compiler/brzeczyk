@@ -14,7 +14,14 @@ interface Dfa<A, R> : AbstractDfa<A, R> {
             }
 
             override fun isDead(): Boolean {
-                return currentState == null || (currentState?.result == null && currentState?.possibleSteps?.isEmpty() == true)
+                var canAccept = false
+                currentState?.let {
+                    dfs(it) { visitedState ->
+                        println("$visitedState ${visitedState.result != null}")
+                        canAccept = canAccept || (visitedState.result != null)
+                    }
+                }
+                return !canAccept
             }
 
             override fun step(a: A) {
@@ -23,14 +30,14 @@ interface Dfa<A, R> : AbstractDfa<A, R> {
         }
     }
 
-    private fun dfs(visit: (DfaState<A, R>) -> Unit) {
+    private fun dfs(start: DfaState<A, R> = startState, visit: (DfaState<A, R>) -> Unit) {
         val visited: MutableSet<DfaState<A, R>> = HashSet()
         fun dfs(state: DfaState<A, R>) {
             if (!visited.add(state)) return
             visit(state)
             for ((_, neighbour) in state.possibleSteps) dfs(neighbour)
         }
-        dfs(startState)
+        dfs(start)
     }
 
     fun getPredecessors(state: DfaState<A, R>): Map<A, Collection<DfaState<A, R>>> {

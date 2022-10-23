@@ -1,7 +1,6 @@
 package compiler.common.regex
 
 object RegexFactory {
-
     fun <A : Comparable<A>> createEmpty(): Regex<A> {
         return Regex.Empty()
     }

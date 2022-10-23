@@ -1,11 +1,12 @@
 package compiler.common.dfa
 
 import compiler.common.dfa.state_dfa.DfaState
+import compiler.common.regex.Regex
 
-class RegexDfaState<A, R> : DfaState<A, R> {
-    override val result: R
-        get() = TODO("Not yet implemented")
+data class RegexDfaState<A : Comparable<A>>(private val regex: Regex<A>) : DfaState<A, Unit> {
+    override val result: Unit?
+        get() = if (regex.containsEpsilon()) Unit else null
 
-    override val possibleSteps: Map<A, DfaState<A, R>>
-        get() = TODO("Not yet implemented")
+    override val possibleSteps: Map<A, DfaState<A, Unit>>
+        get() = regex.first().associateWith { RegexDfaState(regex.derivative(it)) }
 }

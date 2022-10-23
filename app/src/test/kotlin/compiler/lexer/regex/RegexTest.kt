@@ -118,6 +118,78 @@ class RegexTest {
         assertTrue(reg.derivative('b') is Regex.Empty)
     }
 
+    @Test fun `test derivatives of star`() {
+        // (ab)* --a--> b(ab)*
+        val reg = RegexFactory.createStar(
+            RegexFactory.createConcat(
+                RegexFactory.createAtomic(setOf('a')),
+                RegexFactory.createAtomic(setOf('b')),
+            )
+        )
+
+        val expectedDerivative = RegexFactory.createConcat(
+            RegexFactory.createAtomic(setOf('b')),
+            reg
+        )
+
+        assertEquals(reg.derivative('a'), expectedDerivative)
+        assertEquals(reg.derivative('b'), EMPTY)
+    }
+
+    @Test fun `test derivatives of union`() {
+        // (bc)+(bd) --b--> (c)+(d)
+        val reg = RegexFactory.createUnion(
+            RegexFactory.createConcat(
+                RegexFactory.createAtomic(setOf('b')),
+                RegexFactory.createAtomic(setOf('c')),
+            ),
+            RegexFactory.createConcat(
+                RegexFactory.createAtomic(setOf('b')),
+                RegexFactory.createAtomic(setOf('d')),
+            )
+        )
+
+        val expectedDerivative = RegexFactory.createUnion(
+            RegexFactory.createAtomic(setOf('c')),
+            RegexFactory.createAtomic(setOf('d')),
+        )
+
+        assertEquals(reg.derivative('b'), expectedDerivative)
+        assertEquals(reg.derivative('a'), EMPTY)
+    }
+
+    @Test fun `test derivatives of concat`() {
+        // (epsilon+x+y)((y)(z+q)) --x--> (y)(z+q)
+        // (epsilon+x+y)((y)(z+q)) --y--> ((y)(z+q))+(z+q) == (y+epsi)(z+q)
+        val reg = RegexFactory.createConcat(
+            RegexFactory.createUnion(
+                EPSILON,
+                RegexFactory.createAtomic(setOf('x', 'y'))
+            ),
+            RegexFactory.createConcat(
+                RegexFactory.createAtomic(setOf('y')),
+                RegexFactory.createAtomic(setOf('z', 'q'))
+            )
+        )
+
+        val expectedDerivativeX = RegexFactory.createConcat(
+            RegexFactory.createAtomic(setOf('y')),
+            RegexFactory.createAtomic(setOf('z', 'q'))
+        )
+
+        val expectedDerivativeY = RegexFactory.createConcat(
+            RegexFactory.createUnion(
+                RegexFactory.createAtomic(setOf('y')),
+                EPSILON
+            ),
+            RegexFactory.createAtomic(setOf('z', 'q'))
+        )
+
+        assertEquals(expectedDerivativeX, reg.derivative('x'))
+        assertEquals(expectedDerivativeY, reg.derivative('y'))
+        assertEquals(EMPTY, reg.derivative('z'))
+    }
+
     private fun <T : Comparable<T>> assertOrdered(desiredOrder: List<T>) {
         for (i in 0..(desiredOrder.size - 1)) {
             for (j in 0..(desiredOrder.size - 1)) {

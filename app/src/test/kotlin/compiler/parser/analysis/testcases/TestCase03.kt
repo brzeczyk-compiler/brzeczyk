@@ -45,34 +45,35 @@ class TestCase03 {
         mapOf(
             Pair("startState", symc) to "state1",
             Pair("state1", symD) to "accState",
-        )
+        ),
+        "CD",
     )
 
     private val grammar: AutomatonGrammar<String> = AutomatonGrammar(
         start,
         mapOf(
             start to dfaCD,
-            symD to DfaFactory.getTrivialDfa(),
+            symD to DfaFactory.getTrivialDfa(""),
         ),
     )
 
     @Ignore
     @Test
-    fun `test nullable for trivial grammar`() {
+    fun `test nullable for simple grammar with not all nullable`() {
         val actualNullable = GrammarAnalysis<GrammarSymbol>().computeNullable(grammar)
         assertEquals(expectedNullable, actualNullable)
     }
 
     @Ignore
     @Test
-    fun `test first for trivial grammar`() {
+    fun `test first for simple grammar with not all nullable`() {
         val actualFirst = GrammarAnalysis<GrammarSymbol>().computeFirst(grammar, expectedNullable)
         assertEquals(expectedFirst, actualFirst)
     }
 
     @Ignore
     @Test
-    fun `test follow for trivial grammar`() {
+    fun `test follow for simple grammar with not all nullable`() {
         // In fact, the upper approximation of Follow.
         val actualFollow = GrammarAnalysis<GrammarSymbol>().computeFollow(grammar, expectedNullable, expectedFirst)
         assertEquals(expectedFollow, actualFollow)

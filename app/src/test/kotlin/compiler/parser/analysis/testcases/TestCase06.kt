@@ -40,7 +40,8 @@ class TestCase06 {
         listOf("accStartState"),
         mapOf(
             Pair("accStartState", symg) to "accStartState",
-        )
+        ),
+        "G",
     )
 
     private val grammar: AutomatonGrammar<String> = AutomatonGrammar(
@@ -52,21 +53,21 @@ class TestCase06 {
 
     @Ignore
     @Test
-    fun `test nullable for trivial grammar`() {
+    fun `test nullable for star recursion grammar`() {
         val actualNullable = GrammarAnalysis<GrammarSymbol>().computeNullable(grammar)
         assertEquals(expectedNullable, actualNullable)
     }
 
     @Ignore
     @Test
-    fun `test first for trivial grammar`() {
+    fun `test first for star recursion grammar`() {
         val actualFirst = GrammarAnalysis<GrammarSymbol>().computeFirst(grammar, expectedNullable)
         assertEquals(expectedFirst, actualFirst)
     }
 
     @Ignore
     @Test
-    fun `test follow for trivial grammar`() {
+    fun `test follow for star recursion grammar`() {
         // In fact, the upper approximation of Follow.
         val actualFollow = GrammarAnalysis<GrammarSymbol>().computeFollow(grammar, expectedNullable, expectedFirst)
         assertEquals(expectedFollow, actualFollow)

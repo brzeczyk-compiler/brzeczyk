@@ -1,6 +1,5 @@
 package compiler.parser.analysis.testcases
 
-import compiler.parser.analysis.EPSILON
 import compiler.parser.analysis.GrammarAnalysis
 import compiler.parser.analysis.GrammarAnalysisTest.DfaFactory
 import compiler.parser.analysis.GrammarSymbol
@@ -37,13 +36,13 @@ class TestCase05 {
     )
 
     private val dfaF = DfaFactory.createDfa(
-        "startState",
-        listOf("startState", "state1", "accState"),
+        "accStartState",
+        listOf("accStartState", "state1", "accState"),
         mapOf(
-            Pair("startState", symf) to "state1",
+            Pair("accStartState", symf) to "state1",
             Pair("state1", start) to "accState",
-            Pair("startState", EPSILON) to "accState",
-        )
+        ),
+        "F",
     )
 
     private val grammar: AutomatonGrammar<String> = AutomatonGrammar(
@@ -55,21 +54,21 @@ class TestCase05 {
 
     @Ignore
     @Test
-    fun `test nullable for trivial grammar`() {
+    fun `test nullable for right recursion grammar`() {
         val actualNullable = GrammarAnalysis<GrammarSymbol>().computeNullable(grammar)
         assertEquals(expectedNullable, actualNullable)
     }
 
     @Ignore
     @Test
-    fun `test first for trivial grammar`() {
+    fun `test first for right recursion grammar`() {
         val actualFirst = GrammarAnalysis<GrammarSymbol>().computeFirst(grammar, expectedNullable)
         assertEquals(expectedFirst, actualFirst)
     }
 
     @Ignore
     @Test
-    fun `test follow for trivial grammar`() {
+    fun `test follow for right recursion grammar`() {
         // In fact, the upper approximation of Follow.
         val actualFollow = GrammarAnalysis<GrammarSymbol>().computeFollow(grammar, expectedNullable, expectedFirst)
         assertEquals(expectedFollow, actualFollow)

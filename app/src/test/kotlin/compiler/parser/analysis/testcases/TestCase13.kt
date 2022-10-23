@@ -8,54 +8,64 @@ import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class TestCase02 {
+class TestCase13 {
 
-    // LINEAR GRAMMAR WITH ALL NULLABLE
+    // TEST DFA WITH CYCLES GRAMMAR
+    //
     // Grammar:
-    //   Sigma = { start, A, B }
+    //   Sigma = { start, a, B, c, D }
     //   Productions = {
-    //      start --> A (dfaA)
-    //      A --> B (dfaB)
-    //      B --> eps (trivial dfa)
+    //      start --> a (a B c)* B (dfaSt)
+    //      B --> D (dfaB)
+    //      D --> eps (trivial dfa)
     //   }
     //
 
     private val start = "start"
-    private val symA = "A"
+    private val syma = "a"
     private val symB = "B"
+    private val symc = "c"
+    private val symD = "D"
 
     private val expectedNullable = setOf(
-        start,
-        symA,
         symB,
+        symD,
     )
 
     private val expectedFirst = mapOf(
-        start to setOf(start, symA, symB),
-        symA to setOf(symA, symB),
-        symB to setOf(symB),
+        start to setOf(start, syma),
+        syma to setOf(syma),
+        symB to setOf(symB, symD),
+        symc to setOf(symc),
+        symD to setOf(symD),
     )
 
-    private val expectedFollow: Map<GrammarSymbol, Set<GrammarSymbol>> = mapOf(
+    private val expectedFollow = mapOf(
         start to setOf(),
-        symA to setOf(),
-        symB to setOf(),
+        syma to setOf(syma, symB, symc, symD),
+        symB to setOf(symc),
+        symc to setOf(syma, symB, symD),
+        symD to setOf(symc),
     )
 
-    private val dfaA = DfaFactory.createDfa(
+    private val dfaSt = DfaFactory.createDfa(
         "startState",
-        listOf("startState", "accState"),
+        listOf("startState", "state1", "state2", "state3", "accState"),
         mapOf(
-            Pair("startState", symA) to "accState",
+            Pair("startState", syma) to "state1",
+            Pair("state1", syma) to "state2",
+            Pair("state2", symB) to "state3",
+            Pair("state3", symc) to "state1",
+            Pair("state1", symB) to "accState",
         ),
-        "A",
+        "St",
     )
 
     private val dfaB = DfaFactory.createDfa(
         "startState",
         listOf("startState", "accState"),
         mapOf(
-            Pair("startState", symB) to "accState",
+            Pair("startState", symD) to "accState",
         ),
         "B",
     )
@@ -63,29 +73,29 @@ class TestCase02 {
     private val grammar: AutomatonGrammar<String> = AutomatonGrammar(
         start,
         mapOf(
-            start to dfaA,
-            symA to dfaB,
-            symB to DfaFactory.getTrivialDfa(""),
-        )
+            start to dfaSt,
+            symB to dfaB,
+            symD to DfaFactory.getTrivialDfa(""),
+        ),
     )
 
     @Ignore
     @Test
-    fun `test nullable for linear grammar with all nullable`() {
+    fun `test nullable for dfa with cycles grammar`() {
         val actualNullable = GrammarAnalysis<GrammarSymbol>().computeNullable(grammar)
         assertEquals(expectedNullable, actualNullable)
     }
 
     @Ignore
     @Test
-    fun `test first for linear grammar with all nullable`() {
+    fun `test first for dfa with cycles grammar`() {
         val actualFirst = GrammarAnalysis<GrammarSymbol>().computeFirst(grammar, expectedNullable)
         assertEquals(expectedFirst, actualFirst)
     }
 
     @Ignore
     @Test
-    fun `test follow for linear grammar with all nullable`() {
+    fun `test follow for dfa with cycles grammar`() {
         // In fact, the upper approximation of Follow.
         val actualFollow = GrammarAnalysis<GrammarSymbol>().computeFollow(grammar, expectedNullable, expectedFirst)
         assertEquals(expectedFollow, actualFollow)

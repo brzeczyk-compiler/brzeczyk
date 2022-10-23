@@ -79,6 +79,7 @@ class TestCase09 {
             Pair("state24", symL) to "state25",
             Pair("state25", symL) to "accState",
         ),
+        "CNG",
     )
 
     private val dfaM = DfaFactory.createDfa(
@@ -87,6 +88,7 @@ class TestCase09 {
         mapOf(
             Pair("accStartState", symo) to "accStartState",
         ),
+        "M",
     )
 
     private val dfaN = DfaFactory.createDfa(
@@ -95,13 +97,14 @@ class TestCase09 {
         mapOf(
             Pair("accStartState", symo) to "accState",
         ),
+        "N",
     )
 
     private val grammar: AutomatonGrammar<String> = AutomatonGrammar(
         start,
         mapOf(
             start to dfaCNG,
-            symL to DfaFactory.getTrivialDfa(),
+            symL to DfaFactory.getTrivialDfa(""),
             symM to dfaM,
             symN to dfaN,
         ),
@@ -109,21 +112,21 @@ class TestCase09 {
 
     @Ignore
     @Test
-    fun `test nullable for trivial grammar`() {
+    fun `test nullable for complicated nullable grammar with added terminal`() {
         val actualNullable = GrammarAnalysis<GrammarSymbol>().computeNullable(grammar)
         assertEquals(expectedNullable, actualNullable)
     }
 
     @Ignore
     @Test
-    fun `test first for trivial grammar`() {
+    fun `test first for complicated nullable grammar with added terminal`() {
         val actualFirst = GrammarAnalysis<GrammarSymbol>().computeFirst(grammar, expectedNullable)
         assertEquals(expectedFirst, actualFirst)
     }
 
     @Ignore
     @Test
-    fun `test follow for trivial grammar`() {
+    fun `test follow for complicated nullable grammar with added terminal`() {
         // In fact, the upper approximation of Follow.
         val actualFollow = GrammarAnalysis<GrammarSymbol>().computeFollow(grammar, expectedNullable, expectedFirst)
         assertEquals(expectedFollow, actualFollow)

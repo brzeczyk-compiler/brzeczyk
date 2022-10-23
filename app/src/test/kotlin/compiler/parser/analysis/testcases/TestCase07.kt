@@ -1,6 +1,5 @@
 package compiler.parser.analysis.testcases
 
-import compiler.parser.analysis.EPSILON
 import compiler.parser.analysis.GrammarAnalysis
 import compiler.parser.analysis.GrammarAnalysisTest.DfaFactory
 import compiler.parser.analysis.GrammarSymbol
@@ -47,16 +46,18 @@ class TestCase07 {
 
     private val dfaH = DfaFactory.createDfa(
         "accStartState",
-        listOf("accStartState", "state1", "state2", "accState"),
+        listOf("accStartState", "state1", "accState1", "accState2"),
         mapOf(
-            Pair("accStartState", EPSILON) to "state1",
-            Pair("accStartState", EPSILON) to "state2",
+            Pair("accStartState", symh) to "state1",
+            Pair("accStartState", symi) to "state1",
+            Pair("accStartState", symj) to "accState1",
             Pair("state1", symh) to "state1",
             Pair("state1", symi) to "state1",
-            Pair("state1", symj) to "accState",
-            Pair("state2", symk) to "state2",
-            Pair("state2", EPSILON) to "accState",
+            Pair("state1", symj) to "accState1",
+            Pair("accStartState", symk) to "accState2",
+            Pair("accState2", symk) to "accState2",
         ),
+        "H",
     )
 
     private val grammar: AutomatonGrammar<String> = AutomatonGrammar(
@@ -68,21 +69,21 @@ class TestCase07 {
 
     @Ignore
     @Test
-    fun `test nullable for trivial grammar`() {
+    fun `test nullable for regex grammar`() {
         val actualNullable = GrammarAnalysis<GrammarSymbol>().computeNullable(grammar)
         assertEquals(expectedNullable, actualNullable)
     }
 
     @Ignore
     @Test
-    fun `test first for trivial grammar`() {
+    fun `test first for regex grammar`() {
         val actualFirst = GrammarAnalysis<GrammarSymbol>().computeFirst(grammar, expectedNullable)
         assertEquals(expectedFirst, actualFirst)
     }
 
     @Ignore
     @Test
-    fun `test follow for trivial grammar`() {
+    fun `test follow for regex grammar`() {
         // In fact, the upper approximation of Follow.
         val actualFollow = GrammarAnalysis<GrammarSymbol>().computeFollow(grammar, expectedNullable, expectedFirst)
         assertEquals(expectedFollow, actualFollow)

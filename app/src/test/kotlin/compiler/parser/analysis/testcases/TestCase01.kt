@@ -35,7 +35,7 @@ class TestCase01 {
     private val grammar: AutomatonGrammar<GrammarSymbol> = AutomatonGrammar(
         start,
         mapOf(
-            start to DfaFactory.getTrivialDfa()
+            start to DfaFactory.getTrivialDfa("")
         ),
     )
 

@@ -17,7 +17,6 @@ interface Dfa<A, R> : AbstractDfa<A, R> {
                 var canAccept = false
                 currentState?.let {
                     dfs(it) { visitedState ->
-                        println("$visitedState ${visitedState.result != null}")
                         canAccept = canAccept || (visitedState.result != null)
                     }
                 }

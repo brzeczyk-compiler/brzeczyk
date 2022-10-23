@@ -45,14 +45,15 @@ class TestCase03 {
         mapOf(
             Pair("startState", symc) to "state1",
             Pair("state1", symD) to "accState",
-        )
+        ),
+        "CD",
     )
 
     private val grammar: AutomatonGrammar<String> = AutomatonGrammar(
         start,
         mapOf(
             start to dfaCD,
-            symD to DfaFactory.getTrivialDfa(),
+            symD to DfaFactory.getTrivialDfa(""),
         ),
     )
 

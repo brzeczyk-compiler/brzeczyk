@@ -57,6 +57,7 @@ class TestCase07 {
             Pair("accStartState", symk) to "accState2",
             Pair("accState2", symk) to "accState2",
         ),
+        "H",
     )
 
     private val grammar: AutomatonGrammar<String> = AutomatonGrammar(

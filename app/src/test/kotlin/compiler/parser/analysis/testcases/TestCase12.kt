@@ -63,6 +63,7 @@ class TestCase12 {
             Pair("startState", symx) to "state2",
             Pair("state2", symx) to "accState",
         ),
+        "Fol",
     )
 
     private val dfaV = DfaFactory.createDfa(
@@ -73,7 +74,8 @@ class TestCase12 {
             Pair("state1", symz) to "accState1",
             Pair("accStartState", symz) to "accState2",
             Pair("accState2", symz) to "accState2",
-        )
+        ),
+        "V",
     )
 
     private val grammar: AutomatonGrammar<String> = AutomatonGrammar(

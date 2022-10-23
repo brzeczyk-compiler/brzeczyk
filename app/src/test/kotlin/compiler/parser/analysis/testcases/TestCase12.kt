@@ -100,7 +100,6 @@ class TestCase12 {
         assertEquals(expectedFirst, actualFirst)
     }
 
-    @Ignore
     @Test
     fun `test follow for test follow grammar`() {
         // In fact, the upper approximation of Follow.

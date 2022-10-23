@@ -83,7 +83,6 @@ class TestCase02 {
         assertEquals(expectedFirst, actualFirst)
     }
 
-    @Ignore
     @Test
     fun `test follow for linear grammar with all nullable`() {
         // In fact, the upper approximation of Follow.

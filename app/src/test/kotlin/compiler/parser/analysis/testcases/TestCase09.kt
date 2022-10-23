@@ -124,7 +124,6 @@ class TestCase09 {
         assertEquals(expectedFirst, actualFirst)
     }
 
-    @Ignore
     @Test
     fun `test follow for complicated nullable grammar with added terminal`() {
         // In fact, the upper approximation of Follow.

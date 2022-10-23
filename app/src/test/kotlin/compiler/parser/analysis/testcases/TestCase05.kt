@@ -66,7 +66,6 @@ class TestCase05 {
         assertEquals(expectedFirst, actualFirst)
     }
 
-    @Ignore
     @Test
     fun `test follow for right recursion grammar`() {
         // In fact, the upper approximation of Follow.

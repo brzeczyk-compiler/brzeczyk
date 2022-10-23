@@ -81,7 +81,6 @@ class TestCase07 {
         assertEquals(expectedFirst, actualFirst)
     }
 
-    @Ignore
     @Test
     fun `test follow for regex grammar`() {
         // In fact, the upper approximation of Follow.

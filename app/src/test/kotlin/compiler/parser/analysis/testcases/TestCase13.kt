@@ -93,7 +93,6 @@ class TestCase13 {
         assertEquals(expectedFirst, actualFirst)
     }
 
-    @Ignore
     @Test
     fun `test follow for dfa with cycles grammar`() {
         // In fact, the upper approximation of Follow.

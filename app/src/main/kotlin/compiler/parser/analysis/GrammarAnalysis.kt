@@ -10,25 +10,44 @@ class GrammarAnalysis<S : Comparable<S>> {
     }
 
     fun computeFirst(grammar: AutomatonGrammar<S>, nullable: Set<S>): Map<S, Set<S>> {
-        val symbols = grammar.productions.keys
-        val first = emptyMap<S, MutableSet<S>>().toMutableMap()
+        val symbols = grammar.productions.keys.toMutableSet()
 
-        // bfs through nullable edges
-        for (symbol in symbols) {
-            first[symbol] = mutableSetOf(symbol)
-            val dfa = grammar.productions[symbol]!!
-            val visited = emptySet<DfaState<S, Production<S>>>()
+        // bfs to find all grammar symbols
+        for (prod in grammar.productions) {
+            val dfa = prod.value
+            val visited = emptySet<DfaState<S, Production<S>>>().toMutableSet()
             val queue = mutableListOf(dfa.startState)
 
             while (queue.isNotEmpty()) {
                 val state = queue.removeAt(0)
                 if (visited.contains(state))
                     continue
+                visited.add(state)
+                symbols.addAll(state.possibleSteps.keys)
+                queue.addAll(state.possibleSteps.values)
+            }
+        }
+
+        val first = emptyMap<S, MutableSet<S>>().toMutableMap()
+
+        // bfs through nullable edges
+        for (symbol in symbols) {
+            first[symbol] = mutableSetOf(symbol)
+            val dfa = grammar.productions[symbol]
+            if (dfa === null)
+                continue
+            val visited = emptySet<DfaState<S, Production<S>>>().toMutableSet()
+            val queue = mutableListOf(dfa.startState)
+
+            while (queue.isNotEmpty()) {
+                val state = queue.removeAt(0)
+                if (visited.contains(state))
+                    continue
+                visited.add(state)
                 for ((edgeSymbol, nextState) in state.possibleSteps) {
-                    if (!nullable.contains(edgeSymbol))
-                        continue
                     first[symbol]!!.add(edgeSymbol)
-                    queue.add(nextState)
+                    if (nullable.contains(edgeSymbol))
+                        queue.add(nextState)
                 }
             }
         }

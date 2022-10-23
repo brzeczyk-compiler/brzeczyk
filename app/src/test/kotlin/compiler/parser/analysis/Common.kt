@@ -49,17 +49,20 @@ class GrammarAnalysisTest {
 
     object DfaFactory {
 
-        fun getTrivialDfa(): TestDfa = TestDfa(TestDfaState("accStartDfa", mapOf()), mapOf())
+        fun getTrivialDfa(dfaUniqueName: String): TestDfa = TestDfa(TestDfaState("accStartDfa".plus(dfaUniqueName), mapOf()), mapOf())
 
         fun createDfa(
             startState: DfaStateName,
             dfaStates: List<DfaStateName>,
-            transitionFunction: Map<Pair<DfaStateName, GrammarSymbol>, DfaStateName>
+            transitionFunction: Map<Pair<DfaStateName, GrammarSymbol>, DfaStateName>,
+            dfaUniqueName: String,
         ): TestDfa {
-            val dfaStatesObjects = dfaStates.associateWith { TestDfaState(it, transitionFunction) }
+            val transitionFunctionProperNames = transitionFunction
+                .entries.associate { Pair(it.key.first.plus(dfaUniqueName), it.key.second) to it.value.plus(dfaUniqueName) }
+            val dfaStatesObjects = dfaStates.associateWith { TestDfaState(it.plus(dfaUniqueName), transitionFunctionProperNames) }
             return TestDfa(
                 dfaStatesObjects[startState]!!,
-                transitionFunction.entries.associate { Pair(dfaStatesObjects[it.key.first]!!, it.key.second) to dfaStatesObjects[it.value]!! }
+                transitionFunctionProperNames.entries.associate { Pair(dfaStatesObjects[it.key.first]!!, it.key.second) to dfaStatesObjects[it.value]!! }
             )
         }
     }

@@ -41,7 +41,8 @@ class TestCase04 {
         mapOf(
             Pair("accStartState", start) to "state1",
             Pair("state1", syme) to "accState",
-        )
+        ),
+        "E",
     )
 
     private val grammar: AutomatonGrammar<String> = AutomatonGrammar(

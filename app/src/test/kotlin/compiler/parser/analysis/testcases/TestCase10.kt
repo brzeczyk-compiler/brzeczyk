@@ -58,6 +58,7 @@ class TestCase10 {
             Pair("state21", symQ) to "state22",
             Pair("state22", symQ) to "accState",
         ),
+        "CNNG",
     )
 
     private val dfaQ = DfaFactory.createDfa(
@@ -65,7 +66,8 @@ class TestCase10 {
         listOf("startState", "accState"),
         mapOf(
             Pair("startState", syms) to "accState",
-        )
+        ),
+        "Q",
     )
 
     private val dfaR = DfaFactory.createDfa(
@@ -75,7 +77,8 @@ class TestCase10 {
             Pair("startState", symQ) to "state1",
             Pair("state1", symQ) to "accState",
             Pair("startState", syms) to "accState",
-        )
+        ),
+        "R",
     )
 
     private val grammar: AutomatonGrammar<String> = AutomatonGrammar(

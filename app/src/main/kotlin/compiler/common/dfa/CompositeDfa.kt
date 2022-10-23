@@ -3,10 +3,10 @@ package compiler.common.dfa
 import compiler.common.dfa.state_dfa.Dfa
 import compiler.common.dfa.state_dfa.DfaState
 
-class CompositeDfa<S : Comparable<S>, R, IR> (private val components: List<Pair<Dfa<S, IR>, R>>) : Dfa<S, R> {
+class CompositeDfa<S : Comparable<S>, R> (private val components: List<Pair<Dfa<S, *>, R>>) : Dfa<S, R> {
     class MultipleAcceptingComponentsException : Exception()
 
-    inner class State(private val componentStates: List<DfaState<S, IR>?>) : DfaState<S, R> {
+    inner class State(private val componentStates: List<DfaState<S, *>?>) : DfaState<S, R> {
         override val result: R?
             get() {
                 val notNullResults = componentStates.withIndex().filter { it.value?.result != null }
@@ -23,7 +23,7 @@ class CompositeDfa<S : Comparable<S>, R, IR> (private val components: List<Pair<
                 return possibleNextSymbols.associateWith { symbol -> State(componentStates.map { it?.possibleSteps?.get(symbol) }) }
             }
 
-        override fun equals(other: Any?): Boolean = other is CompositeDfa<*, *, *>.State && componentStates == other.componentStates
+        override fun equals(other: Any?): Boolean = other is CompositeDfa<*, *>.State && componentStates == other.componentStates
 
         override fun hashCode(): Int = componentStates.hashCode()
     }

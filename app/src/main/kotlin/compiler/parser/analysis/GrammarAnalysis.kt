@@ -14,16 +14,16 @@ class GrammarAnalysis<S : Comparable<S>> {
         grammar.productions.forEach { (_, dfa) -> stateQueue.addAll(dfa.getAcceptingStates()) }
         fun analyzePredecessors(state: DfaState<S, Production<S>>, dfa: Dfa<S, Production<S>>) {
             val predecessorsMap = dfa.getPredecessors(state)
-            for ((edge, predecessors) in predecessorsMap) {
-                if (edge in nullable) {
+            for ((symbolOnEdge, predecessors) in predecessorsMap) {
+                if (symbolOnEdge in nullable) {
                     stateQueue.addAll(predecessors)
                 } else {
-                    conditionalSets.getOrPut(edge) { HashSet() }.addAll(predecessors)
+                    conditionalSets.getOrPut(symbolOnEdge) { HashSet() }.addAll(predecessors)
                 }
             }
         }
 
-        while (stateQueue.size > 0) {
+        while (stateQueue.isNotEmpty()) {
             val state = stateQueue.removeFirst()
             grammar.productions.forEach { (_, dfa) -> analyzePredecessors(state, dfa) }
             // check if this is a startState for some production
@@ -31,7 +31,7 @@ class GrammarAnalysis<S : Comparable<S>> {
                 if (state == rightSideDfa.startState) {
                     nullable.add(leftSideSymbol)
                     conditionalSets[leftSideSymbol]?.let { stateQueue.addAll(it) }
-                    conditionalSets[leftSideSymbol]?.let { it.clear() }
+                    conditionalSets[leftSideSymbol]?.clear()
                 }
             }
         }

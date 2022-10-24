@@ -1,10 +1,4 @@
 package compiler.parser.grammar
 import compiler.common.regex.Regex
 
-class Production<S : Comparable<S>> {
-    val lhs: S
-        get() = TODO()
-
-    val rhs: Regex<S>
-        get() = TODO()
-}
+data class Production<S : Comparable<S>> (val lhs: S, val rhs: Regex<S>)

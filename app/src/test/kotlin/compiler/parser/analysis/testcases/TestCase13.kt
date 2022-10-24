@@ -79,14 +79,12 @@ class TestCase13 {
         ),
     )
 
-    @Ignore
     @Test
     fun `test nullable for dfa with cycles grammar`() {
         val actualNullable = GrammarAnalysis<GrammarSymbol>().computeNullable(grammar)
         assertEquals(expectedNullable, actualNullable)
     }
 
-    @Ignore
     @Test
     fun `test first for dfa with cycles grammar`() {
         val actualFirst = GrammarAnalysis<GrammarSymbol>().computeFirst(grammar, expectedNullable)

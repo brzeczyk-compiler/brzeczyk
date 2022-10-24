@@ -69,14 +69,12 @@ class TestCase02 {
         )
     )
 
-    @Ignore
     @Test
     fun `test nullable for linear grammar with all nullable`() {
         val actualNullable = GrammarAnalysis<GrammarSymbol>().computeNullable(grammar)
         assertEquals(expectedNullable, actualNullable)
     }
 
-    @Ignore
     @Test
     fun `test first for linear grammar with all nullable`() {
         val actualFirst = GrammarAnalysis<GrammarSymbol>().computeFirst(grammar, expectedNullable)

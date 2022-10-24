@@ -52,14 +52,12 @@ class TestCase05 {
         ),
     )
 
-    @Ignore
     @Test
     fun `test nullable for right recursion grammar`() {
         val actualNullable = GrammarAnalysis<GrammarSymbol>().computeNullable(grammar)
         assertEquals(expectedNullable, actualNullable)
     }
 
-    @Ignore
     @Test
     fun `test first for right recursion grammar`() {
         val actualFirst = GrammarAnalysis<GrammarSymbol>().computeFirst(grammar, expectedNullable)

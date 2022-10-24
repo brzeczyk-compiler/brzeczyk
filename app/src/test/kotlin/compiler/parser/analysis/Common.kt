@@ -3,11 +3,14 @@ package compiler.parser.analysis
 import compiler.common.dfa.DfaWalk
 import compiler.common.dfa.state_dfa.Dfa
 import compiler.common.dfa.state_dfa.DfaState
+import compiler.common.regex.RegexFactory
 import compiler.parser.grammar.Production
 
 typealias R = Production<GrammarSymbol>
 typealias GrammarSymbol = String
 typealias DfaStateName = String
+
+private val dummyNotNullResult = R("", RegexFactory.createEmpty())
 
 class GrammarAnalysisTest {
 
@@ -38,7 +41,7 @@ class GrammarAnalysisTest {
         private val transitionFunction: Map<Pair<DfaStateName, GrammarSymbol>, DfaStateName>
     ) : DfaState<GrammarSymbol, R> {
 
-        override val result = if (name.startsWith("acc")) R() else null
+        override val result = if (name.startsWith("acc")) dummyNotNullResult else null
         override val possibleSteps: Map<GrammarSymbol, TestDfaState>
             get() = transitionFunction.filter { it.key.first == name }.entries
                 .associate { it.key.second to if (it.value == name) this else TestDfaState(it.value, transitionFunction) }

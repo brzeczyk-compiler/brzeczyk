@@ -1,7 +1,5 @@
-package compiler.lexer.regex
+package compiler.common.regex
 
-import compiler.common.regex.Regex
-import compiler.common.regex.RegexFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -18,28 +16,36 @@ private val EPSILON = RegexFactory.createEpsilon<Char>()
 
 class RegexFactoryTest {
     private fun <T> assertAllEqual(elements: List<T>) {
-        if (elements.size == 0) return
-        elements.forEach { assertEquals(it, elements[0]) }
+        if (elements.isEmpty()) return
+        elements.forEach {
+            assertEquals(it, elements[0])
+            assertEquals(it.hashCode(), elements[0].hashCode())
+        }
+    }
+
+    private fun <A : Comparable<A>> assertEqualsAndHashCodeMatches(regex1: Regex<A>, regex2: Regex<A>) {
+        assertEquals(regex1, regex2)
+        assertEquals(regex1.hashCode(), regex2.hashCode())
     }
 
     @Test fun `test concat preserves order`() {
-        assertEquals(RegexFactory.createConcat(ATOMIC_BC, ATOMIC_AB), Regex.Concat(ATOMIC_BC, ATOMIC_AB))
+        assertEqualsAndHashCodeMatches(RegexFactory.createConcat(ATOMIC_BC, ATOMIC_AB), Regex.Concat(ATOMIC_BC, ATOMIC_AB))
     }
 
     @Test fun `test concat handles empty set`() {
-        assertEquals(RegexFactory.createConcat(CONCAT_AB, EMPTY), EMPTY)
-        assertEquals(RegexFactory.createConcat(EMPTY, CONCAT_AB), EMPTY)
+        assertEqualsAndHashCodeMatches(RegexFactory.createConcat(CONCAT_AB, EMPTY), EMPTY)
+        assertEqualsAndHashCodeMatches(RegexFactory.createConcat(EMPTY, CONCAT_AB), EMPTY)
     }
 
     @Test fun `test concat handles epsilon`() {
-        assertEquals(RegexFactory.createConcat(CONCAT_AB, EPSILON), CONCAT_AB)
-        assertEquals(RegexFactory.createConcat(EPSILON, CONCAT_AB), CONCAT_AB)
+        assertEqualsAndHashCodeMatches(RegexFactory.createConcat(CONCAT_AB, EPSILON), CONCAT_AB)
+        assertEqualsAndHashCodeMatches(RegexFactory.createConcat(EPSILON, CONCAT_AB), CONCAT_AB)
     }
 
     @Test fun `test concat is associative`() {
         val concat1 = RegexFactory.createConcat(CONCAT_AB, CONCAT_AC)
         val concat2 = RegexFactory.createConcat(CONCAT_AC, CONCAT_BC)
-        assertEquals(RegexFactory.createConcat(concat1, CONCAT_BC), RegexFactory.createConcat(CONCAT_AB, concat2))
+        assertEqualsAndHashCodeMatches(RegexFactory.createConcat(concat1, CONCAT_BC), RegexFactory.createConcat(CONCAT_AB, concat2))
     }
 
     @Test fun `test concat is not commutative`() {
@@ -83,27 +89,27 @@ class RegexFactoryTest {
 
     @Test fun `test star operator is collapsable`() {
         val starAtomicAb = RegexFactory.createStar(CONCAT_AB)
-        assertEquals(RegexFactory.createStar(starAtomicAb), starAtomicAb)
-        assertEquals(RegexFactory.createStar(RegexFactory.createStar(starAtomicAb)), starAtomicAb)
+        assertEqualsAndHashCodeMatches(RegexFactory.createStar(starAtomicAb), starAtomicAb)
+        assertEqualsAndHashCodeMatches(RegexFactory.createStar(RegexFactory.createStar(starAtomicAb)), starAtomicAb)
     }
 
     @Test fun `test epsilon star is epsilon`() {
-        assertEquals(RegexFactory.createStar(EPSILON), EPSILON)
+        assertEqualsAndHashCodeMatches(RegexFactory.createStar(EPSILON), EPSILON)
     }
 
     @Test fun `test empty star is epsilon`() {
-        assertEquals(RegexFactory.createStar(EMPTY), EPSILON)
+        assertEqualsAndHashCodeMatches(RegexFactory.createStar(EMPTY), EPSILON)
     }
 
     @Test fun `test union handles empty set`() {
-        assertEquals(RegexFactory.createUnion(CONCAT_AB, EMPTY), CONCAT_AB)
-        assertEquals(RegexFactory.createUnion(EMPTY, CONCAT_AB), CONCAT_AB)
+        assertEqualsAndHashCodeMatches(RegexFactory.createUnion(CONCAT_AB, EMPTY), CONCAT_AB)
+        assertEqualsAndHashCodeMatches(RegexFactory.createUnion(EMPTY, CONCAT_AB), CONCAT_AB)
     }
 
     @Test fun `test union is associative`() {
         val union1 = RegexFactory.createUnion(CONCAT_AB, CONCAT_AC)
         val union2 = RegexFactory.createUnion(CONCAT_AC, CONCAT_BC)
-        assertEquals(RegexFactory.createUnion(union1, CONCAT_BC), RegexFactory.createUnion(CONCAT_AB, union2))
+        assertEqualsAndHashCodeMatches(RegexFactory.createUnion(union1, CONCAT_BC), RegexFactory.createUnion(CONCAT_AB, union2))
     }
 
     @Test fun `test long unions are associative`() {
@@ -141,7 +147,7 @@ class RegexFactoryTest {
     }
 
     @Test fun `test union is commutative`() {
-        assertEquals(
+        assertEqualsAndHashCodeMatches(
             RegexFactory.createUnion(CONCAT_AB, CONCAT_AC),
             RegexFactory.createUnion(CONCAT_AC, CONCAT_AB)
         )
@@ -178,7 +184,7 @@ class RegexFactoryTest {
     }
 
     @Test fun `test union removes repetitions`() {
-        assertEquals(RegexFactory.createUnion(CONCAT_AB, CONCAT_AB), CONCAT_AB)
+        assertEqualsAndHashCodeMatches(RegexFactory.createUnion(CONCAT_AB, CONCAT_AB), CONCAT_AB)
     }
 
     @Test fun `test nested union removes repetitions`() {
@@ -189,11 +195,11 @@ class RegexFactoryTest {
             RegexFactory.createUnion(CONCAT_BC, CONCAT_AB)
         )
         val unionWithoutRepetitions = RegexFactory.createUnion(CONCAT_AB, CONCAT_BC)
-        assertEquals(nestedUnionWithRepetition, unionWithoutRepetitions)
+        assertEqualsAndHashCodeMatches(nestedUnionWithRepetition, unionWithoutRepetitions)
     }
 
     @Test fun `test union merges atomics`() {
-        assertEquals(RegexFactory.createUnion(ATOMIC_AB, ATOMIC_BC), ATOMIC_ABC)
+        assertEqualsAndHashCodeMatches(RegexFactory.createUnion(ATOMIC_AB, ATOMIC_BC), ATOMIC_ABC)
     }
 
     @Test fun `test complex union merges atomics`() {

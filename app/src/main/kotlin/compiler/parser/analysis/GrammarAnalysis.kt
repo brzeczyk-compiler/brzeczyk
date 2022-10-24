@@ -16,10 +16,11 @@ class GrammarAnalysis<S : Comparable<S>> {
         for (prod in grammar.productions) {
             val dfa = prod.value
             val visited = emptySet<DfaState<S, Production<S>>>().toMutableSet()
-            val queue = mutableListOf(dfa.startState)
+            val queue = ArrayDeque<DfaState<S, Production<S>>>()
+            queue.add(dfa.startState)
 
             while (queue.isNotEmpty()) {
-                val state = queue.removeAt(0)
+                val state = queue.removeFirst()
                 if (visited.contains(state))
                     continue
                 visited.add(state)
@@ -28,19 +29,18 @@ class GrammarAnalysis<S : Comparable<S>> {
             }
         }
 
-        val first = emptyMap<S, MutableSet<S>>().toMutableMap()
+        val first: MutableMap<S, MutableSet<S>> = HashMap()
 
         // bfs through nullable edges
         for (symbol in symbols) {
             first[symbol] = mutableSetOf(symbol)
-            val dfa = grammar.productions[symbol]
-            if (dfa === null)
-                continue
+            val dfa = grammar.productions[symbol] ?: continue
             val visited = emptySet<DfaState<S, Production<S>>>().toMutableSet()
-            val queue = mutableListOf(dfa.startState)
+            val queue = ArrayDeque<DfaState<S, Production<S>>>()
+            queue.add(dfa.startState)
 
             while (queue.isNotEmpty()) {
-                val state = queue.removeAt(0)
+                val state = queue.removeFirst()
                 if (visited.contains(state))
                     continue
                 visited.add(state)

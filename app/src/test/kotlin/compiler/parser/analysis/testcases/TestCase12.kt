@@ -4,7 +4,6 @@ import compiler.parser.analysis.GrammarAnalysis
 import compiler.parser.analysis.GrammarAnalysisTest.DfaFactory
 import compiler.parser.analysis.GrammarSymbol
 import compiler.parser.grammar.AutomatonGrammar
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -98,7 +97,6 @@ class TestCase12 {
         assertEquals(expectedFirst, actualFirst)
     }
 
-    @Ignore
     @Test
     fun `test follow for test follow grammar`() {
         // In fact, the upper approximation of Follow.

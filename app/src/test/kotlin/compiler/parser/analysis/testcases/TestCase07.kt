@@ -67,7 +67,6 @@ class TestCase07 {
         ),
     )
 
-    @Ignore
     @Test
     fun `test nullable for regex grammar`() {
         val actualNullable = GrammarAnalysis<GrammarSymbol>().computeNullable(grammar)

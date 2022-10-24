@@ -8,6 +8,7 @@ import compiler.parser.grammar.Production
 class GrammarAnalysis<S : Comparable<S>> {
     fun computeNullable(grammar: AutomatonGrammar<S>): Set<S> {
         val nullable: MutableSet<S> = HashSet()
+        val visited: MutableSet<DfaState<S, Production<S>>> = HashSet()
         val stateQueue: ArrayDeque<DfaState<S, Production<S>>> = ArrayDeque()
         val conditionalSets: MutableMap<S, MutableSet<DfaState<S, Production<S>>>> = HashMap()
 
@@ -30,7 +31,7 @@ class GrammarAnalysis<S : Comparable<S>> {
             for ((leftSideSymbol, rightSideDfa) in grammar.productions) {
                 if (state == rightSideDfa.startState) {
                     nullable.add(leftSideSymbol)
-                    conditionalSets[leftSideSymbol]?.let { stateQueue.addAll(it) }
+                    conditionalSets[leftSideSymbol]?.let { stateQueue.addAll(it.filter { visited.add(it) }) }
                     conditionalSets[leftSideSymbol]?.clear()
                 }
             }

@@ -3,8 +3,6 @@ package compiler.parser.analysis
 import compiler.common.dfa.state_dfa.DfaState
 import compiler.parser.grammar.AutomatonGrammar
 import compiler.parser.grammar.Production
-import java.util.LinkedList
-import java.util.Queue
 import kotlin.collections.HashMap
 import kotlin.collections.HashSet
 
@@ -37,14 +35,14 @@ class GrammarAnalysis<S : Comparable<S>> {
                     val statesFirst = statesFirstMap.getOrPut(lhs) { HashMap() }
                     val acceptingStates = dfa.getAcceptingStates()
                     val visited: MutableSet<DfaState<S, Production<S>>> = acceptingStates.toHashSet()
-                    val queue: Queue<DfaState<S, Production<S>>> = LinkedList()
+                    val queue: ArrayDeque<DfaState<S, Production<S>>> = ArrayDeque()
                     queue.addAll(acceptingStates)
 
                     while (!queue.isEmpty()) {
-                        val current = queue.remove()
+                        val current = queue.removeFirst()
                         for ((symbol, predecessors) in dfa.getPredecessors(current))
                             for (prev in predecessors) {
-                                update(statesFirst.getOrPut(prev) { HashSet() }, first.getOrDefault(symbol, HashSet()))
+                                update(statesFirst.getOrPut(prev) { HashSet() }, first[symbol]!!)
                                 if (symbol in nullable) update(statesFirst[prev]!!, statesFirst.getOrDefault(current, HashSet()))
                                 update(result.getOrPut(symbol) { HashSet() }, statesFirst.getOrDefault(current, HashSet()))
                                 if (prev !in visited) {
@@ -64,19 +62,17 @@ class GrammarAnalysis<S : Comparable<S>> {
             for ((lhs, dfa) in grammar.productions) {
                 val acceptingStates = dfa.getAcceptingStates()
                 val visited: MutableSet<DfaState<S, Production<S>>> = acceptingStates.toHashSet()
-                val queue: Queue<DfaState<S, Production<S>>> = LinkedList()
+                val queue: ArrayDeque<DfaState<S, Production<S>>> = ArrayDeque()
                 queue.addAll(acceptingStates)
 
                 while (!queue.isEmpty()) {
-                    val current = queue.remove()
+                    val current = queue.removeFirst()
                     for ((symbol, predecessors) in dfa.getPredecessors(current)) {
-                        if (predecessors.isNotEmpty()) symbolsToPossibleEndSymbolsMap.getOrPut(lhs) { HashSet() }.add(symbol)
+                        symbolsToPossibleEndSymbolsMap.getOrPut(lhs) { HashSet() }.add(symbol)
                         if (symbol in nullable) {
-                            for (prev in predecessors) {
-                                if (prev !in visited) {
-                                    visited.add(prev)
-                                    queue.add(prev)
-                                }
+                            predecessors.filter { it !in visited }.forEach {
+                                visited.add(it)
+                                queue.add(it)
                             }
                         }
                     }

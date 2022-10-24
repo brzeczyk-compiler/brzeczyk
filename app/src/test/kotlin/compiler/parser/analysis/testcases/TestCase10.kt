@@ -91,7 +91,6 @@ class TestCase10 {
         ),
     )
 
-    @Ignore
     @Test
     fun `test nullable for complicated non nullable grammar`() {
         val actualNullable = GrammarAnalysis<GrammarSymbol>().computeNullable(grammar)

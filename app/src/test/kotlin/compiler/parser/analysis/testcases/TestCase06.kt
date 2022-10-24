@@ -51,7 +51,6 @@ class TestCase06 {
         ),
     )
 
-    @Ignore
     @Test
     fun `test nullable for star recursion grammar`() {
         val actualNullable = GrammarAnalysis<GrammarSymbol>().computeNullable(grammar)

@@ -15,7 +15,7 @@ class Tokens(private val dfaFactory: DfaFactory = RegexDfaFactory()) {
         }
     }
 
-    fun getTokens(): List<Pair<TokenType, AbstractDfa<Char, Unit>>> {
+    fun getTokens(): List<Pair<AbstractDfa<Char, Unit>, TokenType>> {
         val list = listOf(
             // Parenthesis and braces
             Pair(TokenType.LEFT_PAREN, "\\("),
@@ -113,7 +113,7 @@ class Tokens(private val dfaFactory: DfaFactory = RegexDfaFactory()) {
         )
 
         return list.map {
-            Pair(it.first, dfaFactory.fromRegexString(it.second))
+            Pair(dfaFactory.fromRegexString(it.second), it.first)
         }
     }
 }

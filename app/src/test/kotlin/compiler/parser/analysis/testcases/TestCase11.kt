@@ -102,7 +102,6 @@ class TestCase11 {
         assertEquals(expectedNullable, actualNullable)
     }
 
-    @Ignore
     @Test
     fun `test first for complicated non nullable grammar with plugged terminal`() {
         val actualFirst = GrammarAnalysis<GrammarSymbol>().computeFirst(grammar, expectedNullable)

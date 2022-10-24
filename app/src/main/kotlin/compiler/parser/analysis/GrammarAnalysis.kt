@@ -19,18 +19,18 @@ class GrammarAnalysis<S : Comparable<S>> {
 
         val result: MutableMap<S, MutableSet<S>> = HashMap()
 
-        var wasResultUpdated = true
-        fun update(setToUpdate: MutableSet<S>, secondSet: Set<S>) {
+        var didAnySetChange = true
+        fun updateAndCheckIfChanged(setToUpdate: MutableSet<S>, secondSet: Set<S>) {
             val sizeBefore = setToUpdate.size
             setToUpdate.addAll(secondSet)
-            if (sizeBefore < setToUpdate.size) wasResultUpdated = true
+            if (sizeBefore < setToUpdate.size) didAnySetChange = true
         }
 
         fun initializeResult() {
             for (lhs in grammar.productions.keys) result[lhs] = HashSet()
             val statesFirstMap: MutableMap<S, MutableMap<DfaState<S, Production<S>>, MutableSet<S>>> = HashMap()
-            while (wasResultUpdated) {
-                wasResultUpdated = false
+            while (didAnySetChange) {
+                didAnySetChange = false
                 for ((lhs, dfa) in grammar.productions) {
                     val statesFirst = statesFirstMap.getOrPut(lhs) { HashMap() }
                     val acceptingStates = dfa.getAcceptingStates()
@@ -42,9 +42,9 @@ class GrammarAnalysis<S : Comparable<S>> {
                         val current = queue.removeFirst()
                         for ((symbol, predecessors) in dfa.getPredecessors(current))
                             for (prev in predecessors) {
-                                update(statesFirst.getOrPut(prev) { HashSet() }, first[symbol]!!)
-                                if (symbol in nullable) update(statesFirst[prev]!!, statesFirst.getOrDefault(current, HashSet()))
-                                update(result.getOrPut(symbol) { HashSet() }, statesFirst.getOrDefault(current, HashSet()))
+                                updateAndCheckIfChanged(statesFirst.getOrPut(prev) { HashSet() }, first[symbol]!!)
+                                if (symbol in nullable) updateAndCheckIfChanged(statesFirst[prev]!!, statesFirst.getOrDefault(current, HashSet()))
+                                updateAndCheckIfChanged(result.getOrPut(symbol) { HashSet() }, statesFirst.getOrDefault(current, HashSet()))
                                 if (prev !in visited) {
                                     visited.add(prev)
                                     queue.add(prev)
@@ -81,13 +81,13 @@ class GrammarAnalysis<S : Comparable<S>> {
         }
 
         fun calculateResult() {
-            wasResultUpdated = true
-            while (wasResultUpdated) {
-                wasResultUpdated = false
+            didAnySetChange = true
+            while (didAnySetChange) {
+                didAnySetChange = false
 
                 for (lhs in grammar.productions.keys) {
                     for (symbol in symbolsToPossibleEndSymbolsMap.getOrPut(lhs) { HashSet() }) {
-                        update(result.getOrPut(symbol) { HashSet() }, result.getOrPut(lhs) { HashSet() })
+                        updateAndCheckIfChanged(result.getOrPut(symbol) { HashSet() }, result.getOrPut(lhs) { HashSet() })
                     }
                 }
             }

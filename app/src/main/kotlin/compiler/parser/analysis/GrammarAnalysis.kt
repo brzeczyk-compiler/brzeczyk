@@ -8,6 +8,8 @@ import kotlin.collections.HashMap
 import kotlin.collections.HashSet
 
 class GrammarAnalysis<S : Comparable<S>> {
+    class Result<S>(val nullable: Set<S>, val first: Map<S, Set<S>>, val follow: Map<S, Set<S>>)
+
     fun computeNullable(grammar: AutomatonGrammar<S>): Set<S> {
         val nullable: MutableSet<S> = HashSet()
         val visited: MutableSet<DfaState<S, Production<S>>> = HashSet()

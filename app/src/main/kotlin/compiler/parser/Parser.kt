@@ -2,15 +2,14 @@ package compiler.parser
 
 import compiler.common.dfa.state_dfa.DfaState
 import compiler.common.diagnostics.Diagnostics
+import compiler.parser.analysis.GrammarAnalysis
 import compiler.parser.grammar.AutomatonGrammar
 import compiler.parser.grammar.Grammar
 import compiler.parser.grammar.Production
 
 class Parser<S : Comparable<S>>(
     val automatonGrammar: AutomatonGrammar<S>,
-    val nullable: Set<S>,
-    val first: Map<S, Set<S>>,
-    val follow: Map<S, Set<S>>,
+    val analysisResults: GrammarAnalysis.Result<S>,
     val diagnostics: Diagnostics
 ) {
     val parseActions: Map<Pair<DfaState<S, Production<S>>, S>, Action<S>>

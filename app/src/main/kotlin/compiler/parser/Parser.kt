@@ -1,5 +1,6 @@
 package compiler.parser
 
+import compiler.common.dfa.state_dfa.Dfa
 import compiler.common.dfa.state_dfa.DfaState
 import compiler.common.diagnostics.Diagnostics
 import compiler.parser.analysis.GrammarAnalysis
@@ -9,21 +10,19 @@ import compiler.parser.grammar.Production
 
 class Parser<S : Comparable<S>>(
     val automatonGrammar: AutomatonGrammar<S>,
-    val analysisResults: GrammarAnalysis.Result<S>,
     val diagnostics: Diagnostics
 ) {
-    val parseActions: Map<Pair<DfaState<S, Production<S>>, S>, Action<S>>
+    val analysisResults: GrammarAnalysis.Result<S>
+    val parseActions: Map<Triple<Dfa<S, Production<S>>, DfaState<S, Production<S>>, S>, ParserAction<S>>
 
     init {
         // TODO: Compute the parsing table
+        analysisResults = GrammarAnalysis.Result(emptySet(), emptyMap(), emptyMap())
         parseActions = emptyMap()
     }
 
-    companion object {
-        fun <S : Comparable<S>> create(grammar: Grammar<S>): Parser<S> {
-            TODO("Create parser from grammar")
-        }
-    }
+    constructor(grammar: Grammar<S>, diagnostics: Diagnostics) :
+        this(AutomatonGrammar.createFromGrammar(grammar), diagnostics)
 
     fun process(input: Sequence<ParseTree<S>>): ParseTree<S> {
         TODO("Implement the parser")

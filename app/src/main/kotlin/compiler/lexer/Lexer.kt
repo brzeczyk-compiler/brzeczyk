@@ -9,7 +9,11 @@ import compiler.lexer.input.Input
 // Used to turn a sequence of characters into a sequence of tokens.
 // The DFAs given are used to recognize the corresponding token categories.
 // The priority of a DFA is given by its position in the list, with earlier positions having higher priority.
-class Lexer<TCat>(val dfas: List<Pair<AbstractDfa<Char, Unit>, TCat>>, val diagnostics: Diagnostics, val contextErrorLength: Int) {
+class Lexer<TCat>(
+    val dfas: List<Pair<AbstractDfa<Char, Unit>, TCat>>,
+    val diagnostics: Diagnostics,
+    val contextErrorLength: Int = 3
+) {
 
     // Splits the given input into a sequence of tokens.
     // The input is read lazily as consecutive tokens are requested.
@@ -22,13 +26,17 @@ class Lexer<TCat>(val dfas: List<Pair<AbstractDfa<Char, Unit>, TCat>>, val diagn
         val errorSegment = StringBuilder()
         val context = ArrayDeque<String>(contextErrorLength)
 
-        fun addTokenToContext(context: ArrayDeque<String>, tokenContent: String){
-            context.addLast(tokenContent)
+        fun addToContext(content: String) {
+            context.addLast(content)
             if (context.size > contextErrorLength) context.removeFirst()
         }
 
         while (input.hasNext()) {
             input.flush() // Tell the input source that previous characters can be discarded.
+
+            if (isErrorSegment) {
+                errorSegment.append(input.next())
+            }
 
             val buffer = StringBuilder() // The content of a token currently attempted to be matched.
             val tokenStart = input.getLocation() // The start location of a token currently attempted to be matched.
@@ -48,10 +56,14 @@ class Lexer<TCat>(val dfas: List<Pair<AbstractDfa<Char, Unit>, TCat>>, val diagn
 
                 for ((index, walk) in walks.withIndex()) {
                     if (walk.isAccepting()) { // Match a token with category corresponding to the first accepting DFA.
+
                         if (isErrorSegment) {
                             isErrorSegment = false
-                            diagnostics.report(Diagnostic.LexerError(errorSegmentStart!!, tokenStart, context, errorSegment.toString()))
+                            diagnostics.report(Diagnostic.LexerError(errorSegmentStart!!, tokenStart, context.toList(), errorSegment.toString()))
+                            addToContext(errorSegment.toString())
+                            errorSegment.clear()
                         }
+
                         tokenEnd = location
                         tokenCategory = dfas[index].second
                         excess = 0
@@ -63,18 +75,18 @@ class Lexer<TCat>(val dfas: List<Pair<AbstractDfa<Char, Unit>, TCat>>, val diagn
             input.rewind(excess)
 
             if (tokenEnd == null || tokenCategory == null) {
-                errorSegment.append(buffer.first())
+
                 if (!isErrorSegment) {
                     isErrorSegment = true
                     errorSegmentStart = tokenStart
-                    context.clear()
                 }
+
                 if (!input.hasNext()) {
                     diagnostics.report(Diagnostic.LexerError(errorSegmentStart!!, null, context, errorSegment.toString()))
                 }
             } else {
                 val tokenContent = buffer.dropLast(excess).toString()
-                addTokenToContext(context, tokenContent)
+                addToContext(tokenContent)
                 yield(Token(tokenCategory, tokenContent, tokenStart, tokenEnd))
             }
         }

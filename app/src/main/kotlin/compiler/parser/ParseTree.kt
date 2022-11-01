@@ -11,4 +11,10 @@ abstract class ParseTree<S : Comparable<S>>(val start: Location, val end: Locati
         val children: List<ParseTree<S>>,
         val production: Production<S>
     ) : ParseTree<S>(start, end, symbol)
+
+    class Leaf<S : Comparable<S>>(
+        start: Location,
+        end: Location,
+        symbol: S,
+    ) : ParseTree<S>(start, end, symbol)
 }

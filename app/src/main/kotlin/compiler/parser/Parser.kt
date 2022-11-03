@@ -16,10 +16,65 @@ class Parser<S : Comparable<S>>(
     private val analysisResults: GrammarAnalysis.Result<S>
     private val parseActions: Map<Triple<Dfa<S, Production<S>>, DfaState<S, Production<S>>, S?>, ParserAction<S>>
 
+    class AmbiguousParseActions : Throwable()
+
     init {
-        // TODO: Compute the parsing table
-        analysisResults = GrammarAnalysis.Result(emptySet(), emptyMap(), emptyMap())
-        parseActions = emptyMap()
+        val grammarAnalysis = GrammarAnalysis<S>()
+        val nullable = grammarAnalysis.computeNullable(automatonGrammar)
+        val first = grammarAnalysis.computeFirst(automatonGrammar, nullable)
+        val follow = grammarAnalysis.computeFollow(automatonGrammar, nullable, first)
+        val firstPlus = grammarAnalysis.computeFirstPlus(nullable, first, follow)
+
+        analysisResults = GrammarAnalysis.Result(nullable, first, follow)
+        parseActions = mutableMapOf()
+
+        for (dfa in automatonGrammar.productions.values) {
+            val acceptingStates = dfa.getAcceptingStates()
+
+            for (state in dfa.getStates()) {
+
+                for (symbol in automatonGrammar.getSymbols().union(setOf(null))) { // null represents the end of the input
+                    fun alreadySet(): Boolean = parseActions.containsKey(Triple(dfa, state, symbol))
+
+                    // Try to match with a reduce action. The condition is:
+                    // (our state is accepting) AND (there exists a symbol A such that our symbol is in FOLLOW(A))
+                    if (acceptingStates.contains(state)) {
+                        for (otherSymbol in automatonGrammar.getSymbols()) {
+                            if (follow[otherSymbol]!!.contains(symbol)) {
+                                if (alreadySet())
+                                    throw AmbiguousParseActions()
+
+                                parseActions[Triple(dfa, state, symbol)] =
+                                    ParserAction.Reduce(state.result!!)
+                            }
+                        }
+                    }
+
+                    // Try to match with a shift action. The condition is:
+                    // (there exists an edge from our state labelled with our symbol)
+                    if (state.possibleSteps.containsKey(symbol)) {
+                        if (alreadySet())
+                            throw AmbiguousParseActions()
+
+                        parseActions[Triple(dfa, state, symbol)] = ParserAction.Shift()
+                    }
+
+                    // Try to match with a call action. The condition is:
+                    // (there exists an edge from our state labelled with such A that our symbol is in FIRST+(A))
+                    for ((otherSymbol, _) in state.possibleSteps) {
+                        if (
+                            firstPlus[otherSymbol]!!.contains(symbol) &&
+                            (symbol != null || nullable.contains(otherSymbol)) // null symbol requires special treatment
+                        ) {
+                            if (alreadySet())
+                                throw AmbiguousParseActions()
+
+                            parseActions[Triple(dfa, state, symbol)] = ParserAction.Call(otherSymbol)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     constructor(grammar: Grammar<S>, diagnostics: Diagnostics) :

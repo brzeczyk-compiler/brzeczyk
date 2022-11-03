@@ -44,25 +44,7 @@ class GrammarAnalysis<S : Comparable<S>> {
     }
 
     fun computeFirst(grammar: AutomatonGrammar<S>, nullable: Set<S>): Map<S, Set<S>> {
-        val symbols = grammar.productions.keys.toMutableSet()
-
-        // bfs to find all grammar symbols
-        for (prod in grammar.productions) {
-            val dfa = prod.value
-            val visited = emptySet<DfaState<S, Production<S>>>().toMutableSet()
-            val queue = ArrayDeque<DfaState<S, Production<S>>>()
-            queue.add(dfa.startState)
-
-            while (queue.isNotEmpty()) {
-                val state = queue.removeFirst()
-                if (visited.contains(state))
-                    continue
-                visited.add(state)
-                symbols.addAll(state.possibleSteps.keys)
-                queue.addAll(state.possibleSteps.values)
-            }
-        }
-
+        val symbols = grammar.getSymbols()
         val first: MutableMap<S, MutableSet<S>> = HashMap()
 
         // bfs through nullable edges

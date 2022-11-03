@@ -14,7 +14,8 @@ class Parser<S : Comparable<S>>(
 ) {
     val analysisResults: GrammarAnalysis.Result<S>
     val parseActions: Map<Triple<Dfa<S, Production<S>>, DfaState<S, Production<S>>, S>, ParserAction<S>>
-
+    class ParsingFailed : Throwable()
+    class AmbiguousParseActions : Throwable()
     init {
         // TODO: Compute the parsing table
         analysisResults = GrammarAnalysis.Result(emptySet(), emptyMap(), emptyMap())

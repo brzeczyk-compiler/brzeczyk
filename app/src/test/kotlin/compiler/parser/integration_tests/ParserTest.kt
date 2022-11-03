@@ -25,8 +25,9 @@ abstract class ParserTest {
         return TestDiagnostics()
     }
 
-    fun leaf(symbol: Char, row: Int): ParseTree<Char> {
-        return object : ParseTree<Char>(Location(row, 0), Location(row, 0), symbol) {}
+    data class Leaf(override val symbol: Char, val row: Int) : ParseTree<Char> {
+        override val start get() = Location(row, 0)
+        override val end get() = Location(row, 0)
     }
 
     fun branch(production: Production<Char>, vararg children: ParseTree<Char>): ParseTree<Char> {
@@ -40,6 +41,6 @@ abstract class ParserTest {
     }
 
     fun leafSequence(s: String): Sequence<ParseTree<Char>> {
-        return s.asSequence().mapIndexed { idx, symbol -> leaf(symbol, idx) }
+        return s.asSequence().mapIndexed { idx, symbol -> Leaf(symbol, idx) }
     }
 }

@@ -6,7 +6,6 @@ import compiler.parser.ParseTree
 import compiler.parser.Parser
 import compiler.parser.grammar.Grammar
 import compiler.parser.grammar.Production
-import org.junit.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -15,8 +14,8 @@ class ExpressionParsingTest : ParserTest() {
     private val addExpr = 'B'
     private val numExpr = 'C'
 
-    private val addToMul = Production(addExpr, RegexParser.parseStringToRegex("$addExpr(\\+$mulExpr)*"))
-    private val mulToNum = Production(mulExpr, RegexParser.parseStringToRegex("$mulExpr(\\*$numExpr)*"))
+    private val addToMul = Production(addExpr, RegexParser.parseStringToRegex("$mulExpr(\\+$mulExpr)*"))
+    private val mulToNum = Production(mulExpr, RegexParser.parseStringToRegex("$numExpr(\\*$numExpr)*"))
     private val numParentheses = Production(numExpr, RegexParser.parseStringToRegex("\\(${addExpr}\\)"))
     private val numToZero = Production(numExpr, RegexFactory.createAtomic(setOf('0')))
     private val numToOne = Production(numExpr, RegexFactory.createAtomic(setOf('1')))
@@ -34,15 +33,15 @@ class ExpressionParsingTest : ParserTest() {
         )
     }
 
-    @Ignore @Test
+    @Test
     fun `test parse tree for 0`() {
         val grammar = getExpressionGrammar()
         val parser = Parser(grammar, getMockedDiagnostics())
         val parseTree = parser.process(leafSequence("0"))
-        assertEquals(branch(addToMul, branch(mulToNum, branch(numToZero, leaf('0', 0)))), parseTree)
+        assertEquals(branch(addToMul, branch(mulToNum, branch(numToZero, Leaf('0', 0)))), parseTree)
     }
 
-    @Ignore @Test
+    @Test
     fun `test parse tree for 0+1`() {
         val grammar = getExpressionGrammar()
         val parser = Parser(grammar, getMockedDiagnostics())
@@ -53,15 +52,15 @@ class ExpressionParsingTest : ParserTest() {
                 mulToNum,
                 branch(
                     numToZero,
-                    leaf('0', 0)
+                    Leaf('0', 0)
                 )
             ),
-            leaf('+', 1),
+            Leaf('+', 1),
             branch(
                 mulToNum,
                 branch(
                     numToOne,
-                    leaf('1', 2)
+                    Leaf('1', 2)
                 )
             )
         )
@@ -69,7 +68,7 @@ class ExpressionParsingTest : ParserTest() {
         assertEquals(expectedParseTree, parseTree)
     }
 
-    @Ignore @Test
+    @Test
     fun `test parse tree for (0+1+0) mul 1+0`() {
         val grammar = getExpressionGrammar()
         val parser = Parser(grammar, getMockedDiagnostics())
@@ -77,16 +76,16 @@ class ExpressionParsingTest : ParserTest() {
 
         val sumInParentheses = branch(
             numParentheses,
-            leaf('(', 0),
+            Leaf('(', 0),
             branch(
                 addToMul,
-                branch(mulToNum, branch(numToZero, leaf('0', 1))),
-                leaf('+', 2),
-                branch(mulToNum, branch(numToOne, leaf('1', 3))),
-                leaf('+', 4),
-                branch(mulToNum, branch(numToZero, leaf('0', 5))),
+                branch(mulToNum, branch(numToZero, Leaf('0', 1))),
+                Leaf('+', 2),
+                branch(mulToNum, branch(numToOne, Leaf('1', 3))),
+                Leaf('+', 4),
+                branch(mulToNum, branch(numToZero, Leaf('0', 5))),
             ),
-            leaf(')', 6)
+            Leaf(')', 6)
         )
 
         val expectedParseTree = branch(
@@ -94,20 +93,20 @@ class ExpressionParsingTest : ParserTest() {
             branch(
                 mulToNum,
                 sumInParentheses,
-                leaf('*', 7),
-                branch(numToOne, leaf('1', 8))
+                Leaf('*', 7),
+                branch(numToOne, Leaf('1', 8))
             ),
-            leaf('+', 9),
+            Leaf('+', 9),
             branch(
                 mulToNum,
-                branch(numToZero, leaf('0', 10))
+                branch(numToZero, Leaf('0', 10))
             )
         )
 
         assertEquals(expectedParseTree, parseTree)
     }
 
-    @Ignore @Test
+    @Test
     fun `test parse tree for (((1)))`() {
         val grammar = getExpressionGrammar()
         val parser = Parser(grammar, getMockedDiagnostics())
@@ -120,9 +119,9 @@ class ExpressionParsingTest : ParserTest() {
                     mulToNum,
                     branch(
                         numParentheses,
-                        leaf('(', expr.start.row - 1),
+                        Leaf('(', expr.start.row - 1),
                         expr,
-                        leaf(')', expr.end.row + 1)
+                        Leaf(')', expr.end.row + 1)
                     )
                 )
             )
@@ -131,7 +130,7 @@ class ExpressionParsingTest : ParserTest() {
         val expectedParseTree = encloseWithParentheses(
             encloseWithParentheses(
                 encloseWithParentheses(
-                    branch(addToMul, branch(mulToNum, branch(numToOne, leaf('1', 3))))
+                    branch(addToMul, branch(mulToNum, branch(numToOne, Leaf('1', 3))))
                 )
             )
         )
@@ -139,23 +138,31 @@ class ExpressionParsingTest : ParserTest() {
         assertEquals(expectedParseTree, parseTree)
     }
 
-    @Ignore @Test
+    @Test
     fun `test parsing fails for ()`() {
         val grammar = getExpressionGrammar()
         val diagnostics = getMockedDiagnostics()
         val parser = Parser(grammar, diagnostics)
-        parser.process(leafSequence("()"))
-        assertEquals(1, diagnostics.loggedErrors)
-        assertEquals(0, diagnostics.loggedWarnings)
+
+        try {
+            parser.process(leafSequence("()"))
+        } catch (_: Parser.ParsingFailed) { }
+
+        assert(diagnostics.loggedErrors >= 1)
+        assert(diagnostics.loggedWarnings == 0)
     }
 
-    @Ignore @Test
+    @Test
     fun `test parsing fails for empty sequence`() {
         val grammar = getExpressionGrammar()
         val diagnostics = getMockedDiagnostics()
         val parser = Parser(grammar, diagnostics)
-        parser.process(leafSequence(""))
-        assertEquals(1, diagnostics.loggedErrors)
-        assertEquals(0, diagnostics.loggedWarnings)
+
+        try {
+            parser.process(leafSequence(""))
+        } catch (_: Parser.ParsingFailed) { }
+
+        assert(diagnostics.loggedErrors >= 1)
+        assert(diagnostics.loggedWarnings == 0)
     }
 }

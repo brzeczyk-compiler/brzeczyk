@@ -5,32 +5,31 @@ import compiler.parser.Parser
 import compiler.parser.grammar.Grammar
 import compiler.parser.grammar.Production
 import org.junit.Test
-import kotlin.test.Ignore
-import kotlin.test.assertFails
+import kotlin.test.assertFailsWith
 
 class NonLL1Grammar : ParserTest() {
-    private val aToaB = Production('A', RegexParser.parseStringToRegex("aB"))
-    private val aToaC = Production('A', RegexParser.parseStringToRegex("aC"))
-    private val bTob = Production('B', RegexParser.parseStringToRegex("b"))
-    private val cToc = Production('C', RegexParser.parseStringToRegex("c"))
-    private val aTox = Production('A', RegexParser.parseStringToRegex("x"))
+    private val aToB = Production('A', RegexParser.parseStringToRegex("B"))
+    private val aToC = Production('A', RegexParser.parseStringToRegex("C"))
+    private val bToab = Production('B', RegexParser.parseStringToRegex("ab"))
+    private val cToac = Production('C', RegexParser.parseStringToRegex("ac"))
 
     override fun getExpressionGrammar(): Grammar<Char> {
         return Grammar(
             'A',
             listOf(
-                aToaB,
-                aToaC,
-                bTob,
-                cToc,
-                aTox
+                aToB,
+                aToC,
+                bToab,
+                cToac,
             ),
         )
     }
 
-    @Ignore @Test
+    @Test
     fun `test creating parser fails early for non LL1 grammar`() {
         val grammar = getExpressionGrammar()
-        assertFails { Parser(grammar, getMockedDiagnostics()) }
+        assertFailsWith(Parser.AmbiguousParseActions::class) {
+            Parser(grammar, getMockedDiagnostics())
+        }
     }
 }

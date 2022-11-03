@@ -7,20 +7,19 @@ import compiler.parser.Parser
 import compiler.parser.grammar.Grammar
 import compiler.parser.grammar.Production
 import org.junit.Ignore
-import kotlin.test.assertEquals
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
-class ExpressionParsingTest: ParserTest() {
+class ExpressionParsingTest : ParserTest() {
     private val mulExpr = 'A'
     private val addExpr = 'B'
     private val numExpr = 'C'
 
-    private val addToMul = Production(addExpr, RegexParser.parseStringToRegex("${addExpr}(\\+${mulExpr})*"))
-    private val mulToNum = Production(mulExpr, RegexParser.parseStringToRegex("${mulExpr}(\\*${numExpr})*"))
+    private val addToMul = Production(addExpr, RegexParser.parseStringToRegex("$addExpr(\\+$mulExpr)*"))
+    private val mulToNum = Production(mulExpr, RegexParser.parseStringToRegex("$mulExpr(\\*$numExpr)*"))
     private val numParentheses = Production(numExpr, RegexParser.parseStringToRegex("\\(${addExpr}\\)"))
     private val numToZero = Production(numExpr, RegexFactory.createAtomic(setOf('0')))
     private val numToOne = Production(numExpr, RegexFactory.createAtomic(setOf('1')))
-
 
     override fun getExpressionGrammar(): Grammar<Char> {
         return Grammar(
@@ -40,7 +39,7 @@ class ExpressionParsingTest: ParserTest() {
         val grammar = getExpressionGrammar()
         val parser = Parser(grammar, getMockedDiagnostics())
         val parseTree = parser.process(leafSequence("0"))
-        assertEquals(branch(addToMul, branch(mulToNum, branch(numToZero, leaf('0',0)))), parseTree)
+        assertEquals(branch(addToMul, branch(mulToNum, branch(numToZero, leaf('0', 0)))), parseTree)
     }
 
     @Ignore @Test
@@ -54,15 +53,15 @@ class ExpressionParsingTest: ParserTest() {
                 mulToNum,
                 branch(
                     numToZero,
-                    leaf('0',0)
+                    leaf('0', 0)
                 )
             ),
-            leaf('+',1),
+            leaf('+', 1),
             branch(
                 mulToNum,
                 branch(
                     numToOne,
-                    leaf('1',2)
+                    leaf('1', 2)
                 )
             )
         )
@@ -78,16 +77,16 @@ class ExpressionParsingTest: ParserTest() {
 
         val sumInParentheses = branch(
             numParentheses,
-            leaf('(',0),
+            leaf('(', 0),
             branch(
                 addToMul,
-                branch(mulToNum, branch(numToZero, leaf('0',1))),
-                leaf('+',2),
-                branch(mulToNum, branch(numToOne, leaf('1',3))),
-                leaf('+',4),
-                branch(mulToNum, branch(numToZero, leaf('0',5))),
+                branch(mulToNum, branch(numToZero, leaf('0', 1))),
+                leaf('+', 2),
+                branch(mulToNum, branch(numToOne, leaf('1', 3))),
+                leaf('+', 4),
+                branch(mulToNum, branch(numToZero, leaf('0', 5))),
             ),
-            leaf(')',6)
+            leaf(')', 6)
         )
 
         val expectedParseTree = branch(
@@ -95,13 +94,13 @@ class ExpressionParsingTest: ParserTest() {
             branch(
                 mulToNum,
                 sumInParentheses,
-                leaf('*',7),
-                branch(numToOne, leaf('1',8))
+                leaf('*', 7),
+                branch(numToOne, leaf('1', 8))
             ),
-            leaf('+',9),
+            leaf('+', 9),
             branch(
                 mulToNum,
-                branch(numToZero, leaf('0',10))
+                branch(numToZero, leaf('0', 10))
             )
         )
 
@@ -121,17 +120,21 @@ class ExpressionParsingTest: ParserTest() {
                     mulToNum,
                     branch(
                         numParentheses,
-                        leaf('(',expr.start.row-1),
+                        leaf('(', expr.start.row - 1),
                         expr,
-                        leaf(')', expr.end.row+1)
+                        leaf(')', expr.end.row + 1)
                     )
                 )
             )
         }
 
-        val expectedParseTree = encloseWithParentheses(encloseWithParentheses(encloseWithParentheses(
-                branch(addToMul, branch(mulToNum, branch(numToOne, leaf('1',3))))
-        )))
+        val expectedParseTree = encloseWithParentheses(
+            encloseWithParentheses(
+                encloseWithParentheses(
+                    branch(addToMul, branch(mulToNum, branch(numToOne, leaf('1', 3))))
+                )
+            )
+        )
 
         assertEquals(expectedParseTree, parseTree)
     }

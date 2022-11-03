@@ -8,7 +8,7 @@ import org.junit.Test
 import kotlin.test.Ignore
 import kotlin.test.assertFails
 
-class NonLL1Grammar: ParserTest() {
+class NonLL1Grammar : ParserTest() {
     private val aToaB = Production('A', RegexParser.parseStringToRegex("aB"))
     private val aToaC = Production('A', RegexParser.parseStringToRegex("aC"))
     private val bTob = Production('B', RegexParser.parseStringToRegex("b"))

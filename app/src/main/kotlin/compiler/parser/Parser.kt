@@ -135,4 +135,6 @@ class Parser<S : Comparable<S>>(
         // and so the final callResult must be a node corresponding to a production from the start symbol.
         return callResult!!
     }
+
+    fun process(input: Sequence<ParseTree<S>>): ParseTree<S> = process(input.iterator())
 }

@@ -44,13 +44,13 @@ interface Dfa<A, R> : AbstractDfa<A, R> {
 
     fun getStates(): Set<DfaState<A, R>> {
         val states: MutableSet<DfaState<A, R>> = HashSet()
-        dfs { visitedState -> states.addAll(visitedState.possibleSteps.values) }
+        dfs { states.add(it) }
         return states
     }
 
     fun getEdgeSymbols(): Set<A> {
         val symbols: MutableSet<A> = HashSet()
-        dfs(visit = {_ -> {}}, inspectEdge = {edge -> symbols.add(edge)})
+        dfs(visit = { }, inspectEdge = { edge -> symbols.add(edge)})
         return symbols
     }
 

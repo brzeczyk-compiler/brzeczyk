@@ -30,47 +30,47 @@ class Parser<S : Comparable<S>>(
         parseActions = mutableMapOf()
 
         for (dfa in automatonGrammar.productions.values) {
-            val acceptingStates = dfa.getAcceptingStates()
-
             for (state in dfa.getStates()) {
-
-                for (lookAheadSymbol in grammarSymbols.union(setOf(null))) { // null represents the end of the input
-                    fun alreadySet(): Boolean = parseActions.containsKey(Triple(dfa, state, lookAheadSymbol))
+                for (lookaheadSymbol in grammarSymbols.union(setOf(null))) { // null represents the end of the input
+                    fun alreadySet(): Boolean = parseActions.containsKey(Triple(dfa, state, lookaheadSymbol))
 
                     // Try to match with a reduce action. The condition is:
                     // (the state is accepting) AND (there exists a symbol A such that the look-ahead symbol is in FOLLOW(A))
-                    if (acceptingStates.contains(state)) {
-                        for (symbol in grammarSymbols) {
-                            if (follow[symbol]!!.contains(lookAheadSymbol)) {
-                                if (alreadySet())
-                                    throw AmbiguousParseActions()
 
-                                parseActions[Triple(dfa, state, lookAheadSymbol)] =
-                                    ParserAction.Reduce(state.result!!)
-                            }
+                    val result = state.result
+                    if (result != null) {
+                        val symbol = result.lhs
+                        if (lookaheadSymbol == null || follow[symbol]!!.contains(lookaheadSymbol)) {
+                            if (alreadySet())
+                                throw AmbiguousParseActions()
+
+                            parseActions[Triple(dfa, state, lookaheadSymbol)] =
+                                ParserAction.Reduce(state.result!!)
                         }
                     }
 
                     // Try to match with a shift action. The condition is:
                     // (there exists an edge from the state labelled with the look-ahead symbol)
-                    if (state.possibleSteps.containsKey(lookAheadSymbol)) {
+                    if (state.possibleSteps.containsKey(lookaheadSymbol)) {
                         if (alreadySet())
                             throw AmbiguousParseActions()
 
-                        parseActions[Triple(dfa, state, lookAheadSymbol)] = ParserAction.Shift()
+                        parseActions[Triple(dfa, state, lookaheadSymbol)] = ParserAction.Shift()
                     }
 
                     // Try to match with a call action. The condition is:
                     // (there exists an edge from the state labelled with such A that the look-ahead symbol is in FIRST+(A))
-                    for ((otherSymbol, _) in state.possibleSteps) {
+                    for ((symbol, _) in state.possibleSteps) {
+                        if (symbol == lookaheadSymbol)
+                            continue
                         if (
-                            (lookAheadSymbol != null && firstPlus[otherSymbol]!!.contains(lookAheadSymbol)) ||
-                            (lookAheadSymbol == null || nullable.contains(otherSymbol)) // null look-ahead symbol requires special treatment
+                            (lookaheadSymbol != null && firstPlus[symbol]!!.contains(lookaheadSymbol)) ||
+                            (lookaheadSymbol == null && nullable.contains(symbol)) // null look-ahead symbol requires special treatment
                         ) {
                             if (alreadySet())
                                 throw AmbiguousParseActions()
 
-                            parseActions[Triple(dfa, state, lookAheadSymbol)] = ParserAction.Call(otherSymbol)
+                            parseActions[Triple(dfa, state, lookaheadSymbol)] = ParserAction.Call(symbol)
                         }
                     }
                 }

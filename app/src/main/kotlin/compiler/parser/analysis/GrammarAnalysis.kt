@@ -166,4 +166,13 @@ class GrammarAnalysis<S : Comparable<S>> {
 
         return result
     }
+
+    fun computeFirstPlus(nullable: Set<S>, first: Map<S, Set<S>>, follow: Map<S, Set<S>>): Map<S, Set<S>> {
+        val firstPlus: MutableMap<S, MutableSet<S>> = HashMap()
+        for ((symbol, firstOfSymbol) in first)
+            firstPlus[symbol]!!.addAll(firstOfSymbol)
+        for (symbol in nullable)
+            firstPlus[symbol]!!.addAll(follow[symbol]!!)
+        return firstPlus
+    }
 }

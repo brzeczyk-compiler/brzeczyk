@@ -4,6 +4,7 @@ import compiler.common.dfa.state_dfa.Dfa
 import compiler.common.dfa.state_dfa.DfaState
 import compiler.common.diagnostics.Diagnostic
 import compiler.common.diagnostics.Diagnostics
+import compiler.lexer.Location
 import compiler.parser.analysis.GrammarAnalysis
 import compiler.parser.grammar.AutomatonGrammar
 import compiler.parser.grammar.Grammar
@@ -42,11 +43,22 @@ class Parser<S : Comparable<S>>(
             val parsedSubtrees: MutableList<ParseTree<S>> = mutableListOf()
         )
 
-        fun <T> Iterator<T>.nextOrNull() = if (hasNext()) next() else null
-
-        var lookahead = input.nextOrNull()
         val callStack = mutableListOf(Call(automatonGrammar.start))
         var callResult: ParseTree<S>? = null
+        var lookahead: ParseTree<S>? = null
+        var lookaheadStart = Location(1, 1)
+        var lookaheadEnd = Location(1, 1)
+
+        fun shift() {
+            if (input.hasNext()) {
+                lookahead = input.next()
+                lookaheadStart = lookahead!!.start
+                lookaheadEnd = lookahead!!.end
+            } else
+                lookahead = null
+        }
+
+        shift()
 
         while (callStack.isNotEmpty()) {
             callStack.last().apply {
@@ -66,7 +78,7 @@ class Parser<S : Comparable<S>>(
                         // (2) the parsing table only tells to do Shift when a DFA step can be made with the lookahead symbol.
                         state = state.possibleSteps[lookahead!!.symbol]!!
                         parsedSubtrees.add(lookahead!!)
-                        lookahead = input.nextOrNull()
+                        shift()
                     }
 
                     is ParserAction.Call -> {
@@ -76,19 +88,26 @@ class Parser<S : Comparable<S>>(
                     }
 
                     is ParserAction.Reduce -> {
-                        // A parse tree node corresponding to an empty production does not have a location.
-                        // A parse tree node corresponding to a non-empty production has a location
-                        // which spans the locations of the node's children.
-                        val start = parsedSubtrees.firstNotNullOfOrNull { it.start }
-                        val end = parsedSubtrees.reversed().firstNotNullOfOrNull { it.end }
+                        val start: Location
+                        val end: Location
+
+                        if (parsedSubtrees.isNotEmpty()) {
+                            start = parsedSubtrees.first().start
+                            end = parsedSubtrees.last().end
+                        } else {
+                            // An empty non-terminal symbol has (somewhat arbitrarily) the location of the next input symbol.
+                            start = lookaheadStart
+                            end = lookaheadEnd
+                        }
+
                         callResult = ParseTree.Branch(start, end, symbol, parsedSubtrees, action.production)
                         callStack.removeLast()
                     }
 
                     null -> {
                         // Report a parsing error when the parsing table does not tell what to do.
-                        val expectedSymbols = parseActions.keys.filter { it.first == dfa && it.second == state }.mapNotNull { it.third }
-                        diagnostics.report(Diagnostic.ParserError(lookahead?.symbol, lookahead?.start, lookahead?.end, expectedSymbols))
+                        val expectedSymbols = parseActions.keys.filter { it.first == dfa && it.second == state }.mapNotNull { it.third.toString() }
+                        diagnostics.report(Diagnostic.ParserError(lookahead?.symbol?.toString(), lookaheadStart, lookaheadEnd, expectedSymbols))
 
                         // Attempt to resume parsing by skipping input symbols until finding
                         // one compatible with some state in the call stack.
@@ -105,7 +124,7 @@ class Parser<S : Comparable<S>>(
                             if (lookahead == null)
                                 throw ParsingFailed()
 
-                            lookahead = input.nextOrNull()
+                            shift()
                         }
                     }
                 }

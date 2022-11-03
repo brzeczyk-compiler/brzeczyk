@@ -1,5 +1,7 @@
 package compiler.common.diagnostics
 
+import compiler.lexer.Location
+
 sealed class Diagnostic {
     abstract fun isError(): Boolean
 
@@ -10,16 +12,16 @@ sealed class Diagnostic {
     }
 
     class ParserError(
-        val symbol: Any?,
-        val start: Any?,
-        val end: Any?,
-        val expectedSymbols: List<Any>
+        val symbol: String?,
+        val start: Location,
+        val end: Location,
+        val expectedSymbols: List<String>
     ) : Diagnostic() {
         override fun isError() = true
 
         override fun toString() = StringBuilder().apply {
             if (symbol != null)
-                append("Unexpected symbol $symbol at location ${start ?: "?"} - ${end ?: "?"}.")
+                append("Unexpected symbol $symbol at location $start - $end.")
             else
                 append("Unexpected end of file.")
             if (expectedSymbols.isNotEmpty())

@@ -63,8 +63,8 @@ class Parser<S : Comparable<S>>(
                     // (there exists an edge from our state labelled with such A that our symbol is in FIRST+(A))
                     for ((otherSymbol, _) in state.possibleSteps) {
                         if (
-                            firstPlus[otherSymbol]!!.contains(symbol) &&
-                            (symbol != null || nullable.contains(otherSymbol)) // null symbol requires special treatment
+                            (symbol != null && firstPlus[otherSymbol]!!.contains(symbol)) ||
+                            (symbol == null || nullable.contains(otherSymbol)) // null symbol requires special treatment
                         ) {
                             if (alreadySet())
                                 throw AmbiguousParseActions()

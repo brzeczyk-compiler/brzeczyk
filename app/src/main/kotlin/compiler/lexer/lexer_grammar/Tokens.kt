@@ -82,6 +82,8 @@ class Tokens(private val dfaFactory: DfaFactory = RegexDfaFactory()) {
             Pair(TokenType.NOT, "nie"),
             Pair(TokenType.OR, "lub"),
             Pair(TokenType.AND, "oraz"),
+            Pair(TokenType.IFF, "wtw"),
+            Pair(TokenType.XOR, "albo"),
 
             // Boolean constants
             Pair(TokenType.TRUE_CONSTANT, "prawda"),

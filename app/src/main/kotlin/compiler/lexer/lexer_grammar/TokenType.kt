@@ -24,7 +24,7 @@ enum class TokenType {
     // Assignment operator
     ASSIGNMENT,
     // Logical operators
-    NOT, OR, AND,
+    NOT, OR, AND, IFF, XOR,
     // Boolean constants
     TRUE_CONSTANT, FALSE_CONSTANT,
     // Integers

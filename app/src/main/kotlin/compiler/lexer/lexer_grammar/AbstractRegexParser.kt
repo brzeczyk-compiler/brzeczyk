@@ -2,19 +2,14 @@ package compiler.lexer.lexer_grammar
 
 import java.util.Stack
 
-abstract class UniversalRegexParser<T> {
+abstract class AbstractRegexParser<T> {
     companion object {
         val OPERATOR_PRIORITY = mapOf(
             '(' to 0,
             '|' to 1,
-            '?' to 2,
-            '*' to 3
-        )
-        val SPECIAL_SYMBOLS = mapOf(
-            "\\l" to "aąbcćdeęfghijklłmnńoópqrsśtuvwxyzźż".toSet(),
-            "\\u" to "AĄBCĆDEĘFGHIJKLŁMNŃOÓPQRSŚTUVWXYZŹŻ".toSet(),
-            "\\d" to "0123456789".toSet(),
-            "\\c" to "{}(),.<>:;?/+=-_!%^&*|~".toSet()
+            '¿' to 2,
+            '*' to 3,
+            '?' to 3
         )
     }
 
@@ -23,6 +18,10 @@ abstract class UniversalRegexParser<T> {
     protected abstract fun performUnion(left: T, right: T): T
     protected abstract fun getEmpty(): T
     protected abstract fun getAtomic(charSet: Set<Char>): T
+    protected abstract fun getSpecialAtomic(string: String): T
+    private fun performOptional(child: T): T {
+        return performUnion(child, performStar(getEmpty()))
+    }
 
     private class SymbolSeq(private val text: String) : Iterable<String> {
         override fun iterator(): Iterator<String> {
@@ -39,8 +38,16 @@ abstract class UniversalRegexParser<T> {
                         }
 
                         '\\' -> {
-                            position += 2
-                            text.substring(position - 2, position)
+                            position += 1
+                            if (text[position] == '{') {
+                                val begin = position
+                                position = text.indexOf('}', begin) + 1
+                                if (position == 0) throw IllegalArgumentException("The bracket at position $begin has no corresponding closing bracket")
+                                text.substring(begin - 1, position)
+                            } else {
+                                position += 1
+                                text.substring(position - 2, position)
+                            }
                         }
 
                         else -> text[position++].toString()
@@ -64,9 +71,9 @@ abstract class UniversalRegexParser<T> {
                 result
             }
 
-            '\\' -> when (symbol) {
-                in SPECIAL_SYMBOLS.keys -> getAtomic(SPECIAL_SYMBOLS[symbol]!!)
-                else -> getAtomic(setOf(symbol[1]))
+            '\\' -> when (symbol[1]) {
+                '{' -> getSpecialAtomic(symbol.substring(2, symbol.length - 1))
+                else -> getSpecialAtomic(symbol[1].toString())
             }
 
             else -> getAtomic(setOf(symbol[0]))
@@ -87,8 +94,8 @@ abstract class UniversalRegexParser<T> {
         var didTokenEndInPrevStep = false
         for (next in SymbolSeq(string)) {
             val c = next[0]
-            val isNewTokenStarting = !(c in listOf('|', '*', ')'))
-            if (didTokenEndInPrevStep && isNewTokenStarting) putOperatorOnStack('?') // concat
+            val isNewTokenStarting = !(c in listOf('|', '*', ')', '?'))
+            if (didTokenEndInPrevStep && isNewTokenStarting) putOperatorOnStack('¿') // concat
             didTokenEndInPrevStep = false
             when (c) {
                 '(' -> stack.push(c)
@@ -101,7 +108,7 @@ abstract class UniversalRegexParser<T> {
 
                 in OPERATOR_PRIORITY.keys -> {
                     putOperatorOnStack(c)
-                    if (c == '*') didTokenEndInPrevStep = true
+                    if (c in setOf('*', '?')) didTokenEndInPrevStep = true
                 }
 
                 else -> {
@@ -120,12 +127,14 @@ abstract class UniversalRegexParser<T> {
         for (next in SymbolSeq(rpn)) {
             when (next[0]) {
                 '*' -> stack.push(performStar(stack.pop()))
+                '?' -> stack.push(performOptional(stack.pop()))
                 '|' -> {
                     val right = stack.pop()
                     val left = stack.pop()
                     stack.push(performUnion(left, right))
                 }
-                '?' -> {
+
+                '¿' -> {
                     val right = stack.pop()
                     val left = stack.pop()
                     stack.push(performConcat(left, right))

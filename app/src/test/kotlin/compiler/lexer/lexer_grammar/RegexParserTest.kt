@@ -6,7 +6,7 @@ import kotlin.test.assertFails
 
 internal class RegexParserTest {
 
-    class TestRegexParser : UniversalRegexParser<String>() {
+    class TestRegexParser : AbstractRegexParser<String>() {
         public override fun performStar(child: String): String {
             return "(*$child*)"
         }
@@ -27,6 +27,13 @@ internal class RegexParserTest {
             return if (charSet.size == 1) charSet.toList()[0].toString()
             else "(&" + charSet.toList().sorted().joinToString("") + "&)"
         }
+
+        public override fun getSpecialAtomic(string: String): String {
+            return when (string.length) {
+                1 -> getAtomic(LexerRegexParser.SPECIAL_SYMBOLS.getOrDefault(string, setOf(string[0])))
+                else -> "(!$string!)"
+            }
+        }
     }
 
     companion object {
@@ -39,6 +46,7 @@ internal class RegexParserTest {
         val concat = PARSER.parseStringToRegex("ab")
         val union = PARSER.parseStringToRegex("a|b")
         val brackets = PARSER.parseStringToRegex("[abc]")
+        val optional = PARSER.parseStringToRegex("a?")
         var bracketsExpected = PARSER.getEmpty()
         for (char in "abc") bracketsExpected = PARSER.performUnion(bracketsExpected, char.toString())
 
@@ -46,11 +54,12 @@ internal class RegexParserTest {
         assertEquals("(?a,b?)", concat)
         assertEquals("(|a,b|)", union)
         assertEquals(bracketsExpected, brackets)
+        assertEquals("(|a,(*EMP*)|)", optional)
     }
 
     @Test
     fun `test concatenation`() {
-        val expressionsToConcatenate = listOf("a", "b*", "(x|d)", "[dd]", "(d)*", "(xd)")
+        val expressionsToConcatenate = listOf("a", "b*", "(x|d)", "\\{abcd}", "(abc)?", "[dd]", "(d)*", "(xd)")
         val expressionsParsed = expressionsToConcatenate.map { PARSER.parseStringToRegex(it) }
 
         val concatenationParsed = PARSER.parseStringToRegex(expressionsToConcatenate.joinToString(""))
@@ -86,11 +95,13 @@ internal class RegexParserTest {
         val polishUpper = PARSER.parseStringToRegex("\\u")
         val numbers = PARSER.parseStringToRegex("\\d")
         val special = PARSER.parseStringToRegex("\\c")
+        val specialString = PARSER.parseStringToRegex("\\{abcd}")
 
         assertEquals("(&abcdefghijklmnopqrstuvwxyzóąćęłńśźż&)", polishLower)
         assertEquals("(&ABCDEFGHIJKLMNOPQRSTUVWXYZÓĄĆĘŁŃŚŹŻ&)", polishUpper)
         assertEquals("(&0123456789&)", numbers)
         assertEquals("(&!%&()*+,-./:;<=>?^_{|}~&)", special)
+        assertEquals("(!abcd!)", specialString)
     }
 
     @Test
@@ -108,6 +119,9 @@ internal class RegexParserTest {
         assertEquals("The square bracket at position 3 has no corresponding closing bracket", message.message)
         assertFails {
             PARSER.parseStringToRegex("(a))")
+        }
+        assertFails {
+            PARSER.parseStringToRegex("\\{aaaa")
         }
     }
 }

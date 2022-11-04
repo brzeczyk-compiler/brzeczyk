@@ -27,12 +27,15 @@ object SymbolRegexParser : AbstractRegexParser<Regex<Symbol>>() {
         throw IllegalArgumentException()
     }
 
-    override fun getSpecialAtomic(string: String): Regex<Symbol> {
-        fun atomicOf(symbol: Symbol): Regex<Symbol> {
-            return RegexFactory.createAtomic(setOf(symbol))
+    fun getSymbolFromString(string: String): Symbol {
+        return when (string[0]) {
+            'n' -> Symbol.NonTerminal(NonTerminalType.valueOf(string.substring(1)))
+            't' -> Symbol.Terminal(TokenType.valueOf(string.substring(1)))
+            else -> throw IllegalArgumentException()
         }
-        TokenType.values().find { it.name == string }?.let { return atomicOf(Symbol.Terminal(it)) }
-        NonTerminalType.values().find { it.name == string }?.let { return atomicOf(Symbol.NonTerminal(it)) }
-        throw IllegalArgumentException()
+    }
+
+    override fun getSpecialAtomic(string: String): Regex<Symbol> {
+        return RegexFactory.createAtomic(setOf(getSymbolFromString(string)))
     }
 }

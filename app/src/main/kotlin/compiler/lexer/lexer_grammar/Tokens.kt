@@ -46,6 +46,7 @@ class Tokens(private val dfaFactory: DfaFactory = RegexDfaFactory()) {
             Pair(TokenType.SEMICOLON, ";"),
             Pair(TokenType.QUESTION_MARK, "\\?"),
             Pair(TokenType.COMMA, ","),
+            Pair(TokenType.ARROW, "->"),
             Pair(TokenType.NEWLINE, "\n"),
 
             // Arithmetic operators

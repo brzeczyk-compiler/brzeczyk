@@ -6,10 +6,10 @@ enum class NonTerminalType {
     // types, literals
     TYPE, CONST,
     // argument lists
-    DEF_ARGS, DEF_ARG, DEF_ARG_WITH_DEFAULT,
-    CALL_ARGS, CALL_ARG_NAMED,
+    DEF_ARGS, DEF_ARG,
+    CALL_ARGS,
     // variable/function declaration
-    VARIABLE_DECL, FUNCTION_DEF,
+    VAR_DECL, FUNC_DEF,
     // expression categories
     EXPR, EXPR2, EXPR4, EXPR8, EXPR16, EXPR32, EXPR64, EXPR128, EXPR256, EXPR512, EXPR1024, EXPR2048,
     // statements

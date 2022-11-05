@@ -12,10 +12,10 @@ sealed class Diagnostic {
     }
 
     class ParserError(
-        val symbol: String?,
+        val symbol: Any?,
         val start: Location,
         val end: Location,
-        val expectedSymbols: List<String>
+        val expectedSymbols: List<Any>
     ) : Diagnostic() {
         override fun isError() = true
 

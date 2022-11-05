@@ -1,5 +1,6 @@
-package compiler.lexer.lexer_grammar
+package compiler.common.regex
 
+import compiler.lexer.lexer_grammar.LexerRegexParser
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails

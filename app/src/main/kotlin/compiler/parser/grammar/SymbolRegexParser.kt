@@ -1,8 +1,8 @@
 package compiler.parser.grammar
 
+import compiler.common.regex.AbstractRegexParser
 import compiler.common.regex.Regex
 import compiler.common.regex.RegexFactory
-import compiler.lexer.lexer_grammar.AbstractRegexParser
 import compiler.lexer.lexer_grammar.TokenType
 import java.lang.IllegalArgumentException
 

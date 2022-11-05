@@ -1,4 +1,4 @@
-package compiler.lexer.lexer_grammar
+package compiler.common.regex
 
 import java.util.Stack
 

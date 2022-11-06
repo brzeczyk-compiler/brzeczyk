@@ -12,7 +12,7 @@ enum class TokenType {
     // Function related keywords
     RETURN, RETURN_UNIT, FUNCTION,
     // Special characters
-    COLON, SEMICOLON, QUESTION_MARK, COMMA, NEWLINE,
+    COLON, SEMICOLON, QUESTION_MARK, COMMA, ARROW, NEWLINE,
     // Arithmetic operators
     PLUS, MINUS, MULTIPLY, DIVIDE, MODULO,
     // Increment and decrement operators
@@ -24,7 +24,7 @@ enum class TokenType {
     // Assignment operator
     ASSIGNMENT,
     // Logical operators
-    NOT, OR, AND,
+    NOT, OR, AND, IFF, XOR,
     // Boolean constants
     TRUE_CONSTANT, FALSE_CONSTANT,
     // Integers

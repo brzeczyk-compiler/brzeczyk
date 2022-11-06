@@ -48,6 +48,7 @@ class TokensTest {
         assertEquals(firstMatch(tokens, "}"), TokenType.RIGHT_BRACE)
         assertEquals(firstMatch(tokens, ":"), TokenType.COLON)
         assertEquals(firstMatch(tokens, ","), TokenType.COMMA)
+        assertEquals(firstMatch(tokens, "->"), TokenType.ARROW)
         assertEquals(firstMatch(tokens, ";"), TokenType.SEMICOLON)
         assertEquals(firstMatch(tokens, "\n"), TokenType.NEWLINE)
         assertEquals(firstMatch(tokens, "?"), TokenType.QUESTION_MARK)
@@ -77,6 +78,8 @@ class TokensTest {
         assertEquals(firstMatch(tokens, "nie"), TokenType.NOT)
         assertEquals(firstMatch(tokens, "lub"), TokenType.OR)
         assertEquals(firstMatch(tokens, "oraz"), TokenType.AND)
+        assertEquals(firstMatch(tokens, "wtw"), TokenType.IFF)
+        assertEquals(firstMatch(tokens, "albo"), TokenType.XOR)
 
         assertNull(firstMatch(tokens, "&&"))
         assertNull(firstMatch(tokens, "||"))

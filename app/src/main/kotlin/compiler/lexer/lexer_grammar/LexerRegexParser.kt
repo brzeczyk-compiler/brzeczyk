@@ -1,9 +1,16 @@
 package compiler.lexer.lexer_grammar
 
+import compiler.common.regex.AbstractRegexParser
 import compiler.common.regex.Regex
 import compiler.common.regex.RegexFactory
 
-object RegexParser : UniversalRegexParser<Regex<Char>>() {
+object LexerRegexParser : AbstractRegexParser<Regex<Char>>() {
+    val SPECIAL_SYMBOLS = mapOf(
+        "l" to "aąbcćdeęfghijklłmnńoópqrsśtuvwxyzźż".toSet(),
+        "u" to "AĄBCĆDEĘFGHIJKLŁMNŃOÓPQRSŚTUVWXYZŹŻ".toSet(),
+        "d" to "0123456789".toSet(),
+        "c" to "{}(),.<>:;?/+=-_!%^&*|~".toSet()
+    )
 
     override fun performStar(child: Regex<Char>): Regex<Char> {
         return RegexFactory.createStar(child)
@@ -23,5 +30,9 @@ object RegexParser : UniversalRegexParser<Regex<Char>>() {
 
     override fun getAtomic(charSet: Set<Char>): Regex<Char> {
         return RegexFactory.createAtomic(charSet)
+    }
+
+    override fun getSpecialAtomic(string: String): Regex<Char> {
+        return getAtomic(SPECIAL_SYMBOLS.getOrDefault(string, setOf(string[0])))
     }
 }

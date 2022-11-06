@@ -9,7 +9,7 @@ object ParserGrammar {
         )
     }
 
-    private const val NLS: String = "(\\{NEWLINE})*" // NLS = NewLine Star
+    private const val NLS: String = "(\\{tNEWLINE})*" // NLS = NewLine Star
 
     fun getGrammar(): Grammar<Symbol> {
         val productions = listOf(
@@ -20,7 +20,7 @@ object ParserGrammar {
             getProduction("CONST", "\\{tINTEGER}|\\{tTRUE_CONSTANT}|\\{tFALSE_CONSTANT}"),
 
             getProduction("VAR_DECL", "(\\{tVARIABLE}|\\{tVALUE}|\\{tCONSTANT})$NLS\\{tIDENTIFIER}$NLS\\{tCOLON}$NLS\\{nTYPE}($NLS\\{tASSIGNMENT}$NLS\\{nEXPR})?"),
-            getProduction("FUNC_DEF", "\\{tFUNCTION}$NLS\\{tIDENTIFIER}$NLS\\{tLEFT_PAREN}$NLS\\{nDEF_ARGS}$NLS\\{tRIGHT_PAREN}($NLS\\{tARROW}$NLS\\{nTYPE})?\\{LEFT_BRACE}\\{MANY_STATEMENTS}\\{RIGHT_BRACE}"),
+            getProduction("FUNC_DEF", "\\{tFUNCTION}$NLS\\{tIDENTIFIER}$NLS\\{tLEFT_PAREN}$NLS\\{nDEF_ARGS}$NLS\\{tRIGHT_PAREN}($NLS\\{tARROW}$NLS\\{nTYPE})?\\{tLEFT_BRACE}\\{nMANY_STATEMENTS}\\{tRIGHT_BRACE}"),
 
             getProduction("DEF_ARGS", "(\\{nDEF_ARG}($NLS\\{tCOMMA}$NLS\\{nDEF_ARG})*($NLS\\{tCOMMA}$NLS\\{nDEF_ARG}$NLS\\{tASSIGNMENT}$NLS\\{nEXPR})*)?"),
             getProduction("DEF_ARGS", "\\{nDEF_ARG}$NLS\\{tASSIGNMENT}$NLS\\{nEXPR}($NLS\\{tCOMMA}$NLS\\{nDEF_ARG}$NLS\\{tASSIGNMENT}$NLS\\{nEXPR})*"),
@@ -33,7 +33,7 @@ object ParserGrammar {
             getProduction("EXPR2048", "\\{nCONST}"),
             getProduction("EXPR2048", "\\{tIDENTIFIER}"),
             getProduction("EXPR2048", "\\{tIDENTIFIER}$NLS\\{tLEFT_PAREN}$NLS\\{nCALL_ARGS}$NLS\\{tRIGHT_PAREN}"),
-            getProduction("EXPR2048", "\\{tMINUS}$NLS\\{EXPR2048}"),
+            getProduction("EXPR2048", "\\{tMINUS}$NLS\\{nEXPR2048}"),
             getProduction("EXPR2048", "\\{tINCREMENT}$NLS\\{tIDENTIFIER}"),
             getProduction("EXPR2048", "\\{tIDENTIFIER}$NLS\\{tINCREMENT}"),
             getProduction("EXPR2048", "\\{tDECREMENT}$NLS\\{tIDENTIFIER}"),

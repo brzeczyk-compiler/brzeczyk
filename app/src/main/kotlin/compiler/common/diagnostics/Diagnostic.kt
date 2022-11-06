@@ -5,10 +5,14 @@ import compiler.lexer.Location
 sealed class Diagnostic {
     abstract fun isError(): Boolean
 
-    class LexerError : Diagnostic() {
-        override fun isError(): Boolean {
-            TODO("Not yet implemented")
-        }
+    class LexerError(val start: Location, val end: Location?, val context: List<String>, val errorSegment: String) : Diagnostic() {
+
+        override fun isError(): Boolean = true
+
+        override fun toString() = StringBuilder()
+            .append("Unable to match token at location $start - ${end ?: "eof"}.\n")
+            .append("\t\t${context.joinToString("")}-->$errorSegment<---")
+            .toString()
     }
 
     class ParserError(

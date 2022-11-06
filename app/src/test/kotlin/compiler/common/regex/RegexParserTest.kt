@@ -31,7 +31,10 @@ internal class RegexParserTest {
 
         public override fun getSpecialAtomic(string: String): String {
             return when (string.length) {
-                1 -> getAtomic(LexerRegexParser.SPECIAL_SYMBOLS.getOrDefault(string, setOf(string[0])))
+                1 -> {
+                    if (string[0] in SPECIAL_SYMBOLS) "ERROR" // special symbols should be escaped regardless of getSpecialAtomic implementation
+                    else getAtomic(LexerRegexParser.SPECIAL_SYMBOLS.getOrDefault(string, setOf(string[0])))
+                }
                 else -> "(!$string!)"
             }
         }
@@ -60,7 +63,7 @@ internal class RegexParserTest {
 
     @Test
     fun `test concatenation`() {
-        val expressionsToConcatenate = listOf("a", "b*", "(x|d)", "\\{abcd}", "(abc)?", "[dd]", "(d)*", "(xd)")
+        val expressionsToConcatenate = listOf("a", "b*", "(x|d)", "{abcd}", "(abc)?", "[dd]", "(d)*", "(xd)")
         val expressionsParsed = expressionsToConcatenate.map { PARSER.parseStringToRegex(it) }
 
         val concatenationParsed = PARSER.parseStringToRegex(expressionsToConcatenate.joinToString(""))
@@ -96,7 +99,7 @@ internal class RegexParserTest {
         val polishUpper = PARSER.parseStringToRegex("\\u")
         val numbers = PARSER.parseStringToRegex("\\d")
         val special = PARSER.parseStringToRegex("\\c")
-        val specialString = PARSER.parseStringToRegex("\\{abcd}")
+        val specialString = PARSER.parseStringToRegex("{abcd}")
 
         assertEquals("(&abcdefghijklmnopqrstuvwxyzóąćęłńśźż&)", polishLower)
         assertEquals("(&ABCDEFGHIJKLMNOPQRSTUVWXYZÓĄĆĘŁŃŚŹŻ&)", polishUpper)
@@ -107,22 +110,21 @@ internal class RegexParserTest {
 
     @Test
     fun `test escaping characters`() {
-        for (c in "\\?|()[]*") {
+        for (c in "\\?|*()[]{}") {
             assertEquals(c.toString(), PARSER.parseStringToRegex("\\" + c))
         }
     }
 
     @Test
     fun `test exceptions`() {
-        val message = assertFails {
-            PARSER.parseStringToRegex("abc[d")
+        for (regex in setOf("abc[d", "abc{d")) {
+            val message = assertFails {
+                PARSER.parseStringToRegex(regex)
+            }
+            assertEquals("The bracket at position 3 has no corresponding closing bracket", message.message)
         }
-        assertEquals("The square bracket at position 3 has no corresponding closing bracket", message.message)
         assertFails {
             PARSER.parseStringToRegex("(a))")
-        }
-        assertFails {
-            PARSER.parseStringToRegex("\\{aaaa")
         }
     }
 }

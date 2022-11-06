@@ -20,8 +20,8 @@ class Tokens(private val dfaFactory: DfaFactory = RegexDfaFactory()) {
             // Parenthesis and braces
             Pair(TokenType.LEFT_PAREN, "\\("),
             Pair(TokenType.RIGHT_PAREN, "\\)"),
-            Pair(TokenType.LEFT_BRACE, "{"),
-            Pair(TokenType.RIGHT_BRACE, "}"),
+            Pair(TokenType.LEFT_BRACE, "\\{"),
+            Pair(TokenType.RIGHT_BRACE, "\\}"),
 
             // Variable types
             Pair(TokenType.VARIABLE, "zm"),

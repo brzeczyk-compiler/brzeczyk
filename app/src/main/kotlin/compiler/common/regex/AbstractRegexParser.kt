@@ -11,6 +11,7 @@ abstract class AbstractRegexParser<T> {
             '*' to 3,
             '?' to 3
         )
+        val SPECIAL_SYMBOLS = "(){}[]|¿*?\\".toSet() // have to be escaped with \ in regex
     }
 
     protected abstract fun performStar(child: T): T
@@ -29,25 +30,21 @@ abstract class AbstractRegexParser<T> {
                 var position = 0
 
                 override fun next(): String {
+                    fun readToBracket(closingBracket: Char): String {
+                        val begin = position
+                        position = text.indexOf(closingBracket, begin) + 1
+                        if (position == 0) throw IllegalArgumentException("The bracket at position $begin has no corresponding closing bracket")
+                        return text.substring(begin, position)
+                    }
+
                     return when (text[position]) {
-                        '[' -> {
-                            val begin = position
-                            position = text.indexOf(']', begin) + 1
-                            if (position == 0) throw IllegalArgumentException("The square bracket at position $begin has no corresponding closing bracket")
-                            text.substring(begin, position)
-                        }
+                        '[' -> readToBracket(']')
+
+                        '{' -> readToBracket('}')
 
                         '\\' -> {
-                            position += 1
-                            if (text[position] == '{') {
-                                val begin = position
-                                position = text.indexOf('}', begin) + 1
-                                if (position == 0) throw IllegalArgumentException("The bracket at position $begin has no corresponding closing bracket")
-                                text.substring(begin - 1, position)
-                            } else {
-                                position += 1
-                                text.substring(position - 2, position)
-                            }
+                            position += 2
+                            text.substring(position - 2, position)
                         }
 
                         else -> text[position++].toString()
@@ -71,9 +68,11 @@ abstract class AbstractRegexParser<T> {
                 result
             }
 
-            '\\' -> when (symbol[1]) {
-                '{' -> getSpecialAtomic(symbol.substring(2, symbol.length - 1))
-                else -> getSpecialAtomic(symbol[1].toString())
+            '{' -> getSpecialAtomic(symbol.substring(1, symbol.length - 1))
+
+            '\\' -> when (val specialChar = symbol[1]) {
+                in SPECIAL_SYMBOLS -> getAtomic(setOf(specialChar))
+                else -> getSpecialAtomic(specialChar.toString())
             }
 
             else -> getAtomic(setOf(symbol[0]))

@@ -6,8 +6,8 @@ import compiler.lexer.input.InputImpl
 import compiler.lexer.lexer_grammar.TokenType
 import compiler.lexer.lexer_grammar.Tokens
 import compiler.parser.ParseTree
-// import compiler.parser.Parser
-// import compiler.parser.grammar.ParserGrammar
+import compiler.parser.Parser
+import compiler.parser.grammar.ParserGrammar
 import compiler.parser.grammar.Symbol
 import java.io.Reader
 
@@ -18,9 +18,6 @@ class Compiler(val diagnostics: Diagnostics) {
         val leaves: Sequence<ParseTree<Symbol>> = tokenSequence.filter { it.category != TokenType.TO_IGNORE }
             .map { ParseTree.Leaf(it.start, it.end, Symbol.Terminal(it.category)) }
 
-        // consume the elements so that Lexer actually tries to evaluate
-        leaves.forEach { println(it) }
-
-        // val parseTree = Parser<Symbol>(ParserGrammar.getGrammar(), diagnostics).process(leaves)
+        val parseTree = Parser<Symbol>(ParserGrammar.getGrammar(), diagnostics).process(leaves)
     }
 }

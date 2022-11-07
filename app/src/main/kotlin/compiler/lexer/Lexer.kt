@@ -34,10 +34,6 @@ class Lexer<TCat>(
         while (input.hasNext()) {
             input.flush() // Tell the input source that previous characters can be discarded.
 
-            if (isErrorSegment) {
-                errorSegment.append(input.next())
-            }
-
             val buffer = StringBuilder() // The content of a token currently attempted to be matched.
             val tokenStart = input.getLocation() // The start location of a token currently attempted to be matched.
             var tokenEnd: Location? = null // The end location of the last matched token, if any.
@@ -80,6 +76,8 @@ class Lexer<TCat>(
                     isErrorSegment = true
                     errorSegmentStart = tokenStart
                 }
+
+                errorSegment.append(input.next())
 
                 if (!input.hasNext()) {
                     diagnostics.report(Diagnostic.LexerError(errorSegmentStart!!, null, context, errorSegment.toString()))

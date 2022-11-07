@@ -34,7 +34,7 @@ class Parser<S : Comparable<S>>(
             for (state in dfa.getStates()) {
                 for (lookaheadSymbol in grammarSymbols.union(setOf(null))) { // null represents the end of the input
 
-                    fun setParseAction(parserAction: ParserAction<S>): Unit {
+                    fun setParseAction(parserAction: ParserAction<S>) {
                         if (parseActions.containsKey(Triple(dfa, state, lookaheadSymbol)))
                             throw AmbiguousParseActions(
                                 """

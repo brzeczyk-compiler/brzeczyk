@@ -8,6 +8,7 @@ import compiler.parser.analysis.GrammarAnalysis
 import compiler.parser.grammar.AutomatonGrammar
 import compiler.parser.grammar.Grammar
 import compiler.parser.grammar.Production
+import java.lang.Exception
 
 class Parser<S : Comparable<S>>(
     private val automatonGrammar: AutomatonGrammar<S>,
@@ -15,7 +16,7 @@ class Parser<S : Comparable<S>>(
 ) {
     private val parseActions: Map<Triple<Dfa<S, Production<S>>, DfaState<S, Production<S>>, S?>, ParserAction<S>>
 
-    class AmbiguousParseActions : Throwable()
+    class AmbiguousParseActions(message: String) : Exception(message)
 
     init {
         val grammarAnalysis = GrammarAnalysis<S>()
@@ -32,7 +33,18 @@ class Parser<S : Comparable<S>>(
         for (dfa in automatonGrammar.productions.values) {
             for (state in dfa.getStates()) {
                 for (lookaheadSymbol in grammarSymbols.union(setOf(null))) { // null represents the end of the input
-                    fun alreadySet(): Boolean = parseActions.containsKey(Triple(dfa, state, lookaheadSymbol))
+
+                    fun setParseAction(parserAction: ParserAction<S>): Unit {
+                        if (parseActions.containsKey(Triple(dfa, state, lookaheadSymbol)))
+                            throw AmbiguousParseActions(
+                                """
+                                    Ambiguity found for symbol: $lookaheadSymbol
+                                    Parser action 1: ${parseActions[Triple(dfa, state, lookaheadSymbol)]}
+                                    Parser action 2: $parserAction
+                                """
+                            )
+                        parseActions[Triple(dfa, state, lookaheadSymbol)] = parserAction
+                    }
 
                     // Try to match with a reduce action. The condition is:
                     // (the state is accepting) AND (there exists a symbol A such that the look-ahead symbol is in FOLLOW(A))
@@ -41,21 +53,14 @@ class Parser<S : Comparable<S>>(
                     if (result != null) {
                         val symbol = result.lhs
                         if (lookaheadSymbol == null || follow[symbol]!!.contains(lookaheadSymbol)) {
-                            if (alreadySet())
-                                throw AmbiguousParseActions()
-
-                            parseActions[Triple(dfa, state, lookaheadSymbol)] =
-                                ParserAction.Reduce(state.result!!)
+                            setParseAction(ParserAction.Reduce(result))
                         }
                     }
 
                     // Try to match with a shift action. The condition is:
                     // (there exists an edge from the state labelled with the look-ahead symbol)
                     if (state.possibleSteps.containsKey(lookaheadSymbol)) {
-                        if (alreadySet())
-                            throw AmbiguousParseActions()
-
-                        parseActions[Triple(dfa, state, lookaheadSymbol)] = ParserAction.Shift()
+                        setParseAction(ParserAction.Shift())
                     }
 
                     // Try to match with a call action. The condition is:
@@ -67,10 +72,7 @@ class Parser<S : Comparable<S>>(
                             (lookaheadSymbol != null && firstPlus[symbol]!!.contains(lookaheadSymbol)) ||
                             (lookaheadSymbol == null && nullable.contains(symbol)) // null look-ahead symbol requires special treatment
                         ) {
-                            if (alreadySet())
-                                throw AmbiguousParseActions()
-
-                            parseActions[Triple(dfa, state, lookaheadSymbol)] = ParserAction.Call(symbol)
+                            setParseAction(ParserAction.Call(symbol))
                         }
                     }
                 }

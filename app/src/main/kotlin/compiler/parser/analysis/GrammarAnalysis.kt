@@ -167,18 +167,11 @@ class GrammarAnalysis<S : Comparable<S>> {
     }
 
     fun computeFirstPlus(nullable: Set<S>, first: Map<S, Set<S>>, follow: Map<S, Set<S>>): Map<S, Set<S>> {
-        val firstPlus: MutableMap<S, MutableSet<S>> = HashMap()
-
-        for ((symbol, firstOfSymbol) in first) {
-            firstPlus.putIfAbsent(symbol, HashSet())
-            firstPlus[symbol]!!.addAll(firstOfSymbol)
+        return first.keys.associateWith { symbol ->
+            if (nullable.contains(symbol))
+                first[symbol]!!.union(follow[symbol]!!)
+            else
+                first[symbol]!!
         }
-
-        for (symbol in nullable) {
-            firstPlus.putIfAbsent(symbol, HashSet())
-            firstPlus[symbol]!!.addAll(follow[symbol]!!)
-        }
-
-        return firstPlus
     }
 }

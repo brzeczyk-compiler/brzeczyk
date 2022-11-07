@@ -31,15 +31,15 @@ interface Dfa<A, R> : AbstractDfa<A, R> {
 
     private fun dfs(
         start: DfaState<A, R> = startState,
-        inspectEdge: (A) -> Unit = {},
+        inspectSymbol: (A) -> Unit = {},
         visit: (DfaState<A, R>) -> Unit
     ) {
         val visited: MutableSet<DfaState<A, R>> = HashSet()
         fun dfs(state: DfaState<A, R>) {
             if (!visited.add(state)) return
             visit(state)
-            for ((edge, _) in state.possibleSteps)
-                inspectEdge(edge)
+            for ((symbol, _) in state.possibleSteps)
+                inspectSymbol(symbol)
             for ((_, neighbour) in state.possibleSteps)
                 dfs(neighbour)
         }
@@ -54,7 +54,7 @@ interface Dfa<A, R> : AbstractDfa<A, R> {
 
     fun getEdgeSymbols(): Set<A> {
         val symbols: MutableSet<A> = HashSet()
-        dfs(visit = { }, inspectEdge = { edge -> symbols.add(edge) })
+        dfs(visit = { }, inspectSymbol = { edge -> symbols.add(edge) })
         return symbols
     }
 

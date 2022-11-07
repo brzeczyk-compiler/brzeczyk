@@ -15,7 +15,7 @@ class Compiler(val diagnostics: Diagnostics) {
     fun process(input: Reader) {
         val lexer = Lexer<TokenType>(Tokens().getTokens(), diagnostics)
         val tokenSequence = lexer.process(InputImpl(input))
-        val leaves: Sequence<ParseTree<Symbol>> = tokenSequence
+        val leaves: Sequence<ParseTree<Symbol>> = tokenSequence.filter { it.category != TokenType.TO_IGNORE }
             .map { ParseTree.Leaf(it.start, it.end, Symbol.Terminal(it.category)) }
 
         // consume the elements so that Lexer actually tries to evaluate

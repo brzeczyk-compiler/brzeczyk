@@ -29,14 +29,33 @@ interface Dfa<A, R> : AbstractDfa<A, R> {
         }
     }
 
-    private fun dfs(start: DfaState<A, R> = startState, visit: (DfaState<A, R>) -> Unit) {
+    private fun dfs(
+        start: DfaState<A, R> = startState,
+        inspectSymbol: (A) -> Unit = {},
+        visit: (DfaState<A, R>) -> Unit
+    ) {
         val visited: MutableSet<DfaState<A, R>> = HashSet()
         fun dfs(state: DfaState<A, R>) {
             if (!visited.add(state)) return
             visit(state)
-            for ((_, neighbour) in state.possibleSteps) dfs(neighbour)
+            for ((symbol, _) in state.possibleSteps)
+                inspectSymbol(symbol)
+            for ((_, neighbour) in state.possibleSteps)
+                dfs(neighbour)
         }
         dfs(start)
+    }
+
+    fun getStates(): Set<DfaState<A, R>> {
+        val states: MutableSet<DfaState<A, R>> = HashSet()
+        dfs { states.add(it) }
+        return states
+    }
+
+    fun getEdgeSymbols(): Set<A> {
+        val symbols: MutableSet<A> = HashSet()
+        dfs(visit = { }, inspectSymbol = { edge -> symbols.add(edge) })
+        return symbols
     }
 
     fun getPredecessors(state: DfaState<A, R>): Map<A, Collection<DfaState<A, R>>> {

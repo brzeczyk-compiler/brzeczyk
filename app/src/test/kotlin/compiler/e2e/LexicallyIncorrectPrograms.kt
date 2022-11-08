@@ -11,14 +11,16 @@ class LexicallyIncorrectPrograms {
             """
             zm test$$: Liczba = 123
             """,
-            listOf(Diagnostic.LexerError(Location(1, 8), Location(1, 10), listOf("zm", " ", "test"), "$$"))
+            listOf(Diagnostic.LexerError(Location(1, 8), Location(1, 10), listOf("zm", " ", "test"), "$$")),
+            Diagnostic.LexerError::class
         )
         E2eAsserter.assertProgramGeneratesDiagnostics(
             """
             zm liczbaa: Liczba = 123
             zm licz#: Liczba = 123
             """,
-            listOf(Diagnostic.LexerError(Location(2, 8), Location(2, 9), listOf("zm", " ", "licz"), "#"))
+            listOf(Diagnostic.LexerError(Location(2, 8), Location(2, 9), listOf("zm", " ", "licz"), "#")),
+            Diagnostic.LexerError::class
         )
     }
 
@@ -42,7 +44,8 @@ class LexicallyIncorrectPrograms {
                 napisz(14)
             }
             """,
-            listOf(Diagnostic.LexerError(Location(9, 4), Location(9, 5), listOf("}", "\n", "wpp"), "."))
+            listOf(Diagnostic.LexerError(Location(9, 4), Location(9, 5), listOf("}", "\n", "wpp"), ".")),
+            Diagnostic.LexerError::class
         )
     }
 
@@ -61,7 +64,8 @@ class LexicallyIncorrectPrograms {
             b = fałsz
             b = Fałsz
             """,
-            listOf(Diagnostic.LexerError(Location(3, 5), Location(3, 6), listOf(" ", "=", " "), "F"))
+            listOf(Diagnostic.LexerError(Location(3, 5), Location(3, 6), listOf(" ", "=", " "), "F")),
+            Diagnostic.LexerError::class
         )
     }
 
@@ -72,7 +76,8 @@ class LexicallyIncorrectPrograms {
             zm x: Liczba
             zm y: Number
             """,
-            listOf(Diagnostic.LexerError(Location(2, 7), Location(2, 8), listOf("y", ":", " "), "N"))
+            listOf(Diagnostic.LexerError(Location(2, 7), Location(2, 8), listOf("y", ":", " "), "N")),
+            Diagnostic.LexerError::class
         )
     }
 }

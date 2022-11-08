@@ -1,7 +1,7 @@
 package compiler.parser.integration_tests
 
 import compiler.common.regex.RegexFactory
-import compiler.lexer.lexer_grammar.RegexParser
+import compiler.lexer.lexer_grammar.LexerRegexParser
 import compiler.parser.ParseTree
 import compiler.parser.Parser
 import compiler.parser.grammar.Grammar
@@ -14,9 +14,9 @@ class ExpressionParsingTest : ParserTest() {
     private val addExpr = 'B'
     private val numExpr = 'C'
 
-    private val addToMul = Production(addExpr, RegexParser.parseStringToRegex("$mulExpr(\\+$mulExpr)*"))
-    private val mulToNum = Production(mulExpr, RegexParser.parseStringToRegex("$numExpr(\\*$numExpr)*"))
-    private val numParentheses = Production(numExpr, RegexParser.parseStringToRegex("\\(${addExpr}\\)"))
+    private val addToMul = Production(addExpr, LexerRegexParser.parseStringToRegex("$mulExpr(\\+$mulExpr)*"))
+    private val mulToNum = Production(mulExpr, LexerRegexParser.parseStringToRegex("$numExpr(\\*$numExpr)*"))
+    private val numParentheses = Production(numExpr, LexerRegexParser.parseStringToRegex("\\(${addExpr}\\)"))
     private val numToZero = Production(numExpr, RegexFactory.createAtomic(setOf('0')))
     private val numToOne = Production(numExpr, RegexFactory.createAtomic(setOf('1')))
 

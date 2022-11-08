@@ -11,7 +11,7 @@ class Tokens(private val dfaFactory: DfaFactory = RegexDfaFactory()) {
 
     private class RegexDfaFactory : DfaFactory {
         override fun fromRegexString(regexString: String): AbstractDfa<Char, Unit> {
-            return RegexDfa(RegexParser.parseStringToRegex(regexString))
+            return RegexDfa(LexerRegexParser.parseStringToRegex(regexString))
         }
     }
 
@@ -20,8 +20,8 @@ class Tokens(private val dfaFactory: DfaFactory = RegexDfaFactory()) {
             // Parenthesis and braces
             Pair(TokenType.LEFT_PAREN, "\\("),
             Pair(TokenType.RIGHT_PAREN, "\\)"),
-            Pair(TokenType.LEFT_BRACE, "{"),
-            Pair(TokenType.RIGHT_BRACE, "}"),
+            Pair(TokenType.LEFT_BRACE, "\\{"),
+            Pair(TokenType.RIGHT_BRACE, "\\}"),
 
             // Variable types
             Pair(TokenType.VARIABLE, "zm"),
@@ -46,6 +46,7 @@ class Tokens(private val dfaFactory: DfaFactory = RegexDfaFactory()) {
             Pair(TokenType.SEMICOLON, ";"),
             Pair(TokenType.QUESTION_MARK, "\\?"),
             Pair(TokenType.COMMA, ","),
+            Pair(TokenType.ARROW, "->"),
             Pair(TokenType.NEWLINE, "\n"),
 
             // Arithmetic operators
@@ -82,6 +83,8 @@ class Tokens(private val dfaFactory: DfaFactory = RegexDfaFactory()) {
             Pair(TokenType.NOT, "nie"),
             Pair(TokenType.OR, "lub"),
             Pair(TokenType.AND, "oraz"),
+            Pair(TokenType.IFF, "wtw"),
+            Pair(TokenType.XOR, "albo"),
 
             // Boolean constants
             Pair(TokenType.TRUE_CONSTANT, "prawda"),

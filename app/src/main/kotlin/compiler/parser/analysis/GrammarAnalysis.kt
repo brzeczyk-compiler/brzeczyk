@@ -8,7 +8,6 @@ import kotlin.collections.HashMap
 import kotlin.collections.HashSet
 
 class GrammarAnalysis<S : Comparable<S>> {
-    class Result<S>(val nullable: Set<S>, val first: Map<S, Set<S>>, val follow: Map<S, Set<S>>)
 
     fun computeNullable(grammar: AutomatonGrammar<S>): Set<S> {
         val nullable: MutableSet<S> = HashSet()
@@ -44,25 +43,7 @@ class GrammarAnalysis<S : Comparable<S>> {
     }
 
     fun computeFirst(grammar: AutomatonGrammar<S>, nullable: Set<S>): Map<S, Set<S>> {
-        val symbols = grammar.productions.keys.toMutableSet()
-
-        // bfs to find all grammar symbols
-        for (prod in grammar.productions) {
-            val dfa = prod.value
-            val visited = emptySet<DfaState<S, Production<S>>>().toMutableSet()
-            val queue = ArrayDeque<DfaState<S, Production<S>>>()
-            queue.add(dfa.startState)
-
-            while (queue.isNotEmpty()) {
-                val state = queue.removeFirst()
-                if (visited.contains(state))
-                    continue
-                visited.add(state)
-                symbols.addAll(state.possibleSteps.keys)
-                queue.addAll(state.possibleSteps.values)
-            }
-        }
-
+        val symbols = grammar.getSymbols()
         val first: MutableMap<S, MutableSet<S>> = HashMap()
 
         // bfs through nullable edges
@@ -183,5 +164,14 @@ class GrammarAnalysis<S : Comparable<S>> {
         calculateResult()
 
         return result
+    }
+
+    fun computeFirstPlus(nullable: Set<S>, first: Map<S, Set<S>>, follow: Map<S, Set<S>>): Map<S, Set<S>> {
+        return first.keys.associateWith { symbol ->
+            if (nullable.contains(symbol))
+                first[symbol]!!.union(follow[symbol]!!)
+            else
+                first[symbol]!!
+        }
     }
 }

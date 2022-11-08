@@ -9,18 +9,76 @@ import compiler.parser.analysis.GrammarAnalysis
 import compiler.parser.grammar.AutomatonGrammar
 import compiler.parser.grammar.Grammar
 import compiler.parser.grammar.Production
+import java.lang.Exception
 
 class Parser<S : Comparable<S>>(
     private val automatonGrammar: AutomatonGrammar<S>,
     private val diagnostics: Diagnostics
 ) {
-    private val analysisResults: GrammarAnalysis.Result<S>
     private val parseActions: Map<Triple<Dfa<S, Production<S>>, DfaState<S, Production<S>>, S?>, ParserAction<S>>
 
+    class AmbiguousParseActions(message: String) : Exception(message)
+
     init {
-        // TODO: Compute the parsing table
-        analysisResults = GrammarAnalysis.Result(emptySet(), emptyMap(), emptyMap())
-        parseActions = emptyMap()
+        val grammarAnalysis = GrammarAnalysis<S>()
+
+        val nullable = grammarAnalysis.computeNullable(automatonGrammar)
+        val first = grammarAnalysis.computeFirst(automatonGrammar, nullable)
+        val follow = grammarAnalysis.computeFollow(automatonGrammar, nullable, first)
+        val firstPlus = grammarAnalysis.computeFirstPlus(nullable, first, follow)
+
+        val grammarSymbols = automatonGrammar.getSymbols()
+
+        parseActions = mutableMapOf()
+
+        for (dfa in automatonGrammar.productions.values) {
+            for (state in dfa.getStates()) {
+                for (lookaheadSymbol in grammarSymbols.union(setOf(null))) { // null represents the end of the input
+
+                    fun setParseAction(parserAction: ParserAction<S>) {
+                        if (parseActions.containsKey(Triple(dfa, state, lookaheadSymbol)))
+                            throw AmbiguousParseActions(
+                                """
+                                    Ambiguity found for symbol: $lookaheadSymbol
+                                    Parser action 1: ${parseActions[Triple(dfa, state, lookaheadSymbol)]}
+                                    Parser action 2: $parserAction
+                                """
+                            )
+                        parseActions[Triple(dfa, state, lookaheadSymbol)] = parserAction
+                    }
+
+                    // Try to match with a reduce action. The condition is:
+                    // (the state is accepting) AND (there exists a symbol A such that the look-ahead symbol is in FOLLOW(A))
+
+                    val result = state.result
+                    if (result != null) {
+                        val symbol = result.lhs
+                        if (lookaheadSymbol == null || follow[symbol]!!.contains(lookaheadSymbol)) {
+                            setParseAction(ParserAction.Reduce(result))
+                        }
+                    }
+
+                    // Try to match with a shift action. The condition is:
+                    // (there exists an edge from the state labelled with the look-ahead symbol)
+                    if (state.possibleSteps.containsKey(lookaheadSymbol)) {
+                        setParseAction(ParserAction.Shift())
+                    }
+
+                    // Try to match with a call action. The condition is:
+                    // (there exists an edge from the state labelled with such A that the look-ahead symbol is in FIRST+(A))
+                    for ((symbol, _) in state.possibleSteps) {
+                        if (symbol == lookaheadSymbol)
+                            continue
+                        if (
+                            (lookaheadSymbol != null && firstPlus[symbol]!!.contains(lookaheadSymbol)) ||
+                            (lookaheadSymbol == null && nullable.contains(symbol)) // null look-ahead symbol requires special treatment
+                        ) {
+                            setParseAction(ParserAction.Call(symbol))
+                        }
+                    }
+                }
+            }
+        }
     }
 
     constructor(grammar: Grammar<S>, diagnostics: Diagnostics) :

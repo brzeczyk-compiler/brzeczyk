@@ -3,18 +3,22 @@ package compiler.parser
 import compiler.lexer.Location
 import compiler.parser.grammar.Production
 
-abstract class ParseTree<S : Comparable<S>>(val start: Location, val end: Location, val symbol: S) {
-    class Branch<S : Comparable<S>>(
-        start: Location,
-        end: Location,
-        symbol: S,
+interface ParseTree<S : Comparable<S>> {
+    val start: Location
+    val end: Location
+    val symbol: S
+
+    data class Branch<S : Comparable<S>>(
+        override val start: Location,
+        override val end: Location,
+        override val symbol: S,
         val children: List<ParseTree<S>>,
         val production: Production<S>
-    ) : ParseTree<S>(start, end, symbol)
+    ) : ParseTree<S>
 
-    class Leaf<S : Comparable<S>>(
-        start: Location,
-        end: Location,
-        symbol: S,
-    ) : ParseTree<S>(start, end, symbol)
+    data class Leaf<S : Comparable<S>>(
+        override val start: Location,
+        override val end: Location,
+        override val symbol: S,
+    ) : ParseTree<S>
 }

@@ -13,4 +13,13 @@ data class AutomatonGrammar<S : Comparable<S>> (val start: S, val productions: M
             return AutomatonGrammar(grammar.start, combinedProductions)
         }
     }
+
+    fun getSymbols(): Set<S> {
+        val symbols = productions.keys.toMutableSet()
+        for (prod in productions) {
+            val dfa = prod.value
+            symbols.addAll(dfa.getEdgeSymbols())
+        }
+        return symbols
+    }
 }

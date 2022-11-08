@@ -5,7 +5,7 @@ import compiler.lexer.Location
 sealed class Diagnostic {
     abstract fun isError(): Boolean
 
-    class LexerError(val start: Location, val end: Location?, val context: List<String>, val errorSegment: String) : Diagnostic() {
+    data class LexerError(val start: Location, val end: Location?, val context: List<String>, val errorSegment: String) : Diagnostic() {
 
         override fun isError(): Boolean = true
 

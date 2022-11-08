@@ -1,14 +1,14 @@
 package compiler.ast
 
-data class FunctionAst(
+data class Function(
     val name: String,
     val parameters: List<Parameter>,
-    val returnType: TypeAst?,
-    val body: BlockAst
+    val returnType: Type?,
+    val body: Block
 ) {
     data class Parameter(
         val name: String,
-        val type: TypeAst,
-        val defaultValue: ExpressionAst?
+        val type: Type,
+        val defaultValue: Expression?
     )
 }

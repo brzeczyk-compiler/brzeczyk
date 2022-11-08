@@ -1,10 +1,10 @@
 package compiler.ast
 
-data class VariableAst(
+data class Variable(
     val kind: Kind,
     val name: String,
-    val type: TypeAst,
-    val value: ExpressionAst?
+    val type: Type,
+    val value: Expression?
 ) {
     enum class Kind {
         CONSTANT,

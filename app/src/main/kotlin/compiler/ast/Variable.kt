@@ -5,7 +5,7 @@ data class Variable(
     val name: String,
     val type: Type,
     val value: Expression?
-) {
+) : NamedNode {
     enum class Kind {
         CONSTANT,
         VALUE,

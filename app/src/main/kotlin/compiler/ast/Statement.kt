@@ -30,5 +30,5 @@ sealed class Statement {
 
     object LoopContinuation : Statement()
 
-    data class FunctionReturn(val value: Expression?) : Statement()
+    data class FunctionReturn(val value: Expression) : Statement()
 }

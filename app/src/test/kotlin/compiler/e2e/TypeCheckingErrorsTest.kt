@@ -1,4 +1,4 @@
-package compiler.semantic_analysis.integration_tests
+package compiler.e2e
 
 class TypeCheckingErrorsTest {
     // TODO: implement tests for type checking errors

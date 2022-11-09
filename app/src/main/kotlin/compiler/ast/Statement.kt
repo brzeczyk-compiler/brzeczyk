@@ -5,8 +5,8 @@ typealias Block = List<Statement>
 sealed class Statement {
     data class Evaluation(val expression: Expression) : Statement()
 
-    data class VariableDefinition(val variable: Variable) : Statement(), AstNodeTypes.NamedNode
-    data class FunctionDefinition(val function: Function) : Statement(), AstNodeTypes.FunctionDefinition
+    data class VariableDefinition(val variable: Variable) : Statement()
+    data class FunctionDefinition(val function: Function) : Statement()
 
     data class Assignment(
         val variableName: String,

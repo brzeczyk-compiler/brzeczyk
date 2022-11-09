@@ -1,4 +1,4 @@
-package compiler.semantic_analysis.integration_tests
+package compiler.e2e
 
 class NameResolutionErrorsTest {
     // TODO: implement tests for name resolution errors

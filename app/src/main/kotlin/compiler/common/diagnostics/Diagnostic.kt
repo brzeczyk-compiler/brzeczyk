@@ -12,7 +12,7 @@ sealed class Diagnostic {
 
     data class LexerError(val start: Location, val end: Location?, val context: List<String>, val errorSegment: String) : Diagnostic() {
 
-        override fun isError(): Boolean = true
+        override fun isError() = true
 
         override fun toString() = StringBuilder()
             .append("Unable to match token at location $start - ${end ?: "eof"}.\n")

@@ -10,8 +10,8 @@ object NameResolver {
 
     sealed class NameResolutionError {
         class AssignmentToUndefinedVariable(message: String) : Exception(message)
-        class UseOfUndefinedVariable(message: String): Exception(message)
-        class UseOfUndefinedFunction(message: String): Exception(message)
+        class UseOfUndefinedVariable(message: String) : Exception(message)
+        class UseOfUndefinedFunction(message: String) : Exception(message)
     }
 
     fun calculateNameResolution(ast: Program, diagnostics: Diagnostics): ReferenceMap<Any, NamedNode> {

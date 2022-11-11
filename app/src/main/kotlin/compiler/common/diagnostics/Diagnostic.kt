@@ -32,4 +32,8 @@ sealed class Diagnostic {
                 append(" Expected symbols: ${expectedSymbols.joinToString()}.")
         }.toString()
     }
+
+    class TypeCheckingError() : Diagnostic() {
+        override fun isError() = true
+    }
 }

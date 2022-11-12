@@ -2,8 +2,8 @@ package compiler.e2e
 
 import compiler.common.diagnostics.Diagnostic
 import compiler.e2e.E2eAsserter.assertErrorOfType
+import org.junit.Ignore
 import org.junit.Test
-import kotlin.test.Ignore
 
 class TypeCheckingErrorsTest {
     fun assertTypeCheckingError(program: String) {
@@ -48,6 +48,17 @@ class TypeCheckingErrorsTest {
                 }
             """
         )
+        assertTypeCheckingError(
+            """
+                czynność f() {
+                    zakończ
+                }
+                
+                czynność g() {
+                    zm a: Liczba = f()
+                }
+            """
+        )
 
         assertTypeCheckingError("zm a: Czy = 0;")
         assertTypeCheckingError("zm a: Czy = fałsz;")
@@ -57,6 +68,17 @@ class TypeCheckingErrorsTest {
             """
                 czynność f() -> Liczba {
                     zwróć 3
+                }
+                
+                czynność g() {
+                    zm a: Czy = f()
+                }
+            """
+        )
+        assertTypeCheckingError(
+            """
+                czynność f() {
+                    zakończ
                 }
                 
                 czynność g() {
@@ -107,7 +129,17 @@ class TypeCheckingErrorsTest {
                 czynność f() -> Czy {
                     zwróć prawda
                 }
-                
+                czynność g() {
+                    zm a: Liczba
+                    a = f()
+                }
+            """
+        )
+        assertTypeCheckingError(
+            """
+                czynność f() {
+                    zakończ
+                }
                 czynność g() {
                     zm a: Liczba
                     a = f()
@@ -153,7 +185,17 @@ class TypeCheckingErrorsTest {
                 czynność f() -> Liczba {
                     zwróć 3
                 }
-                
+                czynność g() {
+                    zm a: Czy
+                    a = f()
+                }
+            """
+        )
+        assertTypeCheckingError(
+            """
+                czynność f() {
+                    zakończ
+                }
                 czynność g() {
                     zm a: Czy
                     a = f()
@@ -166,22 +208,39 @@ class TypeCheckingErrorsTest {
     @Test
     fun `test integer operators with wrong types`() {
         val binaryOperators = listOf("+", "-", "*", "/", "%", "^", "&", "|", "<<", ">>")
-        val unaryOperators = listOf("-", "++", "--") // , "~")
-        val postOperators = listOf("++", "--")
+        val unaryOperators = listOf("-") // , "~")
 
         for (operator in binaryOperators) {
             assertTypeCheckingError(
                 """
-                   zm a: Liczba = 4
-                   zm b: Czy = prawda
-                   zm c: Liczba = a $operator b;
+                    zm a: Liczba = 4
+                    zm b: Czy = prawda
+                    zm c: Liczba = a $operator b;
                 """
             )
             assertTypeCheckingError(
                 """
-                   zm a: Liczba = 4
-                   zm b: Czy = prawda
-                   zm c: Liczba = b $operator a;
+                    zm a: Liczba = 4
+                    zm b: Czy = prawda
+                    zm c: Liczba = b $operator a;
+                """
+            )
+            assertTypeCheckingError(
+                """
+                    czynność f() {
+                        zakończ 
+                    }
+                    zm b: Czy = prawda
+                    zm c: Liczba = f() $operator b;
+                """
+            )
+            assertTypeCheckingError(
+                """
+                    czynność f() {
+                        zakończ 
+                    }
+                    zm a: Liczba = 4
+                    zm c: Liczba = b $operator f();
                 """
             )
         }
@@ -189,17 +248,16 @@ class TypeCheckingErrorsTest {
         for (operator in unaryOperators) {
             assertTypeCheckingError(
                 """
-                   zm b: Czy = prawda
-                   zm c: Liczba = $operator b;
+                    zm b: Czy = prawda
+                    zm c: Liczba = $operator b;
                 """
             )
-        }
-
-        for (operator in postOperators) {
             assertTypeCheckingError(
                 """
-                   zm b: Czy = prawda
-                   zm c: Liczba = b $operator;
+                    czynność f() {
+                        zakończ 
+                    }
+                    zm c: Liczba = $operator f();
                 """
             )
         }
@@ -214,16 +272,34 @@ class TypeCheckingErrorsTest {
         for (operator in binaryOperators) {
             assertTypeCheckingError(
                 """
-                   zm a: Liczba = 4
-                   zm b: Czy = prawda
-                   zm c: Czy = a $operator b;
+                    zm a: Liczba = 4
+                    zm b: Czy = prawda
+                    zm c: Czy = a $operator b;
                 """
             )
             assertTypeCheckingError(
                 """
-                   zm a: Liczba = 4
-                   zm b: Czy = prawda
-                   zm c: Czy = b $operator a;
+                    zm a: Liczba = 4
+                    zm b: Czy = prawda
+                    zm c: Czy = b $operator a;
+                """
+            )
+            assertTypeCheckingError(
+                """
+                    czynność f() {
+                        zakończ 
+                    }
+                    zm b: Czy = prawda
+                    zm c: Czy = f() $operator b;
+                """
+            )
+            assertTypeCheckingError(
+                """
+                    czynność f() {
+                        zakończ 
+                    }
+                    zm a: Liczba = 4
+                    zm c: Czy = b $operator f();
                 """
             )
         }
@@ -231,8 +307,16 @@ class TypeCheckingErrorsTest {
         for (operator in unaryOperators) {
             assertTypeCheckingError(
                 """
-                   zm b: Liczba = 17
-                   zm c: Czy = $operator b;
+                    zm b: Liczba = 17
+                    zm c: Czy = $operator b;
+                """
+            )
+            assertTypeCheckingError(
+                """
+                    czynność f() {
+                        zakończ 
+                    }
+                    zm c: Czy = $operator f();
                 """
             )
         }
@@ -246,16 +330,34 @@ class TypeCheckingErrorsTest {
         for (operator in comparisonOperators) {
             assertTypeCheckingError(
                 """
-                   zm a: Liczba = 4
-                   zm b: Czy = prawda
-                   zm c: Czy = a $operator b;
+                    zm a: Liczba = 4
+                    zm b: Czy = prawda
+                    zm c: Czy = a $operator b;
                 """
             )
             assertTypeCheckingError(
                 """
-                   zm a: Liczba = 4
-                   zm b: Czy = prawda
-                   zm c: Czy = b $operator a;
+                    zm a: Liczba = 4
+                    zm b: Czy = prawda
+                    zm c: Czy = b $operator a;
+                """
+            )
+            assertTypeCheckingError(
+                """
+                    czynność f() {
+                        zakończ 
+                    }
+                    zm b: Czy = prawda
+                    zm c: Czy = f() $operator b;
+                """
+            )
+            assertTypeCheckingError(
+                """
+                    czynność f() {
+                        zakończ 
+                    }
+                    zm a: Liczba = 4
+                    zm c: Czy = b $operator f();
                 """
             )
         }
@@ -270,6 +372,46 @@ class TypeCheckingErrorsTest {
         assertTypeCheckingError("wart a: Liczba = 34 ? 10 : 31;")
         assertTypeCheckingError("wart a: Liczba = 99 ? prawda : fałsz;")
         assertTypeCheckingError("wart a: Czy = fałsz ? 11 : 16;")
+        assertTypeCheckingError(
+            """
+            czynność f() {
+                zakończ
+            }
+            czynność g() {
+                f() ? 10 : 11                            
+            }
+            """
+        )
+        assertTypeCheckingError(
+            """
+            czynność f() {
+                zakończ
+            }
+            czynność g() {
+                prawda ? f() : 11                            
+            }
+            """
+        )
+        assertTypeCheckingError(
+            """
+            czynność f() {
+                zakończ
+            }
+            czynność g() {
+                prawda ? 12 : f()                   
+            }
+            """
+        )
+        assertTypeCheckingError(
+            """
+            czynność f() {
+                zakończ
+            }
+            czynność g() {
+                prawda ? fałsz : f()                   
+            }
+            """
+        )
     }
 
     @Ignore
@@ -277,44 +419,44 @@ class TypeCheckingErrorsTest {
     fun `test wrong return type`() {
         assertTypeCheckingError(
             """
-            czynność f() {
-                zwróć 4                            
-            }
+                czynność f() {
+                    zwróć 4                            
+                }
             """
         )
         assertTypeCheckingError(
             """
-            czynność f() {
-                zwróć fałsz                            
-            }
+                czynność f() {
+                    zwróć fałsz                            
+                }
             """
         )
         assertTypeCheckingError(
             """
-            czynność f() -> Liczba {
-                zakończ                            
-            }
+                czynność f() -> Liczba {
+                    zakończ                            
+                }
             """
         )
         assertTypeCheckingError(
             """
-            czynność f() -> Liczba {
-                zwróć fałsz                            
-            }
+                czynność f() -> Liczba {
+                    zwróć fałsz                            
+                }
             """
         )
         assertTypeCheckingError(
             """
-            czynność f() -> Czy {
-                zakończ                            
-            }
+                czynność f() -> Czy {
+                    zakończ                            
+                }
             """
         )
         assertTypeCheckingError(
             """
-            czynność f() -> Czy {
-                zwróć 654
-            }
+                czynność f() -> Czy {
+                    zwróć 654
+                }
             """
         )
     }
@@ -324,16 +466,16 @@ class TypeCheckingErrorsTest {
     fun `test wrong default parameter type`() {
         assertTypeCheckingError(
             """
-            czynność f(a: Liczba = fałsz) {
-                zakończ
-            }
+                czynność f(a: Liczba = fałsz) {
+                    zakończ
+                }
             """
         )
         assertTypeCheckingError(
             """
-            czynność f(a: Czy = 13) {
-                zakończ
-            }
+                czynność f(a: Czy = 13) {
+                    zakończ
+                }
             """
         )
     }
@@ -343,46 +485,94 @@ class TypeCheckingErrorsTest {
     fun `test wrong function call argument type`() {
         assertTypeCheckingError(
             """
-            czynność f(a: Liczba) {
-                zakończ
-            }
-            
-            czynność g() {
-                f(fałsz)
-            }
+                czynność f(a: Liczba) {
+                    zakończ
+                }
+                czynność g() {
+                    f(fałsz)
+                }
             """
         )
         assertTypeCheckingError(
             """
-            czynność f(a: Czy) {
-                zakończ
-            }
-            
-            czynność g() {
-                f(7)
-            }
+                czynność h() {
+                    zakończ
+                }
+                czynność f(a: Liczba) {
+                    zakończ
+                }
+                czynność g() {
+                    f(h())
+                }
             """
         )
         assertTypeCheckingError(
             """
-            czynność f(a: Liczba, b: Liczba = 2, c: Liczba = 3) -> Liczba {
-                zwróć a + b + c
-            }
-            
-            czynność g() {
-                f(3, c = prawda)
-            }
+                czynność f(a: Czy) {
+                    zakończ
+                }
+                czynność g() {
+                    f(7)
+                }
             """
         )
         assertTypeCheckingError(
             """
-            czynność f(a: Czy, b: Czy = fałsz, c: Czy = fałsz) -> Czy {
-                zwróć a lub b lub c
-            }
-            
-            czynność g() {
-                f(fałsz, c = 3)
-            }
+                czynność h() {
+                    zakończ
+                }
+                czynność f(a: Czy) {
+                    zakończ
+                }
+                czynność g() {
+                    f(h())
+                }
+            """
+        )
+        assertTypeCheckingError(
+            """
+                czynność f(a: Liczba, b: Liczba = 2, c: Liczba = 3) -> Liczba {
+                    zwróć a + b + c
+                }
+                czynność g() {
+                    f(3, c = prawda)
+                }
+            """
+        )
+        assertTypeCheckingError(
+            """
+                czynność h() {
+                    zakończ
+                }
+                czynność f(a: Liczba, b: Liczba = 2, c: Liczba = 3) -> Liczba {
+                    zwróć a + b + c
+                }
+                czynność g() {
+                    f(3, c = h())
+                }
+            """
+        )
+        assertTypeCheckingError(
+            """
+                czynność f(a: Czy, b: Czy = fałsz, c: Czy = fałsz) -> Czy {
+                    zwróć a lub b lub c
+                }
+                czynność g() {
+                    f(fałsz, c = 3)
+                }
+            """
+        )
+        assertTypeCheckingError(
+            """
+                czynność h() {
+                    zakończ
+                }
+                czynność f(a: Czy, b: Czy = fałsz, c: Czy = fałsz) -> Czy {
+                    zwróć a lub b lub c
+                }
+                czynność g() {
+                    f(fałsz, c = h())
+                }
             """
         )
     }
@@ -392,44 +582,70 @@ class TypeCheckingErrorsTest {
     fun `test wrong expression type in if else statements`() {
         assertTypeCheckingError(
             """
-            czynność f() {
-                jeśli (4) {
-                    zakończ
+                czynność f() {
+                    jeśli (4) {
+                        zakończ
+                    }
                 }
-            }
             """
         )
         assertTypeCheckingError(
             """
-            czynność f() {
-                wart a: Liczba = 15
-                jeśli (a) {
-                    zakończ
+                czynność f() {
+                    wart a: Liczba = 15
+                    jeśli (a) {
+                        zakończ
+                    }
                 }
-            }
             """
         )
         assertTypeCheckingError(
             """
-            czynność f() {
-                jeśli (fałsz) {
+                czynność g() {
                     zakończ
-                } zaś gdy (555) {
-                    zakończ      
                 }
-            }
+                czynność f() {
+                    jeśli (g()) {
+                        zakończ
+                    }
+                }
             """
         )
         assertTypeCheckingError(
             """
-            czynność f() {
-                wart a: Liczba = 15
-                jeśli (a < 10) {
-                    zakończ
-                } zaś gdy (a) {
-                    zakończ      
+                czynność f() {
+                    jeśli (fałsz) {
+                        zakończ
+                    } zaś gdy (555) {
+                        zakończ      
+                    }
                 }
-            }
+            """
+        )
+        assertTypeCheckingError(
+            """
+                czynność f() {
+                    wart a: Liczba = 15
+                    jeśli (a < 10) {
+                        zakończ
+                    } zaś gdy (a) {
+                        zakończ      
+                    }
+                }
+            """
+        )
+        assertTypeCheckingError(
+            """
+                czynność g() {
+                    zakończ
+                }
+                czynność f() {
+                    jeśli (fałsz) {
+                        zakończ
+                    } zaś gdy (g()) {
+                        zakończ      
+                    }
+                }
             """
         )
     }
@@ -439,32 +655,35 @@ class TypeCheckingErrorsTest {
     fun `test wrong expression type in while loop`() {
         assertTypeCheckingError(
             """
-            czynność f() {
-                zm a: Liczba = 0
-                dopóki (13) {
-                    a = a + 1
+                czynność f() {
+                    zm a: Liczba = 0
+                    dopóki (13) {
+                        a = a + 1
+                    }
                 }
-            }
             """
         )
         assertTypeCheckingError(
             """
-            czynność f() {
-                zm a: Liczba = 0
-                dopóki (a) {
-                    a = a + 1
+                czynność f() {
+                    zm a: Liczba = 0
+                    dopóki (a) {
+                        a = a + 1
+                    }
                 }
-            }
             """
         )
         assertTypeCheckingError(
             """
-            czynność f() {
-                zm a: Liczba = 0
-                dopóki (a - 1) {
-                    a = a + 1
+                czynność g() {
+                    zakończ
                 }
-            }
+                czynność f() {
+                    zm a: Liczba = 0
+                    dopóki (g()) {
+                        a = a + 1
+                    }
+                }
             """
         )
     }

@@ -36,4 +36,11 @@ sealed class Diagnostic {
     class TypeCheckingError() : Diagnostic() {
         override fun isError() = true
     }
+
+    sealed class VariablePropertiesError() : Diagnostic() {
+        override fun isError() = true
+
+        class AssignmentToOuterVariable() : VariablePropertiesError()
+        class AssignmentToFunctionParameter() : VariablePropertiesError()
+    }
 }

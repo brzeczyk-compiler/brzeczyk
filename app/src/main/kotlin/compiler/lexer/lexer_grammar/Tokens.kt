@@ -56,10 +56,6 @@ class Tokens(private val dfaFactory: DfaFactory = RegexDfaFactory()) {
             Pair(TokenType.DIVIDE, "/"),
             Pair(TokenType.MODULO, "%"),
 
-            // Increment and decrement operators
-            Pair(TokenType.INCREMENT, "++"),
-            Pair(TokenType.DECREMENT, "--"),
-
             // Bitwise operators
             Pair(TokenType.BIT_NOT, "~"),
             Pair(TokenType.BIT_OR, "\\|"),
@@ -89,6 +85,7 @@ class Tokens(private val dfaFactory: DfaFactory = RegexDfaFactory()) {
             // Boolean constants
             Pair(TokenType.TRUE_CONSTANT, "prawda"),
             Pair(TokenType.FALSE_CONSTANT, "fałsz"),
+            Pair(TokenType.UNIT_CONSTANT, "nic"),
 
             // Integer literals
             // Only includes nonnegative integers

@@ -1,6 +1,6 @@
 package compiler.ast
 
-typealias Block = List<Statement>
+typealias StatementBlock = List<Statement>
 
 sealed class Statement {
     data class Evaluation(val expression: Expression) : Statement()
@@ -13,17 +13,17 @@ sealed class Statement {
         val value: Expression
     ) : Statement()
 
-    data class Block(val block: Block) : Statement()
+    data class Block(val block: StatementBlock) : Statement()
 
     data class Conditional(
         val condition: Expression,
-        val actionWhenTrue: Block,
-        val actionWhenFalse: Block?
+        val actionWhenTrue: StatementBlock,
+        val actionWhenFalse: StatementBlock?
     ) : Statement()
 
     data class Loop(
         val condition: Expression,
-        val action: Block
+        val action: StatementBlock
     ) : Statement()
 
     object LoopBreak : Statement()

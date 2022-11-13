@@ -15,8 +15,6 @@ enum class TokenType {
     COLON, SEMICOLON, QUESTION_MARK, COMMA, ARROW, NEWLINE,
     // Arithmetic operators
     PLUS, MINUS, MULTIPLY, DIVIDE, MODULO,
-    // Increment and decrement operators
-    INCREMENT, DECREMENT,
     // Bitwise operators
     BIT_NOT, BIT_OR, BIT_AND, BIT_XOR, SHIFT_LEFT, SHIFT_RIGHT,
     // Comparison operators
@@ -25,8 +23,8 @@ enum class TokenType {
     ASSIGNMENT,
     // Logical operators
     NOT, OR, AND, IFF, XOR,
-    // Boolean constants
-    TRUE_CONSTANT, FALSE_CONSTANT,
+    // Named constants
+    TRUE_CONSTANT, FALSE_CONSTANT, UNIT_CONSTANT,
     // Integers
     INTEGER,
     // Identifiers

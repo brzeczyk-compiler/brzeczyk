@@ -37,6 +37,8 @@ sealed class Expression {
         enum class Kind {
             AND,
             OR,
+            IFF,
+            XOR,
             ADD,
             SUBTRACT,
             MULTIPLY,

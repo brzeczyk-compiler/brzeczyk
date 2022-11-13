@@ -23,7 +23,7 @@ object AstFactory {
         return if (parseTree.nonTerm() in listOf(NonTerminalType.EXPR2048, NonTerminalType.E_EXPR2048) || parseTree.children.size > 1)
             parseTree
         else
-            parseTree.children.first() as ParseTree.Branch
+            skipPassThroughExpressions(parseTree.children.first() as ParseTree.Branch)
     }
 
     private fun extractIdentifier(parseTree: ParseTree.Branch<Symbol>, diagnostics: Diagnostics): String {
@@ -56,8 +56,8 @@ object AstFactory {
         val children = (parseTree as ParseTree.Branch).getFilteredChildren()
         val globals = children.map {
             when (it.nonTerm()) {
-                NonTerminalType.FUNC_DEF -> Program.Global.VariableDefinition(processVariableDefinition(it, diagnostics))
-                NonTerminalType.VAR_DECL -> Program.Global.FunctionDefinition(processFunctionDefinition(it, diagnostics))
+                NonTerminalType.VAR_DECL -> Program.Global.VariableDefinition(processVariableDeclaration(it, diagnostics))
+                NonTerminalType.FUNC_DEF -> Program.Global.FunctionDefinition(processFunctionDefinition(it, diagnostics))
                 else -> throw IllegalArgumentException()
             }
         }
@@ -65,7 +65,7 @@ object AstFactory {
     }
 
     private fun processType(parseTree: ParseTree<Symbol>): Type {
-        return when (parseTree.token()) {
+        return when ((parseTree as ParseTree.Branch).children[0].token()) {
             TokenType.TYPE_INTEGER -> Type.Number
             TokenType.TYPE_BOOLEAN -> Type.Boolean
             TokenType.TYPE_UNIT -> Type.Unit
@@ -74,7 +74,7 @@ object AstFactory {
     }
 
     private fun processConst(parseTree: ParseTree<Symbol>): Expression {
-        return when (parseTree.token()) {
+        return when ((parseTree as ParseTree.Branch).children[0].token()) {
             TokenType.INTEGER -> Expression.NumberLiteral((parseTree as ParseTree.Leaf).content.toInt())
             TokenType.TRUE_CONSTANT -> Expression.BooleanLiteral(true)
             TokenType.FALSE_CONSTANT -> Expression.BooleanLiteral(false)
@@ -83,7 +83,7 @@ object AstFactory {
         }
     }
 
-    private fun processVariableDefinition(parseTree: ParseTree<Symbol>, diagnostics: Diagnostics): Variable {
+    private fun processVariableDeclaration(parseTree: ParseTree<Symbol>, diagnostics: Diagnostics): Variable {
         val children = (parseTree as ParseTree.Branch).getFilteredChildren()
 
         val kind = when (children[0].token()) {
@@ -322,7 +322,7 @@ object AstFactory {
             Productions.atomicReturn ->
                 Statement.FunctionReturn(processExpression(children[1], diagnostics))
             Productions.atomicVarDef ->
-                Statement.VariableDefinition(processVariableDefinition(children[0], diagnostics))
+                Statement.VariableDefinition(processVariableDeclaration(children[0], diagnostics))
             else -> throw IllegalArgumentException()
         }
     }

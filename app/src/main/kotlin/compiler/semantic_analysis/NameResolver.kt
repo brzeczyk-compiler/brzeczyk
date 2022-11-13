@@ -1,7 +1,12 @@
 package compiler.semantic_analysis
 
-import compiler.ast.*
+import compiler.ast.Expression
 import compiler.ast.Function
+import compiler.ast.NamedNode
+import compiler.ast.Program
+import compiler.ast.Statement
+import compiler.ast.Type
+import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic
 import compiler.common.diagnostics.Diagnostics
 import compiler.common.semantic_analysis.MutableReferenceMap
@@ -39,7 +44,6 @@ object NameResolver {
 
         val visibleNames: MutableMap<String, NameOverloadState> = HashMap()
 
-
         // Auxiliary functions for reporting issues to diagnostics
 
         fun reportIfNameConflict(name: String, scope: MutableMap<String, NamedNode>) {
@@ -70,7 +74,6 @@ object NameResolver {
                 diagnostics.report(Diagnostic.NameResolutionErrors.FunctionIsNotVariable())
         }
 
-
         // Auxiliary functions for managing scopes of names
 
         fun makeScope(): MutableMap<String, NamedNode> {
@@ -100,7 +103,6 @@ object NameResolver {
                     visibleNames.remove(name)
             }
         }
-
 
         // Core function
 

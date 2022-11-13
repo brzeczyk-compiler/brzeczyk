@@ -11,8 +11,6 @@ import compiler.parser.Parser
 import compiler.parser.grammar.ParserGrammar
 import compiler.parser.grammar.Symbol
 import compiler.semantic_analysis.NameResolver
-import compiler.semantic_analysis.TypeChecker
-import compiler.semantic_analysis.VariablePropertiesAnalyzer
 import java.io.Reader
 
 class Compiler(val diagnostics: Diagnostics) {

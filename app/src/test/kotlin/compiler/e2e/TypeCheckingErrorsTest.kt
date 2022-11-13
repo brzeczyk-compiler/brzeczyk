@@ -2,6 +2,7 @@ package compiler.e2e
 
 import compiler.common.diagnostics.Diagnostic
 import compiler.e2e.E2eAsserter.assertErrorOfType
+import compiler.e2e.E2eAsserter.assertProgramCorrect
 import org.junit.Ignore
 import org.junit.Test
 
@@ -20,6 +21,10 @@ class TypeCheckingErrorsTest {
 
     private fun assertConstantWithoutValueError(program: String) {
         assertErrorOfType(program, Diagnostic.ConstantWithoutValue::class)
+    }
+
+    private fun assertNonConstantExpressionError(program: String) {
+        assertErrorOfType(program, Diagnostic.NonConstantExpression::class)
     }
 
     @Ignore
@@ -124,6 +129,168 @@ class TypeCheckingErrorsTest {
                 }
             """
         )
+    }
+
+    @Ignore
+    @Test
+    fun `test compile time constants`() {
+        // The commented out lines don't work right now as only
+        // integer and boolean literals are recognized as constant expressions.
+        // We might want to evaluate constant expressions as right now
+        // we don't even support negative numbers
+
+        assertNonConstantExpressionError(
+            """
+                czynność f() {
+                    zm a: Liczba = 3
+                    stała b: Liczba = a
+                }
+            """
+        )
+        assertNonConstantExpressionError(
+            """
+                czynność f() {
+                    zm a: Liczba = 3
+                    stała b: Liczba = a * 2
+                }
+            """
+        )
+        assertNonConstantExpressionError(
+            """
+                czynność f(a: Liczba) {
+                    stała b: Liczba = a
+                }
+            """
+        )
+        assertNonConstantExpressionError(
+            """
+                czynność f(a: Liczba) {a
+                    stała b: Czy = a > 7 albo nie a < 3
+                }
+            """
+        )
+        assertNonConstantExpressionError(
+            """
+                czynność f() {
+                    zm a: Czy = fałsz
+                    stała b: Liczba = a ? 13 : 10
+                }
+            """
+        )
+
+        assertProgramCorrect("stała a: Czy = prawda;")
+        assertProgramCorrect("stała a: Czy = fałsz;")
+//        assertProgramCorrect("stała a: Czy = 134 > 43;")
+//        assertProgramCorrect("stała a: Czy = 34 > 7 ? fałsz : 23 == 10;")
+        assertProgramCorrect("stała a: Liczba = 0;")
+        assertProgramCorrect("stała a: Liczba = 123;")
+//        assertProgramCorrect("stała a: Liczba = -17;")
+//        assertProgramCorrect("stała a: Liczba = 10 + 4;")
+//        assertProgramCorrect("stała a: Liczba = 1 << 8;")
+//        assertProgramCorrect("stała a: Liczba = 4 > 6 ? -3 : 30 % 7;")
+//        assertProgramCorrect(
+//            """
+//                stała a: Liczba = 40
+//                stała b: Liczba = a
+//            """
+//        )
+//        assertProgramCorrect(
+//            """
+//                stała a: Czy = prawda
+//                stała b: Liczba = a ? 1 : 2
+//            """
+//        )
+//        assertProgramCorrect(
+//            """
+//                stała b: Liczba = 14
+//                stała a: Liczba = b >> 1
+//                czynność f() {
+//                    stała b: Liczba = a > 10 ? a + 1 : a * 17
+//                }
+//            """
+//        )
+    }
+
+    @Ignore
+    @Test
+    fun `test non constant default function parameters`() {
+        // The commented out lines don't work right now as only
+        // integer and boolean literals are recognized as constant expressions.
+        // We might want to evaluate constant expressions as right now
+        // we don't even support negative numbers
+
+        assertNonConstantExpressionError(
+            """
+                zm a: Liczba = 143
+                czynność g(b: Liczba = a + 1) {
+                    zakończ
+                }
+            """
+        )
+        assertNonConstantExpressionError(
+            """
+                zm a: Czy = fałsz
+                czynność f(b: Czy = nie a) {
+                    zakończ
+                }
+            """
+        )
+
+        assertProgramCorrect(
+            """
+                czynność f(a: Liczba = 13) { 
+                    zakończ
+                }
+            """
+        )
+        assertProgramCorrect(
+            """
+                czynność f(a: Czy = fałsz) { 
+                    zakończ
+                }
+            """
+        )
+//        assertProgramCorrect(
+//            """
+//                czynnośc f(b: Liczba = 35 / 8 - 1) {
+//                    zakończ
+//                }
+//            """
+//        )
+//        assertProgramCorrect(
+//            """
+//                stała a: Liczba = 124
+//                czynnośc f(b: Liczba = a) {
+//                    zakończ
+//                }
+//            """
+//        )
+//        assertProgramCorrect(
+//            """
+//                stała a: Liczba = 124
+//                czynnośc f(b: Liczba = 3 * a + 1) {
+//                    zakończ
+//                }
+//            """
+//        )
+//        assertProgramCorrect(
+//            """
+//                stała a: Czy = prawda
+//                czynnośc f(b: Liczba = nie a lub fałsz) {
+//                    zakończ
+//                }
+//            """
+//        )
+//        assertProgramCorrect(
+//            """
+//                czynnośc f() {
+//                    stała a: Czy = prawda
+//                    czynność g(b: Liczba = a ? 3 : 4) {
+//                        zakończ
+//                    }
+//                }
+//            """
+//        )
     }
 
     @Ignore

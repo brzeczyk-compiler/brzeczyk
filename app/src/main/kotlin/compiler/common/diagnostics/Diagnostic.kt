@@ -38,59 +38,52 @@ sealed class Diagnostic {
         }.toString()
     }
 
-    data class ConstantWithoutValue(val variable: Variable) : Diagnostic() {
+    sealed class TypeCheckingError : Diagnostic() {
         override fun isError() = true
-        override fun toString() = "A constant must have a value"
-    }
 
-    data class UninitializedGlobalVariable(val variable: Variable) : Diagnostic() {
-        override fun isError() = true
-        override fun toString() = "A global variable must be initialized"
-    }
+        data class ConstantWithoutValue(val variable: Variable) : TypeCheckingError() {
+            override fun toString() = "A constant must have a value"
+        }
 
-    data class ImmutableAssignment(val assignment: Statement.Assignment, val variable: Variable) : Diagnostic() {
-        override fun isError() = true
-        override fun toString() = "Cannot assign to a " + if (variable.kind == Variable.Kind.CONSTANT) "constant" else "value"
-    }
+        data class UninitializedGlobalVariable(val variable: Variable) : TypeCheckingError() {
+            override fun toString() = "A global variable must be initialized"
+        }
 
-    data class ParameterAssignment(val assignment: Statement.Assignment, val parameter: Function.Parameter) : Diagnostic() {
-        override fun isError() = true
-        override fun toString() = "Cannot assign to a parameter"
-    }
+        data class ImmutableAssignment(val assignment: Statement.Assignment, val variable: Variable) : TypeCheckingError() {
+            override fun toString() = "Cannot assign to a " + if (variable.kind == Variable.Kind.CONSTANT) "constant" else "value"
+        }
 
-    data class FunctionAssignment(val assignment: Statement.Assignment, val function: Function) : Diagnostic() {
-        override fun isError() = true
-        override fun toString() = "Cannot assign to a function"
-    }
+        data class ParameterAssignment(val assignment: Statement.Assignment, val parameter: Function.Parameter) : TypeCheckingError() {
+            override fun toString() = "Cannot assign to a parameter"
+        }
 
-    data class FunctionAsValue(val expression: Expression.Variable, val function: Function) : Diagnostic() {
-        override fun isError() = true
-        override fun toString() = "Cannot use a function as a value"
-    }
+        data class FunctionAssignment(val assignment: Statement.Assignment, val function: Function) : TypeCheckingError() {
+            override fun toString() = "Cannot assign to a function"
+        }
 
-    data class VariableCall(val call: Expression.FunctionCall, val variable: Variable) : Diagnostic() {
-        override fun isError() = true
-        override fun toString() = "Cannot call a variable"
-    }
+        data class FunctionAsValue(val expression: Expression.Variable, val function: Function) : TypeCheckingError() {
+            override fun toString() = "Cannot use a function as a value"
+        }
 
-    data class ParameterCall(val call: Expression.FunctionCall, val parameter: Function.Parameter) : Diagnostic() {
-        override fun isError() = true
-        override fun toString() = "Cannot call a parameter"
-    }
+        data class VariableCall(val call: Expression.FunctionCall, val variable: Variable) : TypeCheckingError() {
+            override fun toString() = "Cannot call a variable"
+        }
 
-    data class ConditionalTypesMismatch(val conditional: Expression.Conditional, val typeWhenTrue: Type, val typeWhenFalse: Type) : Diagnostic() {
-        override fun isError() = true
-        override fun toString() = "The results of a conditional operator cannot have distinct types '$typeWhenTrue' and '$typeWhenFalse'"
-    }
+        data class ParameterCall(val call: Expression.FunctionCall, val parameter: Function.Parameter) : TypeCheckingError() {
+            override fun toString() = "Cannot call a parameter"
+        }
 
-    data class NonConstantExpression(val expression: Expression) : Diagnostic() {
-        override fun isError() = true
-        override fun toString() = "Expected a constant expression"
-    }
+        data class ConditionalTypesMismatch(val conditional: Expression.Conditional, val typeWhenTrue: Type, val typeWhenFalse: Type) : TypeCheckingError() {
+            override fun toString() = "The results of a conditional operator cannot have distinct types '$typeWhenTrue' and '$typeWhenFalse'"
+        }
 
-    data class InvalidType(val expression: Expression, val type: Type, val expectedType: Type) : Diagnostic() {
-        override fun isError() = true
-        override fun toString() = "Expected type '$expectedType' instead of '$type'"
+        data class NonConstantExpression(val expression: Expression) : TypeCheckingError() {
+            override fun toString() = "Expected a constant expression"
+        }
+
+        data class InvalidType(val expression: Expression, val type: Type, val expectedType: Type) : TypeCheckingError() {
+            override fun toString() = "Expected type '$expectedType' instead of '$type'"
+        }
     }
 
     sealed class VariablePropertiesError() : Diagnostic() {

@@ -8,7 +8,7 @@ import compiler.ast.Statement
 import compiler.ast.StatementBlock
 import compiler.ast.Type
 import compiler.ast.Variable
-import compiler.common.diagnostics.Diagnostic
+import compiler.common.diagnostics.Diagnostic.TypeCheckingError
 import compiler.common.diagnostics.Diagnostics
 import compiler.common.semantic_analysis.ReferenceHashMap
 import compiler.common.semantic_analysis.ReferenceMap
@@ -40,9 +40,9 @@ class TypeChecker(private val nameResolution: ReferenceMap<Any, NamedNode>, priv
             else
                 checkExpression(variable.value, variable.type)
         } else if (variable.kind == Variable.Kind.CONSTANT)
-            diagnostics.report(Diagnostic.ConstantWithoutValue(variable))
+            diagnostics.report(TypeCheckingError.ConstantWithoutValue(variable))
         else if (global)
-            diagnostics.report(Diagnostic.UninitializedGlobalVariable(variable))
+            diagnostics.report(TypeCheckingError.UninitializedGlobalVariable(variable))
     }
 
     private fun checkFunction(function: Function, global: Boolean) {
@@ -68,13 +68,13 @@ class TypeChecker(private val nameResolution: ReferenceMap<Any, NamedNode>, priv
                         when (val node = nameResolution[statement]!!) {
                             is Variable -> {
                                 if (node.kind != Variable.Kind.VARIABLE)
-                                    diagnostics.report(Diagnostic.ImmutableAssignment(statement, node))
+                                    diagnostics.report(TypeCheckingError.ImmutableAssignment(statement, node))
                                 checkExpression(statement.value, node.type)
                             }
 
-                            is Function.Parameter -> diagnostics.report(Diagnostic.ParameterAssignment(statement, node))
+                            is Function.Parameter -> diagnostics.report(TypeCheckingError.ParameterAssignment(statement, node))
 
-                            is Function -> diagnostics.report(Diagnostic.FunctionAssignment(statement, node))
+                            is Function -> diagnostics.report(TypeCheckingError.FunctionAssignment(statement, node))
                         }
                     }
 
@@ -118,15 +118,15 @@ class TypeChecker(private val nameResolution: ReferenceMap<Any, NamedNode>, priv
 
                         is Function.Parameter -> return node.type
 
-                        is Function -> diagnostics.report(Diagnostic.FunctionAsValue(expression, node))
+                        is Function -> diagnostics.report(TypeCheckingError.FunctionAsValue(expression, node))
                     }
                 }
 
                 is Expression.FunctionCall -> {
                     when (val node = nameResolution[expression]!!) {
-                        is Variable -> diagnostics.report(Diagnostic.VariableCall(expression, node))
+                        is Variable -> diagnostics.report(TypeCheckingError.VariableCall(expression, node))
 
-                        is Function.Parameter -> diagnostics.report(Diagnostic.ParameterCall(expression, node))
+                        is Function.Parameter -> diagnostics.report(TypeCheckingError.ParameterCall(expression, node))
 
                         is Function -> {
                             for (argument in expression.arguments) {
@@ -203,7 +203,7 @@ class TypeChecker(private val nameResolution: ReferenceMap<Any, NamedNode>, priv
                     if (typeWhenTrue == typeWhenFalse)
                         return typeWhenTrue
                     else if (typeWhenTrue != null && typeWhenFalse != null)
-                        diagnostics.report(Diagnostic.ConditionalTypesMismatch(expression, typeWhenTrue, typeWhenFalse))
+                        diagnostics.report(TypeCheckingError.ConditionalTypesMismatch(expression, typeWhenTrue, typeWhenFalse))
                 }
             }
 
@@ -216,7 +216,7 @@ class TypeChecker(private val nameResolution: ReferenceMap<Any, NamedNode>, priv
     private fun checkExpression(expression: Expression, expectedType: Type) {
         val type = checkExpression(expression)
         if (type != null && type != expectedType)
-            diagnostics.report(Diagnostic.InvalidType(expression, type, expectedType))
+            diagnostics.report(TypeCheckingError.InvalidType(expression, type, expectedType))
     }
 
     private fun checkConstantExpression(expression: Expression): Type? {
@@ -234,7 +234,7 @@ class TypeChecker(private val nameResolution: ReferenceMap<Any, NamedNode>, priv
                 is Expression.BinaryOperation,
                 is Expression.Conditional -> {
                     // TODO: some of these could be considered as constant
-                    diagnostics.report(Diagnostic.NonConstantExpression(expression))
+                    diagnostics.report(TypeCheckingError.NonConstantExpression(expression))
                 }
             }
 
@@ -247,6 +247,6 @@ class TypeChecker(private val nameResolution: ReferenceMap<Any, NamedNode>, priv
     private fun checkConstantExpression(expression: Expression, expectedType: Type) {
         val type = checkConstantExpression(expression)
         if (type != null && type != expectedType)
-            diagnostics.report(Diagnostic.InvalidType(expression, type, expectedType))
+            diagnostics.report(TypeCheckingError.InvalidType(expression, type, expectedType))
     }
 }

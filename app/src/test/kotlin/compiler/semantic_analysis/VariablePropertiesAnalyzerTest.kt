@@ -143,6 +143,7 @@ class VariablePropertiesAnalyzerTest {
     //         zm y: Liczba = x
     //     }
     // }
+    @Test
     fun `test read outer parameter in inner function`() {
         val readFromX = Expression.Variable("x")
         val variableY = Variable(Variable.Kind.VALUE, "y", Type.Number, readFromX)

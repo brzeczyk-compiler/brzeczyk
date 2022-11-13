@@ -51,20 +51,8 @@ object VariablePropertiesAnalyzer {
         fun analyzeVariables(node: Any, currentOwner: Function?) {
             when (node) {
                 is Statement.Evaluation -> analyzeVariables(node.expression, currentOwner)
-                is Statement.VariableDefinition -> {
-                    variableProperties.put(
-                        node.variable,
-                        VariableProperties(currentOwner, false)
-                    )
-                    node.variable.value?.let { analyzeVariables(it, currentOwner) }
-                }
-                is Global.VariableDefinition -> {
-                    variableProperties.put(
-                        node.variable,
-                        VariableProperties(currentOwner, false)
-                    )
-                    node.variable.value?.let { analyzeVariables(it, currentOwner) }
-                }
+                is Statement.VariableDefinition -> analyzeVariables(node.variable, currentOwner)
+                is Global.VariableDefinition -> analyzeVariables(node.variable, currentOwner)
                 is Statement.FunctionDefinition -> analyzeVariables(node.function, currentOwner)
                 is Global.FunctionDefinition -> analyzeVariables(node.function, currentOwner)
                 is Statement.Assignment -> {
@@ -96,6 +84,13 @@ object VariablePropertiesAnalyzer {
                         it.defaultValue?.let { analyzeVariables(it, currentOwner) }
                     }
                     node.body.forEach { analyzeVariables(it, node) }
+                }
+                is Variable -> {
+                    variableProperties.put(
+                        node,
+                        VariableProperties(currentOwner, false)
+                    )
+                    node.value?.let { analyzeVariables(it, currentOwner) }
                 }
             }
         }

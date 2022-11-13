@@ -23,6 +23,36 @@ class NameResolutionErrorsTest {
 
     @Ignore
     @Test
+    fun `test undefined variable (defined later but not assigned)`() {
+        assertErrorOfType(
+            """
+                    czynność f() {
+                        x = 17
+                        zm x: Liczba
+                    }
+                    
+                """,
+            Diagnostic.NameResolutionErrors.UndefinedVariable::class
+        )
+    }
+
+    @Ignore
+    @Test
+    fun `test undefined variable (defined and assigned later)`() {
+        assertErrorOfType(
+            """
+                    czynność f() {
+                        x = 17
+                        zm x: Liczba = 18
+                    }
+                    
+                """,
+            Diagnostic.NameResolutionErrors.UndefinedVariable::class
+        )
+    }
+
+    @Ignore
+    @Test
     fun `test variable defined in other scope`() {
         assertErrorOfType(
             """
@@ -196,7 +226,138 @@ class NameResolutionErrorsTest {
         )
     }
 
-    // Assuming no functional features.
+    // ----------- Parameters tests ---------------------------------------------
+
+    @Ignore
+    @Test
+    fun `test undefined default value`() {
+        assertErrorOfType(
+            """
+                    czynność f(x: Czy = und) { }
+                    
+                """,
+            Diagnostic.NameResolutionErrors.UndefinedVariable::class
+        )
+    }
+
+    @Ignore
+    @Test
+    fun `test undefined default value (defined inside a function)`() {
+        assertErrorOfType(
+            """
+                    czynność f(x: Liczba = y) {
+                        zm y: Liczba = 17
+                    }
+                    
+                """,
+            Diagnostic.NameResolutionErrors.UndefinedVariable::class
+        )
+        assertErrorOfType(
+            """
+                    czynność f(x: Liczba = g()) {
+                        czynność g() -> Liczba {
+                            zwróć 17
+                        }
+                    }
+                    
+                """,
+            Diagnostic.NameResolutionErrors.UndefinedFunction::class
+        )
+    }
+
+    @Ignore
+    @Test
+    fun `test undefined default value (defined later)`() {
+        assertErrorOfType(
+            """
+                    czynność f(x: Liczba = y) { }
+                    zm y: Liczba = 17
+                    
+                """,
+            Diagnostic.NameResolutionErrors.UndefinedVariable::class
+        )
+        assertErrorOfType(
+            """
+                    czynność f(x: Liczba = g()) { }
+                    czynność g() -> Liczba {
+                        zwróć 17
+                    }
+                    
+                """,
+            Diagnostic.NameResolutionErrors.UndefinedFunction::class
+        )
+    }
+
+    @Ignore
+    @Test
+    fun `test looping default value`() {
+        assertErrorOfType(
+            """
+                    czynność f(x: Czy = f()) -> Czy {
+                        zwróć x
+                    }
+                    
+                """,
+            Diagnostic.NameResolutionErrors.UndefinedFunction::class
+        )
+    }
+
+    @Ignore
+    @Test
+    fun `test parameters name conflicts`() {
+        assertErrorOfType(
+            """
+                    czynność f(x: Liczba, x: Czy) { }
+                    
+                """,
+            Diagnostic.NameResolutionErrors.NameConflict::class
+        )
+    }
+
+    @Ignore
+    @Test
+    fun `test parameters with variables conflicts`() {
+        assertErrorOfType(
+            """
+                    czynność f(x: Liczba) {
+                        zm x: Czy = 17
+                    }
+                    
+                """,
+            Diagnostic.NameResolutionErrors.NameConflict::class
+        )
+    }
+
+    @Ignore
+    @Test
+    fun `test parameters with functions conflicts`() {
+        assertErrorOfType(
+            """
+                    czynność f(g: Liczba) {
+                        czynność g() { }
+                    }
+                    
+                """,
+            Diagnostic.NameResolutionErrors.NameConflict::class
+        )
+    }
+
+    @Ignore
+    @Test
+    fun `test parameters used outside a function`() {
+        assertErrorOfType(
+            """
+                    czynność f() -> Liczba {
+                        czynność g(x: Liczba) { }
+                        zwróć x
+                    }
+                    
+                """,
+            Diagnostic.NameResolutionErrors.UndefinedVariable::class
+        )
+    }
+
+    // ----------Assuming no functional features--------------------------------------------------
 
     @Ignore
     @Test
@@ -213,7 +374,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    // I'm not 100% sure if the next two tests make sense
     @Ignore
     @Test
     fun `test using functions in assignment`() {
@@ -221,7 +381,7 @@ class NameResolutionErrorsTest {
             """
                     czynność f() {
                         czynność g() { }
-                        zm x: Liczba = x
+                        zm x: Liczba = g
                     }
                     
                 """,
@@ -231,16 +391,15 @@ class NameResolutionErrorsTest {
 
     @Ignore
     @Test
-    fun `test using functions in conditions`() {
+    fun `test calling a parameter`() {
         assertErrorOfType(
             """
-                    czynność f() -> Czy {
-                        czynność g() { }
-                        zwróć (g == 17)
+                    czynność f(x: Liczba) -> Liczba {
+                        zwróć x()
                     }
                     
                 """,
-            Diagnostic.NameResolutionErrors.FunctionIsNotVariable::class
+            Diagnostic.NameResolutionErrors.VariableIsNotCallable::class
         )
     }
 }

@@ -108,11 +108,22 @@ object NameResolver {
             node: Any,
             currentScope: MutableMap<String, NamedNode>
         ) {
-            println(node)
+
             when (node) {
 
                 is Program -> {
                     val newScope = makeScope()
+
+                    // we have to be able to map "napisz(...)" FunctionCalls to something
+                    // TODO: napiszNode has to actually have some meaning
+                    val dummyNapiszNode: Function = Function(
+                        "napisz",
+                        listOf(Function.Parameter("wartość", Type.Number, null)),
+                        Type.Unit,
+                        listOf()
+                    )
+                    addName("napisz", dummyNapiszNode, newScope)
+
                     node.globals.forEach { analyzeNode(it, newScope) }
                     destroyScope(newScope)
                 }

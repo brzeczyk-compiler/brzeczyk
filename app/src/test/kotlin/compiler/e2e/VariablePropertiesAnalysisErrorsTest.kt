@@ -6,11 +6,11 @@ import org.junit.Ignore
 import org.junit.Test
 
 class VariablePropertiesAnalysisErrorsTest {
-    fun assertAssignmentToParameterError(program: String) {
+    private fun assertAssignmentToParameterError(program: String) {
         assertErrorOfType(program, Diagnostic.VariablePropertiesError.AssignmentToFunctionParameter::class)
     }
 
-    fun assertAssignmentToOuterVariableError(program: String) {
+    private fun assertAssignmentToOuterVariableError(program: String) {
         assertErrorOfType(program, Diagnostic.VariablePropertiesError.AssignmentToOuterVariable::class)
     }
 

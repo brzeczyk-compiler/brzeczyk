@@ -6,28 +6,28 @@ import org.junit.Ignore
 import org.junit.Test
 
 class TypeCheckingErrorsTest {
-    fun assertInvalidTypeError(program: String) {
+    private fun assertInvalidTypeError(program: String) {
         assertErrorOfType(program, Diagnostic.InvalidType::class)
     }
 
-    fun assertConditionalMismatchError(program: String) {
+    private fun assertConditionalMismatchError(program: String) {
         assertErrorOfType(program, Diagnostic.ConditionalTypesMismatch::class)
     }
 
-    fun assertUninitializedGlobalVariableError(program: String) {
+    private fun assertUninitializedGlobalVariableError(program: String) {
         assertErrorOfType(program, Diagnostic.UninitializedGlobalVariable::class)
     }
 
-    fun assertConstantWithoutValueError(program: String) {
+    private fun assertConstantWithoutValueError(program: String) {
         assertErrorOfType(program, Diagnostic.ConstantWithoutValue::class)
     }
 
     @Ignore
     @Test
     fun `test define variable with unit type`() {
-        assertInvalidTypeError("zm a: Nic;")
-        assertInvalidTypeError("wart a: Nic;")
-        assertInvalidTypeError("stała a: Nic;")
+        assertInvalidTypeError("czynność test() { zm a: Nic; }")
+        assertInvalidTypeError("czynność test() { wart a: Nic; }")
+        assertInvalidTypeError("czynność test() { stała a: Nic; }")
     }
 
     @Ignore

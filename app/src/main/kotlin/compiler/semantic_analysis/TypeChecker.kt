@@ -175,7 +175,12 @@ class TypeChecker(private val nameResolution: ReferenceMap<Any, NamedNode>, priv
                         Expression.BinaryOperation.Kind.BIT_OR,
                         Expression.BinaryOperation.Kind.BIT_XOR,
                         Expression.BinaryOperation.Kind.BIT_SHIFT_LEFT,
-                        Expression.BinaryOperation.Kind.BIT_SHIFT_RIGHT,
+                        Expression.BinaryOperation.Kind.BIT_SHIFT_RIGHT -> {
+                            checkExpression(expression.leftOperand, Type.Number)
+                            checkExpression(expression.rightOperand, Type.Number)
+                            return Type.Number
+                        }
+
                         Expression.BinaryOperation.Kind.EQUALS,
                         Expression.BinaryOperation.Kind.NOT_EQUALS,
                         Expression.BinaryOperation.Kind.LESS_THAN,
@@ -184,7 +189,7 @@ class TypeChecker(private val nameResolution: ReferenceMap<Any, NamedNode>, priv
                         Expression.BinaryOperation.Kind.GREATER_THAN_OR_EQUALS -> {
                             checkExpression(expression.leftOperand, Type.Number)
                             checkExpression(expression.rightOperand, Type.Number)
-                            return Type.Number
+                            return Type.Boolean
                         }
                     }
                 }

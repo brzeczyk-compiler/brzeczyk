@@ -1005,6 +1005,39 @@ class TypeCheckerTest {
         assertContentEquals(listOf(Diagnostic.InvalidType(leftValue, Type.Boolean, Type.Number)), diagnostics)
     }
 
+    // czynność główna() { 123 == 123 }
+
+    @Test
+    fun `number comparison has boolean type`() {
+        val leftValue = Expression.NumberLiteral(123)
+        val rightValue = Expression.NumberLiteral(123)
+        val operation = Expression.BinaryOperation(Expression.BinaryOperation.Kind.EQUALS, leftValue, rightValue)
+        val evaluation = Statement.Evaluation(operation)
+        val main = mainFunction(listOf(evaluation))
+        val program = Program(listOf(Program.Global.FunctionDefinition(main)))
+
+        val types = TypeChecker.calculateTypes(program, nameResolution, diagnostics::add)
+
+        assertContentEquals(referenceMapOf(leftValue to Type.Number, rightValue to Type.Number, operation to Type.Boolean), types)
+        assertContentEquals(listOf(), diagnostics)
+    }
+
+    // czynność główna() { prawda == 1 }
+
+    @Test
+    fun `number comparison with incorrect type of operand`() {
+        val leftValue = Expression.BooleanLiteral(true)
+        val rightValue = Expression.NumberLiteral(1)
+        val operation = Expression.BinaryOperation(Expression.BinaryOperation.Kind.EQUALS, leftValue, rightValue)
+        val evaluation = Statement.Evaluation(operation)
+        val main = mainFunction(listOf(evaluation))
+        val program = Program(listOf(Program.Global.FunctionDefinition(main)))
+
+        TypeChecker.calculateTypes(program, nameResolution, diagnostics::add)
+
+        assertContentEquals(listOf(Diagnostic.InvalidType(leftValue, Type.Boolean, Type.Number)), diagnostics)
+    }
+
     // czynność główna() { prawda ? 123 : 456 }
 
     @Test

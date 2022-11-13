@@ -29,26 +29,6 @@ class TypeCheckingErrorsTest {
 
     @Ignore
     @Test
-    fun `test define variable with unit type`() {
-        assertInvalidTypeError("czynność test() { zm a: Nic; }")
-        assertInvalidTypeError("czynność test() { wart a: Nic; }")
-        assertInvalidTypeError("czynność test() { stała a: Nic; }")
-    }
-
-    @Ignore
-    @Test
-    fun `test function parameter with unit type`() {
-        assertInvalidTypeError(
-            """
-            czynność f(a: Nic) {
-                zakończ
-            }
-            """
-        )
-    }
-
-    @Ignore
-    @Test
     fun `test instantiate variable with wrong type`() {
         assertInvalidTypeError("zm a: Liczba = prawda;")
         assertInvalidTypeError("zm a: Liczba = fałsz;")

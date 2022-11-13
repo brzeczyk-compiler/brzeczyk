@@ -11,7 +11,7 @@ class ParserErrorsTest {
     }
 
     @Test
-    fun `test assignment`() {
+    fun `test variable declaration`() {
         assertParseError(
             listOf(
                 """
@@ -212,6 +212,18 @@ class ParserErrorsTest {
                             }
                             
                         """,
+                """
+                            czynność f(x: Czy) -> Czy {
+                                zwróć (
+                                    jeśli (x) {
+                                        x
+                                    } wpp {
+                                        nie x
+                                    }
+                                )
+                            }
+                            
+                        """,
             )
         )
     }
@@ -272,6 +284,12 @@ class ParserErrorsTest {
                         """,
                 """
                             czynność f() {
+                                zwróć
+                            }
+                            
+                        """,
+                """
+                            czynność f() {
                                 zwróć Nic
                             }
                             
@@ -302,6 +320,119 @@ class ParserErrorsTest {
                         """,
                 """
                             czynność f(a; Liczba) { }
+                            
+                        """,
+            )
+        )
+    }
+
+    @Test
+    fun `test expressions`() {
+        assertParseError(
+            listOf(
+                """
+                            czynność f(x: Liczba) -> Liczba {
+                                zwróć x
+                                + x
+                            }
+                            
+                        """,
+                """
+                            czynność f(x: Liczba) -> Liczba {
+                                zwróć (x %;x)
+                            }
+                            
+                        """,
+                """
+                            czynność f(x: Liczba) -> Liczba {
+                                zwróć ()
+                            }
+                            
+                        """,
+                """
+                            czynność f(x: Liczba) -> Liczba {
+                                zwróć (x - x
+                            }
+                            
+                        """,
+                """
+                            czynność f(x: Czy) -> Czy {
+                                zwróć )x albo x(
+                            }
+                            
+                        """,
+                """
+                            czynność f(x: Czy) -> Czy {
+                                zwróć [nie x]
+                            }
+                            
+                        """,
+                """
+                            czynność f(x: Liczba) -> Czy {
+                                zwróć {x >= x}
+                            }
+                            
+                        """,
+                """
+                            czynność f(x: Liczba) -> Czy {
+                                zwróć (x !== x)
+                            }
+                            
+                        """,
+                """
+                            czynność f(x: Liczba) -> Czy {
+                                zwróć (x === x)
+                            }
+                            
+                        """,
+                """
+                            czynność f(x: Czy) -> Czy {
+                                czynność g(y: Czy) -> Czy { }
+                                zwróć g(x: Czy)
+                            }
+                            
+                        """,
+            )
+        )
+    }
+
+    @Test
+    fun `test operators`() {
+        assertParseError(
+            listOf(
+                """
+                            czynność f(x: Liczba) {
+                                x
+                                ++
+                            }
+                            
+                        """,
+                """
+                            czynność f(x: Liczba) -> Liczba {
+                                --
+                                x
+                            }
+                            
+                        """,
+                """
+                            czynność f(x: Czy) -> Czy {
+                                zwróć (x ? x ? x : x : x)
+                            }
+                            
+                        """,
+                """
+                            czynność f() {
+                                zm test: Liczba = 17
+                                test := 18
+                            }
+                            
+                        """,
+                """
+                            czynność f() {
+                                zm test: Liczba = 17
+                                test 
+                                = 18
+                            }
                             
                         """,
             )

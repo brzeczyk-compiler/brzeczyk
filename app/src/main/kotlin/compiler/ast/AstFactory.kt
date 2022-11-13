@@ -75,7 +75,7 @@ object AstFactory {
 
     private fun processConst(parseTree: ParseTree<Symbol>): Expression {
         return when ((parseTree as ParseTree.Branch).children[0].token()) {
-            TokenType.INTEGER -> Expression.NumberLiteral((parseTree as ParseTree.Leaf).content.toInt())
+            TokenType.INTEGER -> Expression.NumberLiteral((parseTree.children[0] as ParseTree.Leaf).content.toInt())
             TokenType.TRUE_CONSTANT -> Expression.BooleanLiteral(true)
             TokenType.FALSE_CONSTANT -> Expression.BooleanLiteral(false)
             TokenType.UNIT_CONSTANT -> Expression.UnitLiteral

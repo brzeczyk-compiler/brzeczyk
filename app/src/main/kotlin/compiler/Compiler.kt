@@ -26,7 +26,7 @@ class Compiler(val diagnostics: Diagnostics) {
 
         val ast = AstFactory.createFromParseTree(parseTree, diagnostics)
         val nameResolution = NameResolver.calculateNameResolution(ast, diagnostics)
-        val expressionTypes = TypeChecker.calculateTypes(ast, nameResolution, diagnostics)
-        val variableProperties = VariablePropertiesAnalyzer.calculateVariableProperties(ast, nameResolution, diagnostics)
+        // val expressionTypes = TypeChecker.calculateTypes(ast, nameResolution, diagnostics)
+        // val variableProperties = VariablePropertiesAnalyzer.calculateVariableProperties(ast, nameResolution, diagnostics)
     }
 }

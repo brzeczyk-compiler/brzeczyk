@@ -1,7 +1,7 @@
 package compiler.e2e
 
 import compiler.common.diagnostics.Diagnostic
-import compiler.e2e.E2eAsserter.assertErrorOfType
+import compiler.e2e.common.E2eAsserter.assertErrorOfType
 import kotlin.test.Test
 
 class ParserErrorsTest {

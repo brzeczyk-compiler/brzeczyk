@@ -1,13 +1,11 @@
 package compiler.e2e
 
 import compiler.common.diagnostics.Diagnostic
-import compiler.e2e.E2eAsserter.assertErrorOfType
-import kotlin.test.Ignore
+import compiler.e2e.common.E2eAsserter.assertErrorOfType
 import kotlin.test.Test
 
 class NameResolutionErrorsTest {
 
-    @Ignore
     @Test
     fun `test undefined variable`() {
         assertErrorOfType(
@@ -21,7 +19,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test variable defined in other scope`() {
         assertErrorOfType(
@@ -38,7 +35,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test variable defined in an inner function`() {
         assertErrorOfType(
@@ -55,7 +51,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test undefined function`() {
         assertErrorOfType(
@@ -69,7 +64,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test inner function`() {
         assertErrorOfType(
@@ -88,7 +82,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test conflicts (variables)`() {
         assertErrorOfType(
@@ -103,7 +96,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test conflicts (different modifiers variables)`() {
         assertErrorOfType(
@@ -128,7 +120,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test conflicts (variables of different type)`() {
         assertErrorOfType(
@@ -143,7 +134,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test conflicts (functions)`() {
         assertErrorOfType(
@@ -162,7 +152,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test conflicts (functions with different return types)`() {
         assertErrorOfType(
@@ -181,7 +170,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test conflicts (functions with different signatures)`() {
         assertErrorOfType(
@@ -198,7 +186,6 @@ class NameResolutionErrorsTest {
 
     // Assuming no functional features.
 
-    @Ignore
     @Test
     fun `test calling variables`() {
         assertErrorOfType(
@@ -213,15 +200,13 @@ class NameResolutionErrorsTest {
         )
     }
 
-    // I'm not 100% sure if the next two tests make sense
-    @Ignore
     @Test
     fun `test using functions in assignment`() {
         assertErrorOfType(
             """
                     czynność f() {
                         czynność g() { }
-                        zm x: Liczba = x
+                        zm x: Liczba = g
                     }
                     
                 """,
@@ -229,7 +214,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test using functions in conditions`() {
         assertErrorOfType(

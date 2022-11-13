@@ -1,4 +1,4 @@
-package compiler.e2e
+package compiler.e2e.common
 
 import compiler.Compiler
 import compiler.common.diagnostics.CompilerDiagnostics

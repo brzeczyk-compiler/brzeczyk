@@ -108,7 +108,7 @@ object NameResolver {
             node: Any,
             currentScope: MutableMap<String, NamedNode>
         ) {
-
+            println(node)
             when (node) {
 
                 is Program -> {
@@ -209,6 +209,13 @@ object NameResolver {
                     // first add name, then analyze because we can have recursive calls in the body
                     addName(node.function.name, node.function, currentScope)
                     analyzeNode(node.function, currentScope)
+                }
+
+                is Statement.Assignment -> {
+                    reportIfVariableUndefined(node.variableName)
+                    reportIfFunctionUsedAsVariable(node.variableName) // when we try to assign to a function
+                    nameDefinitions[node.variableName] = visibleNames[node.variableName]!!.topVariable()
+                    analyzeNode(node.value, currentScope)
                 }
 
                 is Statement.Block -> {

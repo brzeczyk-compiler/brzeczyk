@@ -6,22 +6,50 @@ import org.junit.Ignore
 import org.junit.Test
 
 class TypeCheckingErrorsTest {
-    fun assertTypeCheckingError(program: String) {
-        assertErrorOfType(program, Diagnostic.TypeCheckingError::class)
+    fun assertInvalidTypeError(program: String) {
+        assertErrorOfType(program, Diagnostic.InvalidType::class)
+    }
+
+    fun assertConditionalMismatchError(program: String) {
+        assertErrorOfType(program, Diagnostic.ConditionalTypesMismatch::class)
+    }
+
+    fun assertParameterCallError(program: String) {
+        assertErrorOfType(program, Diagnostic.ParameterCall::class)
+    }
+
+    fun assertVariableCallError(program: String) {
+        assertErrorOfType(program, Diagnostic.VariableCall::class)
+    }
+
+    fun assertFunctionAssignmentError(program: String) {
+        assertErrorOfType(program, Diagnostic.FunctionAssignment::class)
+    }
+
+    fun assertFunctionAsValueError(program: String) {
+        assertErrorOfType(program, Diagnostic.FunctionAsValue::class)
+    }
+
+    fun assertUninitializedGlobalVariableError(program: String) {
+        assertErrorOfType(program, Diagnostic.UninitializedGlobalVariable::class)
+    }
+
+    fun assertConstantWithoutValueError(program: String) {
+        assertErrorOfType(program, Diagnostic.ConstantWithoutValue::class)
     }
 
     @Ignore
     @Test
     fun `test define variable with unit type`() {
-        assertTypeCheckingError("zm a: Nic;")
-        assertTypeCheckingError("wart a: Nic;")
-        assertTypeCheckingError("stała a: Nic;")
+        assertInvalidTypeError("zm a: Nic;")
+        assertInvalidTypeError("wart a: Nic;")
+        assertInvalidTypeError("stała a: Nic;")
     }
 
     @Ignore
     @Test
     fun `test function parameter with unit type`() {
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
             czynność f(a: Nic) {
                 zakończ
@@ -33,54 +61,50 @@ class TypeCheckingErrorsTest {
     @Ignore
     @Test
     fun `test instantiate variable with wrong type`() {
-        assertTypeCheckingError("zm a: Liczba = prawda;")
-        assertTypeCheckingError("zm a: Liczba = fałsz;")
-        assertTypeCheckingError("zm a: Liczba = (5 > 3) lub 0 == -1;")
-        assertTypeCheckingError("zm b: Czy = fałsz; zm a: Liczba = b;")
-        assertTypeCheckingError(
+        assertInvalidTypeError("zm a: Liczba = prawda;")
+        assertInvalidTypeError("zm a: Liczba = fałsz;")
+        assertInvalidTypeError("zm a: Liczba = (5 > 3) lub 0 == -1;")
+        assertInvalidTypeError("zm b: Czy = fałsz; zm a: Liczba = b;")
+        assertInvalidTypeError(
             """
                 czynność f() -> Czy {
                     zwróć prawda
                 }
-                
                 czynność g() {
                     zm a: Liczba = f()
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f() {
                     zakończ
                 }
-                
                 czynność g() {
                     zm a: Liczba = f()
                 }
             """
         )
 
-        assertTypeCheckingError("zm a: Czy = 0;")
-        assertTypeCheckingError("zm a: Czy = fałsz;")
-        assertTypeCheckingError("zm a: Czy = 5 * 3 - (1 % 2);")
-        assertTypeCheckingError("zm b: Liczba = 4; zm a: Czy = b;")
-        assertTypeCheckingError(
+        assertInvalidTypeError("zm a: Czy = 0;")
+        assertInvalidTypeError("zm a: Czy = fałsz;")
+        assertInvalidTypeError("zm a: Czy = 5 * 3 - (1 % 2);")
+        assertInvalidTypeError("zm b: Liczba = 4; zm a: Czy = b;")
+        assertInvalidTypeError(
             """
                 czynność f() -> Liczba {
                     zwróć 3
                 }
-                
                 czynność g() {
                     zm a: Czy = f()
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f() {
                     zakończ
                 }
-                
                 czynność g() {
                     zm a: Czy = f()
                 }
@@ -90,8 +114,38 @@ class TypeCheckingErrorsTest {
 
     @Ignore
     @Test
+    fun `test uninitialized global variables`() {
+        assertUninitializedGlobalVariableError("zm a: Liczba;")
+        assertUninitializedGlobalVariableError("zm a: Czy;")
+        assertUninitializedGlobalVariableError("wart a: Liczba;")
+        assertUninitializedGlobalVariableError("wart a: Czy;")
+    }
+
+    @Ignore
+    @Test
+    fun `test constant without value`() {
+        assertConstantWithoutValueError("stała a: Liczba;")
+        assertConstantWithoutValueError("stała a: Czy;")
+        assertConstantWithoutValueError(
+            """
+                czynność f() {
+                    stała a: Liczba
+                }
+            """
+        )
+        assertConstantWithoutValueError(
+            """
+                czynność f() {
+                    stała a: Czy
+                }
+            """
+        )
+    }
+
+    @Ignore
+    @Test
     fun `test assignment to variable of wrong type`() {
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f() {
                     zm a: Liczba = 1 
@@ -99,7 +153,7 @@ class TypeCheckingErrorsTest {
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f() {
                     zm a: Liczba = 1
@@ -107,7 +161,7 @@ class TypeCheckingErrorsTest {
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f() {
                     zm a: Liczba = 1
@@ -115,7 +169,7 @@ class TypeCheckingErrorsTest {
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f() {
                     zm b: Czy = fałsz
@@ -124,7 +178,7 @@ class TypeCheckingErrorsTest {
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f() -> Czy {
                     zwróć prawda
@@ -135,7 +189,7 @@ class TypeCheckingErrorsTest {
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f() {
                     zakończ
@@ -147,7 +201,7 @@ class TypeCheckingErrorsTest {
             """
         )
 
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f() {
                     zm a: Czy
@@ -155,7 +209,7 @@ class TypeCheckingErrorsTest {
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f() {
                     zm a: Czy
@@ -163,7 +217,7 @@ class TypeCheckingErrorsTest {
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f() {
                     zm a: Czy
@@ -171,7 +225,7 @@ class TypeCheckingErrorsTest {
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f() {
                     zm b: Liczba = 4; 
@@ -180,7 +234,7 @@ class TypeCheckingErrorsTest {
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f() -> Liczba {
                     zwróć 3
@@ -191,7 +245,7 @@ class TypeCheckingErrorsTest {
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f() {
                     zakończ
@@ -199,6 +253,133 @@ class TypeCheckingErrorsTest {
                 czynność g() {
                     zm a: Czy
                     a = f()
+                }
+            """
+        )
+    }
+
+    @Ignore
+    @Test
+    fun `test assignment to function`() {
+        assertFunctionAssignmentError(
+            """
+                czynność f() {
+                    zakończ
+                }
+                czynność g() {
+                    f = 3
+                }
+            """
+        )
+        assertFunctionAssignmentError(
+            """
+                czynność f() {
+                    f = fałsz
+                }
+            """
+        )
+        assertFunctionAssignmentError(
+            """
+                czynność f() {
+                    czynność g() {
+                        zakończ                    
+                    }
+                    g = 99
+                }
+            """
+        )
+        assertFunctionAssignmentError(
+            """
+                czynność f() {
+                    czynność g() {
+                        g = prawda                    
+                    }
+                }
+            """
+        )
+    }
+
+    @Ignore
+    @Test
+    fun `test using function as value`() {
+        assertFunctionAsValueError(
+            """
+                czynność f() {
+                    zakończ
+                }
+                zm a: Liczba = f;
+            """
+        )
+        assertFunctionAsValueError(
+            """
+                czynność f() {
+                    zm a: Liczba = 4
+                    a = f
+                }
+            """
+        )
+        assertFunctionAsValueError(
+            """
+                czynność f() {
+                    zakończ
+                }
+                zm a: Liczba = f + 5;
+            """
+        )
+        assertFunctionAsValueError(
+            """
+                czynność f(a: Liczba) {
+                    zakończ
+                }
+                czynność g() {
+                    f(f)
+                }
+            """
+        )
+        assertFunctionAsValueError(
+            """
+                czynność f(a: Liczba) {
+                    zakończ
+                }
+                czynność g() {
+                    f(g)
+                }
+            """
+        )
+    }
+
+    @Ignore
+    @Test
+    fun `test calling variables or parameters`() {
+        assertVariableCallError(
+            """
+                czynność f() {
+                    zm a: Liczba = 3
+                    a()
+                }
+            """
+        )
+        assertVariableCallError(
+            """
+                wart a: Czy = prawda
+                czynność f() {
+                    a()
+                }
+            """
+        )
+        assertParameterCallError(
+            """
+                czynność f(a: Liczba) {
+                    a()
+                }
+            """
+        )
+        assertParameterCallError(
+            """
+                czynność f(a: Liczba) {
+                    czynność g() {
+                        a()
+                    }
                 }
             """
         )
@@ -211,21 +392,21 @@ class TypeCheckingErrorsTest {
         val unaryOperators = listOf("-") // , "~")
 
         for (operator in binaryOperators) {
-            assertTypeCheckingError(
+            assertInvalidTypeError(
                 """
                     zm a: Liczba = 4
                     zm b: Czy = prawda
                     zm c: Liczba = a $operator b;
                 """
             )
-            assertTypeCheckingError(
+            assertInvalidTypeError(
                 """
                     zm a: Liczba = 4
                     zm b: Czy = prawda
                     zm c: Liczba = b $operator a;
                 """
             )
-            assertTypeCheckingError(
+            assertInvalidTypeError(
                 """
                     czynność f() {
                         zakończ 
@@ -234,7 +415,7 @@ class TypeCheckingErrorsTest {
                     zm c: Liczba = f() $operator b;
                 """
             )
-            assertTypeCheckingError(
+            assertInvalidTypeError(
                 """
                     czynność f() {
                         zakończ 
@@ -246,13 +427,13 @@ class TypeCheckingErrorsTest {
         }
 
         for (operator in unaryOperators) {
-            assertTypeCheckingError(
+            assertInvalidTypeError(
                 """
                     zm b: Czy = prawda
                     zm c: Liczba = $operator b;
                 """
             )
-            assertTypeCheckingError(
+            assertInvalidTypeError(
                 """
                     czynność f() {
                         zakończ 
@@ -270,21 +451,21 @@ class TypeCheckingErrorsTest {
         val unaryOperators = emptyList<String>() // listOf("nie")
 
         for (operator in binaryOperators) {
-            assertTypeCheckingError(
+            assertInvalidTypeError(
                 """
                     zm a: Liczba = 4
                     zm b: Czy = prawda
                     zm c: Czy = a $operator b;
                 """
             )
-            assertTypeCheckingError(
+            assertInvalidTypeError(
                 """
                     zm a: Liczba = 4
                     zm b: Czy = prawda
                     zm c: Czy = b $operator a;
                 """
             )
-            assertTypeCheckingError(
+            assertInvalidTypeError(
                 """
                     czynność f() {
                         zakończ 
@@ -293,7 +474,7 @@ class TypeCheckingErrorsTest {
                     zm c: Czy = f() $operator b;
                 """
             )
-            assertTypeCheckingError(
+            assertInvalidTypeError(
                 """
                     czynność f() {
                         zakończ 
@@ -305,13 +486,13 @@ class TypeCheckingErrorsTest {
         }
 
         for (operator in unaryOperators) {
-            assertTypeCheckingError(
+            assertInvalidTypeError(
                 """
                     zm b: Liczba = 17
                     zm c: Czy = $operator b;
                 """
             )
-            assertTypeCheckingError(
+            assertInvalidTypeError(
                 """
                     czynność f() {
                         zakończ 
@@ -328,21 +509,21 @@ class TypeCheckingErrorsTest {
         val comparisonOperators = listOf("==", "!=", ">", ">=", "<", "<=")
 
         for (operator in comparisonOperators) {
-            assertTypeCheckingError(
+            assertInvalidTypeError(
                 """
                     zm a: Liczba = 4
                     zm b: Czy = prawda
                     zm c: Czy = a $operator b;
                 """
             )
-            assertTypeCheckingError(
+            assertInvalidTypeError(
                 """
                     zm a: Liczba = 4
                     zm b: Czy = prawda
                     zm c: Czy = b $operator a;
                 """
             )
-            assertTypeCheckingError(
+            assertInvalidTypeError(
                 """
                     czynność f() {
                         zakończ 
@@ -351,7 +532,7 @@ class TypeCheckingErrorsTest {
                     zm c: Czy = f() $operator b;
                 """
             )
-            assertTypeCheckingError(
+            assertInvalidTypeError(
                 """
                     czynność f() {
                         zakończ 
@@ -366,50 +547,50 @@ class TypeCheckingErrorsTest {
     @Ignore
     @Test
     fun `test conditional operator with wrong types`() {
-        assertTypeCheckingError("wart a: Liczba = prawda ? 10 : fałsz;")
-        assertTypeCheckingError("wart a: Liczba = prawda ? prawda : 13;")
-        assertTypeCheckingError("wart a: Liczba = 34 ? fałsz : 14;")
-        assertTypeCheckingError("wart a: Liczba = 34 ? 10 : 31;")
-        assertTypeCheckingError("wart a: Liczba = 99 ? prawda : fałsz;")
-        assertTypeCheckingError("wart a: Czy = fałsz ? 11 : 16;")
-        assertTypeCheckingError(
+        assertConditionalMismatchError("wart a: Liczba = prawda ? 10 : fałsz;")
+        assertConditionalMismatchError("wart a: Liczba = prawda ? prawda : 13;")
+        assertConditionalMismatchError("wart a: Liczba = 34 ? fałsz : 14;")
+        assertInvalidTypeError("wart a: Liczba = 34 ? 10 : 31;")
+        assertInvalidTypeError("wart a: Liczba = 99 ? prawda : fałsz;")
+        assertInvalidTypeError("wart a: Czy = fałsz ? 11 : 16;")
+        assertInvalidTypeError(
             """
-            czynność f() {
-                zakończ
-            }
-            czynność g() {
-                f() ? 10 : 11                            
-            }
-            """
-        )
-        assertTypeCheckingError(
-            """
-            czynność f() {
-                zakończ
-            }
-            czynność g() {
-                prawda ? f() : 11                            
-            }
+                czynność f() {
+                    zakończ
+                }
+                czynność g() {
+                    f() ? 10 : 11                            
+                }
             """
         )
-        assertTypeCheckingError(
+        assertConditionalMismatchError(
             """
-            czynność f() {
-                zakończ
-            }
-            czynność g() {
-                prawda ? 12 : f()                   
-            }
+                czynność f() {
+                    zakończ
+                }
+                czynność g() {
+                    prawda ? f() : 11                            
+                }
             """
         )
-        assertTypeCheckingError(
+        assertConditionalMismatchError(
             """
-            czynność f() {
-                zakończ
-            }
-            czynność g() {
-                prawda ? fałsz : f()                   
-            }
+                czynność f() {
+                    zakończ
+                }
+                czynność g() {
+                    prawda ? 12 : f()                   
+                }
+            """
+        )
+        assertConditionalMismatchError(
+            """
+                czynność f() {
+                    zakończ
+                }
+                czynność g() {
+                    prawda ? fałsz : f()                   
+                }
             """
         )
     }
@@ -417,42 +598,42 @@ class TypeCheckingErrorsTest {
     @Ignore
     @Test
     fun `test wrong return type`() {
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f() {
                     zwróć 4                            
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f() {
                     zwróć fałsz                            
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f() -> Liczba {
                     zakończ                            
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f() -> Liczba {
                     zwróć fałsz                            
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f() -> Czy {
                     zakończ                            
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f() -> Czy {
                     zwróć 654
@@ -464,14 +645,14 @@ class TypeCheckingErrorsTest {
     @Ignore
     @Test
     fun `test wrong default parameter type`() {
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f(a: Liczba = fałsz) {
                     zakończ
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f(a: Czy = 13) {
                     zakończ
@@ -483,7 +664,7 @@ class TypeCheckingErrorsTest {
     @Ignore
     @Test
     fun `test wrong function call argument type`() {
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f(a: Liczba) {
                     zakończ
@@ -493,7 +674,7 @@ class TypeCheckingErrorsTest {
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność h() {
                     zakończ
@@ -506,7 +687,7 @@ class TypeCheckingErrorsTest {
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f(a: Czy) {
                     zakończ
@@ -516,7 +697,7 @@ class TypeCheckingErrorsTest {
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność h() {
                     zakończ
@@ -529,7 +710,7 @@ class TypeCheckingErrorsTest {
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f(a: Liczba, b: Liczba = 2, c: Liczba = 3) -> Liczba {
                     zwróć a + b + c
@@ -539,7 +720,7 @@ class TypeCheckingErrorsTest {
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność h() {
                     zakończ
@@ -552,7 +733,7 @@ class TypeCheckingErrorsTest {
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f(a: Czy, b: Czy = fałsz, c: Czy = fałsz) -> Czy {
                     zwróć a lub b lub c
@@ -562,7 +743,7 @@ class TypeCheckingErrorsTest {
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność h() {
                     zakończ
@@ -580,7 +761,7 @@ class TypeCheckingErrorsTest {
     @Ignore
     @Test
     fun `test wrong expression type in if else statements`() {
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f() {
                     jeśli (4) {
@@ -589,7 +770,7 @@ class TypeCheckingErrorsTest {
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f() {
                     wart a: Liczba = 15
@@ -599,7 +780,7 @@ class TypeCheckingErrorsTest {
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność g() {
                     zakończ
@@ -611,7 +792,7 @@ class TypeCheckingErrorsTest {
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f() {
                     jeśli (fałsz) {
@@ -622,7 +803,7 @@ class TypeCheckingErrorsTest {
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f() {
                     wart a: Liczba = 15
@@ -634,7 +815,7 @@ class TypeCheckingErrorsTest {
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność g() {
                     zakończ
@@ -653,7 +834,7 @@ class TypeCheckingErrorsTest {
     @Ignore
     @Test
     fun `test wrong expression type in while loop`() {
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f() {
                     zm a: Liczba = 0
@@ -663,7 +844,7 @@ class TypeCheckingErrorsTest {
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność f() {
                     zm a: Liczba = 0
@@ -673,7 +854,7 @@ class TypeCheckingErrorsTest {
                 }
             """
         )
-        assertTypeCheckingError(
+        assertInvalidTypeError(
             """
                 czynność g() {
                     zakończ

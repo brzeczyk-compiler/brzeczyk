@@ -18,7 +18,7 @@ sealed class Statement {
     data class Conditional(
         val condition: Expression,
         val actionWhenTrue: StatementBlock,
-        val actionWhenFalse: StatementBlock
+        val actionWhenFalse: StatementBlock?
     ) : Statement()
 
     data class Loop(

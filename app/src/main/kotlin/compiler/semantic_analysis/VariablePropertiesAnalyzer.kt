@@ -62,7 +62,7 @@ object VariablePropertiesAnalyzer {
                 is Statement.Block -> node.block.forEach { analyzeVariables(it, currentOwner) }
                 is Statement.Conditional -> (
                     sequenceOf(node.condition) +
-                        node.actionWhenTrue.asSequence() + node.actionWhenFalse.asSequence()
+                        node.actionWhenTrue.asSequence() + (node.actionWhenFalse?.asSequence() ?: emptySequence())
                     ).forEach { analyzeVariables(it, currentOwner) }
                 is Statement.Loop -> (sequenceOf(node.condition) + node.action.asSequence())
                     .forEach { analyzeVariables(it, currentOwner) }

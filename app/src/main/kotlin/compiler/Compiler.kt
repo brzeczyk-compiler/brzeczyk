@@ -16,7 +16,7 @@ class Compiler(val diagnostics: Diagnostics) {
         val lexer = Lexer<TokenType>(Tokens().getTokens(), diagnostics)
         val tokenSequence = lexer.process(InputImpl(input))
         val leaves: Sequence<ParseTree<Symbol>> = tokenSequence.filter { it.category != TokenType.TO_IGNORE }
-            .map { ParseTree.Leaf(it.start, it.end, Symbol.Terminal(it.category)) }
+            .map { ParseTree.Leaf(it.start, it.end, Symbol.Terminal(it.category), it.content) }
 
         val parseTree = Parser<Symbol>(ParserGrammar.getGrammar(), diagnostics).process(leaves)
 

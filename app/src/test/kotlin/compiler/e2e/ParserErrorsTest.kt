@@ -355,12 +355,6 @@ class ParserErrorsTest {
                             
                         """,
                 """
-                            czynność f(x: Czy) -> Czy {
-                                zwróć [nie x]
-                            }
-                            
-                        """,
-                """
                             czynność f(x: Liczba) -> Czy {
                                 zwróć {x >= x}
                             }

@@ -20,5 +20,6 @@ interface ParseTree<S : Comparable<S>> {
         override val start: Location,
         override val end: Location,
         override val symbol: S,
+        val content: String
     ) : ParseTree<S>
 }

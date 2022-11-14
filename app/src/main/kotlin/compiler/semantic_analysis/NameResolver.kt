@@ -131,29 +131,30 @@ object NameResolver {
                 }
 
                 is Program.Global.VariableDefinition -> {
-                    reportIfNameConflict(node.variable.name, currentScope)
-
-                    // first analyze the variable, then add name, because we can't have self-referencing definitions
                     analyzeNode(node.variable, currentScope)
-                    addName(node.variable.name, node.variable, currentScope)
                 }
 
                 is Program.Global.FunctionDefinition -> {
-                    reportIfNameConflict(node.function.name, currentScope)
-
-                    // first add name, then analyze because we can have recursive calls in the body
-                    addName(node.function.name, node.function, currentScope)
                     analyzeNode(node.function, currentScope)
                 }
 
                 is Variable -> {
+                    reportIfNameConflict(node.name, currentScope)
+
+                    // first analyze the value, then add name, because we can't have self-referencing definitions
                     node.value?.let { analyzeNode(it, currentScope) }
+                    addName(node.name, node, currentScope)
                 }
 
                 is Function -> {
-                    val newScope = makeScope() // function introduces a new scope of names
+                    // first analyze each parameter, so they can't refer to each other and to the function
+                    node.parameters.forEach { analyzeNode(it, currentScope) }
 
-                    node.parameters.forEach { analyzeNode(it, currentScope) } // first analyze each parameter, so they can't refer to each other
+                    reportIfNameConflict(node.name, currentScope)
+
+                    // first add name, then create scope and analyze body because we can have recursive calls
+                    addName(node.name, node, currentScope)
+                    val newScope = makeScope() // function introduces a new scope of names
 
                     for (param in node.parameters) { // and then add their names
                         reportIfNameConflict(param.name, newScope) // verifies that the parameters have different names
@@ -209,25 +210,17 @@ object NameResolver {
                 }
 
                 is Statement.VariableDefinition -> {
-                    reportIfNameConflict(node.variable.name, currentScope)
-
-                    // first analyze the variable, then add name, because we can't have self-referencing definitions
                     analyzeNode(node.variable, currentScope)
-                    addName(node.variable.name, node.variable, currentScope)
                 }
 
                 is Statement.FunctionDefinition -> {
-                    reportIfNameConflict(node.function.name, currentScope)
-
-                    // first add name, then analyze because we can have recursive calls in the body
-                    addName(node.function.name, node.function, currentScope)
                     analyzeNode(node.function, currentScope)
                 }
 
                 is Statement.Assignment -> {
                     reportIfVariableUndefined(node.variableName)
                     reportIfFunctionUsedAsVariable(node.variableName) // when we try to assign to a function
-                    nameDefinitions[node.variableName] = visibleNames[node.variableName]!!.topVariable()
+                    nameDefinitions[node] = visibleNames[node.variableName]!!.topVariable()
                     analyzeNode(node.value, currentScope)
                 }
 

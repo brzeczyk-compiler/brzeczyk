@@ -332,13 +332,6 @@ class ParserErrorsTest {
             listOf(
                 """
                             czynność f(x: Liczba) -> Liczba {
-                                zwróć x
-                                + x
-                            }
-                            
-                        """,
-                """
-                            czynność f(x: Liczba) -> Liczba {
                                 zwróć (x %;x)
                             }
                             
@@ -400,20 +393,6 @@ class ParserErrorsTest {
     fun `test operators`() {
         assertParseError(
             listOf(
-                """
-                            czynność f(x: Liczba) {
-                                x
-                                ++
-                            }
-                            
-                        """,
-                """
-                            czynność f(x: Liczba) -> Liczba {
-                                --
-                                x
-                            }
-                            
-                        """,
                 """
                             czynność f(x: Czy) -> Czy {
                                 zwróć (x ? x ? x : x : x)

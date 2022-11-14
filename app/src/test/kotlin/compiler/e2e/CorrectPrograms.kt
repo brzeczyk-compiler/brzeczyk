@@ -1,5 +1,6 @@
 package compiler.e2e
 
+import compiler.e2e.common.E2eAsserter
 import kotlin.test.Test
 
 class CorrectPrograms {

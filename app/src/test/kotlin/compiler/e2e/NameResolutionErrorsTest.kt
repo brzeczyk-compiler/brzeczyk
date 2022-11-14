@@ -1,13 +1,11 @@
 package compiler.e2e
 
 import compiler.common.diagnostics.Diagnostic
-import compiler.e2e.E2eAsserter.assertErrorOfType
-import kotlin.test.Ignore
+import compiler.e2e.common.E2eAsserter.assertErrorOfType
 import kotlin.test.Test
 
 class NameResolutionErrorsTest {
 
-    @Ignore
     @Test
     fun `test undefined variable`() {
         assertErrorOfType(
@@ -21,7 +19,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test undefined variable (defined later but not assigned)`() {
         assertErrorOfType(
@@ -36,7 +33,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test undefined variable (defined and assigned later)`() {
         assertErrorOfType(
@@ -51,7 +47,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test variable defined in other scope`() {
         assertErrorOfType(
@@ -68,7 +63,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test variable defined in an inner function`() {
         assertErrorOfType(
@@ -85,7 +79,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test undefined function`() {
         assertErrorOfType(
@@ -99,7 +92,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test inner function`() {
         assertErrorOfType(
@@ -118,7 +110,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test conflicts (variables)`() {
         assertErrorOfType(
@@ -133,7 +124,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test conflicts (different modifiers variables)`() {
         assertErrorOfType(
@@ -158,7 +148,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test conflicts (variables of different type)`() {
         assertErrorOfType(
@@ -173,7 +162,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test conflicts (functions)`() {
         assertErrorOfType(
@@ -192,7 +180,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test conflicts (functions with different return types)`() {
         assertErrorOfType(
@@ -211,7 +198,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test conflicts (functions with different signatures)`() {
         assertErrorOfType(
@@ -228,7 +214,6 @@ class NameResolutionErrorsTest {
 
     // ----------- Parameters tests ---------------------------------------------
 
-    @Ignore
     @Test
     fun `test undefined default value`() {
         assertErrorOfType(
@@ -240,7 +225,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test undefined default value (defined inside a function)`() {
         assertErrorOfType(
@@ -265,7 +249,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test undefined default value (defined later)`() {
         assertErrorOfType(
@@ -288,7 +271,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test looping default value`() {
         assertErrorOfType(
@@ -302,7 +284,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test parameters name conflicts`() {
         assertErrorOfType(
@@ -314,7 +295,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test parameters with variables conflicts`() {
         assertErrorOfType(
@@ -328,7 +308,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test parameters with functions conflicts`() {
         assertErrorOfType(
@@ -342,7 +321,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test parameters used outside a function`() {
         assertErrorOfType(
@@ -359,7 +337,6 @@ class NameResolutionErrorsTest {
 
     // ----------Assuming no functional features--------------------------------------------------
 
-    @Ignore
     @Test
     fun `test calling variables`() {
         assertErrorOfType(
@@ -374,7 +351,6 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test using functions in assignment`() {
         assertErrorOfType(
@@ -389,7 +365,20 @@ class NameResolutionErrorsTest {
         )
     }
 
-    @Ignore
+    @Test
+    fun `test using functions in conditions`() {
+        assertErrorOfType(
+            """
+                    czynność f() -> Czy {
+                        czynność g() { }
+                        zwróć (g == 17)
+                    }
+                    
+                """,
+            Diagnostic.NameResolutionErrors.FunctionIsNotVariable::class
+        )
+    }
+
     @Test
     fun `test calling a parameter`() {
         assertErrorOfType(

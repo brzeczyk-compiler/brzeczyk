@@ -1,5 +1,6 @@
 package compiler
 
+import compiler.ast.AstFactory
 import compiler.common.diagnostics.Diagnostics
 import compiler.lexer.Lexer
 import compiler.lexer.input.InputImpl
@@ -9,6 +10,9 @@ import compiler.parser.ParseTree
 import compiler.parser.Parser
 import compiler.parser.grammar.ParserGrammar
 import compiler.parser.grammar.Symbol
+import compiler.semantic_analysis.NameResolver
+import compiler.semantic_analysis.TypeChecker
+import compiler.semantic_analysis.VariablePropertiesAnalyzer
 import java.io.Reader
 
 class Compiler(val diagnostics: Diagnostics) {
@@ -20,9 +24,9 @@ class Compiler(val diagnostics: Diagnostics) {
 
         val parseTree = Parser<Symbol>(ParserGrammar.getGrammar(), diagnostics).process(leaves)
 
-        // val ast = AstFactory.createFromParseTree(parseTree, diagnostics)
-        // val nameResolution = NameResolver.calculateNameResolution(ast, diagnostics)
-        // val expressionTypes = TypeChecker.calculateTypes(ast, nameResolution, diagnostics)
-        // val variableProperties = VariablePropertiesAnalyzer.calculateVariableProperties(ast, nameResolution, diagnostics)
+        val ast = AstFactory.createFromParseTree(parseTree, diagnostics)
+        val nameResolution = NameResolver.calculateNameResolution(ast, diagnostics)
+        val expressionTypes = TypeChecker.calculateTypes(ast, nameResolution, diagnostics)
+        val variableProperties = VariablePropertiesAnalyzer.calculateVariableProperties(ast, nameResolution, diagnostics)
     }
 }

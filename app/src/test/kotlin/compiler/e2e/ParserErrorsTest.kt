@@ -6,7 +6,7 @@ import kotlin.test.Test
 
 class ParserErrorsTest {
 
-    fun assertParseError(programs: List<String>) {
+    private fun assertParseError(programs: List<String>) {
         programs.forEach { assertErrorOfType(it, Diagnostic.ParserError::class) }
     }
 

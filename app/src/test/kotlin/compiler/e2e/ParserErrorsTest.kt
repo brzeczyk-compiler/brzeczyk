@@ -332,6 +332,13 @@ class ParserErrorsTest {
             listOf(
                 """
                             czynność f(x: Liczba) -> Liczba {
+                                zwróć x
+                                + x
+                            }
+        
+                        """,
+                """
+                            czynność f(x: Liczba) -> Liczba {
                                 zwróć (x %;x)
                             }
                             

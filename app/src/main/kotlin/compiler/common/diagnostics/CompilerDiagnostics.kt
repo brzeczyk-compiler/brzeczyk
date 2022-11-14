@@ -7,4 +7,8 @@ class CompilerDiagnostics : Diagnostics {
     override fun report(diagnostic: Diagnostic) {
         diagnosticsList.add(diagnostic)
     }
+
+    fun clear() {
+        diagnosticsList.clear()
+    }
 }

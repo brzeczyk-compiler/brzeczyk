@@ -1,33 +1,32 @@
 package compiler.e2e
 
 import compiler.common.diagnostics.Diagnostic
-import compiler.e2e.E2eAsserter.assertErrorOfType
-import compiler.e2e.E2eAsserter.assertProgramCorrect
+import compiler.e2e.common.E2eAsserter.assertErrorOfType
+import compiler.e2e.common.E2eAsserter.assertProgramCorrect
 import org.junit.Ignore
 import org.junit.Test
 
 class TypeCheckingErrorsTest {
     private fun assertInvalidTypeError(program: String) {
-        assertErrorOfType(program, Diagnostic.InvalidType::class)
+        assertErrorOfType(program, Diagnostic.TypeCheckingError.InvalidType::class)
     }
 
     private fun assertConditionalMismatchError(program: String) {
-        assertErrorOfType(program, Diagnostic.ConditionalTypesMismatch::class)
+        assertErrorOfType(program, Diagnostic.TypeCheckingError.ConditionalTypesMismatch::class)
     }
 
     private fun assertUninitializedGlobalVariableError(program: String) {
-        assertErrorOfType(program, Diagnostic.UninitializedGlobalVariable::class)
+        assertErrorOfType(program, Diagnostic.TypeCheckingError.UninitializedGlobalVariable::class)
     }
 
     private fun assertConstantWithoutValueError(program: String) {
-        assertErrorOfType(program, Diagnostic.ConstantWithoutValue::class)
+        assertErrorOfType(program, Diagnostic.TypeCheckingError.ConstantWithoutValue::class)
     }
 
     private fun assertNonConstantExpressionError(program: String) {
-        assertErrorOfType(program, Diagnostic.NonConstantExpression::class)
+        assertErrorOfType(program, Diagnostic.TypeCheckingError.NonConstantExpression::class)
     }
 
-    @Ignore
     @Test
     fun `test instantiate variable with wrong type`() {
         assertInvalidTypeError("zm a: Liczba = prawda;")
@@ -81,7 +80,6 @@ class TypeCheckingErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test uninitialized global variables`() {
         assertUninitializedGlobalVariableError("zm a: Liczba;")
@@ -90,7 +88,6 @@ class TypeCheckingErrorsTest {
         assertUninitializedGlobalVariableError("wart a: Czy;")
     }
 
-    @Ignore
     @Test
     fun `test constant without value`() {
         assertConstantWithoutValueError("stała a: Liczba;")
@@ -111,7 +108,6 @@ class TypeCheckingErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test compile time constants`() {
         // The commented out lines don't work right now as only
@@ -191,7 +187,6 @@ class TypeCheckingErrorsTest {
 //        )
     }
 
-    @Ignore
     @Test
     fun `test non constant default function parameters`() {
         // The commented out lines don't work right now as only
@@ -273,7 +268,6 @@ class TypeCheckingErrorsTest {
 //        )
     }
 
-    @Ignore
     @Test
     fun `test assignment to variable of wrong type`() {
         assertInvalidTypeError(
@@ -389,7 +383,6 @@ class TypeCheckingErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test integer operators with wrong types`() {
         val binaryOperators = listOf("+", "-", "*", "/", "%", "^", "&", "|", "<<", ">>")
@@ -460,7 +453,6 @@ class TypeCheckingErrorsTest {
         }
     }
 
-    @Ignore
     @Test
     fun `test boolean operators with wrong types`() {
         val binaryOperators = listOf("oraz", "lub", "wtw", "albo")
@@ -531,7 +523,6 @@ class TypeCheckingErrorsTest {
         }
     }
 
-    @Ignore
     @Test
     fun `test comparison operators with wrong types`() {
         val comparisonOperators = listOf("==", "!=", ">", ">=", "<", "<=")
@@ -580,7 +571,6 @@ class TypeCheckingErrorsTest {
         }
     }
 
-    @Ignore
     @Test
     fun `test conditional operator with wrong types`() {
         assertConditionalMismatchError("czynność test() { zm a: Liczba = prawda ? 10 : fałsz; }")
@@ -631,7 +621,6 @@ class TypeCheckingErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test wrong return type`() {
         assertInvalidTypeError(
@@ -678,7 +667,6 @@ class TypeCheckingErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test wrong default parameter type`() {
         assertInvalidTypeError(
@@ -794,7 +782,6 @@ class TypeCheckingErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test wrong expression type in if else statements`() {
         assertInvalidTypeError(
@@ -867,7 +854,6 @@ class TypeCheckingErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test wrong expression type in while loop`() {
         assertInvalidTypeError(

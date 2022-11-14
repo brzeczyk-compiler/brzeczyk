@@ -3,18 +3,7 @@ package compiler.lexer.lexer_grammar
 import compiler.common.dfa.AbstractDfa
 import compiler.common.dfa.RegexDfa
 
-class Tokens(private val dfaFactory: DfaFactory = RegexDfaFactory()) {
-
-    interface DfaFactory {
-        fun fromRegexString(regexString: String): AbstractDfa<Char, Unit>
-    }
-
-    private class RegexDfaFactory : DfaFactory {
-        override fun fromRegexString(regexString: String): AbstractDfa<Char, Unit> {
-            return RegexDfa(LexerRegexParser.parseStringToRegex(regexString))
-        }
-    }
-
+object Tokens {
     fun getTokens(): List<Pair<AbstractDfa<Char, Unit>, TokenType>> {
         val list = listOf(
             // Parenthesis and braces
@@ -56,10 +45,6 @@ class Tokens(private val dfaFactory: DfaFactory = RegexDfaFactory()) {
             Pair(TokenType.DIVIDE, "/"),
             Pair(TokenType.MODULO, "%"),
 
-            // Increment and decrement operators
-            Pair(TokenType.INCREMENT, "++"),
-            Pair(TokenType.DECREMENT, "--"),
-
             // Bitwise operators
             Pair(TokenType.BIT_NOT, "~"),
             Pair(TokenType.BIT_OR, "\\|"),
@@ -89,6 +74,7 @@ class Tokens(private val dfaFactory: DfaFactory = RegexDfaFactory()) {
             // Boolean constants
             Pair(TokenType.TRUE_CONSTANT, "prawda"),
             Pair(TokenType.FALSE_CONSTANT, "fałsz"),
+            Pair(TokenType.UNIT_CONSTANT, "nic"),
 
             // Integer literals
             // Only includes nonnegative integers
@@ -116,7 +102,7 @@ class Tokens(private val dfaFactory: DfaFactory = RegexDfaFactory()) {
         )
 
         return list.map {
-            Pair(dfaFactory.fromRegexString(it.second), it.first)
+            Pair(RegexDfa(LexerRegexParser.parseStringToRegex(it.second)), it.first)
         }
     }
 }

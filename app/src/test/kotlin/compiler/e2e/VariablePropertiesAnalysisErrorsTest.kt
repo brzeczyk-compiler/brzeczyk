@@ -1,8 +1,7 @@
 package compiler.e2e
 
 import compiler.common.diagnostics.Diagnostic
-import compiler.e2e.E2eAsserter.assertErrorOfType
-import org.junit.Ignore
+import compiler.e2e.common.E2eAsserter.assertErrorOfType
 import org.junit.Test
 
 class VariablePropertiesAnalysisErrorsTest {
@@ -14,7 +13,6 @@ class VariablePropertiesAnalysisErrorsTest {
         assertErrorOfType(program, Diagnostic.VariablePropertiesError.AssignmentToOuterVariable::class)
     }
 
-    @Ignore
     @Test
     fun `test assignment to function parameter`() {
         assertAssignmentToParameterError(
@@ -44,7 +42,6 @@ class VariablePropertiesAnalysisErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test assignment to outer function variable`() {
         assertAssignmentToOuterVariableError(

@@ -1,6 +1,7 @@
 package compiler.e2e
 
 import compiler.common.diagnostics.Diagnostic
+import compiler.e2e.common.E2eAsserter
 import compiler.lexer.Location
 import kotlin.test.Test
 

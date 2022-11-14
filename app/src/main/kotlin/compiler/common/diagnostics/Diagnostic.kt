@@ -12,7 +12,7 @@ sealed class Diagnostic {
 
     data class LexerError(val start: Location, val end: Location?, val context: List<String>, val errorSegment: String) : Diagnostic() {
 
-        override fun isError(): Boolean = true
+        override fun isError() = true
 
         override fun toString() = StringBuilder()
             .append("Unable to match token at location $start - ${end ?: "eof"}.\n")
@@ -38,65 +38,91 @@ sealed class Diagnostic {
         }.toString()
     }
 
-    data class ConstantWithoutValue(val variable: Variable) : Diagnostic() {
+    sealed class NameResolutionErrors() : Diagnostic() {
         override fun isError() = true
-        override fun toString() = "A constant must have a value"
+
+        class UndefinedVariable : NameResolutionErrors()
+        class UndefinedFunction : NameResolutionErrors()
+        class NameConflict : NameResolutionErrors()
+        class VariableIsNotCallable : NameResolutionErrors()
+        class FunctionIsNotVariable : NameResolutionErrors()
     }
 
-    data class UninitializedGlobalVariable(val variable: Variable) : Diagnostic() {
+    sealed class TypeCheckingError : Diagnostic() {
         override fun isError() = true
-        override fun toString() = "A global variable must be initialized"
-    }
 
-    data class ImmutableAssignment(val assignment: Statement.Assignment, val variable: Variable) : Diagnostic() {
-        override fun isError() = true
-        override fun toString() = "Cannot assign to a " + if (variable.kind == Variable.Kind.CONSTANT) "constant" else "value"
-    }
+        data class ConstantWithoutValue(val variable: Variable) : TypeCheckingError() {
+            override fun toString() = "A constant must have a value"
+        }
 
-    data class ParameterAssignment(val assignment: Statement.Assignment, val parameter: Function.Parameter) : Diagnostic() {
-        override fun isError() = true
-        override fun toString() = "Cannot assign to a parameter"
-    }
+        data class UninitializedGlobalVariable(val variable: Variable) : TypeCheckingError() {
+            override fun toString() = "A global variable must be initialized"
+        }
 
-    data class FunctionAssignment(val assignment: Statement.Assignment, val function: Function) : Diagnostic() {
-        override fun isError() = true
-        override fun toString() = "Cannot assign to a function"
-    }
+        data class ImmutableAssignment(val assignment: Statement.Assignment, val variable: Variable) : TypeCheckingError() {
+            override fun toString() = "Cannot assign to a " + if (variable.kind == Variable.Kind.CONSTANT) "constant" else "value"
+        }
 
-    data class FunctionAsValue(val expression: Expression.Variable, val function: Function) : Diagnostic() {
-        override fun isError() = true
-        override fun toString() = "Cannot use a function as a value"
-    }
+        data class ParameterAssignment(val assignment: Statement.Assignment, val parameter: Function.Parameter) : TypeCheckingError() {
+            override fun toString() = "Cannot assign to a parameter"
+        }
 
-    data class VariableCall(val call: Expression.FunctionCall, val variable: Variable) : Diagnostic() {
-        override fun isError() = true
-        override fun toString() = "Cannot call a variable"
-    }
+        data class FunctionAssignment(val assignment: Statement.Assignment, val function: Function) : TypeCheckingError() {
+            override fun toString() = "Cannot assign to a function"
+        }
 
-    data class ParameterCall(val call: Expression.FunctionCall, val parameter: Function.Parameter) : Diagnostic() {
-        override fun isError() = true
-        override fun toString() = "Cannot call a parameter"
-    }
+        data class FunctionAsValue(val expression: Expression.Variable, val function: Function) : TypeCheckingError() {
+            override fun toString() = "Cannot use a function as a value"
+        }
 
-    data class ConditionalTypesMismatch(val conditional: Expression.Conditional, val typeWhenTrue: Type, val typeWhenFalse: Type) : Diagnostic() {
-        override fun isError() = true
-        override fun toString() = "The results of a conditional operator cannot have distinct types '$typeWhenTrue' and '$typeWhenFalse'"
-    }
+        data class VariableCall(val call: Expression.FunctionCall, val variable: Variable) : TypeCheckingError() {
+            override fun toString() = "Cannot call a variable"
+        }
 
-    data class NonConstantExpression(val expression: Expression) : Diagnostic() {
-        override fun isError() = true
-        override fun toString() = "Expected a constant expression"
-    }
+        data class ParameterCall(val call: Expression.FunctionCall, val parameter: Function.Parameter) : TypeCheckingError() {
+            override fun toString() = "Cannot call a parameter"
+        }
 
-    data class InvalidType(val expression: Expression, val type: Type, val expectedType: Type) : Diagnostic() {
-        override fun isError() = true
-        override fun toString() = "Expected type '$expectedType' instead of '$type'"
+        data class ConditionalTypesMismatch(val conditional: Expression.Conditional, val typeWhenTrue: Type, val typeWhenFalse: Type) : TypeCheckingError() {
+            override fun toString() = "The results of a conditional operator cannot have distinct types '$typeWhenTrue' and '$typeWhenFalse'"
+        }
+
+        data class NonConstantExpression(val expression: Expression) : TypeCheckingError() {
+            override fun toString() = "Expected a constant expression"
+        }
+
+        data class InvalidType(val expression: Expression, val type: Type, val expectedType: Type) : TypeCheckingError() {
+            override fun toString() = "Expected type '$expectedType' instead of '$type'"
+        }
     }
 
     sealed class VariablePropertiesError() : Diagnostic() {
         override fun isError() = true
 
-        class AssignmentToOuterVariable() : VariablePropertiesError()
-        class AssignmentToFunctionParameter() : VariablePropertiesError()
+        data class AssignmentToOuterVariable(
+            // Any = Variable | Function.Parameter
+            val variable: Any,
+            val owner: Function?,
+            val assignedIn: Function
+        ) : VariablePropertiesError() {
+            override fun toString() = StringBuilder().apply {
+                append("Assignment in inner function ${assignedIn.name} to ")
+                var variableName = "Unknown variable"
+                if (variable is Variable) variableName = variable.name
+                if (variable is Function.Parameter) variableName = variable.name
+                if (owner == null)
+                    append("global variable $variableName")
+                else
+                    append("variable $variableName defined in function ${owner.name}")
+            }.toString()
+        }
+        data class AssignmentToFunctionParameter(
+            val parameter: Function.Parameter,
+            val owner: Function,
+            val assignedIn: Function
+        ) : VariablePropertiesError() {
+            override fun toString() = "Assignment to parameter ${parameter.name} " +
+                "of type ${parameter.type} of function ${owner.name} in function ${assignedIn.name}"
+        }
     }
 }

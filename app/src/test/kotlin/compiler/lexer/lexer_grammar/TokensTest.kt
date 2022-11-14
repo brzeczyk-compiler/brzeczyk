@@ -8,7 +8,7 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 
 class TokensTest {
-    private val tokens = Tokens().getTokens()
+    private val tokens = Tokens.getTokens()
 
     private fun accepts(dfa: AbstractDfa<Char, Unit>, string: String): Boolean {
         val walk = dfa.newWalk()
@@ -39,6 +39,7 @@ class TokensTest {
         assertEquals(firstMatch(tokens, "stała"), TokenType.CONSTANT)
         assertEquals(firstMatch(tokens, "prawda"), TokenType.TRUE_CONSTANT)
         assertEquals(firstMatch(tokens, "fałsz"), TokenType.FALSE_CONSTANT)
+        assertEquals(firstMatch(tokens, "nic"), TokenType.UNIT_CONSTANT)
     }
 
     @Test fun `test special symbols`() {
@@ -60,8 +61,6 @@ class TokensTest {
         assertEquals(firstMatch(tokens, "*"), TokenType.MULTIPLY)
         assertEquals(firstMatch(tokens, "/"), TokenType.DIVIDE)
         assertEquals(firstMatch(tokens, "%"), TokenType.MODULO)
-        assertEquals(firstMatch(tokens, "++"), TokenType.INCREMENT)
-        assertEquals(firstMatch(tokens, "--"), TokenType.DECREMENT)
         assertEquals(firstMatch(tokens, "~"), TokenType.BIT_NOT)
         assertEquals(firstMatch(tokens, "|"), TokenType.BIT_OR)
         assertEquals(firstMatch(tokens, "&"), TokenType.BIT_AND)

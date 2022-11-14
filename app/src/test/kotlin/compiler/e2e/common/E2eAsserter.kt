@@ -9,9 +9,11 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 object E2eAsserter {
+    val diagnostics = CompilerDiagnostics()
+    val compiler = Compiler(diagnostics)
+
     private fun runProgram(program: String): Sequence<Diagnostic> {
-        val diagnostics = CompilerDiagnostics()
-        val compiler = Compiler(diagnostics)
+        diagnostics.clear()
         try {
             // exceptions are part of the implementation
             // we do care only about the diagnostics report

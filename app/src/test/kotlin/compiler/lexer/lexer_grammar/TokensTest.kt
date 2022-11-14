@@ -8,7 +8,7 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 
 class TokensTest {
-    private val tokens = Tokens().getTokens()
+    private val tokens = Tokens.getTokens()
 
     private fun accepts(dfa: AbstractDfa<Char, Unit>, string: String): Boolean {
         val walk = dfa.newWalk()

@@ -3,18 +3,7 @@ package compiler.lexer.lexer_grammar
 import compiler.common.dfa.AbstractDfa
 import compiler.common.dfa.RegexDfa
 
-class Tokens(private val dfaFactory: DfaFactory = RegexDfaFactory()) {
-
-    interface DfaFactory {
-        fun fromRegexString(regexString: String): AbstractDfa<Char, Unit>
-    }
-
-    private class RegexDfaFactory : DfaFactory {
-        override fun fromRegexString(regexString: String): AbstractDfa<Char, Unit> {
-            return RegexDfa(LexerRegexParser.parseStringToRegex(regexString))
-        }
-    }
-
+object Tokens {
     fun getTokens(): List<Pair<AbstractDfa<Char, Unit>, TokenType>> {
         val list = listOf(
             // Parenthesis and braces
@@ -113,7 +102,7 @@ class Tokens(private val dfaFactory: DfaFactory = RegexDfaFactory()) {
         )
 
         return list.map {
-            Pair(dfaFactory.fromRegexString(it.second), it.first)
+            Pair(RegexDfa(LexerRegexParser.parseStringToRegex(it.second)), it.first)
         }
     }
 }

@@ -272,7 +272,7 @@ object AstFactory {
             segments.add(Pair(conditionExpr, bodyBlock))
             it += 5
         }
-        val elseSegment = if (it < children.size) processMaybeBlock(children[it + 1], diagnostics) else listOf()
+        val elseSegment = if (it < children.size) processMaybeBlock(children[it + 1], diagnostics) else null
 
         return segments.slice(0 until segments.lastIndex).foldRight(
             Statement.Conditional(segments.last().first, segments.last().second, elseSegment),

@@ -408,6 +408,50 @@ class AstFactoryTest {
         assertTrue(reportedDiagnostics.first() is Diagnostic.ParserError)
     }
 
+    @Test fun `test correctly translates if without else`() {
+        val parseTree = makeProgramWithMainFunction(
+            makeNTNode(
+                NonTerminalType.STATEMENT, Productions.statementNonBrace,
+                makeNTNode(
+                    NonTerminalType.NON_BRACE_STATEMENT, Productions.nonBraceStatementIf,
+                    makeTNode(TokenType.IF, "jeśli"),
+                    makeTNode(TokenType.LEFT_PAREN, "("),
+                    makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR,
+                    makeTNode(TokenType.RIGHT_PAREN, ")"),
+                    makeNTNode(
+                        NonTerminalType.NON_IF_MAYBE_BLOCK, Productions.nonIfMaybeBlockNonBrace,
+                        makeNTNode(
+                            NonTerminalType.NON_IF_NON_BRACE_STATEMENT, Productions.nonIfNonBraceStatementAtomic,
+                            makeNTNode(NonTerminalType.ATOMIC_STATEMENT, Productions.atomicBreak, makeTNode(TokenType.BREAK, "przerwij")),
+                            makeTNode(TokenType.NEWLINE, "\n")
+                        )
+                    )
+                )
+            )
+        )
+        val expectedAst = Program(
+            listOf(
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "główna",
+                        listOf(),
+                        Type.Unit,
+                        listOf(
+                            Statement.Conditional(
+                                Expression.Variable("x"),
+                                listOf(Statement.LoopBreak),
+                                null
+                            )
+                        )
+                    )
+                )
+            )
+        )
+
+        val resultAst = AstFactory.createFromParseTree(parseTree, dummyDiagnostics)
+        assertEquals(expectedAst, resultAst)
+    }
+
     @Test fun `test correctly translates if,elif,else sequence`() {
         val parseTree = makeProgramWithMainFunction(
             makeNTNode(

@@ -38,6 +38,10 @@ sealed class Diagnostic {
         }.toString()
     }
 
+    sealed class ArgumentResolutionErrors() {
+        // TODO
+    }
+
     sealed class NameResolutionErrors() : Diagnostic() {
         override fun isError() = true
 

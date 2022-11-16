@@ -10,10 +10,10 @@ import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic
 import compiler.common.diagnostics.Diagnostic.TypeCheckingError
-import compiler.common.semantic_analysis.ReferenceHashMap
-import compiler.common.semantic_analysis.ReferenceMap
-import compiler.common.semantic_analysis.referenceEntries
-import compiler.common.semantic_analysis.referenceMapOf
+import compiler.common.reference_collections.ReferenceHashMap
+import compiler.common.reference_collections.ReferenceMap
+import compiler.common.reference_collections.referenceEntries
+import compiler.common.reference_collections.referenceMapOf
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals

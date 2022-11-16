@@ -1,4 +1,4 @@
-package compiler.common.semantic_analysis
+package compiler.common.reference_collections
 
 import java.util.IdentityHashMap
 

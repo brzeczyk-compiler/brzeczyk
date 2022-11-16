@@ -10,9 +10,9 @@ import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic.VariablePropertiesError.AssignmentToFunctionParameter
 import compiler.common.diagnostics.Diagnostic.VariablePropertiesError.AssignmentToOuterVariable
 import compiler.common.diagnostics.Diagnostics
-import compiler.common.semantic_analysis.MutableReferenceMap
-import compiler.common.semantic_analysis.ReferenceHashMap
-import compiler.common.semantic_analysis.ReferenceMap
+import compiler.common.reference_collections.MutableReferenceMap
+import compiler.common.reference_collections.ReferenceHashMap
+import compiler.common.reference_collections.ReferenceMap
 
 object VariablePropertiesAnalyzer {
     data class VariableProperties(val owner: Function?, val usedInNested: Boolean)

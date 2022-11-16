@@ -13,8 +13,8 @@ import compiler.ast.Variable
 import compiler.common.diagnostics.CompilerDiagnostics
 import compiler.common.diagnostics.Diagnostic
 import compiler.common.diagnostics.Diagnostic.VariablePropertiesError
-import compiler.common.semantic_analysis.MutableReferenceMap
-import compiler.common.semantic_analysis.ReferenceHashMap
+import compiler.common.reference_collections.MutableReferenceMap
+import compiler.common.reference_collections.ReferenceHashMap
 import compiler.semantic_analysis.VariablePropertiesAnalyzer.VariableProperties
 import kotlin.test.Test
 import kotlin.test.assertContentEquals

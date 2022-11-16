@@ -4,7 +4,7 @@ import compiler.common.diagnostics.Diagnostic
 import compiler.e2e.common.E2eAsserter.assertErrorOfType
 import kotlin.test.Test
 
-class NameResolutionErrorsTest {
+class NameResolutionErrorTest {
 
     @Test
     fun `test undefined variable`() {
@@ -15,7 +15,7 @@ class NameResolutionErrorsTest {
                     }
                     
                 """,
-            Diagnostic.NameResolutionErrors.UndefinedVariable::class
+            Diagnostic.NameResolutionError.UndefinedVariable::class
         )
     }
 
@@ -29,7 +29,7 @@ class NameResolutionErrorsTest {
                     }
                     
                 """,
-            Diagnostic.NameResolutionErrors.UndefinedVariable::class
+            Diagnostic.NameResolutionError.UndefinedVariable::class
         )
     }
 
@@ -43,7 +43,7 @@ class NameResolutionErrorsTest {
                     }
                     
                 """,
-            Diagnostic.NameResolutionErrors.UndefinedVariable::class
+            Diagnostic.NameResolutionError.UndefinedVariable::class
         )
     }
 
@@ -59,7 +59,7 @@ class NameResolutionErrorsTest {
                     }
                     
                 """,
-            Diagnostic.NameResolutionErrors.UndefinedVariable::class
+            Diagnostic.NameResolutionError.UndefinedVariable::class
         )
     }
 
@@ -75,7 +75,7 @@ class NameResolutionErrorsTest {
                     }
                     
                 """,
-            Diagnostic.NameResolutionErrors.UndefinedVariable::class
+            Diagnostic.NameResolutionError.UndefinedVariable::class
         )
     }
 
@@ -88,7 +88,7 @@ class NameResolutionErrorsTest {
                     }
                     
                 """,
-            Diagnostic.NameResolutionErrors.UndefinedFunction::class
+            Diagnostic.NameResolutionError.UndefinedFunction::class
         )
     }
 
@@ -106,7 +106,7 @@ class NameResolutionErrorsTest {
                     }
                     
                 """,
-            Diagnostic.NameResolutionErrors.UndefinedFunction::class
+            Diagnostic.NameResolutionError.UndefinedFunction::class
         )
     }
 
@@ -120,7 +120,7 @@ class NameResolutionErrorsTest {
                     }
                     
                 """,
-            Diagnostic.NameResolutionErrors.NameConflict::class
+            Diagnostic.NameResolutionError.NameConflict::class
         )
     }
 
@@ -134,7 +134,7 @@ class NameResolutionErrorsTest {
                     }
                     
                 """,
-            Diagnostic.NameResolutionErrors.NameConflict::class
+            Diagnostic.NameResolutionError.NameConflict::class
         )
         assertErrorOfType(
             """
@@ -144,7 +144,7 @@ class NameResolutionErrorsTest {
                     }
                     
                 """,
-            Diagnostic.NameResolutionErrors.NameConflict::class
+            Diagnostic.NameResolutionError.NameConflict::class
         )
     }
 
@@ -158,7 +158,7 @@ class NameResolutionErrorsTest {
                     }
                     
                 """,
-            Diagnostic.NameResolutionErrors.NameConflict::class
+            Diagnostic.NameResolutionError.NameConflict::class
         )
     }
 
@@ -176,7 +176,7 @@ class NameResolutionErrorsTest {
                     }
                     
                 """,
-            Diagnostic.NameResolutionErrors.NameConflict::class
+            Diagnostic.NameResolutionError.NameConflict::class
         )
     }
 
@@ -194,7 +194,7 @@ class NameResolutionErrorsTest {
                     }
                     
                 """,
-            Diagnostic.NameResolutionErrors.NameConflict::class
+            Diagnostic.NameResolutionError.NameConflict::class
         )
     }
 
@@ -208,7 +208,7 @@ class NameResolutionErrorsTest {
                     }
                     
                 """,
-            Diagnostic.NameResolutionErrors.NameConflict::class
+            Diagnostic.NameResolutionError.NameConflict::class
         )
     }
 
@@ -221,7 +221,7 @@ class NameResolutionErrorsTest {
                     czynność f(x: Czy = und) { }
                     
                 """,
-            Diagnostic.NameResolutionErrors.UndefinedVariable::class
+            Diagnostic.NameResolutionError.UndefinedVariable::class
         )
     }
 
@@ -234,7 +234,7 @@ class NameResolutionErrorsTest {
                     }
                     
                 """,
-            Diagnostic.NameResolutionErrors.UndefinedVariable::class
+            Diagnostic.NameResolutionError.UndefinedVariable::class
         )
         assertErrorOfType(
             """
@@ -245,7 +245,7 @@ class NameResolutionErrorsTest {
                     }
                     
                 """,
-            Diagnostic.NameResolutionErrors.UndefinedFunction::class
+            Diagnostic.NameResolutionError.UndefinedFunction::class
         )
     }
 
@@ -257,7 +257,7 @@ class NameResolutionErrorsTest {
                     zm y: Liczba = 17
                     
                 """,
-            Diagnostic.NameResolutionErrors.UndefinedVariable::class
+            Diagnostic.NameResolutionError.UndefinedVariable::class
         )
         assertErrorOfType(
             """
@@ -267,7 +267,7 @@ class NameResolutionErrorsTest {
                     }
                     
                 """,
-            Diagnostic.NameResolutionErrors.UndefinedFunction::class
+            Diagnostic.NameResolutionError.UndefinedFunction::class
         )
     }
 
@@ -280,7 +280,7 @@ class NameResolutionErrorsTest {
                     }
                     
                 """,
-            Diagnostic.NameResolutionErrors.UndefinedFunction::class
+            Diagnostic.NameResolutionError.UndefinedFunction::class
         )
     }
 
@@ -291,7 +291,7 @@ class NameResolutionErrorsTest {
                     czynność f(x: Liczba, x: Czy) { }
                     
                 """,
-            Diagnostic.NameResolutionErrors.NameConflict::class
+            Diagnostic.NameResolutionError.NameConflict::class
         )
     }
 
@@ -304,7 +304,7 @@ class NameResolutionErrorsTest {
                     }
                     
                 """,
-            Diagnostic.NameResolutionErrors.NameConflict::class
+            Diagnostic.NameResolutionError.NameConflict::class
         )
     }
 
@@ -317,7 +317,7 @@ class NameResolutionErrorsTest {
                     }
                     
                 """,
-            Diagnostic.NameResolutionErrors.NameConflict::class
+            Diagnostic.NameResolutionError.NameConflict::class
         )
     }
 
@@ -331,7 +331,7 @@ class NameResolutionErrorsTest {
                     }
                     
                 """,
-            Diagnostic.NameResolutionErrors.UndefinedVariable::class
+            Diagnostic.NameResolutionError.UndefinedVariable::class
         )
     }
 
@@ -347,7 +347,7 @@ class NameResolutionErrorsTest {
                     }
                     
                 """,
-            Diagnostic.NameResolutionErrors.VariableIsNotCallable::class
+            Diagnostic.NameResolutionError.VariableIsNotCallable::class
         )
     }
 
@@ -361,7 +361,7 @@ class NameResolutionErrorsTest {
                     }
                     
                 """,
-            Diagnostic.NameResolutionErrors.FunctionIsNotVariable::class
+            Diagnostic.NameResolutionError.FunctionIsNotVariable::class
         )
     }
 
@@ -375,7 +375,7 @@ class NameResolutionErrorsTest {
                     }
                     
                 """,
-            Diagnostic.NameResolutionErrors.FunctionIsNotVariable::class
+            Diagnostic.NameResolutionError.FunctionIsNotVariable::class
         )
     }
 
@@ -388,7 +388,7 @@ class NameResolutionErrorsTest {
                     }
                     
                 """,
-            Diagnostic.NameResolutionErrors.VariableIsNotCallable::class
+            Diagnostic.NameResolutionError.VariableIsNotCallable::class
         )
     }
 }

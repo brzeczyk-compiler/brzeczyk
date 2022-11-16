@@ -9,9 +9,9 @@ import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic
 import compiler.common.diagnostics.Diagnostics
-import compiler.common.semantic_analysis.MutableReferenceMap
-import compiler.common.semantic_analysis.ReferenceHashMap
-import compiler.common.semantic_analysis.ReferenceMap
+import compiler.common.reference_collections.MutableReferenceMap
+import compiler.common.reference_collections.ReferenceHashMap
+import compiler.common.reference_collections.ReferenceMap
 import java.util.Stack
 
 object NameResolver {
@@ -49,29 +49,29 @@ object NameResolver {
         fun reportIfNameConflict(name: String, scope: MutableMap<String, NamedNode>) {
             // conflict can only appear in the same scope
             if (scope.containsKey(name))
-                diagnostics.report(Diagnostic.NameResolutionErrors.NameConflict())
+                diagnostics.report(Diagnostic.NameResolutionError.NameConflict())
         }
 
         fun reportIfVariableUndefined(variableName: String) {
             // invariant: no node of a particular name exists <==> visibleNames[name] does not exist
             if (!visibleNames.containsKey(variableName))
-                diagnostics.report(Diagnostic.NameResolutionErrors.UndefinedVariable())
+                diagnostics.report(Diagnostic.NameResolutionError.UndefinedVariable())
         }
 
         fun reportIfFunctionUndefined(functionName: String) {
             // invariant: no node of a particular name exists <==> visibleNames[name] does not exist
             if (!visibleNames.containsKey(functionName))
-                diagnostics.report(Diagnostic.NameResolutionErrors.UndefinedFunction())
+                diagnostics.report(Diagnostic.NameResolutionError.UndefinedFunction())
         }
 
         fun reportIfVariableUsedAsFunction(variableName: String) {
             if (visibleNames[variableName]!!.onlyHasVariables())
-                diagnostics.report(Diagnostic.NameResolutionErrors.VariableIsNotCallable())
+                diagnostics.report(Diagnostic.NameResolutionError.VariableIsNotCallable())
         }
 
         fun reportIfFunctionUsedAsVariable(functionName: String) {
             if (visibleNames[functionName]!!.onlyHasFunctions())
-                diagnostics.report(Diagnostic.NameResolutionErrors.FunctionIsNotVariable())
+                diagnostics.report(Diagnostic.NameResolutionError.FunctionIsNotVariable())
         }
 
         // Auxiliary functions for managing scopes of names

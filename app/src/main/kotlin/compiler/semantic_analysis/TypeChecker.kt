@@ -10,8 +10,8 @@ import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic.TypeCheckingError
 import compiler.common.diagnostics.Diagnostics
-import compiler.common.semantic_analysis.ReferenceHashMap
-import compiler.common.semantic_analysis.ReferenceMap
+import compiler.common.reference_collections.ReferenceHashMap
+import compiler.common.reference_collections.ReferenceMap
 
 class TypeChecker(private val nameResolution: ReferenceMap<Any, NamedNode>, private val diagnostics: Diagnostics) {
     private val expressionTypes = ReferenceHashMap<Expression, Type>()

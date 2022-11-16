@@ -1,15 +1,15 @@
 package compiler.intermediate_form
 
-import compiler.common.semantic_analysis.ReferenceMap
+import compiler.common.reference_collections.ReferenceMap
 
-typealias Node = IntermediateFormTreeNode
+typealias IFTNode = IntermediateFormTreeNode
 
 class ControlFlowGraph(
-    private val treeRoots: List<Node>,
-    private val entryTreeRoot: Node,
-    private val unconditionalLinks: ReferenceMap<Node, Node>,
-    private val conditionalTrueLinks: ReferenceMap<Node, Node>,
-    private val conditionalFalseLinks: ReferenceMap<Node, Node>
+    private val treeRoots: List<IFTNode>,
+    private val entryTreeRoot: IFTNode,
+    private val unconditionalLinks: ReferenceMap<IFTNode, IFTNode>,
+    private val conditionalTrueLinks: ReferenceMap<IFTNode, IFTNode>,
+    private val conditionalFalseLinks: ReferenceMap<IFTNode, IFTNode>
 ) {
     // TODO() possibly some traversal here, otherwise make a data class
 }

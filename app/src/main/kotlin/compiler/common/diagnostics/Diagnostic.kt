@@ -38,18 +38,18 @@ sealed class Diagnostic {
         }.toString()
     }
 
-    sealed class ArgumentResolutionErrors() {
-        // TODO
+    sealed class NameResolutionError() : Diagnostic() {
+        override fun isError() = true
+        class UndefinedVariable : NameResolutionError()
+
+        class UndefinedFunction : NameResolutionError()
+        class NameConflict : NameResolutionError()
+        class VariableIsNotCallable : NameResolutionError()
+        class FunctionIsNotVariable : NameResolutionError()
     }
 
-    sealed class NameResolutionErrors() : Diagnostic() {
-        override fun isError() = true
-
-        class UndefinedVariable : NameResolutionErrors()
-        class UndefinedFunction : NameResolutionErrors()
-        class NameConflict : NameResolutionErrors()
-        class VariableIsNotCallable : NameResolutionErrors()
-        class FunctionIsNotVariable : NameResolutionErrors()
+    sealed class ArgumentResolutionError() {
+        // TODO
     }
 
     sealed class TypeCheckingError : Diagnostic() {

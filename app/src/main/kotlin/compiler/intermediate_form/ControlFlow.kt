@@ -4,7 +4,7 @@ import compiler.ast.Expression
 import compiler.ast.Function
 import compiler.ast.Program
 import compiler.ast.Variable
-import compiler.common.semantic_analysis.ReferenceMap
+import compiler.common.reference_collections.ReferenceMap
 
 object ControlFlow {
     fun createGraphForExpression(expression: Expression, variable: Variable?): ControlFlowGraph {

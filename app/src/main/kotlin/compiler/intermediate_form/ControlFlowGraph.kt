@@ -4,12 +4,14 @@ import compiler.common.reference_collections.ReferenceMap
 
 typealias IFTNode = IntermediateFormTreeNode
 
-class ControlFlowGraph(
-    private val treeRoots: List<IFTNode>,
-    private val entryTreeRoot: IFTNode,
-    private val unconditionalLinks: ReferenceMap<IFTNode, IFTNode>,
-    private val conditionalTrueLinks: ReferenceMap<IFTNode, IFTNode>,
-    private val conditionalFalseLinks: ReferenceMap<IFTNode, IFTNode>
+data class ControlFlowGraph(
+    val treeRoots: List<IFTNode>,
+    val entryTreeRoot: IFTNode,
+    val unconditionalLinks: ReferenceMap<IFTNode, IFTNode>,
+    val conditionalTrueLinks: ReferenceMap<IFTNode, IFTNode>,
+    val conditionalFalseLinks: ReferenceMap<IFTNode, IFTNode>
 ) {
-    // TODO() possibly some traversal here, otherwise make a data class
+    val finalTreeRoots: List<IFTNode> get() = treeRoots.filter {
+        it !in unconditionalLinks && it !in conditionalTrueLinks && it !in conditionalFalseLinks
+    }
 }

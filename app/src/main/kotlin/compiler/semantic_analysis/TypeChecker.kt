@@ -99,7 +99,7 @@ class TypeChecker(private val nameResolution: ReferenceMap<Any, NamedNode>, priv
         }
 
         fun checkIfLastStatementIsReturn(block: StatementBlock) {
-            if(block.isEmpty())
+            if (block.isEmpty())
                 diagnostics.report(TypeCheckingError.MissingReturnStatement(function))
             else {
                 when (val lastStatement = block.last()) {
@@ -107,18 +107,18 @@ class TypeChecker(private val nameResolution: ReferenceMap<Any, NamedNode>, priv
                     is Statement.Block -> checkIfLastStatementIsReturn(lastStatement.block)
                     is Statement.Conditional -> {
                         checkIfLastStatementIsReturn(lastStatement.actionWhenTrue)
-                        if(lastStatement.actionWhenFalse == null) // obligatory else
+                        if (lastStatement.actionWhenFalse == null) // obligatory else
                             diagnostics.report(TypeCheckingError.MissingReturnStatement(function))
                         else
                             checkIfLastStatementIsReturn(lastStatement.actionWhenFalse)
                     }
-                    else -> {diagnostics.report(TypeCheckingError.MissingReturnStatement(function))}
+                    else -> { diagnostics.report(TypeCheckingError.MissingReturnStatement(function)) }
                 }
             }
         }
 
         checkBlock(function.body)
-        if(function.returnType != Type.Unit)
+        if (function.returnType != Type.Unit)
             checkIfLastStatementIsReturn(function.body)
     }
 

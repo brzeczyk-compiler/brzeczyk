@@ -8,14 +8,17 @@ import compiler.ast.Program.Global
 import compiler.ast.Statement
 import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic.VariablePropertiesError.AssignmentToFunctionParameter
-import compiler.common.diagnostics.Diagnostic.VariablePropertiesError.AssignmentToOuterVariable
 import compiler.common.diagnostics.Diagnostics
 import compiler.common.reference_collections.MutableReferenceMap
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceMap
 
 object VariablePropertiesAnalyzer {
-    data class VariableProperties(val owner: Function?, val usedInNested: Boolean)
+    data class VariableProperties(
+        var owner: Function? = null,
+        val accessedIn: MutableSet<Function> = mutableSetOf(),
+        val writtenIn: MutableSet<Function> = mutableSetOf()
+    )
 
     fun calculateVariableProperties(
         ast: Program,

@@ -103,23 +103,6 @@ sealed class Diagnostic {
     sealed class VariablePropertiesError() : Diagnostic() {
         override fun isError() = true
 
-        data class AssignmentToOuterVariable(
-            // Any = Variable | Function.Parameter
-            val variable: Any,
-            val owner: Function?,
-            val assignedIn: Function
-        ) : VariablePropertiesError() {
-            override fun toString() = StringBuilder().apply {
-                append("Assignment in inner function ${assignedIn.name} to ")
-                var variableName = "Unknown variable"
-                if (variable is Variable) variableName = variable.name
-                if (variable is Function.Parameter) variableName = variable.name
-                if (owner == null)
-                    append("global variable $variableName")
-                else
-                    append("variable $variableName defined in function ${owner.name}")
-            }.toString()
-        }
         data class AssignmentToFunctionParameter(
             val parameter: Function.Parameter,
             val owner: Function,

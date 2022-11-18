@@ -98,9 +98,28 @@ class TypeChecker(private val nameResolution: ReferenceMap<Any, NamedNode>, priv
             }
         }
 
-        checkBlock(function.body)
+        fun checkIfLastStatementIsReturn(block: StatementBlock) {
+            if(block.isEmpty())
+                diagnostics.report(TypeCheckingError.MissingReturnStatement(function))
+            else {
+                when (val lastStatement = block.last()) {
+                    is Statement.FunctionReturn -> return
+                    is Statement.Block -> checkIfLastStatementIsReturn(lastStatement.block)
+                    is Statement.Conditional -> {
+                        checkIfLastStatementIsReturn(lastStatement.actionWhenTrue)
+                        if(lastStatement.actionWhenFalse == null) // obligatory else
+                            diagnostics.report(TypeCheckingError.MissingReturnStatement(function))
+                        else
+                            checkIfLastStatementIsReturn(lastStatement.actionWhenFalse)
+                    }
+                    else -> {diagnostics.report(TypeCheckingError.MissingReturnStatement(function))}
+                }
+            }
+        }
 
-        // TODO: check if some value is returned (for non-unit functions)
+        checkBlock(function.body)
+        if(function.returnType != Type.Unit)
+            checkIfLastStatementIsReturn(function.body)
     }
 
     private fun checkExpression(expression: Expression): Type? {

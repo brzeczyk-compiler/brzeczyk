@@ -27,6 +27,10 @@ class TypeCheckingErrorsTest {
         assertErrorOfType(program, Diagnostic.TypeCheckingError.NonConstantExpression::class)
     }
 
+    private fun assertMissingReturnStatementError(program: String) {
+        assertErrorOfType(program, Diagnostic.TypeCheckingError.MissingReturnStatement::class)
+    }
+
     @Test
     fun `test instantiate variable with wrong type`() {
         assertInvalidTypeError("zm a: Liczba = prawda;")
@@ -889,5 +893,76 @@ class TypeCheckingErrorsTest {
                 }
             """
         )
+    }
+
+    @Test
+    fun `test non Unit function has explicit return at the end`() {
+        assertProgramCorrect("czynność f() -> Nic { zakończ; }")
+        assertProgramCorrect(
+            """
+                czynność f() -> Nic {
+                    zm a: Liczba = 0
+                    a + 1
+                }
+            """
+        )
+        assertProgramCorrect(
+            """
+                czynność f() -> Liczba {
+                    zm a: Liczba = 0
+                    zwróć a + 1
+                }
+            """
+        )
+        assertMissingReturnStatementError("czynność f() -> Liczba {}")
+        assertMissingReturnStatementError(
+            """
+                czynność f() -> Liczba {
+                    zm a: Liczba = 0
+                    a + 1
+                }
+            """
+        )
+        assertMissingReturnStatementError(
+            """
+                czynność f() -> Czy {
+                    jeśli (fałsz)
+                        zwróć fałsz
+                    zaś gdy(fałsz)
+                        zwróć fałsz
+                }
+            """
+        )
+        assertProgramCorrect(
+            """
+                czynność f() -> Czy {
+                    jeśli (prawda) {
+                        jeśli (prawda) {
+                            jeśli (prawda)
+                                zwróć prawda
+                            wpp zwróć fałsz
+                        }
+                        wpp zwróć fałsz
+                    }
+                    wpp zwróć fałsz
+                }
+            """
+        )
+        assertMissingReturnStatementError(
+            """
+                czynność f() -> Czy {
+                    jeśli (prawda) {
+                        jeśli (prawda) {
+                            jeśli (prawda)
+                                zwróć prawda
+                            // missing wpp
+                        }
+                        wpp zwróć fałsz
+                    }
+                    wpp zwróć fałsz
+                }
+            """
+        )
+        assertProgramCorrect("czynność f() -> Czy { { { zwróć prawda;} } }")
     }
 }

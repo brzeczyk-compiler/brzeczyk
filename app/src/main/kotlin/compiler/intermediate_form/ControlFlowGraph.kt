@@ -6,7 +6,7 @@ typealias IFTNode = IntermediateFormTreeNode
 
 data class ControlFlowGraph(
     val treeRoots: List<IFTNode>,
-    val entryTreeRoot: IFTNode,
+    val entryTreeRoot: IFTNode?,
     val unconditionalLinks: ReferenceMap<IFTNode, IFTNode>,
     val conditionalTrueLinks: ReferenceMap<IFTNode, IFTNode>,
     val conditionalFalseLinks: ReferenceMap<IFTNode, IFTNode>

@@ -26,74 +26,63 @@ object VariablePropertiesAnalyzer {
         diagnostics: Diagnostics
     ): ReferenceMap<Any, VariableProperties> {
         val variableProperties: MutableReferenceMap<Any, VariableProperties> = ReferenceHashMap()
-        fun resolve(
-            // Any = Statement.Assignment | Expression.Variable
-            node: Any,
-            currentOwner: Function?,
-            isAssignment: Boolean
-        ) {
-            val resolvedVariable: Any = nameResolution.get(node)!!
-            // we assume variable is defined before being referenced
-            // if this fails then something is wrong with name resolution
-            val oldOwner = variableProperties.get(resolvedVariable)!!.owner
-            if (resolvedVariable is Function.Parameter && isAssignment) {
-                // function parameter must have an owner
-                diagnostics.report(AssignmentToFunctionParameter(resolvedVariable, oldOwner!!, currentOwner!!))
-            }
-            if (oldOwner != currentOwner) {
-                // if this was a function that is not nested in the original owner
-                // then name resolution would not be able to succeed
-                // current owner cannot be null as it is always a function once we start descending
-                if (isAssignment)
-                    diagnostics.report(AssignmentToOuterVariable(resolvedVariable, oldOwner, currentOwner!!))
-                variableProperties.put(resolvedVariable, VariableProperties(oldOwner, true))
-            }
-        }
 
         // Any = Expression | Statement
-        fun analyzeVariables(node: Any, currentOwner: Function?) {
+        fun analyzeVariables(node: Any, currentFunction: Function?) {
             when (node) {
-                is Statement.Evaluation -> analyzeVariables(node.expression, currentOwner)
-                is Statement.VariableDefinition -> analyzeVariables(node.variable, currentOwner)
-                is Global.VariableDefinition -> analyzeVariables(node.variable, currentOwner)
-                is Statement.FunctionDefinition -> analyzeVariables(node.function, currentOwner)
-                is Global.FunctionDefinition -> analyzeVariables(node.function, currentOwner)
-                is Statement.Assignment -> {
-                    resolve(node, currentOwner, true)
-                    analyzeVariables(node.value, currentOwner)
+                is Statement.Evaluation -> analyzeVariables(node.expression, currentFunction)
+                is Statement.VariableDefinition -> {
+                    variableProperties[node.variable] = VariableProperties(currentFunction)
+                    analyzeVariables(node.variable, currentFunction)
                 }
-                is Statement.Block -> node.block.forEach { analyzeVariables(it, currentOwner) }
+                is Global.VariableDefinition -> {
+                    variableProperties[node.variable] = VariableProperties(currentFunction)
+                    analyzeVariables(node.variable, currentFunction)
+                }
+                is Statement.FunctionDefinition -> analyzeVariables(node.function, currentFunction)
+                is Global.FunctionDefinition -> analyzeVariables(node.function, currentFunction)
+                is Statement.Assignment -> {
+                    val resolvedVariable: NamedNode = nameResolution[node]!!
+                    variableProperties[resolvedVariable]!!.writtenIn.add(currentFunction!!)
+                    if (resolvedVariable is Function.Parameter) {
+                        diagnostics.report(
+                            AssignmentToFunctionParameter(
+                                resolvedVariable,
+                                variableProperties[resolvedVariable]!!.owner!!, currentFunction
+                            )
+                        )
+                    }
+                    analyzeVariables(node.value, currentFunction)
+                }
+                is Statement.Block -> node.block.forEach { analyzeVariables(it, currentFunction) }
                 is Statement.Conditional -> (
                     sequenceOf(node.condition) +
                         node.actionWhenTrue.asSequence() + (node.actionWhenFalse?.asSequence() ?: emptySequence())
-                    ).forEach { analyzeVariables(it, currentOwner) }
+                    ).forEach { analyzeVariables(it, currentFunction) }
                 is Statement.Loop -> (sequenceOf(node.condition) + node.action.asSequence())
-                    .forEach { analyzeVariables(it, currentOwner) }
-                is Statement.FunctionReturn -> analyzeVariables(node.value, currentOwner)
+                    .forEach { analyzeVariables(it, currentFunction) }
+                is Statement.FunctionReturn -> analyzeVariables(node.value, currentFunction)
                 is Expression.Variable -> {
-                    resolve(node, currentOwner, false)
+                    val resolvedVariable: NamedNode = nameResolution[node]!!
+                    variableProperties[resolvedVariable]!!.accessedIn.add(currentFunction!!)
                 }
-                is Expression.FunctionCall -> node.arguments.forEach { analyzeVariables(it, currentOwner) }
-                is Expression.FunctionCall.Argument -> analyzeVariables(node.value, currentOwner)
-                is Expression.UnaryOperation -> analyzeVariables(node.operand, currentOwner)
+                is Expression.FunctionCall -> node.arguments.forEach { analyzeVariables(it, currentFunction) }
+                is Expression.FunctionCall.Argument -> analyzeVariables(node.value, currentFunction)
+                is Expression.UnaryOperation -> analyzeVariables(node.operand, currentFunction)
                 is Expression.BinaryOperation -> sequenceOf(node.leftOperand, node.rightOperand)
-                    .forEach { analyzeVariables(it, currentOwner) }
+                    .forEach { analyzeVariables(it, currentFunction) }
                 is Expression.Conditional -> sequenceOf(node.condition, node.resultWhenTrue, node.resultWhenFalse)
-                    .forEach { analyzeVariables(it, currentOwner) }
+                    .forEach { analyzeVariables(it, currentFunction) }
                 is Function -> {
                     node.parameters.forEach {
-                        variableProperties.put(it, VariableProperties(node, false))
+                        variableProperties[it] = VariableProperties(node)
                         // scope of the inner function has not begun yet
-                        it.defaultValue?.let { analyzeVariables(it, currentOwner) }
+                        it.defaultValue?.let { analyzeVariables(it, currentFunction) }
                     }
                     node.body.forEach { analyzeVariables(it, node) }
                 }
                 is Variable -> {
-                    variableProperties.put(
-                        node,
-                        VariableProperties(currentOwner, false)
-                    )
-                    node.value?.let { analyzeVariables(it, currentOwner) }
+                    node.value?.let { analyzeVariables(it, currentFunction) }
                 }
             }
         }

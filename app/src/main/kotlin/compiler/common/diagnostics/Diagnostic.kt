@@ -129,4 +129,21 @@ sealed class Diagnostic {
                 "of type ${parameter.type} of function ${owner.name} in function ${assignedIn.name}"
         }
     }
+
+    sealed class ControlFlowDiagnostic : Diagnostic() {
+        data class UnreachableStatement(val statement: Statement) : ControlFlowDiagnostic() {
+            override fun isError() = false
+            override fun toString() = "Unreachable statement"
+        }
+
+        data class BreakOutsideOfLoop(val loopBreak: Statement.LoopBreak) : ControlFlowDiagnostic() {
+            override fun isError() = true
+            override fun toString() = "Cannot use 'break' outside of loop"
+        }
+
+        data class ContinuationOutsideOfLoop(val loopContinuation: Statement.LoopContinuation) : ControlFlowDiagnostic() {
+            override fun isError() = true
+            override fun toString() = "Cannot use 'continue' outside of loop"
+        }
+    }
 }

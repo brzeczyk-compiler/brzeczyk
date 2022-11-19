@@ -5,7 +5,6 @@ import compiler.ast.Function
 import compiler.ast.NamedNode
 import compiler.ast.Program
 import compiler.ast.Statement
-import compiler.ast.StatementBlock
 import compiler.ast.Variable
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceMap
@@ -28,67 +27,76 @@ object FunctionDependenciesAnalyzer {
 
         val functionCalls: ReferenceHashMap<Function, ReferenceSet<Function>> = ReferenceHashMap()
 
-        fun getCalledFunctions(node: Any?): ReferenceSet<Function> {
-
-            fun getCalledOfStatementBlock(statementBlock: StatementBlock?): ReferenceSet<Function> =
-                if (statementBlock === null) referenceSetOf() else combineReferenceSets(statementBlock.map { getCalledFunctions(it) })
-
-            return when (node) {
-
-                is Program.Global.FunctionDefinition -> {
-                    functionCalls[node.function] = getCalledOfStatementBlock(node.function.body)
-                    return referenceSetOf()
-                }
-
-                // Expressions
+        fun getCalledFunctions(global: Program.Global): ReferenceSet<Function> {
+            fun getCalledFunctions(expression: Expression?): ReferenceSet<Function> = when (expression) {
+                is Expression.BooleanLiteral -> referenceSetOf()
+                is Expression.NumberLiteral -> referenceSetOf()
+                is Expression.UnitLiteral -> referenceSetOf()
+                is Expression.Variable -> referenceSetOf()
+                null -> referenceSetOf()
 
                 is Expression.FunctionCall -> combineReferenceSets(
-                    referenceSetOf(nameResolution[node] as Function),
-                    combineReferenceSets(node.arguments.map { getCalledFunctions(it.value) }),
+                    referenceSetOf(nameResolution[expression] as Function),
+                    combineReferenceSets(expression.arguments.map { getCalledFunctions(it.value) }),
                 )
 
-                is Expression.UnaryOperation -> getCalledFunctions(node.operand)
+                is Expression.UnaryOperation -> getCalledFunctions(expression.operand)
 
                 is Expression.BinaryOperation -> combineReferenceSets(
-                    getCalledFunctions(node.leftOperand),
-                    getCalledFunctions(node.rightOperand),
+                    getCalledFunctions(expression.leftOperand),
+                    getCalledFunctions(expression.rightOperand),
                 )
 
                 is Expression.Conditional -> combineReferenceSets(
-                    getCalledFunctions(node.condition),
-                    getCalledFunctions(node.resultWhenTrue),
-                    getCalledFunctions(node.resultWhenFalse),
+                    getCalledFunctions(expression.condition),
+                    getCalledFunctions(expression.resultWhenTrue),
+                    getCalledFunctions(expression.resultWhenFalse),
                 )
+            }
 
-                // Statements
+            fun getCalledFunctions(statement: Statement): ReferenceSet<Function> {
+                fun getCalledFunctions(list: List<Statement>?): ReferenceSet<Function> =
+                    if (list === null) referenceSetOf() else combineReferenceSets(list.map { getCalledFunctions(it) })
 
-                is Statement.Evaluation -> getCalledFunctions(node.expression)
+                return when (statement) {
+                    is Statement.LoopBreak -> referenceSetOf()
+                    is Statement.LoopContinuation -> referenceSetOf()
 
-                is Statement.VariableDefinition -> getCalledFunctions(node.variable.value)
+                    is Statement.FunctionDefinition -> {
+                        functionCalls[statement.function] = getCalledFunctions(statement.function.body)
+                        return combineReferenceSets(statement.function.parameters.map { it.defaultValue }.map { getCalledFunctions(it) })
+                    }
 
-                is Statement.FunctionDefinition -> {
-                    functionCalls[node.function] = getCalledOfStatementBlock(node.function.body)
-                    return combineReferenceSets(node.function.parameters.map { it.defaultValue }.map { getCalledFunctions(it) })
+                    is Statement.Evaluation -> getCalledFunctions(statement.expression)
+
+                    is Statement.VariableDefinition -> getCalledFunctions(statement.variable.value)
+
+                    is Statement.Assignment -> getCalledFunctions(statement.value)
+
+                    is Statement.Block -> getCalledFunctions(statement.block)
+
+                    is Statement.FunctionReturn -> getCalledFunctions(statement.value)
+
+                    is Statement.Conditional -> combineReferenceSets(
+                        getCalledFunctions(statement.condition),
+                        getCalledFunctions(statement.actionWhenTrue),
+                        getCalledFunctions(statement.actionWhenFalse),
+                    )
+
+                    is Statement.Loop -> combineReferenceSets(
+                        getCalledFunctions(statement.condition),
+                        getCalledFunctions(statement.action),
+                    )
                 }
+            }
 
-                is Statement.Assignment -> getCalledFunctions(node.value)
+            return when (global) {
+                is Program.Global.VariableDefinition -> referenceSetOf()
 
-                is Statement.Block -> getCalledOfStatementBlock(node.block)
-
-                is Statement.Conditional -> combineReferenceSets(
-                    getCalledFunctions(node.condition),
-                    getCalledOfStatementBlock(node.actionWhenTrue),
-                    getCalledOfStatementBlock(node.actionWhenFalse),
-                )
-
-                is Statement.Loop -> combineReferenceSets(
-                    getCalledFunctions(node.condition),
-                    getCalledOfStatementBlock(node.action),
-                )
-
-                is Statement.FunctionReturn -> getCalledFunctions(node.value)
-
-                else -> referenceSetOf()
+                is Program.Global.FunctionDefinition -> {
+                    functionCalls[global.function] = combineReferenceSets(global.function.body.map { getCalledFunctions(it) })
+                    return referenceSetOf()
+                }
             }
         }
 

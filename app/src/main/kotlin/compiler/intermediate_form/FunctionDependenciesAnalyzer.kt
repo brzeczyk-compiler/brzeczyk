@@ -1,8 +1,18 @@
 package compiler.intermediate_form
 
-import compiler.ast.*
+import compiler.ast.Expression
 import compiler.ast.Function
-import compiler.common.reference_collections.*
+import compiler.ast.NamedNode
+import compiler.ast.Program
+import compiler.ast.Statement
+import compiler.ast.StatementBlock
+import compiler.ast.Variable
+import compiler.common.reference_collections.ReferenceHashMap
+import compiler.common.reference_collections.ReferenceMap
+import compiler.common.reference_collections.ReferenceSet
+import compiler.common.reference_collections.combineReferenceSets
+import compiler.common.reference_collections.referenceKeys
+import compiler.common.reference_collections.referenceSetOf
 
 object FunctionDependenciesAnalyzer {
     enum class VariableAccessMode {
@@ -21,7 +31,7 @@ object FunctionDependenciesAnalyzer {
         fun getCalledFunctions(node: Any?): ReferenceSet<Function> {
 
             fun getCalledOfStatementBlock(statementBlock: StatementBlock?): ReferenceSet<Function> =
-                    if (statementBlock === null) referenceSetOf() else combineReferenceSets(statementBlock.map { getCalledFunctions(it) })
+                if (statementBlock === null) referenceSetOf() else combineReferenceSets(statementBlock.map { getCalledFunctions(it) })
 
             return when (node) {
 
@@ -33,21 +43,21 @@ object FunctionDependenciesAnalyzer {
                 // Expressions
 
                 is Expression.FunctionCall -> combineReferenceSets(
-                            referenceSetOf(nameResolution[node] as Function),
-                            combineReferenceSets(node.arguments.map { getCalledFunctions(it.value) }),
-                    )
+                    referenceSetOf(nameResolution[node] as Function),
+                    combineReferenceSets(node.arguments.map { getCalledFunctions(it.value) }),
+                )
 
                 is Expression.UnaryOperation -> getCalledFunctions(node.operand)
 
                 is Expression.BinaryOperation -> combineReferenceSets(
-                        getCalledFunctions(node.leftOperand),
-                        getCalledFunctions(node.rightOperand),
+                    getCalledFunctions(node.leftOperand),
+                    getCalledFunctions(node.rightOperand),
                 )
 
                 is Expression.Conditional -> combineReferenceSets(
-                        getCalledFunctions(node.condition),
-                        getCalledFunctions(node.resultWhenTrue),
-                        getCalledFunctions(node.resultWhenFalse),
+                    getCalledFunctions(node.condition),
+                    getCalledFunctions(node.resultWhenTrue),
+                    getCalledFunctions(node.resultWhenFalse),
                 )
 
                 // Statements
@@ -66,14 +76,14 @@ object FunctionDependenciesAnalyzer {
                 is Statement.Block -> getCalledOfStatementBlock(node.block)
 
                 is Statement.Conditional -> combineReferenceSets(
-                        getCalledFunctions(node.condition),
-                        getCalledOfStatementBlock(node.actionWhenTrue),
-                        getCalledOfStatementBlock(node.actionWhenFalse),
+                    getCalledFunctions(node.condition),
+                    getCalledOfStatementBlock(node.actionWhenTrue),
+                    getCalledOfStatementBlock(node.actionWhenFalse),
                 )
 
                 is Statement.Loop -> combineReferenceSets(
-                        getCalledFunctions(node.condition),
-                        getCalledOfStatementBlock(node.action),
+                    getCalledFunctions(node.condition),
+                    getCalledOfStatementBlock(node.action),
                 )
 
                 is Statement.FunctionReturn -> getCalledFunctions(node.value)
@@ -89,20 +99,19 @@ object FunctionDependenciesAnalyzer {
         var nextPartialTransitiveFunctionCalls = functionCalls
 
         fun getAllCallsOfChildren(calls: ReferenceHashMap<Function, ReferenceSet<Function>>, function: Function): ReferenceSet<Function> =
-                combineReferenceSets(calls[function]!!.map { calls[it]!! })
+            combineReferenceSets(calls[function]!!.map { calls[it]!! })
 
         repeat(allFunctions.size) {
             previousPartialTransitiveFunctionCalls = nextPartialTransitiveFunctionCalls
             nextPartialTransitiveFunctionCalls = ReferenceHashMap()
             allFunctions.forEach {
                 nextPartialTransitiveFunctionCalls[it] = combineReferenceSets(
-                        previousPartialTransitiveFunctionCalls[it]!!,
-                        getAllCallsOfChildren(previousPartialTransitiveFunctionCalls, it),
+                    previousPartialTransitiveFunctionCalls[it]!!,
+                    getAllCallsOfChildren(previousPartialTransitiveFunctionCalls, it),
                 )
             }
         }
 
         return nextPartialTransitiveFunctionCalls
     }
-
 }

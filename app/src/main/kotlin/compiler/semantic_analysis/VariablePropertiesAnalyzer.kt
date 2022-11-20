@@ -48,7 +48,8 @@ object VariablePropertiesAnalyzer {
                         diagnostics.report(
                             AssignmentToFunctionParameter(
                                 resolvedVariable,
-                                variableProperties[resolvedVariable]!!.owner!!, currentFunction
+                                variableProperties[resolvedVariable]!!.owner!!,
+                                currentFunction
                             )
                         )
                     }
@@ -77,7 +78,7 @@ object VariablePropertiesAnalyzer {
                     node.parameters.forEach {
                         variableProperties[it] = VariableProperties(node)
                         // scope of the inner function has not begun yet
-                        it.defaultValue?.let { analyzeVariables(it, currentFunction) }
+                        it.defaultValue?.let { defValue -> analyzeVariables(defValue, currentFunction) }
                     }
                     node.body.forEach { analyzeVariables(it, node) }
                 }

@@ -34,7 +34,7 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
         }
     }
 
-    private fun resolveFunctionCall(functionCall: Expression.FunctionCall) {
+    private fun resolveFunctionCallArguments(functionCall: Expression.FunctionCall) {
         var foundNamedArgument = false
         for (argument in functionCall.arguments) {
             if (argument.name != null) {
@@ -47,7 +47,7 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
 
         val function: Function = nameResolution[functionCall] as Function
         val parameterNames = function.parameters.map { it.name }
-        val isMatched = parameterNames.map { false }.toMutableList()
+        val isMatched = function.parameters.map { false }.toMutableList()
 
         if (functionCall.arguments.size > function.parameters.size) {
             diagnostics.report(Diagnostic.ArgumentResolutionError.TooManyArguments(functionCall))
@@ -82,64 +82,64 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
         }
     }
 
-    private fun checkExpression(expression: Expression) {
-        when (expression) {
-            is Expression.FunctionCall -> {
-                resolveFunctionCall(expression)
-                for (argument in expression.arguments)
-                    checkExpression(argument.value)
-            }
-            is Expression.UnaryOperation -> {
-                checkExpression(expression.operand)
-            }
-            is Expression.BinaryOperation -> {
-                checkExpression(expression.leftOperand)
-                checkExpression(expression.rightOperand)
-            }
-            is Expression.Conditional -> {
-                checkExpression(expression.condition)
-                checkExpression(expression.resultWhenTrue)
-                checkExpression(expression.resultWhenFalse)
-            }
-            else -> {}
-        }
-    }
-
-    private fun checkVariable(variable: Variable) {
-        if (variable.value != null) {
-            checkExpression(variable.value)
-        }
-    }
-
     private fun resolveFunctionCallsArguments(program: Program) {
-        fun checkFunction(function: Function) {
-            fun checkBlock(block: StatementBlock) {
+        fun processExpression(expression: Expression) {
+            when (expression) {
+                is Expression.FunctionCall -> {
+                    resolveFunctionCallArguments(expression)
+                    for (argument in expression.arguments)
+                        processExpression(argument.value)
+                }
+                is Expression.UnaryOperation -> {
+                    processExpression(expression.operand)
+                }
+                is Expression.BinaryOperation -> {
+                    processExpression(expression.leftOperand)
+                    processExpression(expression.rightOperand)
+                }
+                is Expression.Conditional -> {
+                    processExpression(expression.condition)
+                    processExpression(expression.resultWhenTrue)
+                    processExpression(expression.resultWhenFalse)
+                }
+                else -> {}
+            }
+        }
+
+        fun processVariable(variable: Variable) {
+            if (variable.value != null) {
+                processExpression(variable.value)
+            }
+        }
+
+        fun processFunction(function: Function) {
+            fun processBlock(block: StatementBlock) {
                 for (statement in block) {
                     when (statement) {
-                        is Statement.Evaluation -> checkExpression(statement.expression)
-                        is Statement.VariableDefinition -> checkVariable(statement.variable)
-                        is Statement.FunctionDefinition -> checkFunction(statement.function)
-                        is Statement.Assignment -> checkExpression(statement.value)
-                        is Statement.Block -> checkBlock(statement.block)
+                        is Statement.Evaluation -> processExpression(statement.expression)
+                        is Statement.VariableDefinition -> processVariable(statement.variable)
+                        is Statement.FunctionDefinition -> processFunction(statement.function)
+                        is Statement.Assignment -> processExpression(statement.value)
+                        is Statement.Block -> processBlock(statement.block)
                         is Statement.Conditional -> {
-                            checkExpression(statement.condition)
-                            checkBlock(statement.actionWhenTrue)
-                            statement.actionWhenFalse?.let { checkBlock(it) }
+                            processExpression(statement.condition)
+                            processBlock(statement.actionWhenTrue)
+                            statement.actionWhenFalse?.let { processBlock(it) }
                         }
                         is Statement.Loop -> {
-                            checkExpression(statement.condition)
-                            checkBlock(statement.action)
+                            processExpression(statement.condition)
+                            processBlock(statement.action)
                         }
-                        is Statement.FunctionReturn -> checkExpression(statement.value)
+                        is Statement.FunctionReturn -> processExpression(statement.value)
                         else -> {}
                     }
                 }
             }
 
-            checkBlock(function.body)
+            processBlock(function.body)
         }
 
-        program.globals.forEach { if (it is Program.Global.FunctionDefinition) checkFunction(it.function) }
+        program.globals.forEach { if (it is Program.Global.FunctionDefinition) processFunction(it.function) }
     }
 
     private fun resolveFunctionDefinitions(program: Program) {

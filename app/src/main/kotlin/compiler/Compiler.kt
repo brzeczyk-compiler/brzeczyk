@@ -10,6 +10,7 @@ import compiler.parser.ParseTree
 import compiler.parser.Parser
 import compiler.parser.grammar.ParserGrammar
 import compiler.parser.grammar.Symbol
+import compiler.semantic_analysis.ArgumentResolver
 import compiler.semantic_analysis.NameResolver
 import compiler.semantic_analysis.TypeChecker
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
@@ -29,8 +30,8 @@ class Compiler(val diagnostics: Diagnostics) {
 
         val ast = AstFactory.createFromParseTree(parseTree, diagnostics)
         val nameResolution = NameResolver.calculateNameResolution(ast, diagnostics)
-        // val argumentResolution = ArgumentResolver.calculateArgumentToParameterResolution(ast, diagnostics)
-        val expressionTypes = TypeChecker.calculateTypes(ast, nameResolution, diagnostics)
+        val argumentResolution = ArgumentResolver.calculateArgumentToParameterResolution(ast, nameResolution, diagnostics)
+        val expressionTypes = TypeChecker.calculateTypes(ast, nameResolution, argumentResolution, diagnostics)
         val variableProperties = VariablePropertiesAnalyzer.calculateVariableProperties(ast, nameResolution, diagnostics)
     }
 }

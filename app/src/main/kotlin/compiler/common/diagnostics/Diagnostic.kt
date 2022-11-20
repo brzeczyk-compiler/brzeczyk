@@ -48,8 +48,32 @@ sealed class Diagnostic {
         class FunctionIsNotVariable : NameResolutionError()
     }
 
-    sealed class ArgumentResolutionError() {
-        // TODO
+    sealed class ArgumentResolutionError() : Diagnostic() {
+        override fun isError(): Boolean = true
+
+        data class DefaultParametersNotLast(val function: Function) : ArgumentResolutionError() {
+            override fun toString(): String = "Error in $function - non default arguments should be before default ones"
+        }
+
+        data class PositionalArgumentAfterNamed(val functionCall: Expression.FunctionCall) : ArgumentResolutionError() {
+            override fun toString(): String = "Positional argument after a named one in function call $functionCall"
+        }
+
+        data class MissingArgument(val functionCall: Expression.FunctionCall, val argumentName: String) : ArgumentResolutionError() {
+            override fun toString(): String = "Argument $argumentName in function call $functionCall"
+        }
+
+        data class RepeatedArgument(val functionCall: Expression.FunctionCall, val argumentName: String) : ArgumentResolutionError() {
+            override fun toString(): String = "Argument $argumentName is repeated in function call $functionCall"
+        }
+
+        data class UnknownArgument(val functionCall: Expression.FunctionCall, val argumentName: String) : ArgumentResolutionError() {
+            override fun toString(): String = "Unknown named argument $argumentName in function call $functionCall"
+        }
+
+        data class TooManyArguments(val functionCall: Expression.FunctionCall) : ArgumentResolutionError() {
+            override fun toString(): String = "Too many arguments in function call $functionCall"
+        }
     }
 
     sealed class TypeCheckingError : Diagnostic() {

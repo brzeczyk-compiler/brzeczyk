@@ -52,7 +52,7 @@ object ControlFlow {
             var breaking: MutableList<Pair<IFTNode, LinkType>?>? = null
             var continuing: MutableList<Pair<IFTNode, LinkType>?>? = null
 
-            fun processBlock(block: StatementBlock) {
+            fun processStatementBlock(block: StatementBlock) {
                 fun addExpression(expression: Expression, variable: Variable?): IFTNode? {
                     val cfg = createGraphForExpression(expression, variable)
 
@@ -100,19 +100,19 @@ object ControlFlow {
 
                         is Statement.Assignment -> addExpression(statement.value, nameResolution[statement] as Variable)
 
-                        is Statement.Block -> processBlock(statement.block)
+                        is Statement.Block -> processStatementBlock(statement.block)
 
                         is Statement.Conditional -> {
                             addExpression(statement.condition, null)!!
                             val conditionEnd = last
 
                             last = mapLinkType(conditionEnd, LinkType.CONDITIONAL_TRUE)
-                            processBlock(statement.actionWhenTrue)
+                            processStatementBlock(statement.actionWhenTrue)
                             val trueBranchEnd = last
 
                             last = mapLinkType(conditionEnd, LinkType.CONDITIONAL_FALSE)
                             if (statement.actionWhenFalse != null)
-                                processBlock(statement.actionWhenFalse)
+                                processStatementBlock(statement.actionWhenFalse)
                             val falseBranchEnd = last
 
                             last = trueBranchEnd + falseBranchEnd
@@ -129,7 +129,7 @@ object ControlFlow {
                             continuing = mutableListOf()
 
                             last = mapLinkType(conditionEnd, LinkType.CONDITIONAL_TRUE)
-                            processBlock(statement.action)
+                            processStatementBlock(statement.action)
                             val end = last
 
                             for (node in end + continuing!!)
@@ -168,7 +168,7 @@ object ControlFlow {
                 }
             }
 
-            processBlock(function.body)
+            processStatementBlock(function.body)
 
             controlFlowGraphs[function] = ControlFlowGraph(
                 treeRoots,
@@ -179,10 +179,7 @@ object ControlFlow {
             )
         }
 
-        for (global in program.globals) {
-            if (global is Program.Global.FunctionDefinition)
-                processFunction(global.function)
-        }
+        program.globals.filterIsInstance<Program.Global.FunctionDefinition>().forEach { processFunction(it.function) }
 
         return controlFlowGraphs
     }

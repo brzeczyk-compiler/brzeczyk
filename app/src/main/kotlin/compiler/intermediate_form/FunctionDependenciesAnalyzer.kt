@@ -64,7 +64,7 @@ object FunctionDependenciesAnalyzer {
 
                     is Statement.FunctionDefinition -> {
                         functionCalls[statement.function] = getCalledFunctions(statement.function.body)
-                        return combineReferenceSets(statement.function.parameters.map { it.defaultValue }.map { getCalledFunctions(it) })
+                        return combineReferenceSets(statement.function.parameters.map { getCalledFunctions(it.defaultValue) })
                     }
 
                     is Statement.Evaluation -> getCalledFunctions(statement.expression)

@@ -26,15 +26,15 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
         ): ArgumentResolutionResult {
             val resolver = ArgumentResolver(nameResolution, diagnostics)
 
-            resolver.checkFunctionDefinitions(program)
+            resolver.resolveFunctionDefinitions(program)
             if (resolver.correctDefinitions)
-                resolver.checkFunctionCalls(program)
+                resolver.resolveFunctionCallsArguments(program)
 
             return resolver.result
         }
     }
 
-    private fun checkFunctionCall(functionCall: Expression.FunctionCall) {
+    private fun resolveFunctionCall(functionCall: Expression.FunctionCall) {
         var foundNamedArgument = false
         for (argument in functionCall.arguments) {
             if (argument.name != null) {
@@ -47,15 +47,15 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
 
         val function: Function = nameResolution[functionCall] as Function
         val parameterNames = function.parameters.map { it.name }
-        val numberOfParameters = parameterNames.size
         val isMatched = parameterNames.map { false }.toMutableList()
+
+        if (functionCall.arguments.size > function.parameters.size) {
+            diagnostics.report(Diagnostic.ArgumentResolutionError.TooManyArguments(functionCall))
+            return
+        }
 
         for ((index, argument) in functionCall.arguments.withIndex()) {
             if (argument.name == null) {
-                if (index >= numberOfParameters) {
-                    diagnostics.report(Diagnostic.ArgumentResolutionError.TooManyArguments(functionCall))
-                    return
-                }
                 result[argument] = function.parameters[index]
                 isMatched[index] = true
             } else {
@@ -73,8 +73,8 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
             }
         }
 
-        for (index in 0 until numberOfParameters) {
-            if (!isMatched[index] && function.parameters[index].defaultValue == null) {
+        for ((index, parameter) in function.parameters.withIndex()) {
+            if (!isMatched[index] && parameter.defaultValue == null) {
                 diagnostics.report(Diagnostic.ArgumentResolutionError.MissingArgument(functionCall, parameterNames[index]))
             }
 
@@ -85,7 +85,9 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
     private fun checkExpression(expression: Expression) {
         when (expression) {
             is Expression.FunctionCall -> {
-                checkFunctionCall(expression)
+                resolveFunctionCall(expression)
+                for (argument in expression.arguments)
+                    checkExpression(argument.value)
             }
             is Expression.UnaryOperation -> {
                 checkExpression(expression.operand)
@@ -99,6 +101,7 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
                 checkExpression(expression.resultWhenTrue)
                 checkExpression(expression.resultWhenFalse)
             }
+            else -> {}
         }
     }
 
@@ -108,7 +111,7 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
         }
     }
 
-    private fun checkFunctionCalls(program: Program) {
+    private fun resolveFunctionCallsArguments(program: Program) {
         fun checkFunction(function: Function) {
             fun checkBlock(block: StatementBlock) {
                 for (statement in block) {
@@ -128,6 +131,7 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
                             checkBlock(statement.action)
                         }
                         is Statement.FunctionReturn -> checkExpression(statement.value)
+                        else -> {}
                     }
                 }
             }
@@ -138,7 +142,7 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
         program.globals.forEach { if (it is Program.Global.FunctionDefinition) checkFunction(it.function) }
     }
 
-    private fun checkFunctionDefinitions(program: Program) {
+    private fun resolveFunctionDefinitions(program: Program) {
         fun defaultParametersBeforeNonDefault(function: Function): Boolean {
             var encounteredDefault = false
             for (parameter in function.parameters) {
@@ -171,6 +175,7 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
                         is Statement.Loop -> {
                             checkBlock(statement.action)
                         }
+                        else -> {}
                     }
                 }
             }

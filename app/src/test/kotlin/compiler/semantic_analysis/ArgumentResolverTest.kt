@@ -60,6 +60,31 @@ internal class ArgumentResolverTest {
     }
 
     @Test
+    fun `test argument resolution for nested calls`() {
+        /*
+        czynność f(a: Liczba) {}
+        czynność główna() {
+            f(f(1))
+        }
+        */
+        val par = intParameter("a")
+        val function = globalFunction("f", listOf(par), emptyList())
+        val innerArg = intArgument(1)
+        val innerCall = functionCall("f", listOf(innerArg))
+        val outerArg = argument(innerCall)
+        val outerCall = functionCall("f", listOf(outerArg))
+        val main = mainFunction(listOf(Statement.Evaluation(outerCall)))
+        val program = Program(listOf(function, main))
+        val nameResolution = referenceMapOf<Any, NamedNode>(innerCall to function.function, outerCall to function.function)
+        val diagnostics = CompilerDiagnostics()
+
+        val argumentResolution = ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
+
+        assertEquals(emptyList(), diagnostics.diagnostics.toList())
+        assertEquals(referenceMapOf(innerArg to par, outerArg to par), argumentResolution)
+    }
+
+    @Test
     fun `test named argument resolution`() {
         /*
         czynność f(a: Liczba, b: Liczba, c: Liczba) {}
@@ -265,18 +290,17 @@ internal class ArgumentResolverTest {
     @Test
     fun `test repeated argument in function call`() {
         /*
-        czynność f(a: Czy, b: Czy) {}
+        czynność f(a: Czy, b: Czy = fałsz) {}
         czynnosć główna() {
-            f(fałsz, fałsz, a=prawda)
+            f(fałsz, a=prawda)
         }
          */
         val par1 = boolParameter("a")
-        val par2 = boolParameter("b")
+        val par2 = defaultBoolParameter("b", false)
         val function = globalFunction("f", listOf(par1, par2))
         val arg1 = boolArgument(false)
-        val arg2 = boolArgument(true)
-        val arg3 = namedBoolArgument("a", true)
-        val call = functionCall("f", listOf(arg1, arg2, arg3))
+        val arg2 = namedBoolArgument("a", true)
+        val call = functionCall("f", listOf(arg1, arg2))
         val main = mainFunction(listOf(Statement.Evaluation(call)))
         val program = Program(listOf(function, main))
         val nameResolution = referenceMapOf<Any, NamedNode>(call to function.function)
@@ -292,18 +316,17 @@ internal class ArgumentResolverTest {
     @Test
     fun `test unknown named argument in function call`() {
         /*
-        czynność f(a: Czy, b: Czy) {}
+        czynność f(a: Czy, b: Czy = fałsz) {}
         czynnosć główna() {
-            f(fałsz, fałsz, c=prawda)
+            f(fałsz, c=prawda)
         }
          */
         val par1 = boolParameter("a")
-        val par2 = boolParameter("b")
+        val par2 = defaultBoolParameter("b", false)
         val function = globalFunction("f", listOf(par1, par2))
         val arg1 = boolArgument(false)
-        val arg2 = boolArgument(true)
-        val arg3 = namedBoolArgument("c", true)
-        val call = functionCall("f", listOf(arg1, arg2, arg3))
+        val arg2 = namedBoolArgument("c", true)
+        val call = functionCall("f", listOf(arg1, arg2))
         val main = mainFunction(listOf(Statement.Evaluation(call)))
         val program = Program(listOf(function, main))
         val nameResolution = referenceMapOf<Any, NamedNode>(call to function.function)

@@ -156,33 +156,33 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
             return false
         }
 
-        fun checkFunction(function: Function, global: Boolean) {
+        fun processFunction(function: Function, global: Boolean) {
             if (defaultParametersBeforeNonDefault(function)) {
                 diagnostics.report(Diagnostic.ArgumentResolutionError.DefaultParametersNotLast(function))
             }
 
             // TODO: generate variables for default parameters
 
-            fun checkBlock(block: StatementBlock) {
+            fun processBlock(block: StatementBlock) {
                 for (statement in block) {
                     when (statement) {
-                        is Statement.FunctionDefinition -> checkFunction(statement.function, false)
-                        is Statement.Block -> checkBlock(statement.block)
+                        is Statement.FunctionDefinition -> processFunction(statement.function, false)
+                        is Statement.Block -> processBlock(statement.block)
                         is Statement.Conditional -> {
-                            checkBlock(statement.actionWhenTrue)
-                            statement.actionWhenFalse?.let { checkBlock(it) }
+                            processBlock(statement.actionWhenTrue)
+                            statement.actionWhenFalse?.let { processBlock(it) }
                         }
                         is Statement.Loop -> {
-                            checkBlock(statement.action)
+                            processBlock(statement.action)
                         }
                         else -> {}
                     }
                 }
             }
 
-            checkBlock(function.body)
+            processBlock(function.body)
         }
 
-        program.globals.forEach { if (it is Program.Global.FunctionDefinition) checkFunction(it.function, true) }
+        program.globals.forEach { if (it is Program.Global.FunctionDefinition) processFunction(it.function, true) }
     }
 }

@@ -122,6 +122,10 @@ sealed class Diagnostic {
         data class InvalidType(val expression: Expression, val type: Type, val expectedType: Type) : TypeCheckingError() {
             override fun toString() = "Expected type '$expectedType' instead of '$type'"
         }
+
+        data class MissingReturnStatement(val function: Function) : TypeCheckingError() {
+            override fun toString() = "Non Unit returning function must end with a 'return' statement"
+        }
     }
 
     sealed class VariablePropertiesError() : Diagnostic() {

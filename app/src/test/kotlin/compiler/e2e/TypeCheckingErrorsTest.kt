@@ -3,7 +3,6 @@ package compiler.e2e
 import compiler.common.diagnostics.Diagnostic
 import compiler.e2e.common.E2eAsserter.assertErrorOfType
 import compiler.e2e.common.E2eAsserter.assertProgramCorrect
-import org.junit.Ignore
 import org.junit.Test
 
 class TypeCheckingErrorsTest {
@@ -689,7 +688,6 @@ class TypeCheckingErrorsTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test wrong function call argument type`() {
         assertInvalidTypeError(

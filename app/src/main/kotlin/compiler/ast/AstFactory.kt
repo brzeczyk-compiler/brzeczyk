@@ -114,15 +114,14 @@ object AstFactory {
     private fun processFunctionDefinitionParameters(parseTree: ParseTree<Symbol>, diagnostics: Diagnostics): List<Function.Parameter> {
         val children = (parseTree as ParseTree.Branch).getFilteredChildren()
         val parameters = ArrayList<Function.Parameter>()
-
         var it = 0
         while (it < children.size) {
             val grandchildren = (children[it] as ParseTree.Branch).getFilteredChildren()
             val name = (grandchildren[0] as ParseTree.Leaf).content
             val type = processType(grandchildren[2])
             val defaultValue = if (it + 1 < children.size && children[it + 1].token() == TokenType.ASSIGNMENT) {
-                it += 3
-                processExpression(children[it - 1], diagnostics)
+                it += 4
+                processExpression(children[it - 2], diagnostics)
             } else {
                 it += 2
                 null

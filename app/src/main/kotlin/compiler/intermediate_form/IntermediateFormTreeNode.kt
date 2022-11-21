@@ -77,4 +77,6 @@ sealed class IntermediateFormTreeNode {
     // stack operations, work on 64 bit registers
     data class StackPush(val register: Register) : IntermediateFormTreeNode()
     data class StackPop(val resultRegister: Register) : IntermediateFormTreeNode()
+
+    data class NoOp : IntermediateFormTreeNode() // For testing
 }

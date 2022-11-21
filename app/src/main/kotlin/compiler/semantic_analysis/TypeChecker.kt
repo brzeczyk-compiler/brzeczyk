@@ -13,12 +13,12 @@ import compiler.common.diagnostics.Diagnostics
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceMap
 
-class TypeChecker(private val nameResolution: ReferenceMap<Any, NamedNode>, private val diagnostics: Diagnostics) {
+class TypeChecker(private val nameResolution: ReferenceMap<Any, NamedNode>, private val argumentResolution: ArgumentResolutionResult, private val diagnostics: Diagnostics) {
     private val expressionTypes = ReferenceHashMap<Expression, Type>()
 
     companion object {
-        fun calculateTypes(program: Program, nameResolution: ReferenceMap<Any, NamedNode>, diagnostics: Diagnostics): ReferenceMap<Expression, Type> {
-            val checker = TypeChecker(nameResolution, diagnostics)
+        fun calculateTypes(program: Program, nameResolution: ReferenceMap<Any, NamedNode>, argumentResolution: ArgumentResolutionResult, diagnostics: Diagnostics): ReferenceMap<Expression, Type> {
+            val checker = TypeChecker(nameResolution, argumentResolution, diagnostics)
             checker.checkProgram(program)
             return checker.expressionTypes
         }
@@ -149,7 +149,7 @@ class TypeChecker(private val nameResolution: ReferenceMap<Any, NamedNode>, priv
 
                         is Function -> {
                             for (argument in expression.arguments) {
-                                val parameter = nameResolution[argument]!! as Function.Parameter
+                                val parameter = argumentResolution[argument]!!
                                 checkExpression(argument.value, parameter.type)
                             }
 

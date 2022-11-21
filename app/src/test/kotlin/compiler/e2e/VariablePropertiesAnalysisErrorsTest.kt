@@ -9,10 +9,6 @@ class VariablePropertiesAnalysisErrorsTest {
         assertErrorOfType(program, Diagnostic.VariablePropertiesError.AssignmentToFunctionParameter::class)
     }
 
-    private fun assertAssignmentToOuterVariableError(program: String) {
-        assertErrorOfType(program, Diagnostic.VariablePropertiesError.AssignmentToOuterVariable::class)
-    }
-
     @Test
     fun `test assignment to function parameter`() {
         assertAssignmentToParameterError(
@@ -36,44 +32,6 @@ class VariablePropertiesAnalysisErrorsTest {
                 czynność f() {
                     czynność g(a: Czy) {
                         a = fałsz
-                    }
-                }
-            """
-        )
-    }
-
-    @Test
-    fun `test assignment to outer function variable`() {
-        assertAssignmentToOuterVariableError(
-            """
-                czynność f() {
-                    zm a: Liczba = 3
-                    czynność g() {
-                        a = 7
-                    }
-                }
-            """
-        )
-        assertAssignmentToOuterVariableError(
-            """
-                czynność f() {
-                    zm a: Liczba = 3
-                    czynność g() {
-                        czynność h() {
-                            a = 5
-                        }
-                    }
-                }
-            """
-        )
-        assertAssignmentToOuterVariableError(
-            """
-                czynność f() {
-                    zm a: Liczba = 3
-                    czynność g() {
-                        czynność h() {
-                            a = 5
-                        }
                     }
                 }
             """

@@ -14,15 +14,6 @@ import compiler.common.reference_collections.referenceKeys
 import compiler.common.reference_collections.referenceSetOf
 
 object FunctionDependenciesAnalyzer {
-    enum class VariableAccessMode {
-        READ_ONLY,
-        READ_WRITE
-    }
-
-    fun variablesUsedByFunctions(ast: Program): ReferenceMap<Function, ReferenceMap<Variable, VariableAccessMode>> {
-        return TODO()
-    }
-
     fun createCallGraph(ast: Program, nameResolution: ReferenceMap<Any, NamedNode>): ReferenceMap<Function, ReferenceSet<Function>> {
 
         val functionCalls: ReferenceHashMap<Function, ReferenceSet<Function>> = ReferenceHashMap()

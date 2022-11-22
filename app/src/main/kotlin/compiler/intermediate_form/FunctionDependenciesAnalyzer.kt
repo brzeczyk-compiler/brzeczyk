@@ -14,6 +14,14 @@ import compiler.common.reference_collections.referenceKeys
 import compiler.common.reference_collections.referenceSetOf
 
 object FunctionDependenciesAnalyzer {
+    fun createFunctionDetailsGenerators(ast: Program, nameResolution: ReferenceMap<Any, NamedNode>): ReferenceMap<Function, FunctionDetailsGenerator> {
+        return TODO()
+    }
+
+    fun mapFunctionParametersToDummyVariables(ast: Program, nameResolution: ReferenceMap<Any, NamedNode>): ReferenceMap<Function.Parameter, Variable> {
+        return TODO()
+    }
+
     fun createCallGraph(ast: Program, nameResolution: ReferenceMap<Any, NamedNode>): ReferenceMap<Function, ReferenceSet<Function>> {
 
         val functionCalls: ReferenceHashMap<Function, ReferenceSet<Function>> = ReferenceHashMap()

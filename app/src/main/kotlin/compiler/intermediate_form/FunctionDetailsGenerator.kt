@@ -8,7 +8,7 @@ data class FunctionDetailsGenerator(
     val parameters: List<Variable>
 )
 
-fun generateCall(args: List<IntermediateFormTreeNode>): ControlFlowGraph {
+fun generateCall(args: List<IntermediateFormTreeNode>): Pair<ControlFlowGraph, IntermediateFormTreeNode?> {
     return TODO()
 }
 

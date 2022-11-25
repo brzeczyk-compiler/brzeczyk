@@ -156,17 +156,15 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
             return false
         }
 
-        fun processFunction(function: Function, global: Boolean) {
+        fun processFunction(function: Function) {
             if (defaultParametersBeforeNonDefault(function)) {
                 diagnostics.report(Diagnostic.ArgumentResolutionError.DefaultParametersNotLast(function))
             }
 
-            // TODO: generate variables for default parameters
-
             fun processBlock(block: StatementBlock) {
                 for (statement in block) {
                     when (statement) {
-                        is Statement.FunctionDefinition -> processFunction(statement.function, false)
+                        is Statement.FunctionDefinition -> processFunction(statement.function)
                         is Statement.Block -> processBlock(statement.block)
                         is Statement.Conditional -> {
                             processBlock(statement.actionWhenTrue)
@@ -183,6 +181,6 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
             processBlock(function.body)
         }
 
-        program.globals.forEach { if (it is Program.Global.FunctionDefinition) processFunction(it.function, true) }
+        program.globals.forEach { if (it is Program.Global.FunctionDefinition) processFunction(it.function) }
     }
 }

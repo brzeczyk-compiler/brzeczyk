@@ -19,19 +19,19 @@ data class FunctionCallIntermediateForm(
 
 val FUNCTION_RESULT_REGISTER = Register()
 
-fun generateCall(fdg: FunctionDetailsGenerator,  args: List<IntermediateFormTreeNode>): FunctionCallIntermediateForm {
+fun generateCall(fdg: FunctionDetailsGenerator, args: List<IntermediateFormTreeNode>): FunctionCallIntermediateForm {
     val cfgBuilder = ControlFlowGraphBuilder()
 
     var last: Pair<IFTNode, CFGLinkType>? = null
 
     // write arg values to params
-    for((arg, param) in args zip fdg.parameters) {
+    for ((arg, param) in args zip fdg.parameters) {
         val node = genWrite(param, arg, true)
         cfgBuilder.addLink(last, node)
         last = Pair(node, CFGLinkType.UNCONDITIONAL)
     }
 
-    //add function graph
+    // add function graph
     cfgBuilder.addAllFrom(fdg.functionCFG)
     cfgBuilder.addLink(last, fdg.functionCFG.entryTreeRoot!!)
 
@@ -46,7 +46,7 @@ fun generateCall(fdg: FunctionDetailsGenerator,  args: List<IntermediateFormTree
             CFGLinkType.CONDITIONAL_FALSE to functionCfg.conditionalFalseLinks
         )
 
-        for((linkType, links) in linksToIterateOver){
+        for ((linkType, links) in linksToIterateOver) {
             for ((from, to) in links) {
                 if (to !in finalNodes)
                     modifiedCfgBuilder.addLink(Pair(from, linkType), to)
@@ -62,7 +62,7 @@ fun generateCall(fdg: FunctionDetailsGenerator,  args: List<IntermediateFormTree
         )
     }
 
-    if(fdg.function.returnType == Type.Unit)
+    if (fdg.function.returnType == Type.Unit)
         return FunctionCallIntermediateForm(cfgBuilder.build(), null)
     return modifyReturnNodesToStoreResultInAppropriateRegister(cfgBuilder.build())
 }
@@ -72,7 +72,7 @@ fun genPrologue(fdg: FunctionDetailsGenerator): ControlFlowGraph {
 }
 
 fun genEpilogue(fdg: FunctionDetailsGenerator): ControlFlowGraph {
-   return TODO()
+    return TODO()
 }
 
 fun genRead(variable: Variable, isDirect: Boolean): IntermediateFormTreeNode {

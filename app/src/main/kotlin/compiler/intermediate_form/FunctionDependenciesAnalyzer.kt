@@ -24,12 +24,13 @@ object FunctionDependenciesAnalyzer {
         val result = ReferenceHashMap<Function, FunctionDetailsGenerator>()
 
         fun createDetailsGenerator(function: Function, depth: Int) {
-            val variables = variableProperties
+            val variables = ReferenceHashMap<Variable, Boolean>()
+            variableProperties
                 .filter { it.key is Variable }
                 .map { it.key as Variable to it.value }
                 .filter { (_, properties) -> properties.owner === function }
-                .associate { (variable, properties) ->
-                    variable to (properties.accessedIn.any { it != function } || properties.writtenIn.any { it != function })
+                .forEach{ (variable, properties) ->
+                    variables[variable] = (properties.accessedIn.any { it != function } || properties.writtenIn.any { it != function })
                 }
 
             result[function] = FunctionDetailsGenerator(depth, variables, function.parameters)

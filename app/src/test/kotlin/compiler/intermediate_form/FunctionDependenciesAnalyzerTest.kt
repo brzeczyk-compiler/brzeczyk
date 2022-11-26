@@ -13,7 +13,6 @@ import compiler.common.reference_collections.referenceKeys
 import compiler.common.reference_collections.referenceMapOf
 import compiler.common.reference_collections.referenceSetOf
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
-import kotlin.math.exp
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

@@ -29,7 +29,7 @@ object FunctionDependenciesAnalyzer {
                 .filter { it.key is Variable }
                 .map { it.key as Variable to it.value }
                 .filter { (_, properties) -> properties.owner === function }
-                .forEach{ (variable, properties) ->
+                .forEach { (variable, properties) ->
                     variables[variable] = (properties.accessedIn.any { it != function } || properties.writtenIn.any { it != function })
                 }
 

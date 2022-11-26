@@ -33,8 +33,9 @@ sealed class IntermediateFormTreeNode {
     data class GreaterThan(val left: IntermediateFormTreeNode, val right: IntermediateFormTreeNode) : IntermediateFormTreeNode()
     data class GreaterThanOrEquals(val left: IntermediateFormTreeNode, val right: IntermediateFormTreeNode) : IntermediateFormTreeNode()
 
-    data class StackPush(val Node: IntermediateFormTreeNode) : IntermediateFormTreeNode()
-    class StackPop : IntermediateFormTreeNode()
+    data class StackPush(val node: IntermediateFormTreeNode) : IntermediateFormTreeNode()
+    data class StackPopToRegister(val register: Register) : IntermediateFormTreeNode()
+    data class StackPopToMemory(val address: MemoryAddress) : IntermediateFormTreeNode()
 
     class NoOp : IntermediateFormTreeNode() // For testing
 }

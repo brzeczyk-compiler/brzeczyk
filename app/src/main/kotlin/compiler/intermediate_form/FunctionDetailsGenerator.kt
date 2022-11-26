@@ -1,7 +1,6 @@
 package compiler.intermediate_form
 
 import compiler.ast.Variable
-import compiler.common.reference_collections.ReferenceHashMap
 
 data class FunctionDetailsGenerator(
     val depth: Int,
@@ -11,69 +10,75 @@ data class FunctionDetailsGenerator(
 )
 data class FunctionCallIntermediateForm(
     val callGraph: ControlFlowGraph,
-    val result: IntermediateFormTreeNode?
+    val result: List<IntermediateFormTreeNode> // function can have multiple exit points
 )
 
 fun generateCall(fdg: FunctionDetailsGenerator,  args: List<IntermediateFormTreeNode>): FunctionCallIntermediateForm {
     val cfgBuilder = ControlFlowGraphBuilder()
 
-    // prologue
-    val prologueCFG = genPrologue(fdg)
-    cfgBuilder.addAllFrom(prologueCFG)
-    assert(prologueCFG.finalTreeRoots.size == 1)
-    var last = prologueCFG.finalTreeRoots[0]
+    var last: Pair<IFTNode, CFGLinkType>? = null
 
     // write arg values to params
     for((arg, param) in args zip fdg.parameters) {
-        val node = genWrite(param, arg, true)
-        cfgBuilder.addLink(Pair(last, CFGLinkType.UNCONDITIONAL), node)
-        last = node
+        val node = genWrite(param, arg, true) //TODO: make sure `true` there is correct
+        cfgBuilder.addLink(last, node)
+        last = Pair(node, CFGLinkType.UNCONDITIONAL)
     }
 
     //add function graph
     cfgBuilder.addAllFrom(fdg.functionCFG)
-    cfgBuilder.addLink(Pair(last, CFGLinkType.UNCONDITIONAL), fdg.functionCFG.entryTreeRoot!!)
+    cfgBuilder.addLink(last, fdg.functionCFG.entryTreeRoot!!)
 
-    val cfgEpilogue = genEpilogue()
-    cfgBuilder.addAllFrom(cfgEpilogue)
-    for(functionFinalTreeRoot in fdg.functionCFG.finalTreeRoots)
-        cfgBuilder.addLink(Pair(functionFinalTreeRoot, CFGLinkType.UNCONDITIONAL), cfgEpilogue.entryTreeRoot!!)
-    return FunctionCallIntermediateForm(cfgBuilder.build(), null)
+    fun removeReturnNodes(functionCfg: ControlFlowGraph): FunctionCallIntermediateForm {
+        val finalNodes = functionCfg.finalTreeRoots
+
+        val cfgBuilderForNoReturnCFG = ControlFlowGraphBuilder()
+
+        val linksToIterateOver = hashMapOf(
+            CFGLinkType.UNCONDITIONAL to functionCfg.unconditionalLinks,
+            CFGLinkType.CONDITIONAL_TRUE to functionCfg.conditionalTrueLinks,
+            CFGLinkType.CONDITIONAL_FALSE to functionCfg.conditionalFalseLinks
+        )
+
+        for((linkType, links) in linksToIterateOver){
+            for ((from, to) in links) {
+                if (to !in finalNodes)
+                    cfgBuilderForNoReturnCFG.addLink(Pair(from, linkType), to)
+            }
+        }
+       return FunctionCallIntermediateForm(
+           cfgBuilderForNoReturnCFG.build(),
+           finalNodes
+       )
+    }
+
+    return removeReturnNodes(cfgBuilder.build())
 }
 
 fun genPrologue(fdg: FunctionDetailsGenerator): ControlFlowGraph {
-    val last: IntermediateFormTreeNode? = null
-    val unconditionalLinks = ReferenceHashMap<IFTNode, IFTNode>()
-    val conditionalTrueLinks = ReferenceHashMap<IFTNode, IFTNode>()
-    val conditionalFalseLinks = ReferenceHashMap<IFTNode, IFTNode>()
-    val treeRoots = ArrayList<IFTNode>()
-    var entryTreeRoot: IFTNode? = null
-
-    fun addLinkToLast(newNode: IntermediateFormTreeNode) {
-        treeRoots.add(newNode)
-        if (last != null)
-            unconditionalLinks[last] = newNode
-        else
-            entryTreeRoot = newNode
-    }
-
+    val cfgBuilder = ControlFlowGraphBuilder()
+    var last: Pair<IFTNode, CFGLinkType>? = null
     for((variable, isInMemory) in fdg.vars.entries) {
         if(!isInMemory) {
             val node = IntermediateFormTreeNode.StackPush(genRead(variable, true))
-            addLinkToLast(node)
+            cfgBuilder.addLink(last, node)
+            last = Pair(node, CFGLinkType.UNCONDITIONAL)
         }
     }
-    return ControlFlowGraph(
-        treeRoots,
-        entryTreeRoot,
-        unconditionalLinks,
-        conditionalTrueLinks,
-        conditionalFalseLinks
-    )
+    return cfgBuilder.build()
 }
 
-fun genEpilogue(): ControlFlowGraph {
-    return TODO()
+fun genEpilogue(fdg: FunctionDetailsGenerator): ControlFlowGraph {
+    val cfgBuilder = ControlFlowGraphBuilder()
+    var last: Pair<IFTNode, CFGLinkType>? = null
+    for((variable, isInMemory) in fdg.vars.entries.reversed()) {
+        if(!isInMemory) {
+            val node = genWrite(variable, IntermediateFormTreeNode.StackPop(), true)
+            cfgBuilder.addLink(last, node)
+            last = Pair(node, CFGLinkType.UNCONDITIONAL)
+        }
+    }
+    return cfgBuilder.build()
 }
 
 fun genRead(variable: Variable, isDirect: Boolean): IntermediateFormTreeNode {

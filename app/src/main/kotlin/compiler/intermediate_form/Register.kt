@@ -1,4 +1,7 @@
 package compiler.intermediate_form
 
 // A class representing virtual cpu register
-class Register
+sealed class Register {
+    class NormalRegister: Register()
+    class ReturnValueRegister: Register()
+}

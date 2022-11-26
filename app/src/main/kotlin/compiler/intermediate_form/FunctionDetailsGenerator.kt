@@ -1,11 +1,12 @@
 package compiler.intermediate_form
 
+import compiler.ast.Function
 import compiler.ast.Variable
 
 data class FunctionDetailsGenerator(
     val depth: Int,
     val vars: Map<Variable, Boolean>,
-    val parameters: List<Variable>
+    val parameters: List<Function.Parameter>
 )
 data class FunctionCallIntermediateForm(
     val callGraph: ControlFlowGraph,

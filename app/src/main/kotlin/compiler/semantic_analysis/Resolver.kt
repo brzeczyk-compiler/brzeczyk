@@ -14,23 +14,23 @@ object Resolver {
         val nameResolution: ReferenceMap<Any, NamedNode>,
         val argumentResolution: ReferenceMap<Expression.FunctionCall.Argument, Function.Parameter>,
         val expressionTypes: ReferenceMap<Expression, Type>,
-        val variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>,
         val defaultParameterMapping: ReferenceMap<Function.Parameter, Variable>,
+        val variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>,
     )
 
     fun resolveProgram(ast: Program, diagnostics: Diagnostics): ProgramProperties {
         val nameResolution = NameResolver.calculateNameResolution(ast, diagnostics)
         val argumentResolution = ArgumentResolver.calculateArgumentToParameterResolution(ast, nameResolution, diagnostics)
         val expressionTypes = TypeChecker.calculateTypes(ast, nameResolution, argumentResolution.argumentsToParametersMap, diagnostics)
-        val variableProperties = VariablePropertiesAnalyzer.calculateVariableProperties(ast, nameResolution, diagnostics)
-        val defaultParameterResolutionResult = DefaultParameterResolver.resolveDefaultParameters(ast)
+        val defaultParameterMapping = DefaultParameterResolver.mapFunctionParametersToDummyVariables(ast)
+        val variableProperties = VariablePropertiesAnalyzer.calculateVariableProperties(ast, nameResolution, defaultParameterMapping, argumentResolution.accessedDefaultValues, diagnostics)
 
         return ProgramProperties(
             nameResolution,
             argumentResolution.argumentsToParametersMap,
             expressionTypes,
+            defaultParameterMapping,
             variableProperties,
-            defaultParameterResolutionResult.defaultParameterMapping,
         )
     }
 }

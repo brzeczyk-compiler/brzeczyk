@@ -71,7 +71,7 @@ class DefaultParameterResolverTest {
         )
 
         val program = Program(globals)
-        val actualMapping = DefaultParameterResolver.resolveDefaultParameters(program).defaultParameterMapping
+        val actualMapping = DefaultParameterResolver.mapFunctionParametersToDummyVariables(program)
 
         val expectedMappingSimplified = referenceMapOf(
             cParameter to Variable(Variable.Kind.CONSTANT, "test", Type.Number, cValue),
@@ -121,7 +121,7 @@ class DefaultParameterResolverTest {
         )
 
         val program = Program(globals)
-        val actualMapping = DefaultParameterResolver.resolveDefaultParameters(program).defaultParameterMapping
+        val actualMapping = DefaultParameterResolver.mapFunctionParametersToDummyVariables(program)
 
         val expectedMappingSimplified = referenceMapOf(
             cParameter to Variable(Variable.Kind.VALUE, "test", Type.Number, cValue),
@@ -185,7 +185,7 @@ class DefaultParameterResolverTest {
         )
 
         val program = Program(globals)
-        val actualMapping = DefaultParameterResolver.resolveDefaultParameters(program).defaultParameterMapping
+        val actualMapping = DefaultParameterResolver.mapFunctionParametersToDummyVariables(program)
 
         val expectedMappingSimplified = referenceMapOf(
             aParameter to Variable(Variable.Kind.VALUE, "test", Type.Number, aValue),
@@ -237,8 +237,7 @@ class DefaultParameterResolverTest {
         )
 
         val program = Program(globals)
-        val actualResult = DefaultParameterResolver.resolveDefaultParameters(program)
-        val actualMapping = actualResult.defaultParameterMapping
+        val actualMapping = DefaultParameterResolver.mapFunctionParametersToDummyVariables(program)
 
         val expectedMappingSimplified = referenceMapOf(
             afParameter to Variable(Variable.Kind.VALUE, "test", Type.Number, afValue),

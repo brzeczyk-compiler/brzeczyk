@@ -9,19 +9,7 @@ import compiler.common.reference_collections.ReferenceMap
 
 object DefaultParameterResolver {
 
-    data class DefaultParameterResolutionResult(
-        val defaultParameterMapping: ReferenceMap<Function.Parameter, Variable>,
-    )
-
-    fun resolveDefaultParameters(
-        ast: Program,
-    ): DefaultParameterResolutionResult {
-        val defaultParameterMapping = mapFunctionParametersToDummyVariables(ast)
-
-        return DefaultParameterResolutionResult(defaultParameterMapping)
-    }
-
-    private fun mapFunctionParametersToDummyVariables(ast: Program): ReferenceMap<Function.Parameter, Variable> {
+    fun mapFunctionParametersToDummyVariables(ast: Program): ReferenceMap<Function.Parameter, Variable> {
         val resultMapping: ReferenceHashMap<Function.Parameter, Variable> = ReferenceHashMap()
 
         fun process(global: Program.Global) {

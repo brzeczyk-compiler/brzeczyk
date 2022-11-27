@@ -29,8 +29,8 @@ class ReferenceEntry<K, V>(val key: K, var value: V) {
 }
 
 val <K, V> ReferenceMap<K, V>.referenceEntries get() = entries.map { ReferenceEntry(it.key, it.value) }.toSet()
-
 val <K, V> ReferenceMap<K, V>.referenceKeys get() = referenceSetOf(referenceEntries.map { it.key })
+val <K, V> ReferenceMap<K, V>.referenceValues get() = referenceSetOf(referenceEntries.map { it.value })
 
 fun <K, V> referenceMapOf(vararg pairs: Pair<K, V>): ReferenceMap<K, V> {
     val map = ReferenceHashMap<K, V>()

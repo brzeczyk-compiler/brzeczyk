@@ -12,6 +12,8 @@ import compiler.common.diagnostics.Diagnostics
 import compiler.common.reference_collections.MutableReferenceMap
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceMap
+import compiler.common.reference_collections.ReferenceSet
+import compiler.common.reference_collections.referenceEntries
 
 object VariablePropertiesAnalyzer {
     data class VariableProperties(
@@ -23,9 +25,12 @@ object VariablePropertiesAnalyzer {
     fun calculateVariableProperties(
         ast: Program,
         nameResolution: ReferenceMap<Any, NamedNode>,
-        diagnostics: Diagnostics
+        defaultParameterMapping: ReferenceMap<Function.Parameter, Variable>,
+        accessedDefaultValues: ReferenceMap<Expression.FunctionCall, ReferenceSet<Function.Parameter>>,
+        diagnostics: Diagnostics,
     ): ReferenceMap<Any, VariableProperties> {
         val variableProperties: MutableReferenceMap<Any, VariableProperties> = ReferenceHashMap()
+        val functionCallsOwnership: MutableReferenceMap<Expression.FunctionCall, Function> = ReferenceHashMap()
 
         // Any = Expression | Statement
         fun analyzeVariables(node: Any, currentFunction: Function?) {
@@ -67,7 +72,10 @@ object VariablePropertiesAnalyzer {
                     val resolvedVariable: NamedNode = nameResolution[node]!!
                     variableProperties[resolvedVariable]!!.accessedIn.add(currentFunction!!)
                 }
-                is Expression.FunctionCall -> node.arguments.forEach { analyzeVariables(it, currentFunction) }
+                is Expression.FunctionCall -> {
+                    node.arguments.forEach { analyzeVariables(it, currentFunction) }
+                    functionCallsOwnership[node] = currentFunction!!
+                }
                 is Expression.FunctionCall.Argument -> analyzeVariables(node.value, currentFunction)
                 is Expression.UnaryOperation -> analyzeVariables(node.operand, currentFunction)
                 is Expression.BinaryOperation -> sequenceOf(node.leftOperand, node.rightOperand)
@@ -77,8 +85,12 @@ object VariablePropertiesAnalyzer {
                 is Function -> {
                     node.parameters.forEach {
                         variableProperties[it] = VariableProperties(node)
-                        // scope of the inner function has not begun yet
-                        it.defaultValue?.let { defValue -> analyzeVariables(defValue, currentFunction) }
+                        if (it.defaultValue != null) {
+                            // scope of the inner function has not begun yet
+                            analyzeVariables(it.defaultValue, currentFunction)
+                            // TODO: uncomment after updating tests
+                            // variableProperties[defaultParameterMapping[it]!!] = VariableProperties(currentFunction)
+                        }
                     }
                     node.body.forEach { analyzeVariables(it, node) }
                 }
@@ -88,6 +100,17 @@ object VariablePropertiesAnalyzer {
             }
         }
         ast.globals.forEach { analyzeVariables(it, null) }
+
+        // update properties of default parameters dummy variables
+        defaultParameterMapping.referenceEntries.forEach { paramToVariable ->
+            run {
+                val accessedIn = accessedDefaultValues.referenceEntries.filter { paramToVariable.key in it.value }.map { functionCallsOwnership[it.key]!! }.toMutableSet()
+                val owner = variableProperties[paramToVariable.value]!!.owner
+                val writtenIn = if (owner != null) mutableSetOf(owner) else mutableSetOf()
+                variableProperties[paramToVariable.value] = VariableProperties(owner, accessedIn, writtenIn)
+            }
+        }
+
         return variableProperties
     }
 }

@@ -15,6 +15,7 @@ import compiler.common.diagnostics.Diagnostic.VariablePropertiesError
 import compiler.common.diagnostics.Diagnostic.VariablePropertiesError.AssignmentToFunctionParameter
 import compiler.common.reference_collections.MutableReferenceMap
 import compiler.common.reference_collections.ReferenceHashMap
+import compiler.common.reference_collections.referenceMapOf
 import compiler.semantic_analysis.VariablePropertiesAnalyzer.VariableProperties
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -34,7 +35,9 @@ class VariablePropertiesAnalyzerTest {
         val actualAnalysisResults = VariablePropertiesAnalyzer.calculateVariableProperties(
             input.program,
             input.nameResolution,
-            CompilerDiagnostics()
+            referenceMapOf(),
+            referenceMapOf(),
+            CompilerDiagnostics(),
         )
         assertEquals(expectedAnalysisResults, actualAnalysisResults)
     }
@@ -46,7 +49,10 @@ class VariablePropertiesAnalyzerTest {
         val actualDiagnostics = CompilerDiagnostics()
         VariablePropertiesAnalyzer.calculateVariableProperties(
             input.program,
-            input.nameResolution, actualDiagnostics
+            input.nameResolution,
+            referenceMapOf(),
+            referenceMapOf(),
+            actualDiagnostics
         )
         assertContentEquals(
             expectedDiagnostics.asSequence(),

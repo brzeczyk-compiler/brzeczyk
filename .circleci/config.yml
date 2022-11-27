@@ -21,7 +21,7 @@ jobs:
       - run:
           name: Restore Gradle build cache
           command: |
-            if [[ -d ~/gradle-build-caches ]]; then
+            if [ -d ~/gradle-build-caches -a -d ~/.gradle/caches/ ]; then
               ls ~/gradle-build-caches
               rm -rf ~/.gradle/caches/build-cache-*
               mv ~/gradle-build-caches/* ~/.gradle/caches/

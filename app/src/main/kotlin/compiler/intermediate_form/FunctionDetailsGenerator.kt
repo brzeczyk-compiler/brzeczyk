@@ -175,6 +175,12 @@ data class FunctionDetailsGenerator(
         cfgBuilder.addLink(last, decrementRsp)
         last = Pair(decrementRsp, CFGLinkType.UNCONDITIONAL)
 
+        // restore variable display info
+        for (variable in variablesLocationTypes.filter { entry -> entry.value == VariableLocationType.MEMORY }.keys)
+            variablesDisplayInfo.remove(variable.name)
+        for ((variableName, displayInfo) in variablesDisplayInfoToRestore)
+            variablesDisplayInfo[variableName] = displayInfo
+
         // restore rbp
         val movRspRbp = IntermediateFormTreeNode.RegisterWrite(
             STACK_POINTER_REGISTER,

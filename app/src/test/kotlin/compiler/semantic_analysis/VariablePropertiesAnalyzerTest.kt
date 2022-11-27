@@ -16,6 +16,7 @@ import compiler.common.diagnostics.Diagnostic.VariablePropertiesError.Assignment
 import compiler.common.reference_collections.MutableReferenceMap
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceMap
+import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.referenceMapOf
 import compiler.common.reference_collections.referenceSetOf
 import compiler.semantic_analysis.VariablePropertiesAnalyzer.VariableProperties
@@ -27,7 +28,9 @@ class VariablePropertiesAnalyzerTest {
 
     private data class VariablePropertyInput(
         val program: Program,
-        val nameResolution: MutableReferenceMap<Any, NamedNode>
+        val nameResolution: ReferenceMap<Any, NamedNode>,
+        val defaultParameterMapping: ReferenceMap<Function.Parameter, Variable> = referenceMapOf(),
+        val accessedDefaultValues: ReferenceMap<Expression.FunctionCall, ReferenceSet<Function.Parameter>> = referenceMapOf(),
     )
 
     private fun assertAnalysisResults(
@@ -37,8 +40,8 @@ class VariablePropertiesAnalyzerTest {
         val actualAnalysisResults = VariablePropertiesAnalyzer.calculateVariableProperties(
             input.program,
             input.nameResolution,
-            referenceMapOf(),
-            referenceMapOf(),
+            input.defaultParameterMapping,
+            input.accessedDefaultValues,
             CompilerDiagnostics(),
         )
         assertEquals(expectedAnalysisResults, actualAnalysisResults)
@@ -52,9 +55,9 @@ class VariablePropertiesAnalyzerTest {
         VariablePropertiesAnalyzer.calculateVariableProperties(
             input.program,
             input.nameResolution,
-            referenceMapOf(),
-            referenceMapOf(),
-            actualDiagnostics
+            input.defaultParameterMapping,
+            input.accessedDefaultValues,
+            actualDiagnostics,
         )
         assertContentEquals(
             expectedDiagnostics.asSequence(),
@@ -101,15 +104,18 @@ class VariablePropertiesAnalyzerTest {
     @Test
     fun `test function parameter has an owner`() {
         val parameterX = Function.Parameter("x", Type.Number, Expression.NumberLiteral(123))
+        val dummyVariableX = Variable(Variable.Kind.CONSTANT, "dummy", Type.Number, Expression.NumberLiteral(123))
         val function = Function(
             "zewnętrzna", listOf(parameterX), Type.Unit,
             listOf()
         )
         val nameResolution: MutableReferenceMap<Any, NamedNode> = ReferenceHashMap()
-        val input = VariablePropertyInput(Program(listOf(FunctionDefinition(function))), nameResolution)
+        val defaultParameterMapping = referenceMapOf(parameterX to dummyVariableX)
+        val input = VariablePropertyInput(Program(listOf(FunctionDefinition(function))), nameResolution, defaultParameterMapping)
 
         val expectedResults: MutableReferenceMap<Any, VariableProperties> = ReferenceHashMap()
         expectedResults[parameterX] = VariableProperties(function, referenceSetOf(), referenceSetOf())
+        expectedResults[dummyVariableX] = VariableProperties(null, referenceSetOf(), referenceSetOf())
 
         assertAnalysisResults(input, expectedResults)
         assertDiagnostics(input, listOf())
@@ -177,7 +183,7 @@ class VariablePropertiesAnalyzerTest {
 
     @Test
     fun `test write to function parameter`() {
-        val parameterX = Function.Parameter("x", Type.Number, Expression.NumberLiteral(123))
+        val parameterX = Function.Parameter("x", Type.Number, null)
         val assignmentToX = Assignment("x", Expression.NumberLiteral(124))
         val outer = Function(
             "zewnętrzna", listOf(parameterX), Type.Unit,
@@ -276,7 +282,7 @@ class VariablePropertiesAnalyzerTest {
 
     @Test
     fun `test write to function parameter in inner function`() {
-        val parameterX = Function.Parameter("x", Type.Number, Expression.NumberLiteral(123))
+        val parameterX = Function.Parameter("x", Type.Number, null)
         val assignmentToX = Assignment("x", Expression.NumberLiteral(124))
         val inner = Function(
             "wewnętrzna", listOf(), Type.Unit,
@@ -319,19 +325,23 @@ class VariablePropertiesAnalyzerTest {
             )
         )
         val parameterX = Function.Parameter("x", Type.Number, Expression.NumberLiteral(123))
+        val dummyVariableX = Variable(Variable.Kind.CONSTANT, "dummy", Type.Number, Expression.NumberLiteral(123))
         val outer = Function(
             "zewnętrzna", listOf(parameterX), Type.Unit,
             listOf(Statement.FunctionDefinition(inner))
         )
+        val defaultParameterMapping = referenceMapOf(parameterX to dummyVariableX)
         val nameResolution: MutableReferenceMap<Any, NamedNode> = ReferenceHashMap()
         nameResolution[readFromX] = parameterX
         val input = VariablePropertyInput(
             Program(listOf(FunctionDefinition(outer))),
-            nameResolution
+            nameResolution,
+            defaultParameterMapping,
         )
 
         val expectedResults: MutableReferenceMap<Any, VariableProperties> = ReferenceHashMap()
         expectedResults[parameterX] = VariableProperties(outer, referenceSetOf(inner), referenceSetOf())
+        expectedResults[dummyVariableX] = VariableProperties(null, referenceSetOf(), referenceSetOf())
         expectedResults[variableY] = VariableProperties(inner, referenceSetOf(), referenceSetOf())
 
         assertAnalysisResults(input, expectedResults)

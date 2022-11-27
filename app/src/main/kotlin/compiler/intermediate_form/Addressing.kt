@@ -1,7 +1,7 @@
 package compiler.intermediate_form
 
 typealias MemoryAddress = ULong
-const val memorySize: Long = 8
+const val memorySize: ULong = 8u
 
 sealed class Addressing {
     data class Displacement(val displacement: MemoryAddress) : Addressing() // [displacement]

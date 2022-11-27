@@ -5,7 +5,7 @@ sealed class IntermediateFormTreeNode {
     data class RegisterRead(val register: Register) : IntermediateFormTreeNode()
     data class Const(val value: Long) : IntermediateFormTreeNode()
 
-    data class MemoryWrite(val address: MemoryAddress, val node: IntermediateFormTreeNode) : IntermediateFormTreeNode()
+    data class MemoryWrite(val address: Addressing, val node: IntermediateFormTreeNode) : IntermediateFormTreeNode()
     data class RegisterWrite(val register: Register, val node: IntermediateFormTreeNode) : IntermediateFormTreeNode()
 
     // no logical and, or, since they have a short circuit semantic

@@ -11,9 +11,21 @@ import compiler.common.diagnostics.Diagnostic.ControlFlowDiagnostic
 import compiler.common.diagnostics.Diagnostics
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceMap
+import compiler.common.reference_collections.ReferenceSet
+import compiler.semantic_analysis.ArgumentResolutionResult
+import compiler.semantic_analysis.VariablePropertiesAnalyzer
 
 object ControlFlow {
-    fun createGraphForExpression(expression: Expression, variable: Variable?): ControlFlowGraph {
+    fun createGraphForExpression(
+        expression: Expression,
+        targetVariable: Variable?,
+        currentFunction: Function,
+        nameResolution: ReferenceMap<Any, NamedNode>,
+        variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>,
+        callGraph: ReferenceMap<Function, ReferenceSet<Function>>,
+        functionDetailsGenerators: ReferenceMap<Function, FunctionDetailsGenerator>,
+        argumentResolution: ArgumentResolutionResult
+    ): ControlFlowGraph {
         return TODO()
     }
 

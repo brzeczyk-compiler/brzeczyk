@@ -13,6 +13,7 @@ sealed class IntermediateFormTreeNode {
     data class LogicalIff(val left: IntermediateFormTreeNode, val right: IntermediateFormTreeNode) : IntermediateFormTreeNode()
     data class LogicalXor(val left: IntermediateFormTreeNode, val right: IntermediateFormTreeNode) : IntermediateFormTreeNode()
 
+    data class Negation(val node: IntermediateFormTreeNode) : IntermediateFormTreeNode()
     data class Add(val left: IntermediateFormTreeNode, val right: IntermediateFormTreeNode) : IntermediateFormTreeNode()
     data class Subtract(val left: IntermediateFormTreeNode, val right: IntermediateFormTreeNode) : IntermediateFormTreeNode()
     data class Multiply(val left: IntermediateFormTreeNode, val right: IntermediateFormTreeNode) : IntermediateFormTreeNode()

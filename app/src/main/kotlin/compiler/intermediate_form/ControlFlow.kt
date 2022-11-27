@@ -9,12 +9,276 @@ import compiler.ast.StatementBlock
 import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic.ControlFlowDiagnostic
 import compiler.common.diagnostics.Diagnostics
-import compiler.common.reference_collections.ReferenceHashMap
-import compiler.common.reference_collections.ReferenceMap
+import compiler.common.reference_collections.*
+import compiler.semantic_analysis.ArgumentResolutionResult
+import compiler.semantic_analysis.VariablePropertiesAnalyzer
 
 object ControlFlow {
-    fun createGraphForExpression(expression: Expression, variable: Variable?): ControlFlowGraph {
-        return TODO()
+    fun createGraphForExpression(
+        expression: Expression,
+        targetVariable: Variable?,
+        currentFunction: Function,
+        nameResolution: ReferenceMap<Any, NamedNode>,
+        variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>,
+        callGraph: ReferenceMap<Function, ReferenceSet<Function>>,
+        functionDetailsGenerators: ReferenceMap<Function, FunctionDetailsGenerator>,
+        argumentResolution: ArgumentResolutionResult
+    ): ControlFlowGraph {
+        fun getVariablesModifiedBy(function: Function): ReferenceSet<Variable> {
+            val calledFunctions = callGraph[function]!!
+            return referenceSetOf(variableProperties.asSequence()
+                .filter { (it.value.writtenIn intersect calledFunctions).isNotEmpty() }
+                .map { it.key as Variable }.toList())
+        }
+
+        // first stage is to decide which variable usages have to be realized via temporary registers
+        val usagesThatRequireTempRegisters = ReferenceHashSet<Expression.Variable>()
+        val invalidatedVariables = ReferenceHashMap<Expression, ReferenceSet<Variable>>() // has entries for function calls and conditionals
+
+        fun firstStageRecursion(astNode: Expression, modifiedUnderCurrentBase: MutableReferenceSet<Variable>) {
+            when (astNode) {
+                Expression.UnitLiteral,
+                is Expression.BooleanLiteral,
+                is Expression.NumberLiteral -> {}
+
+                is Expression.Variable ->
+                    if (nameResolution[astNode] in modifiedUnderCurrentBase)
+                        usagesThatRequireTempRegisters.add(astNode)
+
+                is Expression.UnaryOperation ->
+                    firstStageRecursion(astNode.operand, modifiedUnderCurrentBase)
+
+                is Expression.BinaryOperation -> {
+                    if (astNode.kind in listOf(Expression.BinaryOperation.Kind.OR, Expression.BinaryOperation.Kind.AND)) {
+                        val leftModifiedVariables = ReferenceHashSet<Variable>()
+                        firstStageRecursion(astNode.leftOperand, leftModifiedVariables)
+
+                        val rightModifiedVariables = ReferenceHashSet<Variable>()
+                        firstStageRecursion(astNode.rightOperand, rightModifiedVariables)
+
+                        modifiedUnderCurrentBase.addAll(leftModifiedVariables)
+                        modifiedUnderCurrentBase.addAll(rightModifiedVariables)
+                        invalidatedVariables[astNode] = rightModifiedVariables
+                    }
+                    else {
+                        firstStageRecursion(astNode.rightOperand, modifiedUnderCurrentBase)
+                        firstStageRecursion(astNode.leftOperand, modifiedUnderCurrentBase)
+                    }
+                }
+
+                is Expression.FunctionCall -> {
+                    val totalModifiedVariables = ReferenceHashSet<Variable>()
+                    for (argumentNode in astNode.arguments) {
+                        val modifiedVariables = ReferenceHashSet<Variable>()
+                        firstStageRecursion(argumentNode.value, modifiedVariables)
+                        totalModifiedVariables.addAll(modifiedVariables)
+                    }
+                    // TODO invalidatedVariables
+
+                    modifiedUnderCurrentBase.addAll(getVariablesModifiedBy(nameResolution[astNode] as Function))
+                    modifiedUnderCurrentBase.addAll(totalModifiedVariables)
+                }
+
+                is Expression.Conditional -> {
+                    val conditionModifiedVariables = ReferenceHashSet<Variable>()
+                    firstStageRecursion(astNode.condition, conditionModifiedVariables)
+
+                    val trueBranchModifiedVariables = ReferenceHashSet<Variable>()
+                    firstStageRecursion(astNode.resultWhenTrue, trueBranchModifiedVariables)
+
+                    val falseBranchModifiedVariables = ReferenceHashSet<Variable>()
+                    firstStageRecursion(astNode.resultWhenFalse, falseBranchModifiedVariables)
+
+                    modifiedUnderCurrentBase.addAll(conditionModifiedVariables)
+                    modifiedUnderCurrentBase.addAll(trueBranchModifiedVariables)
+                    modifiedUnderCurrentBase.addAll(falseBranchModifiedVariables)
+
+                    invalidatedVariables[astNode] = combineReferenceSets(trueBranchModifiedVariables, falseBranchModifiedVariables)
+                }
+            }
+        }
+
+        firstStageRecursion(expression, ReferenceHashSet())
+
+        // second stage is to actually produce CFG
+        var currentTemporaryRegisters = ReferenceHashMap<Variable, Register>()
+
+        fun <K, V> ReferenceHashMap<K, V>.copy(): ReferenceHashMap<K, V> {
+            val result = ReferenceHashMap<K, V>()
+            result.putAll(result)
+            return result
+        }
+
+        fun mergeCFGsUnconditionally(first: ControlFlowGraph?, second: ControlFlowGraph?): ControlFlowGraph? {
+            return when {
+                first == null -> second
+                second == null -> first
+                else -> {
+                    val newLinks = referenceMapOf(first.finalTreeRoots.map { it to second.entryTreeRoot!! })
+                    val unconditionalLinks = combineReferenceMaps(first.unconditionalLinks, second.unconditionalLinks, newLinks)
+                    val conditionalTrueLinks = combineReferenceMaps(first.conditionalTrueLinks, second.conditionalTrueLinks)
+                    val conditionalFalseLinks = combineReferenceMaps(first.conditionalFalseLinks, second.conditionalFalseLinks)
+                    ControlFlowGraph(first.treeRoots + second.treeRoots, first.entryTreeRoot, unconditionalLinks, conditionalTrueLinks, conditionalFalseLinks)
+                }
+            }
+        }
+
+        fun mergeCFGsConditionally(condition: ControlFlowGraph, trueBranch: ControlFlowGraph, falseBranch: ControlFlowGraph): ControlFlowGraph {
+            val treeRoots = condition.treeRoots + trueBranch.treeRoots + falseBranch.treeRoots
+            val unconditionalLinks = combineReferenceMaps(condition.unconditionalLinks, trueBranch.unconditionalLinks, falseBranch.unconditionalLinks)
+            val newTrueLinks = referenceMapOf(condition.finalTreeRoots.map { it to trueBranch.entryTreeRoot!! })
+            val conditionalTrueLinks = combineReferenceMaps(condition.conditionalTrueLinks, trueBranch.conditionalTrueLinks, falseBranch.conditionalTrueLinks, newTrueLinks)
+            val newFalseLinks = referenceMapOf(condition.finalTreeRoots.map { it to falseBranch.entryTreeRoot!! })
+            val conditionalFalseLinks = combineReferenceMaps(condition.conditionalFalseLinks, trueBranch.conditionalFalseLinks, falseBranch.conditionalFalseLinks, newFalseLinks)
+            return ControlFlowGraph(treeRoots, condition.entryTreeRoot, unconditionalLinks, conditionalTrueLinks, conditionalFalseLinks)
+        }
+
+        fun addTreeToCFG(cfg: ControlFlowGraph?, tree: IntermediateFormTreeNode): ControlFlowGraph {
+            val singleTreeCFG = ControlFlowGraph(listOf(tree), tree, referenceMapOf(), referenceMapOf(), referenceMapOf())
+            return mergeCFGsUnconditionally(cfg, singleTreeCFG)!!
+        }
+
+        fun secondStageRecursion(astNode: Expression): Pair<ControlFlowGraph?, IntermediateFormTreeNode> {
+            return when (astNode) {
+                Expression.UnitLiteral ->
+                    Pair(null, IntermediateFormTreeNode.Const(0))
+
+                is Expression.BooleanLiteral ->
+                    Pair(null, IntermediateFormTreeNode.Const(if (astNode.value) 1 else 0))
+
+                is Expression.NumberLiteral ->
+                    Pair(null, IntermediateFormTreeNode.Const(astNode.value.toLong()))
+
+                is Expression.Variable -> {
+                    val variable = nameResolution[astNode] as Variable
+                    if (astNode !in usagesThatRequireTempRegisters) {
+                        val owner = variableProperties[variable]!!.owner!! // TODO: handle global variables
+                        val valueNode = functionDetailsGenerators[owner]!!.genRead(variable, owner === currentFunction)
+                        Pair(null, valueNode)
+                    }
+                    else{
+                        var cfg: ControlFlowGraph? = null
+                        if (variable !in currentTemporaryRegisters) {
+                            val owner = variableProperties[variable]!!.owner!! // TODO: handle global variables
+                            val valueNode = functionDetailsGenerators[owner]!!.genRead(variable, owner === currentFunction)
+                            val temporaryRegister = Register()
+                            val assignmentNode = IntermediateFormTreeNode.RegisterWrite(temporaryRegister, valueNode)
+                            currentTemporaryRegisters[variable] = temporaryRegister
+                            cfg = ControlFlowGraph(listOf(assignmentNode), assignmentNode, referenceMapOf(), referenceMapOf(), referenceMapOf())
+                        }
+                        Pair(cfg, IntermediateFormTreeNode.RegisterRead(currentTemporaryRegisters.getValue(variable)))
+                    }
+                }
+
+                is Expression.UnaryOperation -> {
+                    val subCFG = secondStageRecursion(astNode.operand)
+                    val newRootNode = when (astNode.kind) {
+                        Expression.UnaryOperation.Kind.NOT -> IntermediateFormTreeNode.LogicalNegation(subCFG.second)
+                        Expression.UnaryOperation.Kind.PLUS -> subCFG.second
+                        Expression.UnaryOperation.Kind.MINUS -> IntermediateFormTreeNode.Negation(subCFG.second)
+                        Expression.UnaryOperation.Kind.BIT_NOT -> IntermediateFormTreeNode.BitNegation(subCFG.second)
+                    }
+                    Pair(subCFG.first, newRootNode)
+                }
+
+                is Expression.BinaryOperation -> when (astNode.kind) {
+                    Expression.BinaryOperation.Kind.AND, Expression.BinaryOperation.Kind.OR -> {
+                        val logicalOr = astNode.kind == Expression.BinaryOperation.Kind.OR
+
+                        val leftSubCFG = secondStageRecursion(astNode.leftOperand)
+                        val rightSubCFG = secondStageRecursion(astNode.rightOperand)
+                        invalidatedVariables[astNode]!!.forEach { currentTemporaryRegisters.remove(it) }
+
+                        val temporaryRegister = Register()
+                        val trueBranchAssignmentNode = IntermediateFormTreeNode.RegisterWrite(temporaryRegister,
+                            if (logicalOr) IntermediateFormTreeNode.Const(1) else rightSubCFG.second)
+                        val falseBranchAssignmentNode = IntermediateFormTreeNode.RegisterWrite(temporaryRegister,
+                            if (logicalOr) rightSubCFG.second else IntermediateFormTreeNode.Const(0))
+
+                        val combinedCFG = mergeCFGsConditionally(addTreeToCFG(leftSubCFG.first, leftSubCFG.second),
+                            addTreeToCFG(if (logicalOr) null else rightSubCFG.first, trueBranchAssignmentNode),
+                            addTreeToCFG(if (logicalOr) rightSubCFG.first else null, falseBranchAssignmentNode))
+                        Pair(combinedCFG, IntermediateFormTreeNode.RegisterRead(temporaryRegister))
+                    }
+
+                    else -> {
+                        val leftSubCFG = secondStageRecursion(astNode.leftOperand)
+                        val rightSubCFG = secondStageRecursion(astNode.rightOperand)
+                        val newRootNode = when (astNode.kind) {
+                            Expression.BinaryOperation.Kind.AND,
+                            Expression.BinaryOperation.Kind.OR -> throw Exception() // unreachable state
+                            Expression.BinaryOperation.Kind.IFF -> IntermediateFormTreeNode.LogicalIff(leftSubCFG.second, rightSubCFG.second)
+                            Expression.BinaryOperation.Kind.XOR -> IntermediateFormTreeNode.LogicalXor(leftSubCFG.second, rightSubCFG.second)
+                            Expression.BinaryOperation.Kind.ADD -> IntermediateFormTreeNode.Add(leftSubCFG.second, rightSubCFG.second)
+                            Expression.BinaryOperation.Kind.SUBTRACT -> IntermediateFormTreeNode.Subtract(leftSubCFG.second, rightSubCFG.second)
+                            Expression.BinaryOperation.Kind.MULTIPLY -> IntermediateFormTreeNode.Multiply(leftSubCFG.second, rightSubCFG.second)
+                            Expression.BinaryOperation.Kind.DIVIDE -> IntermediateFormTreeNode.Divide(leftSubCFG.second, rightSubCFG.second)
+                            Expression.BinaryOperation.Kind.MODULO -> IntermediateFormTreeNode.Modulo(leftSubCFG.second, rightSubCFG.second)
+                            Expression.BinaryOperation.Kind.BIT_AND -> IntermediateFormTreeNode.BitAnd(leftSubCFG.second, rightSubCFG.second)
+                            Expression.BinaryOperation.Kind.BIT_OR -> IntermediateFormTreeNode.BitOr(leftSubCFG.second, rightSubCFG.second)
+                            Expression.BinaryOperation.Kind.BIT_XOR -> IntermediateFormTreeNode.BitXor(leftSubCFG.second, rightSubCFG.second)
+                            Expression.BinaryOperation.Kind.BIT_SHIFT_LEFT -> IntermediateFormTreeNode.BitShiftLeft(leftSubCFG.second, rightSubCFG.second)
+                            Expression.BinaryOperation.Kind.BIT_SHIFT_RIGHT -> IntermediateFormTreeNode.BitShiftRight(leftSubCFG.second, rightSubCFG.second)
+                            Expression.BinaryOperation.Kind.EQUALS -> IntermediateFormTreeNode.Equals(leftSubCFG.second, rightSubCFG.second)
+                            Expression.BinaryOperation.Kind.NOT_EQUALS -> IntermediateFormTreeNode.NotEquals(leftSubCFG.second, rightSubCFG.second)
+                            Expression.BinaryOperation.Kind.LESS_THAN -> IntermediateFormTreeNode.LessThan(leftSubCFG.second, rightSubCFG.second)
+                            Expression.BinaryOperation.Kind.LESS_THAN_OR_EQUALS -> IntermediateFormTreeNode.LessThanOrEquals(leftSubCFG.second, rightSubCFG.second)
+                            Expression.BinaryOperation.Kind.GREATER_THAN -> IntermediateFormTreeNode.GreaterThan(leftSubCFG.second, rightSubCFG.second)
+                            Expression.BinaryOperation.Kind.GREATER_THAN_OR_EQUALS -> IntermediateFormTreeNode.GreaterThanOrEquals(leftSubCFG.second, rightSubCFG.second)
+                        }
+                        Pair(mergeCFGsUnconditionally(leftSubCFG.first, rightSubCFG.first), newRootNode)
+                    }
+                }
+
+                is Expression.FunctionCall -> {
+                    val function = nameResolution[astNode] as Function
+                    val parameterValues = Array<IntermediateFormTreeNode?>(function.parameters.size) { null }
+
+                    val argumentSubCFGs = astNode.arguments.map { secondStageRecursion(it.value) }
+                    // TODO fill parameter array
+
+                    val callSubCFG = functionDetailsGenerators[function]!!.generateCall(parameterValues.map { it!! }.toList())
+                    val combinedArgumentSubCFG = argumentSubCFGs.map { it.first }.reduceOrNull { acc, cfg -> mergeCFGsUnconditionally(acc, cfg) }
+                    val combinedSubCFG = mergeCFGsUnconditionally(combinedArgumentSubCFG, callSubCFG.callGraph)
+                    if (callSubCFG.result != null) {
+                        val temporaryRegister = Register()
+                        val resultAssignmentNode = IntermediateFormTreeNode.RegisterWrite(temporaryRegister, callSubCFG.result)
+                        val resultReadNode = IntermediateFormTreeNode.RegisterRead(temporaryRegister)
+                        Pair(addTreeToCFG(combinedSubCFG, resultAssignmentNode), resultReadNode)
+                    }
+                    else {
+                        Pair(combinedSubCFG, IntermediateFormTreeNode.Const(0)) // unit placeholder value
+                    }
+                }
+
+                is Expression.Conditional -> {
+                    val conditionSubCFG = secondStageRecursion(astNode.condition)
+
+                    val savedTemporaryRegisters = currentTemporaryRegisters.copy()
+                    val trueBranchSubCFG = secondStageRecursion(astNode.resultWhenTrue)
+                    currentTemporaryRegisters = savedTemporaryRegisters
+                    val falseBranchSubCFG = secondStageRecursion(astNode.resultWhenFalse)
+                    invalidatedVariables[astNode]!!.forEach { currentTemporaryRegisters.remove(it) }
+
+                    val temporaryRegister = Register()
+                    val trueBranchAssignmentNode = IntermediateFormTreeNode.RegisterWrite(temporaryRegister, trueBranchSubCFG.second)
+                    val falseBranchAssignmentNode = IntermediateFormTreeNode.RegisterWrite(temporaryRegister, falseBranchSubCFG.second)
+                    val combinedCFG = mergeCFGsConditionally(addTreeToCFG(conditionSubCFG.first, conditionSubCFG.second),
+                        addTreeToCFG(trueBranchSubCFG.first, trueBranchAssignmentNode),
+                        addTreeToCFG(falseBranchSubCFG.first, falseBranchAssignmentNode))
+                    Pair(combinedCFG, IntermediateFormTreeNode.RegisterRead(temporaryRegister))
+                }
+            }
+        }
+
+        val result = secondStageRecursion(expression)
+        return if (targetVariable == null)
+            addTreeToCFG(result.first, result.second)
+        else {
+            val owner = variableProperties[targetVariable]!!.owner!! // TODO global variables
+            val assignmentNode = functionDetailsGenerators[owner]!!.genWrite(targetVariable, result.second, owner == currentFunction)
+            addTreeToCFG(result.first, assignmentNode)
+        }
     }
 
     fun createGraphForEachFunction(

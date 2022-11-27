@@ -122,6 +122,33 @@ class VariablePropertiesAnalyzerTest {
     }
 
     // czynność zewnętrzna() {
+    //     czynność wewnętrzna(x: Liczba = 123) { }
+    // }
+
+    @Test
+    fun `test inner function default parameter`() {
+        val parameterX = Function.Parameter("x", Type.Number, Expression.NumberLiteral(123))
+        val dummyVariableX = Variable(Variable.Kind.VALUE, "dummy", Type.Number, Expression.NumberLiteral(123))
+        val innerFunction = Function("wewnętrzna", listOf(parameterX), Type.Unit, listOf())
+        val function = Function(
+            "zewnętrzna", listOf(), Type.Unit,
+            listOf(
+                Statement.FunctionDefinition(innerFunction)
+            )
+        )
+        val nameResolution: MutableReferenceMap<Any, NamedNode> = ReferenceHashMap()
+        val defaultParameterMapping = referenceMapOf(parameterX to dummyVariableX)
+        val input = VariablePropertyInput(Program(listOf(FunctionDefinition(function))), nameResolution, defaultParameterMapping)
+
+        val expectedResults: MutableReferenceMap<Any, VariableProperties> = ReferenceHashMap()
+        expectedResults[parameterX] = VariableProperties(innerFunction, referenceSetOf(), referenceSetOf())
+        expectedResults[dummyVariableX] = VariableProperties(function, referenceSetOf(), referenceSetOf(function))
+
+        assertAnalysisResults(input, expectedResults)
+        assertDiagnostics(input, listOf())
+    }
+
+    // czynność zewnętrzna() {
     //     zm x: Liczba = 123
     //     zm y: Liczba = x
     // }
@@ -446,6 +473,81 @@ class VariablePropertiesAnalyzerTest {
         expectedResults[variableYOuter] = VariableProperties(outer, referenceSetOf(), referenceSetOf())
         expectedResults[variableYInner] = VariableProperties(inner, referenceSetOf(), referenceSetOf())
         expectedResults[variableYInnerDeep] = VariableProperties(innerDeep, referenceSetOf(), referenceSetOf())
+
+        assertAnalysisResults(input, expectedResults)
+        assertDiagnostics(input, listOf())
+    }
+
+    // czynność zewnętrzna() {
+    //     czynność wewnętrzna(x: Liczba = 123) { }
+    //     wewnętrzna(124)
+    // }
+
+    @Test
+    fun `test uncalled default parameter`() {
+        val parameterX = Function.Parameter("x", Type.Number, Expression.NumberLiteral(123))
+        val dummyVariableX = Variable(Variable.Kind.VALUE, "dummy", Type.Number, Expression.NumberLiteral(123))
+        val innerFunction = Function("wewnętrzna", listOf(parameterX), Type.Unit, listOf())
+        val innerFunctionCall = Expression.FunctionCall("wewnętrzna", listOf(Expression.FunctionCall.Argument("x", Expression.NumberLiteral(124))))
+        val function = Function(
+            "zewnętrzna", listOf(), Type.Unit,
+            listOf(
+                Statement.FunctionDefinition(innerFunction),
+                Statement.Evaluation(innerFunctionCall),
+            )
+        )
+        val nameResolution: MutableReferenceMap<Any, NamedNode> = ReferenceHashMap()
+        nameResolution[innerFunctionCall] = innerFunction
+        val defaultParameterMapping = referenceMapOf(parameterX to dummyVariableX)
+        val accessedDefaultValues = referenceMapOf(innerFunctionCall to referenceSetOf<Function.Parameter>())
+        val input = VariablePropertyInput(Program(listOf(FunctionDefinition(function))), nameResolution, defaultParameterMapping, accessedDefaultValues)
+
+        val expectedResults: MutableReferenceMap<Any, VariableProperties> = ReferenceHashMap()
+        expectedResults[parameterX] = VariableProperties(innerFunction, referenceSetOf(), referenceSetOf())
+        expectedResults[dummyVariableX] = VariableProperties(function, referenceSetOf(), referenceSetOf(function))
+
+        assertAnalysisResults(input, expectedResults)
+        assertDiagnostics(input, listOf())
+    }
+
+    // czynność zewnętrzna() {
+    //     czynność wewnętrzna(x: Liczba = 123) { }
+    //
+    //     czynność f() {
+    //          wewnętrzna()
+    //     }
+    //     czynność g() {
+    //          wewnętrzna(124)
+    //     }
+    // }
+
+    @Test
+    fun `test called default parameter`() {
+        val parameterX = Function.Parameter("x", Type.Number, Expression.NumberLiteral(123))
+        val dummyVariableX = Variable(Variable.Kind.VALUE, "dummy", Type.Number, Expression.NumberLiteral(123))
+        val innerFunction = Function("wewnętrzna", listOf(parameterX), Type.Unit, listOf())
+        val fInnerFunctionCall = Expression.FunctionCall("wewnętrzna", listOf())
+        val gInnerFunctionCall = Expression.FunctionCall("wewnętrzna", listOf(Expression.FunctionCall.Argument("x", Expression.NumberLiteral(124))))
+        val fFunction = Function("f", listOf(), Type.Unit, listOf(Statement.Evaluation(fInnerFunctionCall)))
+        val gFunction = Function("g", listOf(), Type.Unit, listOf(Statement.Evaluation(gInnerFunctionCall)))
+        val function = Function(
+            "zewnętrzna", listOf(), Type.Unit,
+            listOf(
+                Statement.FunctionDefinition(innerFunction),
+                Statement.FunctionDefinition(fFunction),
+                Statement.FunctionDefinition(gFunction),
+            )
+        )
+        val nameResolution: MutableReferenceMap<Any, NamedNode> = ReferenceHashMap()
+        nameResolution[fInnerFunctionCall] = innerFunction
+        nameResolution[gInnerFunctionCall] = innerFunction
+        val defaultParameterMapping = referenceMapOf(parameterX to dummyVariableX)
+        val accessedDefaultValues = referenceMapOf(fInnerFunctionCall to referenceSetOf(parameterX), gInnerFunctionCall to referenceSetOf())
+        val input = VariablePropertyInput(Program(listOf(FunctionDefinition(function))), nameResolution, defaultParameterMapping, accessedDefaultValues)
+
+        val expectedResults: MutableReferenceMap<Any, VariableProperties> = ReferenceHashMap()
+        expectedResults[parameterX] = VariableProperties(innerFunction, referenceSetOf(), referenceSetOf())
+        expectedResults[dummyVariableX] = VariableProperties(function, referenceSetOf(fFunction), referenceSetOf(function))
 
         assertAnalysisResults(input, expectedResults)
         assertDiagnostics(input, listOf())

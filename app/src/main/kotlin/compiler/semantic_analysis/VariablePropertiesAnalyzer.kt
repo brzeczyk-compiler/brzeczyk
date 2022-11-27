@@ -107,8 +107,6 @@ object VariablePropertiesAnalyzer {
                         if (it.defaultValue != null) {
                             // scope of the inner function has not begun yet
                             analyzeVariables(it.defaultValue, currentFunction)
-                            println(it)
-                            println(defaultParameterMapping)
                             mutableVariableProperties[defaultParameterMapping[it]!!] = MutableVariableProperties(currentFunction)
                         }
                     }

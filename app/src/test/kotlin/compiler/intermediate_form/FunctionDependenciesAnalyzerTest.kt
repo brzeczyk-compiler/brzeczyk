@@ -18,7 +18,11 @@ import kotlin.test.assertTrue
 
 class FunctionDependenciesAnalyzerTest {
 
-    private fun assertContentEquals(expected: ReferenceMap<Function, ReferenceSet<Function>>, actual: ReferenceMap<Function, ReferenceSet<Function>>) {
+    private fun assertContentEquals(
+        expected: ReferenceMap<Function, ReferenceSet<Function>>,
+        actual: ReferenceMap<Function, ReferenceSet<Function>>
+    ) {
+        assertEquals(expected.referenceKeys.size, actual.referenceKeys.size)
         expected.referenceKeys.forEach {
             assertTrue(it in actual.referenceKeys)
             assertEquals(expected[it]!!.referenceElements, actual[it]!!.referenceElements)

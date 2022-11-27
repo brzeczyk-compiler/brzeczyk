@@ -12,38 +12,39 @@ object DefaultParameterResolver {
     fun mapFunctionParametersToDummyVariables(ast: Program): ReferenceMap<Function.Parameter, Variable> {
         val resultMapping: ReferenceHashMap<Function.Parameter, Variable> = ReferenceHashMap()
 
-        fun process(global: Program.Global) {
-            fun process(statement: Statement) {
-                fun process(vararg bunchOfBlocks: List<Statement>?) = bunchOfBlocks.toList().forEach { block -> block?.forEach { process(it) } }
+        fun process(statement: Statement) {
+            fun process(vararg bunchOfBlocks: List<Statement>?) = bunchOfBlocks.toList().forEach { block -> block?.forEach { process(it) } }
 
-                when (statement) {
-                    is Statement.Evaluation -> { }
-                    is Statement.VariableDefinition -> { }
-                    is Statement.Assignment -> { }
-                    is Statement.LoopBreak -> { }
-                    is Statement.LoopContinuation -> { }
-                    is Statement.FunctionReturn -> { }
+            when (statement) {
+                // Exhaust all possibilities to be forced to update this place when changing the Statement class.
+                is Statement.Evaluation -> { }
+                is Statement.VariableDefinition -> { }
+                is Statement.Assignment -> { }
+                is Statement.LoopBreak -> { }
+                is Statement.LoopContinuation -> { }
+                is Statement.FunctionReturn -> { }
 
-                    is Statement.Block -> process(statement.block)
-                    is Statement.Conditional -> process(statement.actionWhenTrue, statement.actionWhenFalse)
-                    is Statement.Loop -> process(statement.action)
+                is Statement.Block -> process(statement.block)
+                is Statement.Conditional -> process(statement.actionWhenTrue, statement.actionWhenFalse)
+                is Statement.Loop -> process(statement.action)
 
-                    is Statement.FunctionDefinition -> {
-                        statement.function.parameters.forEach {
-                            if (it.defaultValue != null) {
-                                resultMapping[it] = Variable(
-                                    Variable.Kind.VALUE,
-                                    "_dummy_${it.name}",
-                                    it.type,
-                                    it.defaultValue
-                                )
-                            }
+                is Statement.FunctionDefinition -> {
+                    statement.function.parameters.forEach {
+                        if (it.defaultValue != null) {
+                            resultMapping[it] = Variable(
+                                Variable.Kind.VALUE,
+                                "_dummy_${it.name}",
+                                it.type,
+                                it.defaultValue
+                            )
                         }
-                        process(statement.function.body)
                     }
+                    process(statement.function.body)
                 }
             }
+        }
 
+        fun process(global: Program.Global) {
             when (global) {
                 is Program.Global.VariableDefinition -> { }
                 is Program.Global.FunctionDefinition -> {

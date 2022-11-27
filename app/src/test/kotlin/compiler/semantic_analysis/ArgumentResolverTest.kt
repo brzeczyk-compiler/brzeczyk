@@ -46,6 +46,7 @@ internal class ArgumentResolverTest {
         expected: ReferenceMap<Expression.FunctionCall, ReferenceSet<Function.Parameter>>,
         actual: ReferenceMap<Expression.FunctionCall, ReferenceSet<Function.Parameter>>,
     ) {
+        assertEquals(expected.referenceKeys.size, actual.referenceKeys.size)
         expected.referenceKeys.forEach {
             assertTrue(it in actual.referenceKeys)
             assertEquals(expected[it]!!.referenceElements, actual[it]!!.referenceElements)

@@ -15,7 +15,9 @@ import compiler.common.diagnostics.Diagnostic.VariablePropertiesError
 import compiler.common.diagnostics.Diagnostic.VariablePropertiesError.AssignmentToFunctionParameter
 import compiler.common.reference_collections.MutableReferenceMap
 import compiler.common.reference_collections.ReferenceHashMap
+import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.referenceMapOf
+import compiler.common.reference_collections.referenceSetOf
 import compiler.semantic_analysis.VariablePropertiesAnalyzer.VariableProperties
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -30,7 +32,7 @@ class VariablePropertiesAnalyzerTest {
 
     private fun assertAnalysisResults(
         input: VariablePropertyInput,
-        expectedAnalysisResults: MutableReferenceMap<Any, VariableProperties>
+        expectedAnalysisResults: ReferenceMap<Any, VariableProperties>
     ) {
         val actualAnalysisResults = VariablePropertiesAnalyzer.calculateVariableProperties(
             input.program,
@@ -68,7 +70,7 @@ class VariablePropertiesAnalyzerTest {
         val input = VariablePropertyInput(Program(listOf(VariableDefinition(variable))), ReferenceHashMap())
 
         val expectedResults: MutableReferenceMap<Any, VariableProperties> = ReferenceHashMap()
-        expectedResults[variable] = VariableProperties(null, mutableSetOf(), mutableSetOf())
+        expectedResults[variable] = VariableProperties(null, referenceSetOf(), referenceSetOf())
 
         assertAnalysisResults(input, expectedResults)
         assertDiagnostics(input, listOf())
@@ -88,7 +90,7 @@ class VariablePropertiesAnalyzerTest {
         val input = VariablePropertyInput(Program(listOf(FunctionDefinition(function))), ReferenceHashMap())
 
         val expectedResults: MutableReferenceMap<Any, VariableProperties> = ReferenceHashMap()
-        expectedResults[variable] = VariableProperties(function, mutableSetOf(), mutableSetOf())
+        expectedResults[variable] = VariableProperties(function, referenceSetOf(), referenceSetOf())
 
         assertAnalysisResults(input, expectedResults)
         assertDiagnostics(input, listOf())
@@ -107,7 +109,7 @@ class VariablePropertiesAnalyzerTest {
         val input = VariablePropertyInput(Program(listOf(FunctionDefinition(function))), nameResolution)
 
         val expectedResults: MutableReferenceMap<Any, VariableProperties> = ReferenceHashMap()
-        expectedResults[parameterX] = VariableProperties(function, mutableSetOf(), mutableSetOf())
+        expectedResults[parameterX] = VariableProperties(function, referenceSetOf(), referenceSetOf())
 
         assertAnalysisResults(input, expectedResults)
         assertDiagnostics(input, listOf())
@@ -135,8 +137,8 @@ class VariablePropertiesAnalyzerTest {
         )
 
         val expectedResults: MutableReferenceMap<Any, VariableProperties> = ReferenceHashMap()
-        expectedResults[variableX] = VariableProperties(outer, mutableSetOf(outer), mutableSetOf())
-        expectedResults[variableY] = VariableProperties(outer, mutableSetOf(), mutableSetOf())
+        expectedResults[variableX] = VariableProperties(outer, referenceSetOf(outer), referenceSetOf())
+        expectedResults[variableY] = VariableProperties(outer, referenceSetOf(), referenceSetOf())
 
         assertAnalysisResults(input, expectedResults)
         assertDiagnostics(input, listOf())
@@ -163,7 +165,7 @@ class VariablePropertiesAnalyzerTest {
         )
 
         val expectedResults: MutableReferenceMap<Any, VariableProperties> = ReferenceHashMap()
-        expectedResults[variableX] = VariableProperties(outer, mutableSetOf(), mutableSetOf(outer))
+        expectedResults[variableX] = VariableProperties(outer, referenceSetOf(), referenceSetOf(outer))
 
         assertAnalysisResults(input, expectedResults)
         assertDiagnostics(input, listOf())
@@ -189,7 +191,7 @@ class VariablePropertiesAnalyzerTest {
         )
 
         val expectedResults: MutableReferenceMap<Any, VariableProperties> = ReferenceHashMap()
-        expectedResults[parameterX] = VariableProperties(outer, mutableSetOf(), mutableSetOf(outer))
+        expectedResults[parameterX] = VariableProperties(outer, referenceSetOf(), referenceSetOf(outer))
 
         assertAnalysisResults(input, expectedResults)
         assertDiagnostics(
@@ -226,8 +228,8 @@ class VariablePropertiesAnalyzerTest {
         )
 
         val expectedResults: MutableReferenceMap<Any, VariableProperties> = ReferenceHashMap()
-        expectedResults[variableX] = VariableProperties(outer, mutableSetOf(inner), mutableSetOf())
-        expectedResults[variableY] = VariableProperties(inner, mutableSetOf(), mutableSetOf())
+        expectedResults[variableX] = VariableProperties(outer, referenceSetOf(inner), referenceSetOf())
+        expectedResults[variableY] = VariableProperties(inner, referenceSetOf(), referenceSetOf())
 
         assertAnalysisResults(input, expectedResults)
         assertDiagnostics(input, listOf())
@@ -260,7 +262,7 @@ class VariablePropertiesAnalyzerTest {
         )
 
         val expectedResults: MutableReferenceMap<Any, VariableProperties> = ReferenceHashMap()
-        expectedResults[variableX] = VariableProperties(outer, mutableSetOf(), mutableSetOf(inner))
+        expectedResults[variableX] = VariableProperties(outer, referenceSetOf(), referenceSetOf(inner))
 
         assertAnalysisResults(input, expectedResults)
         assertDiagnostics(input, listOf())
@@ -292,7 +294,7 @@ class VariablePropertiesAnalyzerTest {
         )
 
         val expectedResults: MutableReferenceMap<Any, VariableProperties> = ReferenceHashMap()
-        expectedResults[parameterX] = VariableProperties(outer, mutableSetOf(), mutableSetOf(inner))
+        expectedResults[parameterX] = VariableProperties(outer, referenceSetOf(), referenceSetOf(inner))
 
         assertAnalysisResults(input, expectedResults)
         assertDiagnostics(
@@ -329,8 +331,8 @@ class VariablePropertiesAnalyzerTest {
         )
 
         val expectedResults: MutableReferenceMap<Any, VariableProperties> = ReferenceHashMap()
-        expectedResults[parameterX] = VariableProperties(outer, mutableSetOf(inner), mutableSetOf())
-        expectedResults[variableY] = VariableProperties(inner, mutableSetOf(), mutableSetOf())
+        expectedResults[parameterX] = VariableProperties(outer, referenceSetOf(inner), referenceSetOf())
+        expectedResults[variableY] = VariableProperties(inner, referenceSetOf(), referenceSetOf())
 
         assertAnalysisResults(input, expectedResults)
         assertDiagnostics(input, listOf())
@@ -367,8 +369,8 @@ class VariablePropertiesAnalyzerTest {
         )
 
         val expectedResults: MutableReferenceMap<Any, VariableProperties> = ReferenceHashMap()
-        expectedResults[variableX] = VariableProperties(outer, mutableSetOf(innerDeep), mutableSetOf())
-        expectedResults[variableY] = VariableProperties(innerDeep, mutableSetOf(), mutableSetOf())
+        expectedResults[variableX] = VariableProperties(outer, referenceSetOf(innerDeep), referenceSetOf())
+        expectedResults[variableY] = VariableProperties(innerDeep, referenceSetOf(), referenceSetOf())
 
         assertAnalysisResults(input, expectedResults)
         assertDiagnostics(input, listOf())
@@ -429,11 +431,11 @@ class VariablePropertiesAnalyzerTest {
         val expectedResults: MutableReferenceMap<Any, VariableProperties> = ReferenceHashMap()
         expectedResults[variableX] = VariableProperties(
             outer,
-            mutableSetOf(outer, inner, innerDeep), mutableSetOf(outer, inner, innerDeep)
+            referenceSetOf(outer, inner, innerDeep), referenceSetOf(outer, inner, innerDeep)
         )
-        expectedResults[variableYOuter] = VariableProperties(outer, mutableSetOf(), mutableSetOf())
-        expectedResults[variableYInner] = VariableProperties(inner, mutableSetOf(), mutableSetOf())
-        expectedResults[variableYInnerDeep] = VariableProperties(innerDeep, mutableSetOf(), mutableSetOf())
+        expectedResults[variableYOuter] = VariableProperties(outer, referenceSetOf(), referenceSetOf())
+        expectedResults[variableYInner] = VariableProperties(inner, referenceSetOf(), referenceSetOf())
+        expectedResults[variableYInnerDeep] = VariableProperties(innerDeep, referenceSetOf(), referenceSetOf())
 
         assertAnalysisResults(input, expectedResults)
         assertDiagnostics(input, listOf())

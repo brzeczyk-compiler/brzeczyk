@@ -32,9 +32,11 @@ val <K, V> ReferenceMap<K, V>.referenceEntries get() = entries.map { ReferenceEn
 val <K, V> ReferenceMap<K, V>.referenceKeys get() = referenceSetOf(referenceEntries.map { it.key })
 val <K, V> ReferenceMap<K, V>.referenceValues get() = referenceSetOf(referenceEntries.map { it.value })
 
-fun <K, V> referenceMapOf(vararg pairs: Pair<K, V>): ReferenceMap<K, V> {
+fun <K, V> referenceMapOf(pairs: List<Pair<K, V>>): ReferenceMap<K, V> {
     val map = ReferenceHashMap<K, V>()
     for ((key, value) in pairs)
         map[key] = value
     return map
 }
+
+fun <K, V> referenceMapOf(vararg pairs: Pair<K, V>): ReferenceMap<K, V> = referenceMapOf(pairs.asList())

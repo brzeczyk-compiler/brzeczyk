@@ -21,13 +21,13 @@ object Resolver {
     fun resolveProgram(ast: Program, diagnostics: Diagnostics): ProgramProperties {
         val nameResolution = NameResolver.calculateNameResolution(ast, diagnostics)
         val argumentResolution = ArgumentResolver.calculateArgumentToParameterResolution(ast, nameResolution, diagnostics)
-        val expressionTypes = TypeChecker.calculateTypes(ast, nameResolution, argumentResolution, diagnostics)
+        val expressionTypes = TypeChecker.calculateTypes(ast, nameResolution, argumentResolution.argumentsToParametersMap, diagnostics)
         val variableProperties = VariablePropertiesAnalyzer.calculateVariableProperties(ast, nameResolution, diagnostics)
-        val defaultParameterResolutionResult = DefaultParameterResolver.resolveDefaultParameters(ast, nameResolution)
+        val defaultParameterResolutionResult = DefaultParameterResolver.resolveDefaultParameters(ast)
 
         return ProgramProperties(
             nameResolution,
-            argumentResolution,
+            argumentResolution.argumentsToParametersMap,
             expressionTypes,
             variableProperties,
             defaultParameterResolutionResult.defaultParameterMapping,

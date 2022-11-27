@@ -1,7 +1,6 @@
 package compiler.semantic_analysis
 
 import compiler.ast.Function
-import compiler.ast.NamedNode
 import compiler.ast.Program
 import compiler.ast.Statement
 import compiler.ast.Variable
@@ -16,7 +15,6 @@ object DefaultParameterResolver {
 
     fun resolveDefaultParameters(
         ast: Program,
-        nameResolution: ReferenceMap<Any, NamedNode>,
     ): DefaultParameterResolutionResult {
         val defaultParameterMapping = mapFunctionParametersToDummyVariables(ast)
 

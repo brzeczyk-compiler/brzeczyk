@@ -2,7 +2,6 @@ package compiler.semantic_analysis
 
 import compiler.ast.Expression
 import compiler.ast.Function
-import compiler.ast.NamedNode
 import compiler.ast.Program
 import compiler.ast.Statement
 import compiler.ast.Type
@@ -72,8 +71,7 @@ class DefaultParameterResolverTest {
         )
 
         val program = Program(globals)
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceMapOf()
-        val actualMapping = DefaultParameterResolver.resolveDefaultParameters(program, nameResolution).defaultParameterMapping
+        val actualMapping = DefaultParameterResolver.resolveDefaultParameters(program).defaultParameterMapping
 
         val expectedMappingSimplified = referenceMapOf(
             cParameter to Variable(Variable.Kind.CONSTANT, "test", Type.Number, cValue),
@@ -123,8 +121,7 @@ class DefaultParameterResolverTest {
         )
 
         val program = Program(globals)
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceMapOf()
-        val actualMapping = DefaultParameterResolver.resolveDefaultParameters(program, nameResolution).defaultParameterMapping
+        val actualMapping = DefaultParameterResolver.resolveDefaultParameters(program).defaultParameterMapping
 
         val expectedMappingSimplified = referenceMapOf(
             cParameter to Variable(Variable.Kind.VALUE, "test", Type.Number, cValue),
@@ -188,8 +185,7 @@ class DefaultParameterResolverTest {
         )
 
         val program = Program(globals)
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceMapOf()
-        val actualMapping = DefaultParameterResolver.resolveDefaultParameters(program, nameResolution).defaultParameterMapping
+        val actualMapping = DefaultParameterResolver.resolveDefaultParameters(program).defaultParameterMapping
 
         val expectedMappingSimplified = referenceMapOf(
             aParameter to Variable(Variable.Kind.VALUE, "test", Type.Number, aValue),
@@ -241,11 +237,7 @@ class DefaultParameterResolverTest {
         )
 
         val program = Program(globals)
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceMapOf(
-            afVariableCall to afParameter,
-            agVariableCall to agParameter,
-        )
-        val actualResult = DefaultParameterResolver.resolveDefaultParameters(program, nameResolution)
+        val actualResult = DefaultParameterResolver.resolveDefaultParameters(program)
         val actualMapping = actualResult.defaultParameterMapping
 
         val expectedMappingSimplified = referenceMapOf(

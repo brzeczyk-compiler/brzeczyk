@@ -11,11 +11,19 @@ import compiler.common.diagnostics.Diagnostic
 import compiler.common.diagnostics.Diagnostics
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceMap
+import compiler.common.reference_collections.ReferenceSet
+import compiler.common.reference_collections.referenceSetOf
 
 typealias ArgumentResolutionResult = ReferenceMap<Expression.FunctionCall.Argument, Function.Parameter>
 
 class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>, private val diagnostics: Diagnostics) {
-    private val result = ReferenceHashMap<Expression.FunctionCall.Argument, Function.Parameter>()
+    data class ArgumentResolutionResult(
+        val argumentsToParametersMap: ReferenceMap<Expression.FunctionCall.Argument, Function.Parameter>,
+        val accessedDefaultValues: ReferenceMap<Expression.FunctionCall, ReferenceSet<Function.Parameter>>
+    )
+
+    private val argumentsToParametersMap = ReferenceHashMap<Expression.FunctionCall.Argument, Function.Parameter>()
+    private val accessedDefaultValues = ReferenceHashMap<Expression.FunctionCall, ReferenceSet<Function.Parameter>>()
     private var correctDefinitions = true
 
     companion object {
@@ -30,7 +38,7 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
             if (resolver.correctDefinitions)
                 resolver.resolveFunctionCallsArguments(program)
 
-            return resolver.result
+            return ArgumentResolutionResult(resolver.argumentsToParametersMap, resolver.accessedDefaultValues)
         }
     }
 
@@ -56,7 +64,7 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
 
         for ((index, argument) in functionCall.arguments.withIndex()) {
             if (argument.name == null) {
-                result[argument] = function.parameters[index]
+                argumentsToParametersMap[argument] = function.parameters[index]
                 isMatched[index] = true
             } else {
                 val parameterIndex = parameterNames.indexOf(argument.name)
@@ -68,18 +76,23 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
                     diagnostics.report(Diagnostic.ArgumentResolutionError.RepeatedArgument(functionCall, argument.name))
                     return
                 }
-                result[argument] = function.parameters[parameterIndex]
+                argumentsToParametersMap[argument] = function.parameters[parameterIndex]
                 isMatched[parameterIndex] = true
             }
         }
 
-        for ((index, parameter) in function.parameters.withIndex()) {
-            if (!isMatched[index] && parameter.defaultValue == null) {
-                diagnostics.report(Diagnostic.ArgumentResolutionError.MissingArgument(functionCall, parameterNames[index]))
-            }
+        val parametersWithDefaultValue = mutableListOf<Function.Parameter>()
 
-            // TODO: detect default parameter values used in this function call
+        for ((index, parameter) in function.parameters.withIndex()) {
+            if (!isMatched[index]) {
+                if (parameter.defaultValue == null) {
+                    diagnostics.report(Diagnostic.ArgumentResolutionError.MissingArgument(functionCall, parameterNames[index]))
+                } else {
+                    parametersWithDefaultValue.add(parameter)
+                }
+            }
         }
+        accessedDefaultValues[functionCall] = referenceSetOf(parametersWithDefaultValue)
     }
 
     private fun resolveFunctionCallsArguments(program: Program) {

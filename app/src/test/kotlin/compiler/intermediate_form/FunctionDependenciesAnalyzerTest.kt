@@ -16,7 +16,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class FunctionsUtilitiesTest {
+class FunctionDependenciesAnalyzerTest {
 
     private fun assertContentEquals(expected: ReferenceMap<Function, ReferenceSet<Function>>, actual: ReferenceMap<Function, ReferenceSet<Function>>) {
         expected.referenceKeys.forEach {
@@ -41,7 +41,7 @@ class FunctionsUtilitiesTest {
 
         val program = Program(globals)
         val nameResolution: ReferenceMap<Any, NamedNode> = referenceMapOf()
-        val actualCallGraph = FunctionsUtilities.createCallGraph(program, nameResolution)
+        val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
         val expectedCallGraph = referenceMapOf(
             fFunction to referenceSetOf<Function>(),
@@ -73,7 +73,7 @@ class FunctionsUtilitiesTest {
 
         val program = Program(globals)
         val nameResolution: ReferenceMap<Any, NamedNode> = referenceMapOf(fFunctionCall to fFunction)
-        val actualCallGraph = FunctionsUtilities.createCallGraph(program, nameResolution)
+        val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
         val expectedCallGraph = referenceMapOf(
             fFunction to referenceSetOf(),
@@ -114,7 +114,7 @@ class FunctionsUtilitiesTest {
 
         val program = Program(globals)
         val nameResolution: ReferenceMap<Any, NamedNode> = referenceMapOf(gFunctionCall to gFunction)
-        val actualCallGraph = FunctionsUtilities.createCallGraph(program, nameResolution)
+        val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
         val expectedCallGraph = referenceMapOf(
             fFunction to referenceSetOf(),
@@ -144,7 +144,7 @@ class FunctionsUtilitiesTest {
 
         val program = Program(globals)
         val nameResolution: ReferenceMap<Any, NamedNode> = referenceMapOf(fFunctionCall to fFunction)
-        val actualCallGraph = FunctionsUtilities.createCallGraph(program, nameResolution)
+        val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
         val expectedCallGraph = referenceMapOf(
             fFunction to referenceSetOf(fFunction),
@@ -186,7 +186,7 @@ class FunctionsUtilitiesTest {
             fFunctionCall to fFunction,
             gFunctionCall to gFunction,
         )
-        val actualCallGraph = FunctionsUtilities.createCallGraph(program, nameResolution)
+        val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
         val expectedCallGraph = referenceMapOf(
             fFunction to referenceSetOf(),
@@ -244,7 +244,7 @@ class FunctionsUtilitiesTest {
             hFunctionCall to hFunction,
             iFunctionCall to iFunction,
         )
-        val actualCallGraph = FunctionsUtilities.createCallGraph(program, nameResolution)
+        val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
         val expectedCallGraph = referenceMapOf(
             fFunction to referenceSetOf(fFunction, gFunction, hFunction, iFunction),
@@ -315,7 +315,7 @@ class FunctionsUtilitiesTest {
             hFunctionCall to hFunction,
             iFunctionCall to iFunction,
         )
-        val actualCallGraph = FunctionsUtilities.createCallGraph(program, nameResolution)
+        val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
         val expectedCallGraph = referenceMapOf(
             fFunction to referenceSetOf(fFunction, gFunction, hFunction, iFunction),
@@ -391,7 +391,7 @@ class FunctionsUtilitiesTest {
             jFunctionCall to jFunction,
             kFunctionCall to kFunction,
         )
-        val actualCallGraph = FunctionsUtilities.createCallGraph(program, nameResolution)
+        val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
         val expectedCallGraph = referenceMapOf(
             fFunction to referenceSetOf(),
@@ -455,7 +455,7 @@ class FunctionsUtilitiesTest {
             gFunctionCall to gFunction,
             yAssignment to yVariable,
         )
-        val actualCallGraph = FunctionsUtilities.createCallGraph(program, nameResolution)
+        val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
         val expectedCallGraph = referenceMapOf(
             fFunction to referenceSetOf(),
@@ -550,7 +550,7 @@ class FunctionsUtilitiesTest {
             kFunctionCall to kFunction,
             lFunctionCall to lFunction,
         )
-        val actualCallGraph = FunctionsUtilities.createCallGraph(program, nameResolution)
+        val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
         val expectedCallGraph = referenceMapOf(
             fFunction to referenceSetOf(),
@@ -644,7 +644,7 @@ class FunctionsUtilitiesTest {
             hFunctionCall to hFunction,
             iFunctionCall to iFunction,
         )
-        val actualCallGraph = FunctionsUtilities.createCallGraph(program, nameResolution)
+        val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
         val expectedCallGraph = referenceMapOf(
             fFunction to referenceSetOf(),
@@ -699,7 +699,7 @@ class FunctionsUtilitiesTest {
         val nameResolution: ReferenceMap<Any, NamedNode> = referenceMapOf(
             fFunctionCall to fFunction,
         )
-        val actualCallGraph = FunctionsUtilities.createCallGraph(program, nameResolution)
+        val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
         val expectedCallGraph = referenceMapOf(
             fFunction to referenceSetOf(),
@@ -757,7 +757,7 @@ class FunctionsUtilitiesTest {
             pfFunctionCall to pfFunction,
             pgFunctionCall to pgFunction,
         )
-        val actualCallGraph = FunctionsUtilities.createCallGraph(program, nameResolution)
+        val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
         val expectedCallGraph = referenceMapOf(
             fFunction to referenceSetOf(pfFunction),
@@ -832,7 +832,7 @@ class FunctionsUtilitiesTest {
             fFunctionCall to fFunction,
             gFunctionCall to gFunction,
         )
-        val actualCallGraph = FunctionsUtilities.createCallGraph(program, nameResolution)
+        val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
         val expectedCallGraph = referenceMapOf(
             fFunction to referenceSetOf(pfFunction),

@@ -13,7 +13,7 @@ import compiler.common.reference_collections.combineReferenceSets
 import compiler.common.reference_collections.referenceKeys
 import compiler.common.reference_collections.referenceSetOf
 
-object FunctionsUtilities {
+object FunctionDependenciesAnalyzer {
     fun createFunctionDetailsGenerators(ast: Program, nameResolution: ReferenceMap<Any, NamedNode>): ReferenceMap<Function, FunctionDetailsGenerator> {
         return TODO()
     }

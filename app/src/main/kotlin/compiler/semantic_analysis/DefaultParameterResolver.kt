@@ -7,13 +7,11 @@ import compiler.ast.Statement
 import compiler.ast.Variable
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceMap
-import compiler.common.reference_collections.referenceEntries
 
 object DefaultParameterResolver {
 
     data class DefaultParameterResolutionResult(
         val defaultParameterMapping: ReferenceMap<Function.Parameter, Variable>,
-        val updatedNameResolution: ReferenceMap<Any, NamedNode>,
     )
 
     fun resolveDefaultParameters(
@@ -22,16 +20,7 @@ object DefaultParameterResolver {
     ): DefaultParameterResolutionResult {
         val defaultParameterMapping = mapFunctionParametersToDummyVariables(ast)
 
-        val updatedNameResolution: ReferenceHashMap<Any, NamedNode> = ReferenceHashMap()
-        nameResolution.referenceEntries.forEach {
-            if (defaultParameterMapping.containsKey(it.value)) {
-                updatedNameResolution[it.key] = defaultParameterMapping[it.value]!!
-            } else {
-                updatedNameResolution[it.key] = it.value
-            }
-        }
-
-        return DefaultParameterResolutionResult(defaultParameterMapping, updatedNameResolution)
+        return DefaultParameterResolutionResult(defaultParameterMapping)
     }
 
     private fun mapFunctionParametersToDummyVariables(ast: Program): ReferenceMap<Function.Parameter, Variable> {

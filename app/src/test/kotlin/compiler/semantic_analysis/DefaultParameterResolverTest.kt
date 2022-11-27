@@ -13,7 +13,7 @@ import compiler.common.reference_collections.referenceKeys
 import compiler.common.reference_collections.referenceMapOf
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
+import kotlin.test.assertNotSame
 import kotlin.test.assertTrue
 
 class DefaultParameterResolverTest {
@@ -202,60 +202,6 @@ class DefaultParameterResolverTest {
         compareMappings(expectedMappingSimplified, actualMapping)
     }
 
-    @Test fun `test name resolution updates`() {
-        /*
-        Create AST for program:
-        ---------------------------------
-
-        czynność test(
-            a: Liczba,
-            b: Liczba = 17
-        ) {
-            wart x: Liczba = a
-            wart y: Liczba = b
-        }
-
-        */
-
-        val aParameter = Function.Parameter("a", Type.Number, null)
-        val bValue = Expression.NumberLiteral(17)
-        val bParameter = Function.Parameter("b", Type.Number, bValue)
-
-        val aVariableCall = Expression.Variable("a")
-        val bVariableCall = Expression.Variable("b")
-
-        val testFunction = Function(
-            "test", listOf(aParameter, bParameter), Type.Unit,
-            listOf(
-                Statement.VariableDefinition(Variable(Variable.Kind.VALUE, "x", Type.Number, aVariableCall)),
-                Statement.VariableDefinition(Variable(Variable.Kind.VALUE, "y", Type.Number, bVariableCall)),
-            )
-        )
-        val globals = listOf(
-            Program.Global.FunctionDefinition(testFunction),
-        )
-
-        val program = Program(globals)
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceMapOf(
-            aVariableCall to aParameter,
-            bVariableCall to bParameter,
-        )
-        val actualNameResolution = DefaultParameterResolver.resolveDefaultParameters(program, nameResolution).updatedNameResolution
-
-        // Expected Name Resolution
-        //  aVariableCall to aParameter
-        //  bVariableCall to new Variable(bValue)
-        assertEquals(2, actualNameResolution.referenceEntries.size)
-        assertTrue(aVariableCall in actualNameResolution.referenceKeys)
-        assertTrue(bVariableCall in actualNameResolution.referenceKeys)
-
-        assertEquals(aParameter, actualNameResolution[aVariableCall]!!)
-
-        val expectedResultForB = Variable(Variable.Kind.CONSTANT, "test", Type.Number, bValue)
-        assertTrue(actualNameResolution[bVariableCall]!! is Variable)
-        assertEqualVariables(expectedResultForB, actualNameResolution[bVariableCall]!! as Variable)
-    }
-
     @Test fun `test reference comparison`() {
         /*
         Create AST for program:
@@ -301,7 +247,6 @@ class DefaultParameterResolverTest {
         )
         val actualResult = DefaultParameterResolver.resolveDefaultParameters(program, nameResolution)
         val actualMapping = actualResult.defaultParameterMapping
-        val actualNameResolution = actualResult.updatedNameResolution
 
         val expectedMappingSimplified = referenceMapOf(
             afParameter to Variable(Variable.Kind.VALUE, "test", Type.Number, afValue),
@@ -310,21 +255,6 @@ class DefaultParameterResolverTest {
 
         compareMappings(expectedMappingSimplified, actualMapping)
 
-        // Expected Name Resolution
-        //  afVariableCall to new Variable(afValue)
-        //  agVariableCall to new Variable(agValue)
-        assertEquals(2, actualNameResolution.referenceEntries.size)
-        assertTrue(afVariableCall in actualNameResolution.referenceKeys)
-        assertTrue(agVariableCall in actualNameResolution.referenceKeys)
-
-        val expectedResultForAf = Variable(Variable.Kind.VALUE, "test", Type.Number, afValue)
-        val expectedResultForAg = Variable(Variable.Kind.VALUE, "test", Type.Number, agValue)
-
-        assertTrue(actualNameResolution[afVariableCall]!! is Variable)
-        assertTrue(actualNameResolution[agVariableCall]!! is Variable)
-        assertEqualVariables(expectedResultForAf, actualNameResolution[afVariableCall]!! as Variable)
-        assertEqualVariables(expectedResultForAg, actualNameResolution[agVariableCall]!! as Variable)
-
-        assertFalse(actualNameResolution[afVariableCall]!! as Variable === actualNameResolution[agVariableCall]!! as Variable)
+        assertNotSame(actualMapping[afParameter]!!, actualMapping[agParameter]!!)
     }
 }

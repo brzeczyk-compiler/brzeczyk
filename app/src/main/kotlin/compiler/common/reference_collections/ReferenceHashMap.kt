@@ -48,3 +48,5 @@ fun <K, V> referenceMapOf(pairs: List<Pair<K, V>>): ReferenceMap<K, V> {
 fun <K, V> combineReferenceMaps(vararg maps: ReferenceMap<K, V>): ReferenceMap<K, V> = combineReferenceMaps(maps.asList())
 
 fun <K, V> referenceMapOf(vararg pairs: Pair<K, V>): ReferenceMap<K, V> = referenceMapOf(pairs.asList())
+
+fun <K, V> ReferenceHashMap<K, V>.copy() = ReferenceHashMap<K, V>().also { it.putAll(this) }

@@ -22,18 +22,20 @@ object ControlFlow {
         variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>,
         callGraph: ReferenceMap<Function, ReferenceSet<Function>>,
         functionDetailsGenerators: ReferenceMap<Function, FunctionDetailsGenerator>,
-        argumentResolution: ArgumentResolutionResult
+        argumentResolution: ArgumentResolutionResult,
+        defaultParameterValues: ReferenceMap<Function.Parameter, Variable>
     ): ControlFlowGraph {
         fun getVariablesModifiedBy(function: Function): ReferenceSet<Variable> {
-            val calledFunctions = callGraph[function]!!
+            val possiblyCalledFunctions = combineReferenceSets(callGraph[function]!!, referenceSetOf(function))
             return referenceSetOf(variableProperties.asSequence()
-                .filter { (it.value.writtenIn intersect calledFunctions).isNotEmpty() }
+                .filter { (it.value.writtenIn intersect possiblyCalledFunctions).isNotEmpty() }
                 .map { it.key as Variable }.toList())
         }
 
         // first stage is to decide which variable usages have to be realized via temporary registers
+        // and which variables are invalidated by function calls / conditionals
         val usagesThatRequireTempRegisters = ReferenceHashSet<Expression.Variable>()
-        val invalidatedVariables = ReferenceHashMap<Expression, ReferenceSet<Variable>>() // has entries for function calls and conditionals
+        val invalidatedVariables = ReferenceHashMap<Expression, ReferenceSet<Variable>>()
 
         fun firstStageRecursion(astNode: Expression, modifiedUnderCurrentBase: MutableReferenceSet<Variable>) {
             when (astNode) {
@@ -67,16 +69,17 @@ object ControlFlow {
                 }
 
                 is Expression.FunctionCall -> {
-                    val totalModifiedVariables = ReferenceHashSet<Variable>()
+                    val variablesModifiedInArguments = ReferenceHashSet<Variable>()
                     for (argumentNode in astNode.arguments) {
                         val modifiedVariables = ReferenceHashSet<Variable>()
                         firstStageRecursion(argumentNode.value, modifiedVariables)
-                        totalModifiedVariables.addAll(modifiedVariables)
+                        variablesModifiedInArguments.addAll(modifiedVariables)
                     }
-                    // TODO invalidatedVariables
 
-                    modifiedUnderCurrentBase.addAll(getVariablesModifiedBy(nameResolution[astNode] as Function))
-                    modifiedUnderCurrentBase.addAll(totalModifiedVariables)
+                    val variablesModifiedByCall = getVariablesModifiedBy(nameResolution[astNode] as Function)
+                    invalidatedVariables[astNode] = variablesModifiedByCall
+                    modifiedUnderCurrentBase.addAll(variablesModifiedByCall)
+                    modifiedUnderCurrentBase.addAll(variablesModifiedInArguments)
                 }
 
                 is Expression.Conditional -> {
@@ -102,12 +105,6 @@ object ControlFlow {
 
         // second stage is to actually produce CFG
         var currentTemporaryRegisters = ReferenceHashMap<Variable, Register>()
-
-        fun <K, V> ReferenceHashMap<K, V>.copy(): ReferenceHashMap<K, V> {
-            val result = ReferenceHashMap<K, V>()
-            result.putAll(result)
-            return result
-        }
 
         fun mergeCFGsUnconditionally(first: ControlFlowGraph?, second: ControlFlowGraph?): ControlFlowGraph? {
             return when {
@@ -138,6 +135,11 @@ object ControlFlow {
             return mergeCFGsUnconditionally(cfg, singleTreeCFG)!!
         }
 
+        fun makeVariableReadNode(variable: Variable): IntermediateFormTreeNode {
+            val owner = variableProperties[variable]!!.owner!! // TODO: handle global variables
+            return functionDetailsGenerators[owner]!!.genRead(variable, owner == currentFunction)
+        }
+
         fun secondStageRecursion(astNode: Expression): Pair<ControlFlowGraph?, IntermediateFormTreeNode> {
             return when (astNode) {
                 Expression.UnitLiteral ->
@@ -152,15 +154,12 @@ object ControlFlow {
                 is Expression.Variable -> {
                     val variable = nameResolution[astNode] as Variable
                     if (astNode !in usagesThatRequireTempRegisters) {
-                        val owner = variableProperties[variable]!!.owner!! // TODO: handle global variables
-                        val valueNode = functionDetailsGenerators[owner]!!.genRead(variable, owner === currentFunction)
-                        Pair(null, valueNode)
+                        Pair(null, makeVariableReadNode(variable))
                     }
                     else{
                         var cfg: ControlFlowGraph? = null
                         if (variable !in currentTemporaryRegisters) {
-                            val owner = variableProperties[variable]!!.owner!! // TODO: handle global variables
-                            val valueNode = functionDetailsGenerators[owner]!!.genRead(variable, owner === currentFunction)
+                            val valueNode = makeVariableReadNode(variable)
                             val temporaryRegister = Register()
                             val assignmentNode = IntermediateFormTreeNode.RegisterWrite(temporaryRegister, valueNode)
                             currentTemporaryRegisters[variable] = temporaryRegister
@@ -235,7 +234,11 @@ object ControlFlow {
                     val parameterValues = Array<IntermediateFormTreeNode?>(function.parameters.size) { null }
 
                     val argumentSubCFGs = astNode.arguments.map { secondStageRecursion(it.value) }
-                    // TODO fill parameter array
+                    for ((argument, subCFG) in astNode.arguments zip argumentSubCFGs)
+                        parameterValues[function.parameters.indexOf(argumentResolution[argument])] = subCFG.second // can use indexOf because parameter names are different
+                    function.parameters.withIndex().filter { parameterValues[it.index] == null }.forEach() {
+                        parameterValues[it.index] = makeVariableReadNode(defaultParameterValues[it.value]!!)
+                    }
 
                     val callSubCFG = functionDetailsGenerators[function]!!.generateCall(parameterValues.map { it!! }.toList())
                     val combinedArgumentSubCFG = argumentSubCFGs.map { it.first }.reduceOrNull { acc, cfg -> mergeCFGsUnconditionally(acc, cfg) }
@@ -283,7 +286,7 @@ object ControlFlow {
 
     fun createGraphForEachFunction(
         program: Program,
-        createGraphForExpression: (Expression, Variable?) -> ControlFlowGraph,
+        createGraphForExpression: (Expression, Variable?, Function) -> ControlFlowGraph,
         nameResolution: ReferenceMap<Any, NamedNode>,
         defaultParameterValues: ReferenceMap<Function.Parameter, Variable>,
         diagnostics: Diagnostics
@@ -318,7 +321,7 @@ object ControlFlow {
 
             fun processStatementBlock(block: StatementBlock) {
                 fun addExpression(expression: Expression, variable: Variable?): IFTNode? {
-                    val cfg = createGraphForExpression(expression, variable)
+                    val cfg = createGraphForExpression(expression, variable, function)
 
                     treeRoots.addAll(cfg.treeRoots)
                     unconditionalLinks.putAll(cfg.unconditionalLinks)

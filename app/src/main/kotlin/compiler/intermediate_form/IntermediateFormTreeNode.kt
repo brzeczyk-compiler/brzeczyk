@@ -1,6 +1,10 @@
 package compiler.intermediate_form
 
 sealed class IntermediateFormTreeNode {
+    companion object {
+        const val UNIT_VALUE: Long = 0
+    }
+
     data class MemoryRead(val address: Addressing) : IntermediateFormTreeNode()
     data class RegisterRead(val register: Register) : IntermediateFormTreeNode()
     data class Const(val value: Long) : IntermediateFormTreeNode()

@@ -11,7 +11,7 @@ class ControlFlowGraphBuilder {
 
     fun addLink(from: Pair<IFTNode, CFGLinkType>?, to: IFTNode) {
         if (from != null) {
-            if(!treeRoots.contains(from.first))
+            if (!treeRoots.contains(from.first))
                 treeRoots.add(from.first)
             val links = when (from.second) {
                 CFGLinkType.UNCONDITIONAL -> unconditionalLinks

@@ -19,6 +19,11 @@ data class FunctionDetailsGenerator(
     fun genCall(
         args: List<IntermediateFormTreeNode>,
     ): FunctionCallIntermediateForm {
+        // First, it moves parameter values to appropriate location based on args (using genWrite).
+        // At the end it adds an instruction to store function result in FUNCTION_RESULT_REGISTER, when it isn't Unit
+        // returning function, and then it creates temporary IFTNode outside CFG in result,
+        // which simply reads value from that register.
+
         val cfgBuilder = ControlFlowGraphBuilder()
 
         var last: Pair<IFTNode, CFGLinkType>? = null

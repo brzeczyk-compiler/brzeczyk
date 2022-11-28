@@ -17,7 +17,7 @@ import kotlin.test.assertTrue
 
 class DefaultParameterResolverTest {
 
-    private fun assertSimilarVariables(expected: Variable, actual: Variable) {
+    private fun assertEqualsIgnoreName(expected: Variable, actual: Variable) {
         assertEquals(expected.kind, actual.kind)
         assertEquals(expected.type, actual.type)
         assertEquals(expected.value, actual.value)
@@ -30,7 +30,7 @@ class DefaultParameterResolverTest {
         assertEquals(expectedMappingSimplified.referenceEntries.size, actualMapping.referenceEntries.size)
         actualMapping.referenceEntries.forEach {
             assertTrue(it.key in expectedMappingSimplified.referenceKeys)
-            assertSimilarVariables(expectedMappingSimplified[it.key]!!, it.value)
+            assertEqualsIgnoreName(expectedMappingSimplified[it.key]!!, it.value)
         }
     }
 

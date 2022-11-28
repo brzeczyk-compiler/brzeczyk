@@ -26,18 +26,18 @@ data class FunctionDetailsGenerator(
         // write arg values to params
         for ((arg, param) in args zip parameters) {
             val node = genWrite(param, arg, true)
-            cfgBuilder.addAllFrom(node)
+            cfgBuilder.addAllFrom(node, false)
             cfgBuilder.addLink(last, node.entryTreeRoot!!)
             last = Pair(node.finalTreeRoots[0], CFGLinkType.UNCONDITIONAL)
         }
 
         // add function graph
-        cfgBuilder.addAllFrom(functionCFG)
+        cfgBuilder.addAllFrom(functionCFG, false)
         cfgBuilder.addLink(last, functionCFG.entryTreeRoot!!)
 
         fun modifyReturnNodesToStoreResultInAppropriateRegister(functionCfg: ControlFlowGraph): FunctionCallIntermediateForm {
             val modifiedCfgBuilder = ControlFlowGraphBuilder()
-            modifiedCfgBuilder.addAllFrom(functionCfg)
+            modifiedCfgBuilder.addAllFrom(functionCfg, true)
             modifiedCfgBuilder.updateFinalLinks {
                 val newReturnNode = IntermediateFormTreeNode.RegisterWrite(FUNCTION_RESULT_REGISTER, it.third)
                 listOf(Triple(it.first, it.second, newReturnNode))
@@ -53,8 +53,8 @@ data class FunctionDetailsGenerator(
             return FunctionCallIntermediateForm(cfgBuilder.build(), null)
         return modifyReturnNodesToStoreResultInAppropriateRegister(cfgBuilder.build())
     }
-    fun genPrologue(): ControlFlowGraph {return TODO()}
-    fun genEpilogue(): ControlFlowGraph {return TODO()}
-    fun genRead(variable: Variable, isDirect: Boolean): ControlFlowGraph {return TODO()}
-    fun genWrite(variable: Variable, value: IntermediateFormTreeNode, isDirect: Boolean): ControlFlowGraph {return TODO()}
+    fun genPrologue(): ControlFlowGraph { return TODO() }
+    fun genEpilogue(): ControlFlowGraph { return TODO() }
+    fun genRead(variable: Variable, isDirect: Boolean): ControlFlowGraph { return TODO() }
+    fun genWrite(variable: Variable, value: IntermediateFormTreeNode, isDirect: Boolean): ControlFlowGraph { return TODO() }
 }

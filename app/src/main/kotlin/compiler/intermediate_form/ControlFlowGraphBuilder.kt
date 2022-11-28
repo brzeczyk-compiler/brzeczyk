@@ -2,20 +2,26 @@ package compiler.intermediate_form
 
 import compiler.common.reference_collections.ReferenceHashMap
 
-class ControlFlowGraphBuilder {
+class ControlFlowGraphBuilder(private var entryTreeRoot: IFTNode? = null) {
     private val unconditionalLinks = ReferenceHashMap<IFTNode, IFTNode>()
     private val conditionalTrueLinks = ReferenceHashMap<IFTNode, IFTNode>()
     private val conditionalFalseLinks = ReferenceHashMap<IFTNode, IFTNode>()
     private val treeRoots = ArrayList<IFTNode>()
-    private var entryTreeRoot: IFTNode? = null
     private val finalTreeRoots: List<IFTNode> get() = treeRoots.filter {
         it !in unconditionalLinks && it !in conditionalTrueLinks && it !in conditionalFalseLinks
     }
 
+    init {
+        if (entryTreeRoot != null)
+            addLink(null, entryTreeRoot!!)
+    }
+
     fun addLink(from: Pair<IFTNode, CFGLinkType>?, to: IFTNode) {
         if (from != null) {
-            if (!treeRoots.contains(from.first))
-                treeRoots.add(from.first)
+            for (node in listOf(from.first, to))
+                if (!treeRoots.contains(node))
+                    treeRoots.add(node)
+
             val links = when (from.second) {
                 CFGLinkType.UNCONDITIONAL -> unconditionalLinks
                 CFGLinkType.CONDITIONAL_TRUE -> conditionalTrueLinks
@@ -26,8 +32,10 @@ class ControlFlowGraphBuilder {
             entryTreeRoot = to
     }
 
-    fun addAllFrom(cfg: ControlFlowGraph) {
+    fun addAllFrom(cfg: ControlFlowGraph, modifyEntryTreeRoot: Boolean) {
         treeRoots.addAll(cfg.treeRoots)
+        if (modifyEntryTreeRoot)
+            entryTreeRoot = cfg.entryTreeRoot
         unconditionalLinks.putAll(cfg.unconditionalLinks)
         conditionalTrueLinks.putAll(cfg.conditionalTrueLinks)
         conditionalFalseLinks.putAll(cfg.conditionalFalseLinks)

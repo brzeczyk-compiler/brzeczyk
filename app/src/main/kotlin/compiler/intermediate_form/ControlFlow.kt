@@ -38,7 +38,7 @@ object ControlFlow {
             fun processStatementBlock(block: StatementBlock) {
                 fun addExpression(expression: Expression, variable: Variable?): IFTNode? {
                     val cfg = createGraphForExpression(expression, variable)
-                    cfgBuilder.addAllFrom(cfg)
+                    cfgBuilder.addAllFrom(cfg, true)
 
                     val entry = cfg.entryTreeRoot
 

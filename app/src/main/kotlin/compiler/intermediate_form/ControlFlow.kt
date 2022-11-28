@@ -25,7 +25,8 @@ object ControlFlow {
         variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>,
         callGraph: ReferenceMap<Function, ReferenceSet<Function>>,
         functionDetailsGenerators: ReferenceMap<Function, FunctionDetailsGeneratorInterface>,
-        argumentResolution: ArgumentResolutionResult
+        argumentResolution: ArgumentResolutionResult,
+        defaultParameterValues: ReferenceMap<Function.Parameter, Variable>
     ): ControlFlowGraph {
         return TODO()
     }

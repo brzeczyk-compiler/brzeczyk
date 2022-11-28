@@ -11,11 +11,12 @@ import compiler.common.intermediate_form.mergeCFGsConditionally
 import compiler.common.intermediate_form.mergeCFGsUnconditionally
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceHashSet
-import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.ReferenceSet
+import compiler.common.reference_collections.referenceMapOf
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
 import org.junit.Ignore
 import kotlin.test.Test
+import kotlin.test.assertTrue
 
 class ExpressionControlFlowTest {
 
@@ -88,7 +89,7 @@ class ExpressionControlFlowTest {
         }
 
         fun createCfg(expr: Expression, targetVariable: Variable? = null): ControlFlowGraph {
-            return ControlFlow.createGraphForExpression(expr, targetVariable, currentFunction, nameResolution, variableProperties, finalCallGraph, functionDetailsGenerators, argumentResolution)
+            return ControlFlow.createGraphForExpression(expr, targetVariable, currentFunction, nameResolution, variableProperties, finalCallGraph, functionDetailsGenerators, argumentResolution, referenceMapOf())
         }
     }
 
@@ -186,21 +187,50 @@ class ExpressionControlFlowTest {
         }
 
         if (this.treeRoots.size != cfg.treeRoots.size) return false
-        for (i in 0 until this.treeRoots.size) {
-            if (!(this.treeRoots[i] hasSameStructureAs cfg.treeRoots[i])) return false
-        }
 
-        fun checkLinks(left: ReferenceMap<IntermediateFormTreeNode, IntermediateFormTreeNode>, right: ReferenceMap<IntermediateFormTreeNode, IntermediateFormTreeNode>): Boolean {
-            if (left.size != right.size) return false
-            for ((begin, end) in left) {
-                if (!(right[nodeMap[begin]] === nodeMap[end])) return false
+        fun dfs(left: IntermediateFormTreeNode, right: IntermediateFormTreeNode): Boolean {
+            if (! (left hasSameStructureAs right)) return false
+
+            if (this.unconditionalLinks.containsKey(left)) {
+                if (!cfg.unconditionalLinks.containsKey(right)) return false
+                val leftNext = this.unconditionalLinks[left]!!
+                val rightNext = cfg.unconditionalLinks[right]!!
+                if (nodeMap.containsKey(leftNext)) {
+                    if (!(nodeMap[leftNext]!! === rightNext)) return false
+                } else {
+                    if (!dfs(leftNext, rightNext)) return false
+                }
             }
+
+            if (this.conditionalTrueLinks.containsKey(left)) {
+                if (!cfg.conditionalTrueLinks.containsKey(right)) return false
+                val leftNext = this.conditionalTrueLinks[left]!!
+                val rightNext = cfg.conditionalTrueLinks[right]!!
+                if (nodeMap.containsKey(leftNext)) {
+                    if (!(nodeMap[leftNext]!! === rightNext)) return false
+                } else {
+                    if (!dfs(leftNext, rightNext)) return false
+                }
+            }
+
+            if (this.conditionalFalseLinks.containsKey(left)) {
+                if (!cfg.conditionalFalseLinks.containsKey(right)) return false
+                val leftNext = this.conditionalFalseLinks[left]!!
+                val rightNext = cfg.conditionalFalseLinks[right]!!
+                if (nodeMap.containsKey(leftNext)) {
+                    if (!(nodeMap[leftNext]!! === rightNext)) return false
+                } else {
+                    if (!dfs(leftNext, rightNext)) return false
+                }
+            }
+
             return true
         }
 
-        return checkLinks(this.unconditionalLinks, cfg.unconditionalLinks) &&
-            checkLinks(this.conditionalTrueLinks, cfg.conditionalTrueLinks) &&
-            checkLinks(this.conditionalFalseLinks, cfg.conditionalFalseLinks)
+        return if (this.entryTreeRoot == null)
+            cfg.entryTreeRoot == null
+        else
+            dfs(this.entryTreeRoot!!, cfg.entryTreeRoot!!)
     }
 
     private fun IntermediateFormTreeNode.toCfg(): ControlFlowGraph =
@@ -220,6 +250,59 @@ class ExpressionControlFlowTest {
 
     @Ignore
     @Test
+    fun `basic expressions`() {
+        val context = ExpressionContext(
+            setOf("x", "y")
+        )
+
+        val xExpr = "x" asVarExprIn context
+        val yExpr = "y" asVarExprIn context
+        val xVarRead = IntermediateFormTreeNode.DummyRead("x" asVarIn context, true)
+        val yVarRead = IntermediateFormTreeNode.DummyRead("y" asVarIn context, true)
+
+        val basic = context.createCfg(xExpr)
+        val operatorTests = mapOf(
+
+            Expression.BooleanLiteral(true) to IntermediateFormTreeNode.Const(1),
+            Expression.NumberLiteral(5) to IntermediateFormTreeNode.Const(5),
+
+            Expression.UnaryOperation(Expression.UnaryOperation.Kind.NOT, xExpr) to IntermediateFormTreeNode.LogicalNegation(xVarRead),
+            Expression.UnaryOperation(Expression.UnaryOperation.Kind.BIT_NOT, xExpr) to IntermediateFormTreeNode.BitNegation(xVarRead),
+            Expression.UnaryOperation(Expression.UnaryOperation.Kind.MINUS, xExpr) to IntermediateFormTreeNode.Negation(xVarRead),
+            Expression.UnaryOperation(Expression.UnaryOperation.Kind.PLUS, xExpr) to xVarRead,
+
+            Expression.BinaryOperation(Expression.BinaryOperation.Kind.ADD, xExpr, yExpr) to IntermediateFormTreeNode.Add(xVarRead, yVarRead),
+            Expression.BinaryOperation(Expression.BinaryOperation.Kind.MULTIPLY, xExpr, yExpr) to IntermediateFormTreeNode.Multiply(xVarRead, yVarRead),
+            Expression.BinaryOperation(Expression.BinaryOperation.Kind.DIVIDE, xExpr, yExpr) to IntermediateFormTreeNode.Divide(xVarRead, yVarRead),
+            Expression.BinaryOperation(Expression.BinaryOperation.Kind.SUBTRACT, xExpr, yExpr) to IntermediateFormTreeNode.Subtract(xVarRead, yVarRead),
+            Expression.BinaryOperation(Expression.BinaryOperation.Kind.MODULO, xExpr, yExpr) to IntermediateFormTreeNode.Modulo(xVarRead, yVarRead),
+
+            Expression.BinaryOperation(Expression.BinaryOperation.Kind.BIT_AND, xExpr, yExpr) to IntermediateFormTreeNode.BitAnd(xVarRead, yVarRead),
+            Expression.BinaryOperation(Expression.BinaryOperation.Kind.BIT_OR, xExpr, yExpr) to IntermediateFormTreeNode.BitOr(xVarRead, yVarRead),
+            Expression.BinaryOperation(Expression.BinaryOperation.Kind.BIT_XOR, xExpr, yExpr) to IntermediateFormTreeNode.BitXor(xVarRead, yVarRead),
+            Expression.BinaryOperation(Expression.BinaryOperation.Kind.BIT_SHIFT_LEFT, xExpr, yExpr) to IntermediateFormTreeNode.BitShiftLeft(xVarRead, yVarRead),
+            Expression.BinaryOperation(Expression.BinaryOperation.Kind.BIT_SHIFT_RIGHT, xExpr, yExpr) to IntermediateFormTreeNode.BitShiftRight(xVarRead, yVarRead),
+
+            Expression.BinaryOperation(Expression.BinaryOperation.Kind.XOR, xExpr, yExpr) to IntermediateFormTreeNode.LogicalXor(xVarRead, yVarRead),
+            Expression.BinaryOperation(Expression.BinaryOperation.Kind.IFF, xExpr, yExpr) to IntermediateFormTreeNode.LogicalIff(xVarRead, yVarRead),
+
+            Expression.BinaryOperation(Expression.BinaryOperation.Kind.EQUALS, xExpr, yExpr) to IntermediateFormTreeNode.Equals(xVarRead, yVarRead),
+            Expression.BinaryOperation(Expression.BinaryOperation.Kind.NOT_EQUALS, xExpr, yExpr) to IntermediateFormTreeNode.NotEquals(xVarRead, yVarRead),
+            Expression.BinaryOperation(Expression.BinaryOperation.Kind.LESS_THAN, xExpr, yExpr) to IntermediateFormTreeNode.LessThan(xVarRead, yVarRead),
+            Expression.BinaryOperation(Expression.BinaryOperation.Kind.LESS_THAN_OR_EQUALS, xExpr, yExpr) to IntermediateFormTreeNode.LessThanOrEquals(xVarRead, yVarRead),
+            Expression.BinaryOperation(Expression.BinaryOperation.Kind.GREATER_THAN, xExpr, yExpr) to IntermediateFormTreeNode.GreaterThan(xVarRead, yVarRead),
+            Expression.BinaryOperation(Expression.BinaryOperation.Kind.GREATER_THAN_OR_EQUALS, xExpr, yExpr) to IntermediateFormTreeNode.GreaterThanOrEquals(xVarRead, yVarRead),
+        )
+
+        assertTrue(basic hasSameStructureAs IntermediateFormTreeNode.DummyRead("x" asVarIn context, true).toCfg())
+
+        for ((expr, iftNode) in operatorTests) {
+            assertTrue(context.createCfg(expr) hasSameStructureAs iftNode.toCfg(), expr.toString())
+        }
+    }
+
+    @Ignore
+    @Test
     fun `assignment`() {
         val context = ExpressionContext(
             setOf("x", "y")
@@ -227,7 +310,7 @@ class ExpressionControlFlowTest {
 
         val assignmentCfg = context.createCfg("x" asVarExprIn context, "y" asVarIn context) // y = x
 
-        assert(
+        assertTrue(
             assignmentCfg hasSameStructureAs IntermediateFormTreeNode.DummyWrite("y" asVarIn context, IntermediateFormTreeNode.DummyRead("x" asVarIn context, true), true).toCfg()
         )
     }
@@ -278,14 +361,14 @@ class ExpressionControlFlowTest {
                 add ("f" asFunCallIn context)
         )
 
-        assert(
+        assertTrue(
             basicCall hasSameStructureAs (
                 IntermediateFormTreeNode.DummyCall("f" asFunIn context, emptyList(), callResult)
                     merge IntermediateFormTreeNode.RegisterWrite(r1, callResult)
                     merge IntermediateFormTreeNode.RegisterRead(r1)
                 )
         )
-        assert(
+        assertTrue(
             callAffectingVariable hasSameStructureAs (
                 IntermediateFormTreeNode.RegisterWrite(r1, IntermediateFormTreeNode.DummyRead("x" asVarIn context, true))
                     merge IntermediateFormTreeNode.DummyCall("f" asFunIn context, emptyList(), callResult)
@@ -294,7 +377,7 @@ class ExpressionControlFlowTest {
                 )
         )
 
-        assert(
+        assertTrue(
             callNotAffectingVariable hasSameStructureAs (
                 IntermediateFormTreeNode.DummyCall("g" asFunIn context, emptyList(), callResult)
                     merge IntermediateFormTreeNode.RegisterWrite(r1, callResult)
@@ -302,21 +385,21 @@ class ExpressionControlFlowTest {
                 )
         )
 
-        assert(
+        assertTrue(
             variableAfterAffectingFunction hasSameStructureAs (
                 IntermediateFormTreeNode.DummyCall("f" asFunIn context, emptyList(), callResult)
                     merge IntermediateFormTreeNode.RegisterWrite(r1, callResult)
                     merge IntermediateFormTreeNode.Add(IntermediateFormTreeNode.RegisterRead(r1), IntermediateFormTreeNode.DummyRead("x" asVarIn context, true))
                 )
         )
-        assert(
+        assertTrue(
             variableAfterNotAffectingFunction hasSameStructureAs (
                 IntermediateFormTreeNode.DummyCall("g" asFunIn context, emptyList(), callResult)
                     merge IntermediateFormTreeNode.RegisterWrite(r1, callResult)
                     merge IntermediateFormTreeNode.Add(IntermediateFormTreeNode.RegisterRead(r1), IntermediateFormTreeNode.DummyRead("x" asVarIn context, true))
                 )
         )
-        assert(
+        assertTrue(
             variableOnBothSidesOfFunction hasSameStructureAs (
                 IntermediateFormTreeNode.RegisterWrite(r1, IntermediateFormTreeNode.DummyRead("x" asVarIn context, true))
                     merge IntermediateFormTreeNode.DummyCall("f" asFunIn context, emptyList(), callResult)
@@ -324,7 +407,7 @@ class ExpressionControlFlowTest {
                     merge IntermediateFormTreeNode.Add(IntermediateFormTreeNode.Add(IntermediateFormTreeNode.RegisterRead(r1), IntermediateFormTreeNode.RegisterRead(r2)), IntermediateFormTreeNode.DummyRead("x" asVarIn context, true))
                 )
         )
-        assert(
+        assertTrue(
             multipleUsageBeforeCall hasSameStructureAs (
                 IntermediateFormTreeNode.RegisterWrite(r1, IntermediateFormTreeNode.DummyRead("x" asVarIn context, true))
                     merge IntermediateFormTreeNode.DummyCall("f" asFunIn context, emptyList(), callResult)
@@ -365,7 +448,7 @@ class ExpressionControlFlowTest {
             )
         )
 
-        assert(
+        assertTrue(
             andCfg hasSameStructureAs (
                 mergeCFGsConditionally(
                     IntermediateFormTreeNode.DummyRead("x" asVarIn context, true).toCfg(),
@@ -375,7 +458,7 @@ class ExpressionControlFlowTest {
                     merge IntermediateFormTreeNode.RegisterRead(r1)
                 )
         )
-        assert(
+        assertTrue(
             orCfg hasSameStructureAs (
                 mergeCFGsConditionally(
                     IntermediateFormTreeNode.DummyRead("x" asVarIn context, true).toCfg(),
@@ -385,7 +468,7 @@ class ExpressionControlFlowTest {
                     merge IntermediateFormTreeNode.RegisterRead(r1)
                 )
         )
-        assert(
+        assertTrue(
             ternaryCfg hasSameStructureAs (
                 mergeCFGsConditionally(
                     IntermediateFormTreeNode.DummyRead("x" asVarIn context, true).toCfg(),
@@ -452,7 +535,7 @@ class ExpressionControlFlowTest {
             )
         )
 
-        assert(
+        assertTrue(
             variableInConditional hasSameStructureAs (
                 mergeCFGsConditionally(
                     IntermediateFormTreeNode.DummyRead("x" asVarIn context, true).toCfg(),
@@ -464,7 +547,7 @@ class ExpressionControlFlowTest {
                     merge IntermediateFormTreeNode.Add(IntermediateFormTreeNode.RegisterRead(r1), IntermediateFormTreeNode.RegisterRead(r2))
                 )
         )
-        assert(
+        assertTrue(
             functionCallsInConditional hasSameStructureAs (
                 IntermediateFormTreeNode.RegisterWrite(r1, IntermediateFormTreeNode.DummyRead("x" asVarIn context, true))
                     merge IntermediateFormTreeNode.RegisterWrite(r2, IntermediateFormTreeNode.DummyRead("y" asVarIn context, true))
@@ -493,7 +576,7 @@ class ExpressionControlFlowTest {
                 )
         )
 
-        assert(
+        assertTrue(
             andWithFunction hasSameStructureAs (
                 mergeCFGsConditionally(
                     IntermediateFormTreeNode.DummyRead("x" asVarIn context, true).toCfg(),
@@ -506,7 +589,7 @@ class ExpressionControlFlowTest {
                 )
         )
 
-        assert(
+        assertTrue(
             variableAndFunctionInTernary hasSameStructureAs (
                 mergeCFGsConditionally(
                     IntermediateFormTreeNode.DummyRead("x" asVarIn context, true).toCfg(),
@@ -553,7 +636,7 @@ class ExpressionControlFlowTest {
                 add ("h" withArgs listOf("f" asFunCallIn context) asFunCallIn context)
         )
 
-        assert(
+        assertTrue(
             multipleArguments hasSameStructureAs (
                 IntermediateFormTreeNode.RegisterWrite(r1, IntermediateFormTreeNode.DummyRead("x" asVarIn context, true))
                     merge IntermediateFormTreeNode.DummyCall("f" asFunIn context, emptyList(), callResult1)
@@ -566,7 +649,7 @@ class ExpressionControlFlowTest {
                 )
         )
 
-        assert(
+        assertTrue(
             nestedArguments hasSameStructureAs (
                 IntermediateFormTreeNode.RegisterWrite(r1, IntermediateFormTreeNode.DummyRead("x" asVarIn context, true))
                     merge IntermediateFormTreeNode.DummyCall("f" asFunIn context, emptyList(), callResult1)
@@ -630,7 +713,7 @@ class ExpressionControlFlowTest {
                     )
         )
 
-        assert(
+        assertTrue(
             cfg hasSameStructureAs (
                 IntermediateFormTreeNode.RegisterWrite(r1, IntermediateFormTreeNode.DummyRead("x" asVarIn context, true))
                     merge IntermediateFormTreeNode.DummyCall("f" asFunIn context, emptyList(), callResult1)

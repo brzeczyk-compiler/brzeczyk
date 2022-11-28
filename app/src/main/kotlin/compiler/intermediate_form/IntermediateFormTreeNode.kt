@@ -35,7 +35,7 @@ sealed class IntermediateFormTreeNode {
 
     data class StackPush(val node: IntermediateFormTreeNode) : IntermediateFormTreeNode()
     data class StackPopToRegister(val register: Register) : IntermediateFormTreeNode()
-    data class StackPopToMemory(val address: MemoryAddress) : IntermediateFormTreeNode()
+    data class StackPopToMemory(val address: Addressing) : IntermediateFormTreeNode()
 
     class NoOp : IntermediateFormTreeNode() // For testing
 }

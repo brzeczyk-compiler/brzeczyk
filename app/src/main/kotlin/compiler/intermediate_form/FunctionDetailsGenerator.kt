@@ -146,34 +146,24 @@ data class FunctionDetailsGenerator(
         val cfgBuilder = ControlFlowGraphBuilder()
 
         // abandon stack variables
-        val subRspOffset = IntermediateFormTreeNode.RegisterWrite(
+        val addRspOffset = IntermediateFormTreeNode.RegisterWrite(
             STACK_POINTER_REGISTER,
-            IntermediateFormTreeNode.Subtract(
+            IntermediateFormTreeNode.Add(
                 IntermediateFormTreeNode.RegisterRead(STACK_POINTER_REGISTER),
                 IntermediateFormTreeNode.Const(prologueOffset.toLong())
             )
         )
 
-        cfgBuilder.addLink(null, subRspOffset)
-        var last: Pair<IFTNode, CFGLinkType> = Pair(subRspOffset, CFGLinkType.UNCONDITIONAL)
+        cfgBuilder.addLink(null, addRspOffset)
+        var last: Pair<IFTNode, CFGLinkType> = Pair(addRspOffset, CFGLinkType.UNCONDITIONAL)
 
         // restore previous rbp in display at depth
-        val movRspDisplay = IntermediateFormTreeNode.MemoryWrite(
+        val popPreviousRbp = IntermediateFormTreeNode.StackPopToMemory(
             Addressing.Displacement(displayAddress + memoryUnitSize * depth),
-            IntermediateFormTreeNode.MemoryRead(Addressing.IndexAndDisplacement(STACK_POINTER_REGISTER, 1U, 0u))
-        )
-        val decrementRsp = IntermediateFormTreeNode.RegisterWrite(
-            STACK_POINTER_REGISTER,
-            IntermediateFormTreeNode.Subtract(
-                IntermediateFormTreeNode.RegisterRead(STACK_POINTER_REGISTER),
-                IntermediateFormTreeNode.Const(memoryUnitSize.toLong())
-            )
         )
 
-        cfgBuilder.addLink(last, movRspDisplay)
-        last = Pair(movRspDisplay, CFGLinkType.UNCONDITIONAL)
-        cfgBuilder.addLink(last, decrementRsp)
-        last = Pair(decrementRsp, CFGLinkType.UNCONDITIONAL)
+        cfgBuilder.addLink(last, popPreviousRbp)
+        last = Pair(popPreviousRbp, CFGLinkType.UNCONDITIONAL)
 
         // restore variable display info
         for (variable in variablesLocationTypes.filter { entry -> entry.value == VariableLocationType.MEMORY }.keys)

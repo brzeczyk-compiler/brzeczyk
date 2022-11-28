@@ -9,6 +9,7 @@ import compiler.ast.StatementBlock
 import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic.ControlFlowDiagnostic
 import compiler.common.diagnostics.Diagnostics
+import compiler.common.intermediate_form.FunctionDetailsGeneratorInterface
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.ReferenceSet
@@ -23,7 +24,7 @@ object ControlFlow {
         nameResolution: ReferenceMap<Any, NamedNode>,
         variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>,
         callGraph: ReferenceMap<Function, ReferenceSet<Function>>,
-        functionDetailsGenerators: ReferenceMap<Function, FunctionDetailsGenerator>,
+        functionDetailsGenerators: ReferenceMap<Function, FunctionDetailsGeneratorInterface>,
         argumentResolution: ArgumentResolutionResult
     ): ControlFlowGraph {
         return TODO()

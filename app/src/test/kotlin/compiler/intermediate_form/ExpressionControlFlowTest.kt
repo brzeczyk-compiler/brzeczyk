@@ -5,6 +5,7 @@ import compiler.ast.Function
 import compiler.ast.NamedNode
 import compiler.ast.Type
 import compiler.ast.Variable
+import compiler.common.intermediate_form.FunctionDetailsGeneratorInterface
 import compiler.common.intermediate_form.addTreeToCFG
 import compiler.common.intermediate_form.mergeCFGsConditionally
 import compiler.common.intermediate_form.mergeCFGsUnconditionally
@@ -18,13 +19,21 @@ import kotlin.test.Test
 
 class ExpressionControlFlowTest {
 
-    private class TestFunctionDetailsGenerator(val function: Function) : FunctionDetailsGenerator(0, emptyMap(), emptyList()) {
-        override fun generateCall(args: List<IntermediateFormTreeNode>): FunctionCallIntermediateForm {
+    private class TestFunctionDetailsGenerator(val function: Function) : FunctionDetailsGeneratorInterface {
+        override fun generateCall(args: List<IntermediateFormTreeNode>): FunctionDetailsGeneratorInterface.FunctionCallIntermediateForm {
             val callResult = IntermediateFormTreeNode.DummyCallResult()
-            return FunctionCallIntermediateForm(
+            return FunctionDetailsGeneratorInterface.FunctionCallIntermediateForm(
                 addTreeToCFG(null, IntermediateFormTreeNode.DummyCall(function, args, callResult)),
                 callResult
             )
+        }
+
+        override fun genPrologue(): ControlFlowGraph {
+            throw NotImplementedError()
+        }
+
+        override fun genEpilogue(): ControlFlowGraph {
+            throw NotImplementedError()
         }
 
         override fun genRead(variable: Variable, isDirect: Boolean): IntermediateFormTreeNode {
@@ -46,7 +55,7 @@ class ExpressionControlFlowTest {
         val nameResolution: ReferenceHashMap<Any, NamedNode> = ReferenceHashMap()
         val nameToVarMap = HashMap<String, Variable>()
         val nameToFunMap = HashMap<String, Function>()
-        val functionDetailsGenerators = ReferenceHashMap<Function, FunctionDetailsGenerator>()
+        val functionDetailsGenerators = ReferenceHashMap<Function, FunctionDetailsGeneratorInterface>()
         val variableProperties = ReferenceHashMap<Any, VariablePropertiesAnalyzer.VariableProperties>()
         val finalCallGraph: ReferenceHashMap<Function, ReferenceSet<Function>> = ReferenceHashMap()
         val argumentResolution: ReferenceHashMap<Expression.FunctionCall.Argument, Function.Parameter> = ReferenceHashMap()

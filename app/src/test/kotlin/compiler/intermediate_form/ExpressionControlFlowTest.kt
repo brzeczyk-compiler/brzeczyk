@@ -10,9 +10,9 @@ import compiler.common.intermediate_form.addTreeToCFG
 import compiler.common.intermediate_form.mergeCFGsConditionally
 import compiler.common.intermediate_form.mergeCFGsUnconditionally
 import compiler.common.reference_collections.ReferenceHashMap
-import compiler.common.reference_collections.ReferenceHashSet
 import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.referenceMapOf
+import compiler.common.reference_collections.referenceSetOf
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
 import org.junit.Ignore
 import kotlin.test.Test
@@ -48,48 +48,57 @@ class ExpressionControlFlowTest {
 
     private class ExpressionContext(
         varNames: Set<String>,
-        functions: Map<String, List<Type>> = emptyMap(), // first element is return type
+        functions: Map<String, Pair<Type, List<Type>>> = emptyMap(), // first element is return type
         funToAffectedVar: Map<String, Set<String>> = emptyMap(),
         val currentFunction: Function = Function("dummy", emptyList(), Type.Unit, emptyList()),
         val callGraph: ReferenceHashMap<String, ReferenceSet<String>> = ReferenceHashMap()
     ) {
         val nameResolution: ReferenceHashMap<Any, NamedNode> = ReferenceHashMap()
-        val nameToVarMap = HashMap<String, Variable>()
-        val nameToFunMap = HashMap<String, Function>()
+        var nameToVarMap: Map<String, Variable>
+        var nameToFunMap: Map<String, Function>
         val functionDetailsGenerators = ReferenceHashMap<Function, FunctionDetailsGeneratorInterface>()
         val variableProperties = ReferenceHashMap<Any, VariablePropertiesAnalyzer.VariableProperties>()
         val finalCallGraph: ReferenceHashMap<Function, ReferenceSet<Function>> = ReferenceHashMap()
         val argumentResolution: ReferenceHashMap<Expression.FunctionCall.Argument, Function.Parameter> = ReferenceHashMap()
 
         init {
+            nameToVarMap = varNames.associateWith { Variable(Variable.Kind.VARIABLE, it, Type.Number, null) }
             for (name in varNames) {
-                nameToVarMap[name] = Variable(Variable.Kind.VARIABLE, name, Type.Number, null)
                 variableProperties[nameToVarMap[name]!!] = VariablePropertiesAnalyzer.VariableProperties(currentFunction, mutableSetOf(), mutableSetOf())
             }
-            for (name in functions.keys) {
-                nameToFunMap[name] = Function(
-                    name,
-                    functions[name]!!.subList(1, functions[name]!!.size).map { Function.Parameter("", it, null) },
-                    functions[name]!![0],
+            nameToFunMap = functions.keys.associateWith {
+                Function(
+                    it,
+                    functions[it]!!.second.map { Function.Parameter("", it, null) },
+                    functions[it]!!.first,
                     emptyList()
                 )
-
-                val referenceHashSet = ReferenceHashSet<Function>()
-                referenceHashSet.add(nameToFunMap[name]!!)
-                finalCallGraph[nameToFunMap[name]!!] = referenceHashSet
+            }
+            for (name in functions.keys) {
+                finalCallGraph[nameToFunMap[name]!!] = referenceSetOf(nameToFunMap[name]!!)
             }
             for (function in nameToFunMap.values union setOf(currentFunction)) {
                 functionDetailsGenerators[function] = TestFunctionDetailsGenerator(function)
             }
-            for (entry in funToAffectedVar) {
-                for (variable in entry.value) {
-                    variableProperties[nameToVarMap[variable]]!!.writtenIn.add(nameToFunMap[entry.key]!!)
+            funToAffectedVar.forEach {
+                for (variable in it.value) {
+                    variableProperties[nameToVarMap[variable]]!!.writtenIn.add(nameToFunMap[it.key]!!)
                 }
             }
         }
 
         fun createCfg(expr: Expression, targetVariable: Variable? = null): ControlFlowGraph {
-            return ControlFlow.createGraphForExpression(expr, targetVariable, currentFunction, nameResolution, variableProperties, finalCallGraph, functionDetailsGenerators, argumentResolution, referenceMapOf())
+            return ControlFlow.createGraphForExpression(
+                expr,
+                targetVariable,
+                currentFunction,
+                nameResolution,
+                variableProperties,
+                finalCallGraph,
+                functionDetailsGenerators,
+                argumentResolution,
+                referenceMapOf()
+            )
         }
     }
 
@@ -145,7 +154,7 @@ class ExpressionControlFlowTest {
         val callResultsMap = ReferenceHashMap<IntermediateFormTreeNode.DummyCallResult, IntermediateFormTreeNode.DummyCallResult>()
         val nodeMap = ReferenceHashMap<IntermediateFormTreeNode, IntermediateFormTreeNode>()
 
-        fun <T> ReferenceHashMap<T, T>.isBijection(a: T, b: T): Boolean {
+        fun <T> ReferenceHashMap<T, T>.ensurePairSymmetrical(a: T, b: T): Boolean {
             if (!this.containsKey(a)) {
                 this[a] = b
                 return true
@@ -155,7 +164,7 @@ class ExpressionControlFlowTest {
 
         infix fun IntermediateFormTreeNode.hasSameStructureAs(iftNode: IntermediateFormTreeNode): Boolean {
             if (this::class != iftNode::class) return false
-            if (!(nodeMap.isBijection(this, iftNode))) return false
+            if (!(nodeMap.ensurePairSymmetrical(this, iftNode))) return false
             return when (this) {
                 is IntermediateFormTreeNode.BinaryOperator -> {
                     (this.left hasSameStructureAs (iftNode as IntermediateFormTreeNode.BinaryOperator).left) &&
@@ -169,17 +178,17 @@ class ExpressionControlFlowTest {
                 is IntermediateFormTreeNode.DummyCall -> {
                     if (this.function != (iftNode as IntermediateFormTreeNode.DummyCall).function) return false
                     if (this.args.size != iftNode.args.size) return false
-                    for (i in 0 until this.args.size) {
-                        if (!nodeMap.isBijection(this.args[i], iftNode.args[i])) return false
+                    (this.args zip iftNode.args).forEach {
+                        if (!nodeMap.ensurePairSymmetrical(it.first, it.second)) return false
                     }
                     return this.callResult hasSameStructureAs iftNode.callResult
                 }
 
-                is IntermediateFormTreeNode.DummyCallResult -> callResultsMap.isBijection(this, iftNode as IntermediateFormTreeNode.DummyCallResult)
-                is IntermediateFormTreeNode.DummyWrite -> (this.variable == (iftNode as IntermediateFormTreeNode.DummyWrite).variable) && (this.isDirect == iftNode.isDirect) && (nodeMap.isBijection(this.value, iftNode.value))
+                is IntermediateFormTreeNode.DummyCallResult -> callResultsMap.ensurePairSymmetrical(this, iftNode as IntermediateFormTreeNode.DummyCallResult)
+                is IntermediateFormTreeNode.DummyWrite -> (this.variable == (iftNode as IntermediateFormTreeNode.DummyWrite).variable) && (this.isDirect == iftNode.isDirect) && (nodeMap.ensurePairSymmetrical(this.value, iftNode.value))
                 is IntermediateFormTreeNode.MemoryWrite -> (this.address == (iftNode as IntermediateFormTreeNode.MemoryWrite).address) && (this.node hasSameStructureAs iftNode.node)
-                is IntermediateFormTreeNode.RegisterWrite -> registersMap.isBijection(this.register, (iftNode as IntermediateFormTreeNode.RegisterWrite).register) && (this.node hasSameStructureAs iftNode.node)
-                is IntermediateFormTreeNode.RegisterRead -> registersMap.isBijection(this.register, (iftNode as IntermediateFormTreeNode.RegisterRead).register)
+                is IntermediateFormTreeNode.RegisterWrite -> registersMap.ensurePairSymmetrical(this.register, (iftNode as IntermediateFormTreeNode.RegisterWrite).register) && (this.node hasSameStructureAs iftNode.node)
+                is IntermediateFormTreeNode.RegisterRead -> registersMap.ensurePairSymmetrical(this.register, (iftNode as IntermediateFormTreeNode.RegisterRead).register)
                 else -> {
                     this == iftNode
                 }
@@ -321,8 +330,8 @@ class ExpressionControlFlowTest {
         val context = ExpressionContext(
             setOf("x"),
             mapOf(
-                "f" to listOf(Type.Number),
-                "g" to listOf(Type.Number)
+                "f" to Pair(Type.Number, emptyList()),
+                "g" to Pair(Type.Number, emptyList())
             ),
             mapOf(
                 "f" to setOf("x")
@@ -334,39 +343,17 @@ class ExpressionControlFlowTest {
         val callResult = IntermediateFormTreeNode.DummyCallResult()
 
         val basicCall = context.createCfg("f" asFunCallIn context) // f()
-        val callAffectingVariable = context.createCfg( // x + f(), f affects x
-            ("x" asVarExprIn context)
-                add ("f" asFunCallIn context)
-        )
-        val callNotAffectingVariable = context.createCfg( // x + g(), g does not affect x
-            ("x" asVarExprIn context)
-                add ("g" asFunCallIn context)
-        )
-        val variableAfterAffectingFunction = context.createCfg( // f() + x, f affects x
-            ("f" asFunCallIn context)
-                add ("x" asVarExprIn context)
-        )
-        val variableAfterNotAffectingFunction = context.createCfg( // g() + x, g does not affect x
-            ("g" asFunCallIn context)
-                add ("x" asVarExprIn context)
-        )
-        val variableOnBothSidesOfFunction = context.createCfg( // x + f() + x
-            ("x" asVarExprIn context)
-                add ("f" asFunCallIn context)
-                add ("x" asVarExprIn context)
-        )
-        val multipleUsageBeforeCall = context.createCfg( // x + x + f()
-            ("x" asVarExprIn context)
-                add ("x" asVarExprIn context)
-                add ("f" asFunCallIn context)
-        )
-
         assertTrue(
             basicCall hasSameStructureAs (
                 IntermediateFormTreeNode.DummyCall("f" asFunIn context, emptyList(), callResult)
                     merge IntermediateFormTreeNode.RegisterWrite(r1, callResult)
                     merge IntermediateFormTreeNode.RegisterRead(r1)
                 )
+        )
+
+        val callAffectingVariable = context.createCfg( // x + f(), f affects x
+            ("x" asVarExprIn context)
+                add ("f" asFunCallIn context)
         )
         assertTrue(
             callAffectingVariable hasSameStructureAs (
@@ -377,6 +364,10 @@ class ExpressionControlFlowTest {
                 )
         )
 
+        val callNotAffectingVariable = context.createCfg( // x + g(), g does not affect x
+            ("x" asVarExprIn context)
+                add ("g" asFunCallIn context)
+        )
         assertTrue(
             callNotAffectingVariable hasSameStructureAs (
                 IntermediateFormTreeNode.DummyCall("g" asFunIn context, emptyList(), callResult)
@@ -385,12 +376,21 @@ class ExpressionControlFlowTest {
                 )
         )
 
+        val variableAfterAffectingFunction = context.createCfg( // f() + x, f affects x
+            ("f" asFunCallIn context)
+                add ("x" asVarExprIn context)
+        )
         assertTrue(
             variableAfterAffectingFunction hasSameStructureAs (
                 IntermediateFormTreeNode.DummyCall("f" asFunIn context, emptyList(), callResult)
                     merge IntermediateFormTreeNode.RegisterWrite(r1, callResult)
                     merge IntermediateFormTreeNode.Add(IntermediateFormTreeNode.RegisterRead(r1), IntermediateFormTreeNode.DummyRead("x" asVarIn context, true))
                 )
+        )
+
+        val variableAfterNotAffectingFunction = context.createCfg( // g() + x, g does not affect x
+            ("g" asFunCallIn context)
+                add ("x" asVarExprIn context)
         )
         assertTrue(
             variableAfterNotAffectingFunction hasSameStructureAs (
@@ -399,6 +399,12 @@ class ExpressionControlFlowTest {
                     merge IntermediateFormTreeNode.Add(IntermediateFormTreeNode.RegisterRead(r1), IntermediateFormTreeNode.DummyRead("x" asVarIn context, true))
                 )
         )
+
+        val variableOnBothSidesOfFunction = context.createCfg( // x + f() + x, f -> x
+            ("x" asVarExprIn context)
+                add ("f" asFunCallIn context)
+                add ("x" asVarExprIn context)
+        )
         assertTrue(
             variableOnBothSidesOfFunction hasSameStructureAs (
                 IntermediateFormTreeNode.RegisterWrite(r1, IntermediateFormTreeNode.DummyRead("x" asVarIn context, true))
@@ -406,6 +412,12 @@ class ExpressionControlFlowTest {
                     merge IntermediateFormTreeNode.RegisterWrite(r2, callResult)
                     merge IntermediateFormTreeNode.Add(IntermediateFormTreeNode.Add(IntermediateFormTreeNode.RegisterRead(r1), IntermediateFormTreeNode.RegisterRead(r2)), IntermediateFormTreeNode.DummyRead("x" asVarIn context, true))
                 )
+        )
+
+        val multipleUsageBeforeCall = context.createCfg( // x + x + f(), f -> x
+            ("x" asVarExprIn context)
+                add ("x" asVarExprIn context)
+                add ("f" asFunCallIn context)
         )
         assertTrue(
             multipleUsageBeforeCall hasSameStructureAs (
@@ -436,18 +448,6 @@ class ExpressionControlFlowTest {
             ("x" asVarExprIn context)
                 and ("y" asVarExprIn context)
         )
-        val orCfg = context.createCfg( // x lub y
-            ("x" asVarExprIn context)
-                or ("y" asVarExprIn context)
-        )
-        val ternaryCfg = context.createCfg( // x ? y : z
-            ternary(
-                "x" asVarExprIn context,
-                "y" asVarExprIn context,
-                "z" asVarExprIn context
-            )
-        )
-
         assertTrue(
             andCfg hasSameStructureAs (
                 mergeCFGsConditionally(
@@ -458,6 +458,11 @@ class ExpressionControlFlowTest {
                     merge IntermediateFormTreeNode.RegisterRead(r1)
                 )
         )
+
+        val orCfg = context.createCfg( // x lub y
+            ("x" asVarExprIn context)
+                or ("y" asVarExprIn context)
+        )
         assertTrue(
             orCfg hasSameStructureAs (
                 mergeCFGsConditionally(
@@ -467,6 +472,14 @@ class ExpressionControlFlowTest {
                 )
                     merge IntermediateFormTreeNode.RegisterRead(r1)
                 )
+        )
+
+        val ternaryCfg = context.createCfg( // x ? y : z
+            ternary(
+                "x" asVarExprIn context,
+                "y" asVarExprIn context,
+                "z" asVarExprIn context
+            )
         )
         assertTrue(
             ternaryCfg hasSameStructureAs (
@@ -486,9 +499,9 @@ class ExpressionControlFlowTest {
         val context = ExpressionContext(
             setOf("x", "y", "z"),
             mapOf(
-                "f" to listOf(Type.Number),
-                "g" to listOf(Type.Number),
-                "h" to listOf(Type.Number),
+                "f" to Pair(Type.Number, emptyList()),
+                "g" to Pair(Type.Number, emptyList()),
+                "h" to Pair(Type.Number, emptyList()),
             ),
             mapOf(
                 "f" to setOf("x"),
@@ -515,26 +528,6 @@ class ExpressionControlFlowTest {
                 "x" asVarExprIn context
             ) add ("f" asFunCallIn context)
         )
-        val functionCallsInConditional = context.createCfg( // x + y + z + ( f() ? g() : h() ), f -> x, g -> y, h -> z
-            ("x" asVarExprIn context) add ("y" asVarExprIn context) add ("z" asVarExprIn context) add
-                ternary(
-                    "f" asFunCallIn context,
-                    "g" asFunCallIn context,
-                    "h" asFunCallIn context,
-                )
-        )
-        val andWithFunction = context.createCfg( // x oraz f(), f -> x
-            ("x" asVarExprIn context)
-                and ("f" asFunCallIn context)
-        )
-        val variableAndFunctionInTernary = context.createCfg( // x ? x : f(), f -> x
-            ternary(
-                "x" asVarExprIn context,
-                "x" asVarExprIn context,
-                "f" asFunCallIn context
-            )
-        )
-
         assertTrue(
             variableInConditional hasSameStructureAs (
                 mergeCFGsConditionally(
@@ -545,6 +538,15 @@ class ExpressionControlFlowTest {
                     merge IntermediateFormTreeNode.DummyCall("f" asFunIn context, emptyList(), callResult1)
                     merge IntermediateFormTreeNode.RegisterWrite(r2, callResult1)
                     merge IntermediateFormTreeNode.Add(IntermediateFormTreeNode.RegisterRead(r1), IntermediateFormTreeNode.RegisterRead(r2))
+                )
+        )
+
+        val functionCallsInConditional = context.createCfg( // x + y + z + ( f() ? g() : h() ), f -> x, g -> y, h -> z
+            ("x" asVarExprIn context) add ("y" asVarExprIn context) add ("z" asVarExprIn context) add
+                ternary(
+                    "f" asFunCallIn context,
+                    "g" asFunCallIn context,
+                    "h" asFunCallIn context,
                 )
         )
         assertTrue(
@@ -576,6 +578,10 @@ class ExpressionControlFlowTest {
                 )
         )
 
+        val andWithFunction = context.createCfg( // x oraz f(), f -> x
+            ("x" asVarExprIn context)
+                and ("f" asFunCallIn context)
+        )
         assertTrue(
             andWithFunction hasSameStructureAs (
                 mergeCFGsConditionally(
@@ -589,6 +595,13 @@ class ExpressionControlFlowTest {
                 )
         )
 
+        val variableAndFunctionInTernary = context.createCfg( // x ? x : f(), f -> x
+            ternary(
+                "x" asVarExprIn context,
+                "x" asVarExprIn context,
+                "f" asFunCallIn context
+            )
+        )
         assertTrue(
             variableAndFunctionInTernary hasSameStructureAs (
                 mergeCFGsConditionally(
@@ -609,9 +622,9 @@ class ExpressionControlFlowTest {
         val context = ExpressionContext(
             setOf("x"),
             mapOf(
-                "f" to listOf(Type.Number),
-                "g" to listOf(Type.Number, Type.Number, Type.Number),
-                "h" to listOf(Type.Number, Type.Number),
+                "f" to Pair(Type.Number, emptyList()),
+                "g" to Pair(Type.Number, listOf(Type.Number, Type.Number)),
+                "h" to Pair(Type.Number, listOf(Type.Number)),
             ),
             mapOf(
                 "f" to setOf("x")
@@ -631,11 +644,6 @@ class ExpressionControlFlowTest {
             "g" withArgs listOf("x" asVarExprIn context, "f" asFunCallIn context)
                 asFunCallIn context
         )
-        val nestedArguments = context.createCfg( // x + h(f()), f -> x
-            ("x" asVarExprIn context)
-                add ("h" withArgs listOf("f" asFunCallIn context) asFunCallIn context)
-        )
-
         assertTrue(
             multipleArguments hasSameStructureAs (
                 IntermediateFormTreeNode.RegisterWrite(r1, IntermediateFormTreeNode.DummyRead("x" asVarIn context, true))
@@ -649,6 +657,10 @@ class ExpressionControlFlowTest {
                 )
         )
 
+        val nestedArguments = context.createCfg( // x + h(f()), f -> x
+            ("x" asVarExprIn context)
+                add ("h" withArgs listOf("f" asFunCallIn context) asFunCallIn context)
+        )
         assertTrue(
             nestedArguments hasSameStructureAs (
                 IntermediateFormTreeNode.RegisterWrite(r1, IntermediateFormTreeNode.DummyRead("x" asVarIn context, true))
@@ -668,9 +680,9 @@ class ExpressionControlFlowTest {
         val context = ExpressionContext(
             setOf("x", "y", "a", "b"),
             mapOf(
-                "f" to listOf(Type.Number),
-                "g" to listOf(Type.Number, Type.Number, Type.Number),
-                "h" to listOf(Type.Number),
+                "f" to Pair(Type.Number, emptyList()),
+                "g" to Pair(Type.Number, listOf(Type.Number, Type.Number)),
+                "h" to Pair(Type.Number, emptyList()),
             ),
             mapOf(
                 "f" to setOf("x"),
@@ -693,7 +705,7 @@ class ExpressionControlFlowTest {
         val read3 = IntermediateFormTreeNode.RegisterRead(r3)
         val read4 = IntermediateFormTreeNode.RegisterRead(r4)
 
-        val cfg = context.createCfg( //   x + ( g( a + f() , b ) + ( ( b + x ) + ( h() ? x : y ) ) )
+        val cfg = context.createCfg( //   x + ( g( a + f() , b ) + ( ( b + x ) + ( h() ? x : y ) ) ), f -> x, h -> b
             ("x" asVarExprIn context)
                 add (
                     (

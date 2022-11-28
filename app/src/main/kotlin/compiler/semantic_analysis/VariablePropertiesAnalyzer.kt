@@ -15,7 +15,6 @@ import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceHashSet
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.ReferenceSet
-import compiler.common.reference_collections.referenceElements
 import compiler.common.reference_collections.referenceEntries
 import compiler.common.reference_collections.referenceMapOf
 import compiler.common.reference_collections.referenceSetOf
@@ -25,13 +24,7 @@ object VariablePropertiesAnalyzer {
         var owner: Function? = null,
         val accessedIn: ReferenceSet<Function> = referenceSetOf(),
         val writtenIn: ReferenceSet<Function> = referenceSetOf(),
-    ) {
-        override fun equals(other: Any?): Boolean =
-            other is VariableProperties &&
-                this.owner === other.owner &&
-                this.accessedIn.referenceElements == other.accessedIn.referenceElements &&
-                this.writtenIn.referenceElements == other.writtenIn.referenceElements
-    }
+    )
 
     data class MutableVariableProperties(
         var owner: Function? = null,

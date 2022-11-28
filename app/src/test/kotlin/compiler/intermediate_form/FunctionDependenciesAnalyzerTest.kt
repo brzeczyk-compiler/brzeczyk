@@ -7,27 +7,12 @@ import compiler.ast.Statement
 import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.common.reference_collections.ReferenceMap
-import compiler.common.reference_collections.ReferenceSet
-import compiler.common.reference_collections.referenceElements
-import compiler.common.reference_collections.referenceKeys
 import compiler.common.reference_collections.referenceMapOf
 import compiler.common.reference_collections.referenceSetOf
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class FunctionDependenciesAnalyzerTest {
-
-    private fun assertContentEquals(
-        expected: ReferenceMap<Function, ReferenceSet<Function>>,
-        actual: ReferenceMap<Function, ReferenceSet<Function>>
-    ) {
-        assertEquals(expected.referenceKeys.size, actual.referenceKeys.size)
-        expected.referenceKeys.forEach {
-            assertTrue(it in actual.referenceKeys)
-            assertEquals(expected[it]!!.referenceElements, actual[it]!!.referenceElements)
-        }
-    }
 
     @Test fun `test a function that does not call`() {
         /*
@@ -51,7 +36,7 @@ class FunctionDependenciesAnalyzerTest {
             fFunction to referenceSetOf<Function>(),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test a function that calls another function`() {
@@ -84,7 +69,7 @@ class FunctionDependenciesAnalyzerTest {
             gFunction to referenceSetOf(fFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test inner functions`() {
@@ -126,7 +111,7 @@ class FunctionDependenciesAnalyzerTest {
             hFunction to referenceSetOf(gFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test recursion`() {
@@ -154,7 +139,7 @@ class FunctionDependenciesAnalyzerTest {
             fFunction to referenceSetOf(fFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test transitivity`() {
@@ -198,7 +183,7 @@ class FunctionDependenciesAnalyzerTest {
             hFunction to referenceSetOf(fFunction, gFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test a cycle`() {
@@ -257,7 +242,7 @@ class FunctionDependenciesAnalyzerTest {
             iFunction to referenceSetOf(fFunction, gFunction, hFunction, iFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test buried recursion`() {
@@ -328,7 +313,7 @@ class FunctionDependenciesAnalyzerTest {
             iFunction to referenceSetOf(fFunction, gFunction, hFunction, iFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test operators`() {
@@ -407,7 +392,7 @@ class FunctionDependenciesAnalyzerTest {
             testFunction to referenceSetOf(fFunction, gFunction, hFunction, iFunction, jFunction, kFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test variable definition and assignment`() {
@@ -467,7 +452,7 @@ class FunctionDependenciesAnalyzerTest {
             testFunction to referenceSetOf(fFunction, gFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test control flow`() {
@@ -567,7 +552,7 @@ class FunctionDependenciesAnalyzerTest {
             testFunction to referenceSetOf(fFunction, gFunction, hFunction, iFunction, jFunction, kFunction, lFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test arguments`() {
@@ -658,7 +643,7 @@ class FunctionDependenciesAnalyzerTest {
             testFunction to referenceSetOf(fFunction, gFunction, hFunction, iFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test default arguments`() {
@@ -711,7 +696,7 @@ class FunctionDependenciesAnalyzerTest {
             testFunction to referenceSetOf(fFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test comparison by reference`() {
@@ -770,7 +755,7 @@ class FunctionDependenciesAnalyzerTest {
             pgFunction to referenceSetOf(),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test comparison by reference - sets`() {
@@ -846,6 +831,6 @@ class FunctionDependenciesAnalyzerTest {
             testFunction to referenceSetOf(fFunction, gFunction, pfFunction, pgFunction)
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 }

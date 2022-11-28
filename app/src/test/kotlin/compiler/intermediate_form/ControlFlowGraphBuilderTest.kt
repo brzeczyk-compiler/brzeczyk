@@ -61,14 +61,24 @@ class ControlFlowGraphBuilderTest {
     }
 
     @Test
-    fun `test updateFinalLinks`() {
-        val cfgBuilder = ControlFlowGraphBuilder(entryNode)
-        cfgBuilder.addLink(Pair(entryNode, CFGLinkType.UNCONDITIONAL), secondNode)
-        cfgBuilder.updateFinalLinks {
-            listOf(
-                Triple(it.first, CFGLinkType.CONDITIONAL_TRUE, conditionalTrueNode),
-                Triple(it.first, CFGLinkType.CONDITIONAL_FALSE, conditionalFalseNode),
+    fun `test updateNodes`() {
+        val cfgBuilder = ControlFlowGraphBuilder()
+        cfgBuilder.addAllFrom(expectedCFG, true)
+        val register = Register()
+        val secondNodeModified = IntermediateFormTreeNode.RegisterWrite(register, secondNode)
+        cfgBuilder.updateNodes({ it == secondNode }, {
+            secondNodeModified
+        })
+
+        assertEquals(
+            actual = cfgBuilder.build(),
+            expected = ControlFlowGraph(
+                treeRoots = listOf(entryNode, secondNodeModified, conditionalFalseNode, conditionalTrueNode),
+                entryTreeRoot = entryNode,
+                unconditionalLinks = referenceMapOf(entryNode to secondNodeModified),
+                conditionalTrueLinks = referenceMapOf(secondNodeModified to conditionalTrueNode),
+                conditionalFalseLinks = referenceMapOf(secondNodeModified to conditionalFalseNode)
             )
-        }
+        )
     }
 }

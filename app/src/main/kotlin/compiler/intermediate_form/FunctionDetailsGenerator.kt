@@ -22,7 +22,6 @@ data class FunctionDetailsGenerator(
         val cfgBuilder = ControlFlowGraphBuilder()
 
         var last: Pair<IFTNode, CFGLinkType>? = null
-
         // write arg values to params
         for ((arg, param) in args zip parameters) {
             val node = genWrite(param, arg, true)
@@ -38,10 +37,9 @@ data class FunctionDetailsGenerator(
         fun modifyReturnNodesToStoreResultInAppropriateRegister(functionCfg: ControlFlowGraph): FunctionCallIntermediateForm {
             val modifiedCfgBuilder = ControlFlowGraphBuilder()
             modifiedCfgBuilder.addAllFrom(functionCfg, true)
-            modifiedCfgBuilder.updateFinalLinks {
-                val newReturnNode = IntermediateFormTreeNode.RegisterWrite(FUNCTION_RESULT_REGISTER, it.third)
-                listOf(Triple(it.first, it.second, newReturnNode))
-            }
+            modifiedCfgBuilder.updateNodes({ it in functionCfg.finalTreeRoots }, {
+                IntermediateFormTreeNode.RegisterWrite(FUNCTION_RESULT_REGISTER, it)
+            })
 
             return FunctionCallIntermediateForm(
                 modifiedCfgBuilder.build(),

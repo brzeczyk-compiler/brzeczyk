@@ -294,47 +294,26 @@ object ControlFlow {
         val controlFlowGraphs = ReferenceHashMap<Function, ControlFlowGraph>()
 
         fun processFunction(function: Function) {
-            val treeRoots = mutableListOf<IFTNode>()
-            var entryTreeRoot: IFTNode? = null
-            val unconditionalLinks = ReferenceHashMap<IFTNode, IFTNode>()
-            val conditionalTrueLinks = ReferenceHashMap<IFTNode, IFTNode>()
-            val conditionalFalseLinks = ReferenceHashMap<IFTNode, IFTNode>()
+            val cfgBuilder = ControlFlowGraphBuilder()
 
-            fun link(from: Pair<IFTNode, LinkType>?, to: IFTNode) {
-                if (from != null) {
-                    val links = when (from.second) {
-                        LinkType.UNCONDITIONAL -> unconditionalLinks
-                        LinkType.CONDITIONAL_TRUE -> conditionalTrueLinks
-                        LinkType.CONDITIONAL_FALSE -> conditionalFalseLinks
-                    }
+            fun mapLinkType(list: List<Pair<IFTNode, CFGLinkType>?>, type: CFGLinkType) = list.map { it?.copy(second = type) }
 
-                    links[from.first] = to
-                } else
-                    entryTreeRoot = to
-            }
-
-            fun mapLinkType(list: List<Pair<IFTNode, LinkType>?>, type: LinkType) = list.map { it?.copy(second = type) }
-
-            var last = listOf<Pair<IFTNode, LinkType>?>(null)
-            var breaking: MutableList<Pair<IFTNode, LinkType>?>? = null
-            var continuing: MutableList<Pair<IFTNode, LinkType>?>? = null
+            var last = listOf<Pair<IFTNode, CFGLinkType>?>(null)
+            var breaking: MutableList<Pair<IFTNode, CFGLinkType>?>? = null
+            var continuing: MutableList<Pair<IFTNode, CFGLinkType>?>? = null
 
             fun processStatementBlock(block: StatementBlock) {
                 fun addExpression(expression: Expression, variable: Variable?): IFTNode? {
                     val cfg = createGraphForExpression(expression, variable, function)
-
-                    treeRoots.addAll(cfg.treeRoots)
-                    unconditionalLinks.putAll(cfg.unconditionalLinks)
-                    conditionalTrueLinks.putAll(cfg.conditionalTrueLinks)
-                    conditionalFalseLinks.putAll(cfg.conditionalFalseLinks)
+                    cfgBuilder.addAllFrom(cfg)
 
                     val entry = cfg.entryTreeRoot
 
                     if (entry != null) {
                         for (node in last)
-                            link(node, entry)
+                            cfgBuilder.addLink(node, entry)
 
-                        last = cfg.finalTreeRoots.map { Pair(it, LinkType.UNCONDITIONAL) }
+                        last = cfg.finalTreeRoots.map { Pair(it, CFGLinkType.UNCONDITIONAL) }
                     }
 
                     return entry
@@ -373,11 +352,11 @@ object ControlFlow {
                             addExpression(statement.condition, null)!!
                             val conditionEnd = last
 
-                            last = mapLinkType(conditionEnd, LinkType.CONDITIONAL_TRUE)
+                            last = mapLinkType(conditionEnd, CFGLinkType.CONDITIONAL_TRUE)
                             processStatementBlock(statement.actionWhenTrue)
                             val trueBranchEnd = last
 
-                            last = mapLinkType(conditionEnd, LinkType.CONDITIONAL_FALSE)
+                            last = mapLinkType(conditionEnd, CFGLinkType.CONDITIONAL_FALSE)
                             if (statement.actionWhenFalse != null)
                                 processStatementBlock(statement.actionWhenFalse)
                             val falseBranchEnd = last
@@ -395,14 +374,14 @@ object ControlFlow {
                             breaking = mutableListOf()
                             continuing = mutableListOf()
 
-                            last = mapLinkType(conditionEnd, LinkType.CONDITIONAL_TRUE)
+                            last = mapLinkType(conditionEnd, CFGLinkType.CONDITIONAL_TRUE)
                             processStatementBlock(statement.action)
                             val end = last
 
                             for (node in end + continuing!!)
-                                link(node, conditionEntry)
+                                cfgBuilder.addLink(node, conditionEntry)
 
-                            last = mapLinkType(conditionEnd, LinkType.CONDITIONAL_FALSE) + breaking!!
+                            last = mapLinkType(conditionEnd, CFGLinkType.CONDITIONAL_FALSE) + breaking!!
 
                             breaking = outerBreaking
                             continuing = outerContinuing
@@ -437,23 +416,11 @@ object ControlFlow {
 
             processStatementBlock(function.body)
 
-            controlFlowGraphs[function] = ControlFlowGraph(
-                treeRoots,
-                entryTreeRoot,
-                unconditionalLinks,
-                conditionalTrueLinks,
-                conditionalFalseLinks
-            )
+            controlFlowGraphs[function] = cfgBuilder.build()
         }
 
         program.globals.filterIsInstance<Program.Global.FunctionDefinition>().forEach { processFunction(it.function) }
 
         return controlFlowGraphs
-    }
-
-    private enum class LinkType {
-        UNCONDITIONAL,
-        CONDITIONAL_TRUE,
-        CONDITIONAL_FALSE
     }
 }

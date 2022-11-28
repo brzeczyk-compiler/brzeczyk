@@ -74,7 +74,7 @@ class FunctionDetailsGeneratorTest {
         assertEquals(listOf(root), result.callGraph.treeRoots)
         assertEquals(42, subNode.value)
 
-        assertEquals(resultNode.register, root.register) 
+        assertEquals(resultNode.register, root.register)
     }
 
     @Test

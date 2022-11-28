@@ -53,9 +53,9 @@ class ControlFlowGraphBuilder(var entryTreeRoot: IFTNode? = null) {
             return Pair(newTreeRoots[fromAndTo.key]!!, newTreeRoots[fromAndTo.value]!!)
         }
 
-        unconditionalLinks = referenceHashMapOf(*unconditionalLinks.map { linkReplacer(it) }.toTypedArray())
-        conditionalTrueLinks = referenceHashMapOf(*conditionalTrueLinks.map { linkReplacer(it) }.toTypedArray())
-        conditionalFalseLinks = referenceHashMapOf(*conditionalFalseLinks.map { linkReplacer(it) }.toTypedArray())
+        unconditionalLinks = referenceHashMapOf(unconditionalLinks.map { linkReplacer(it) }.toList())
+        conditionalTrueLinks = referenceHashMapOf(conditionalTrueLinks.map { linkReplacer(it) }.toList())
+        conditionalFalseLinks = referenceHashMapOf(conditionalFalseLinks.map { linkReplacer(it) }.toList())
         entryTreeRoot = newTreeRoots[entryTreeRoot]
         treeRoots = ArrayList(treeRoots.map { newTreeRoots[it]!! })
     }

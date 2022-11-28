@@ -10,10 +10,7 @@ import compiler.parser.ParseTree
 import compiler.parser.Parser
 import compiler.parser.grammar.ParserGrammar
 import compiler.parser.grammar.Symbol
-import compiler.semantic_analysis.ArgumentResolver
-import compiler.semantic_analysis.NameResolver
-import compiler.semantic_analysis.TypeChecker
-import compiler.semantic_analysis.VariablePropertiesAnalyzer
+import compiler.semantic_analysis.Resolver
 import java.io.Reader
 
 class Compiler(val diagnostics: Diagnostics) {
@@ -29,9 +26,6 @@ class Compiler(val diagnostics: Diagnostics) {
         val parseTree = parser.process(leaves)
 
         val ast = AstFactory.createFromParseTree(parseTree, diagnostics)
-        val nameResolution = NameResolver.calculateNameResolution(ast, diagnostics)
-        val argumentResolution = ArgumentResolver.calculateArgumentToParameterResolution(ast, nameResolution, diagnostics)
-        val expressionTypes = TypeChecker.calculateTypes(ast, nameResolution, argumentResolution, diagnostics)
-        val variableProperties = VariablePropertiesAnalyzer.calculateVariableProperties(ast, nameResolution, diagnostics)
+        val programProperties = Resolver.resolveProgram(ast, diagnostics)
     }
 }

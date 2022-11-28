@@ -43,8 +43,9 @@ object ControlFlow {
                     val entry = cfg.entryTreeRoot
 
                     if (entry != null) {
-                        for (node in last)
+                        for (node in last) {
                             cfgBuilder.addLink(node, entry)
+                        }
 
                         last = cfg.finalTreeRoots.map { Pair(it, CFGLinkType.UNCONDITIONAL) }
                     }

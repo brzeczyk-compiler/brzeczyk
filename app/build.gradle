@@ -35,8 +35,8 @@ dependencies {
     // This dependency is used by the application.
     implementation 'com.google.guava:guava:31.0.1-jre'
 
-    // Mockito framework for testing
-    testImplementation 'org.mockito:mockito-core:4.9.0'
+    // Mockk framework for testing
+    testImplementation "io.mockk:mockk:1.13.2"
 
     // Linting and formatting
     ktlint "com.pinterest:ktlint:0.43.1"

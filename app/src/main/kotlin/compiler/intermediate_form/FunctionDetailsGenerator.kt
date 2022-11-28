@@ -24,7 +24,7 @@ data class FunctionDetailsGenerator(
         var last: Pair<IFTNode, CFGLinkType>? = null
         // write arg values to params
         for ((arg, param) in args zip parameters) {
-            val node = genWrite(param, arg, true)
+            val node = genWrite(param, arg, false)
             cfgBuilder.addAllFrom(node, false)
             cfgBuilder.addLink(last, node.entryTreeRoot!!)
             last = Pair(node.finalTreeRoots[0], CFGLinkType.UNCONDITIONAL)

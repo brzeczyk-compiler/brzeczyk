@@ -2,6 +2,9 @@ package compiler.intermediate_form
 
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.referenceHashMapOf
+import java.lang.RuntimeException
+
+class IncorrectControlFlowGraphError(message: String) : RuntimeException(message)
 
 class ControlFlowGraphBuilder(var entryTreeRoot: IFTNode? = null) {
     private var unconditionalLinks = ReferenceHashMap<IFTNode, IFTNode>()
@@ -10,8 +13,7 @@ class ControlFlowGraphBuilder(var entryTreeRoot: IFTNode? = null) {
     private var treeRoots = ArrayList<IFTNode>()
 
     init {
-        if (entryTreeRoot != null)
-            treeRoots.add(entryTreeRoot!!)
+        entryTreeRoot?.let { treeRoots.add(it) }
     }
 
     fun addLink(from: Pair<IFTNode, CFGLinkType>?, to: IFTNode) {
@@ -59,6 +61,7 @@ class ControlFlowGraphBuilder(var entryTreeRoot: IFTNode? = null) {
     }
 
     fun build(): ControlFlowGraph {
+        verifyLinkCorrectness()
         return ControlFlowGraph(
             treeRoots,
             entryTreeRoot,
@@ -66,5 +69,26 @@ class ControlFlowGraphBuilder(var entryTreeRoot: IFTNode? = null) {
             conditionalTrueLinks,
             conditionalFalseLinks
         )
+    }
+
+    private fun verifyLinkCorrectness() {
+        for (node in treeRoots) {
+            if (conditionalTrueLinks.containsKey(node) && !conditionalFalseLinks.containsKey(node))
+                throw IncorrectControlFlowGraphError(
+                    "Tried to create a ControlFlowGraph with conditional true link from some node," +
+                        "but without conditional false link from it"
+                )
+            if (!conditionalTrueLinks.containsKey(node) && conditionalFalseLinks.containsKey(node))
+                throw IncorrectControlFlowGraphError(
+                    "Tried to create a ControlFlowGraph without conditional true link from some node," +
+                        "but with conditional false link from it"
+                )
+            if ((conditionalTrueLinks.containsKey(node) || conditionalFalseLinks.containsKey(node)) &&
+                unconditionalLinks.containsKey(node)
+            )
+                throw IncorrectControlFlowGraphError(
+                    "Tried to create a ControlFlowGraph with both conditional and unconditional link from some node"
+                )
+        }
     }
 }

@@ -2,7 +2,7 @@ package compiler.ast
 
 data class Variable(
     val kind: Kind,
-    val name: String,
+    override val name: String,
     val type: Type,
     val value: Expression?
 ) : NamedNode {

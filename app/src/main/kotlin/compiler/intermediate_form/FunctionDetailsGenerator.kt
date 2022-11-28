@@ -1,8 +1,8 @@
 package compiler.intermediate_form
 
 import compiler.ast.Function
+import compiler.ast.NamedNode
 import compiler.ast.Type
-import compiler.ast.Variable
 import compiler.common.reference_collections.ReferenceHashMap
 
 data class FunctionCallIntermediateForm(
@@ -27,8 +27,8 @@ val STACK_POINTER_REGISTER = Register()
 
 data class FunctionDetailsGenerator(
     val depth: ULong,
-    val variablesLocationTypes: Map<Variable, VariableLocationType>, // should contain parameters
-    val parameters: List<Variable>,
+    val variablesLocationTypes: Map<NamedNode, VariableLocationType>, // should contain parameters
+    val parameters: List<Function.Parameter>,
     val functionCFG: ControlFlowGraph,
     val function: Function,
     val variablesDisplayInfo: MutableMap<String, VariableDisplayInfo>,
@@ -185,7 +185,7 @@ data class FunctionDetailsGenerator(
         return cfgBuilder.build()
     }
 
-    fun genRead(variable: Variable, isDirect: Boolean): ControlFlowGraph {
+    fun genRead(variable: NamedNode, isDirect: Boolean): ControlFlowGraph {
         val cfgBuilder = ControlFlowGraphBuilder()
 
         if (isDirect) {
@@ -222,7 +222,7 @@ data class FunctionDetailsGenerator(
         return cfgBuilder.build()
     }
 
-    fun genWrite(variable: Variable, value: IntermediateFormTreeNode, isDirect: Boolean): ControlFlowGraph {
+    fun genWrite(variable: NamedNode, value: IntermediateFormTreeNode, isDirect: Boolean): ControlFlowGraph {
         val cfgBuilder = ControlFlowGraphBuilder()
 
         if (isDirect) {

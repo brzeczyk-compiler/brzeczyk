@@ -639,6 +639,7 @@ class ExpressionControlFlowTest {
 
         val read1 = IntermediateFormTreeNode.RegisterRead(r1)
         val read2 = IntermediateFormTreeNode.RegisterRead(r2)
+        val read3 = IntermediateFormTreeNode.RegisterRead(r3)
 
         val multipleArguments = context.createCfg( // g( x, f() ), f -> x
             "g" withArgs listOf("x" asVarExprIn context, "f" asFunCallIn context)
@@ -649,8 +650,6 @@ class ExpressionControlFlowTest {
                 IntermediateFormTreeNode.RegisterWrite(r1, IntermediateFormTreeNode.DummyRead("x" asVarIn context, true))
                     merge IntermediateFormTreeNode.DummyCall("f" asFunIn context, emptyList(), callResult1)
                     merge IntermediateFormTreeNode.RegisterWrite(r2, callResult1)
-                    merge read1
-                    merge read2
                     merge IntermediateFormTreeNode.DummyCall("g" asFunIn context, listOf(read1, read2), callResult2)
                     merge IntermediateFormTreeNode.RegisterWrite(r3, callResult2)
                     merge IntermediateFormTreeNode.RegisterRead(r3)
@@ -666,10 +665,9 @@ class ExpressionControlFlowTest {
                 IntermediateFormTreeNode.RegisterWrite(r1, IntermediateFormTreeNode.DummyRead("x" asVarIn context, true))
                     merge IntermediateFormTreeNode.DummyCall("f" asFunIn context, emptyList(), callResult1)
                     merge IntermediateFormTreeNode.RegisterWrite(r2, callResult1)
-                    merge read2
-                    merge IntermediateFormTreeNode.DummyCall("g" asFunIn context, listOf(read2), callResult2)
+                    merge IntermediateFormTreeNode.DummyCall("h" asFunIn context, listOf(read2), callResult2)
                     merge IntermediateFormTreeNode.RegisterWrite(r3, callResult2)
-                    merge IntermediateFormTreeNode.Add(IntermediateFormTreeNode.RegisterRead(r1), IntermediateFormTreeNode.RegisterRead(r3))
+                    merge IntermediateFormTreeNode.Add(read1, read3)
                 )
         )
     }
@@ -696,14 +694,9 @@ class ExpressionControlFlowTest {
         val r4 = Register()
         val r5 = Register()
         val r6 = Register()
-        val r7 = Register()
-        val r8 = Register()
         val callResult1 = IntermediateFormTreeNode.DummyCallResult()
         val callResult2 = IntermediateFormTreeNode.DummyCallResult()
         val callResult3 = IntermediateFormTreeNode.DummyCallResult()
-
-        val read3 = IntermediateFormTreeNode.RegisterRead(r3)
-        val read4 = IntermediateFormTreeNode.RegisterRead(r4)
 
         val cfg = context.createCfg( //   x + ( g( a + f() , b ) + ( ( b + x ) + ( h() ? x : y ) ) ), f -> x, h -> b
             ("x" asVarExprIn context)
@@ -730,35 +723,36 @@ class ExpressionControlFlowTest {
                 IntermediateFormTreeNode.RegisterWrite(r1, IntermediateFormTreeNode.DummyRead("x" asVarIn context, true))
                     merge IntermediateFormTreeNode.DummyCall("f" asFunIn context, emptyList(), callResult1)
                     merge IntermediateFormTreeNode.RegisterWrite(r2, callResult1)
-                    merge IntermediateFormTreeNode.RegisterWrite(
-                        r3,
-                        IntermediateFormTreeNode.Add(
-                            IntermediateFormTreeNode.DummyRead("a" asVarIn context, true),
-                            IntermediateFormTreeNode.RegisterRead(r2)
-                        )
+                    merge IntermediateFormTreeNode.DummyCall(
+                        "g" asFunIn context,
+                        listOf(
+                            IntermediateFormTreeNode.Add(
+                                IntermediateFormTreeNode.DummyRead("a" asVarIn context, true),
+                                IntermediateFormTreeNode.RegisterRead(r2)
+                            ),
+                            IntermediateFormTreeNode.DummyRead("b" asVarIn context, true)
+                        ),
+                        callResult2
                     )
+                    merge IntermediateFormTreeNode.RegisterWrite(r3, callResult2)
                     merge IntermediateFormTreeNode.RegisterWrite(r4, IntermediateFormTreeNode.DummyRead("b" asVarIn context, true))
-                    merge read3 merge read4
-                    merge IntermediateFormTreeNode.DummyCall("g" asFunIn context, listOf(read3, read4), callResult2)
-                    merge IntermediateFormTreeNode.RegisterWrite(r5, callResult2)
-                    merge IntermediateFormTreeNode.RegisterWrite(r6, IntermediateFormTreeNode.DummyRead("b" asVarIn context, true))
                     merge IntermediateFormTreeNode.DummyCall("h" asFunIn context, emptyList(), callResult3)
-                    merge IntermediateFormTreeNode.RegisterWrite(r7, callResult3)
+                    merge IntermediateFormTreeNode.RegisterWrite(r5, callResult3)
                     merge mergeCFGsConditionally(
-                        IntermediateFormTreeNode.RegisterRead(r7).toCfg(),
-                        IntermediateFormTreeNode.RegisterWrite(r8, IntermediateFormTreeNode.DummyRead("x" asVarIn context, true)).toCfg(),
-                        IntermediateFormTreeNode.RegisterWrite(r8, IntermediateFormTreeNode.DummyRead("y" asVarIn context, true)).toCfg()
+                        IntermediateFormTreeNode.RegisterRead(r5).toCfg(),
+                        IntermediateFormTreeNode.RegisterWrite(r6, IntermediateFormTreeNode.DummyRead("x" asVarIn context, true)).toCfg(),
+                        IntermediateFormTreeNode.RegisterWrite(r6, IntermediateFormTreeNode.DummyRead("y" asVarIn context, true)).toCfg()
                     )
                     merge IntermediateFormTreeNode.Add(
                         IntermediateFormTreeNode.RegisterRead(r1),
                         IntermediateFormTreeNode.Add(
-                            IntermediateFormTreeNode.RegisterRead(r5),
+                            IntermediateFormTreeNode.RegisterRead(r3),
                             IntermediateFormTreeNode.Add(
                                 IntermediateFormTreeNode.Add(
-                                    IntermediateFormTreeNode.RegisterRead(r6),
+                                    IntermediateFormTreeNode.RegisterRead(r4),
                                     IntermediateFormTreeNode.DummyRead("x" asVarIn context, true)
                                 ),
-                                IntermediateFormTreeNode.RegisterRead(r8)
+                                IntermediateFormTreeNode.RegisterRead(r6)
                             )
                         )
                     )

@@ -41,8 +41,7 @@ class ExpressionControlFlowTest {
         functions: Map<String, List<Type>> = emptyMap(), // first element is return type
         funToAffectedVar: Map<String, Set<String>> = emptyMap(),
         val currentFunction: Function = Function("dummy", emptyList(), Type.Unit, emptyList()),
-        val callGraph: ReferenceHashMap<String, ReferenceSet<String>> = ReferenceHashMap(),
-        val argumentResolution: ReferenceMap<Expression.FunctionCall.Argument, Function.Parameter> = ReferenceHashMap()
+        val callGraph: ReferenceHashMap<String, ReferenceSet<String>> = ReferenceHashMap()
     ) {
         val nameResolution: ReferenceHashMap<Any, NamedNode> = ReferenceHashMap()
         val nameToVarMap = HashMap<String, Variable>()
@@ -50,6 +49,7 @@ class ExpressionControlFlowTest {
         val functionDetailsGenerators = ReferenceHashMap<Function, FunctionDetailsGenerator>()
         val variableProperties = ReferenceHashMap<Any, VariablePropertiesAnalyzer.VariableProperties>()
         val finalCallGraph: ReferenceHashMap<Function, ReferenceSet<Function>> = ReferenceHashMap()
+        val argumentResolution: ReferenceHashMap<Expression.FunctionCall.Argument, Function.Parameter> = ReferenceHashMap()
 
         init {
             for (name in varNames) {
@@ -93,6 +93,9 @@ class ExpressionControlFlowTest {
 
     private infix fun Pair<String, List<Expression>>.asFunCallIn(exprContext: ExpressionContext): Expression.FunctionCall {
         val result = Expression.FunctionCall(this.first, this.second.map { Expression.FunctionCall.Argument(null, it) })
+        for (i in 0 until result.arguments.size) {
+            exprContext.argumentResolution[result.arguments[i]] = (this.first asFunIn exprContext).parameters[i]
+        }
         exprContext.nameResolution[result] = exprContext.nameToFunMap[this.first]!!
         return result
     }
@@ -213,7 +216,7 @@ class ExpressionControlFlowTest {
             setOf("x", "y")
         )
 
-        val assignmentCfg = context.createCfg("x" asVarExprIn context, "y" asVarIn context)
+        val assignmentCfg = context.createCfg("x" asVarExprIn context, "y" asVarIn context) // y = x
 
         assert(
             assignmentCfg hasSameStructureAs IntermediateFormTreeNode.DummyWrite("y" asVarIn context, IntermediateFormTreeNode.DummyRead("x" asVarIn context, true), true).toCfg()
@@ -238,12 +241,33 @@ class ExpressionControlFlowTest {
         val r2 = Register()
         val callResult = IntermediateFormTreeNode.DummyCallResult()
 
-        val basicCall = context.createCfg("f" asFunCallIn context)
-        val callAffectingVariable = context.createCfg(("x" asVarExprIn context) add ("f" asFunCallIn context))
-        val callNotAffectingVariable = context.createCfg(("x" asVarExprIn context) add ("g" asFunCallIn context))
-        val variableAfterAffectingFunction = context.createCfg(("f" asFunCallIn context) add ("x" asVarExprIn context))
-        val variableAfterNotAffectingFunction = context.createCfg(("g" asFunCallIn context) add ("x" asVarExprIn context))
-        val variableOnBothSidesOfFunction = context.createCfg(("x" asVarExprIn context) add ("f" asFunCallIn context) add ("x" asVarExprIn context))
+        val basicCall = context.createCfg("f" asFunCallIn context) // f()
+        val callAffectingVariable = context.createCfg( // x + f(), f affects x
+            ("x" asVarExprIn context)
+                add ("f" asFunCallIn context)
+        )
+        val callNotAffectingVariable = context.createCfg( // x + g(), g does not affect x
+            ("x" asVarExprIn context)
+                add ("g" asFunCallIn context)
+        )
+        val variableAfterAffectingFunction = context.createCfg( // f() + x, f affects x
+            ("f" asFunCallIn context)
+                add ("x" asVarExprIn context)
+        )
+        val variableAfterNotAffectingFunction = context.createCfg( // g() + x, g does not affect x
+            ("g" asFunCallIn context)
+                add ("x" asVarExprIn context)
+        )
+        val variableOnBothSidesOfFunction = context.createCfg( // x + f() + x
+            ("x" asVarExprIn context)
+                add ("f" asFunCallIn context)
+                add ("x" asVarExprIn context)
+        )
+        val multipleUsageBeforeCall = context.createCfg( // x + x + f()
+            ("x" asVarExprIn context)
+                add ("x" asVarExprIn context)
+                add ("f" asFunCallIn context)
+        )
 
         assert(
             basicCall hasSameStructureAs (
@@ -291,6 +315,20 @@ class ExpressionControlFlowTest {
                     merge IntermediateFormTreeNode.Add(IntermediateFormTreeNode.Add(IntermediateFormTreeNode.RegisterRead(r1), IntermediateFormTreeNode.RegisterRead(r2)), IntermediateFormTreeNode.DummyRead("x" asVarIn context, true))
                 )
         )
+        assert(
+            multipleUsageBeforeCall hasSameStructureAs (
+                IntermediateFormTreeNode.RegisterWrite(r1, IntermediateFormTreeNode.DummyRead("x" asVarIn context, true))
+                    merge IntermediateFormTreeNode.DummyCall("f" asFunIn context, emptyList(), callResult)
+                    merge IntermediateFormTreeNode.RegisterWrite(r2, callResult)
+                    merge IntermediateFormTreeNode.Add(
+                        IntermediateFormTreeNode.Add(
+                            IntermediateFormTreeNode.RegisterRead(r1),
+                            IntermediateFormTreeNode.RegisterRead(r1)
+                        ),
+                        IntermediateFormTreeNode.RegisterRead(r2)
+                    )
+                )
+        )
     }
 
     @Ignore
@@ -302,9 +340,21 @@ class ExpressionControlFlowTest {
 
         val r1 = Register()
 
-        val andCfg = context.createCfg(("x" asVarExprIn context) and ("y" asVarExprIn context))
-        val orCfg = context.createCfg(("x" asVarExprIn context) or ("y" asVarExprIn context))
-        val ternaryCfg = context.createCfg(ternary("x" asVarExprIn context, "y" asVarExprIn context, "z" asVarExprIn context))
+        val andCfg = context.createCfg( // x oraz y
+            ("x" asVarExprIn context)
+                and ("y" asVarExprIn context)
+        )
+        val orCfg = context.createCfg( // x lub y
+            ("x" asVarExprIn context)
+                or ("y" asVarExprIn context)
+        )
+        val ternaryCfg = context.createCfg( // x ? y : z
+            ternary(
+                "x" asVarExprIn context,
+                "y" asVarExprIn context,
+                "z" asVarExprIn context
+            )
+        )
 
         assert(
             andCfg hasSameStructureAs (
@@ -342,29 +392,119 @@ class ExpressionControlFlowTest {
     @Test
     fun `conditionals with function calls`() {
         val context = ExpressionContext(
-            setOf("x"),
+            setOf("x", "y", "z"),
             mapOf(
-                "f" to listOf(Type.Boolean),
+                "f" to listOf(Type.Number),
+                "g" to listOf(Type.Number),
+                "h" to listOf(Type.Number),
             ),
             mapOf(
-                "f" to setOf("x")
+                "f" to setOf("x"),
+                "g" to setOf("y"),
+                "h" to setOf("z"),
             )
         )
 
         val r1 = Register()
         val r2 = Register()
-        val callResult = IntermediateFormTreeNode.DummyCallResult()
+        val r3 = Register()
+        val r4 = Register()
+        val r5 = Register()
+        val r6 = Register()
+        val r7 = Register()
+        val callResult1 = IntermediateFormTreeNode.DummyCallResult()
+        val callResult2 = IntermediateFormTreeNode.DummyCallResult()
+        val callResult3 = IntermediateFormTreeNode.DummyCallResult()
 
-        val andWithFunction = context.createCfg(("x" asVarExprIn context) and ("f" asFunCallIn context))
+        val variableInConditional = context.createCfg( // ( x ? x : x ) + f(), f -> x
+            ternary(
+                "x" asVarExprIn context,
+                "x" asVarExprIn context,
+                "x" asVarExprIn context
+            ) add ("f" asFunCallIn context)
+        )
+        val functionCallsInConditional = context.createCfg( // x + y + z + ( f() ? g() : h() ), f -> x, g -> y, h -> z
+            ("x" asVarExprIn context) add ("y" asVarExprIn context) add ("z" asVarExprIn context) add
+                ternary(
+                    "f" asFunCallIn context,
+                    "g" asFunCallIn context,
+                    "h" asFunCallIn context,
+                )
+        )
+        val andWithFunction = context.createCfg( // x oraz f(), f -> x
+            ("x" asVarExprIn context)
+                and ("f" asFunCallIn context)
+        )
+        val variableAndFunctionInTernary = context.createCfg( // x ? x : f(), f -> x
+            ternary(
+                "x" asVarExprIn context,
+                "x" asVarExprIn context,
+                "f" asFunCallIn context
+            )
+        )
+
+        assert(
+            variableInConditional hasSameStructureAs (
+                mergeCFGsConditionally(
+                    IntermediateFormTreeNode.DummyRead("x" asVarIn context, true).toCfg(),
+                    IntermediateFormTreeNode.RegisterWrite(r1, IntermediateFormTreeNode.DummyRead("x" asVarIn context, true)).toCfg(),
+                    IntermediateFormTreeNode.RegisterWrite(r1, IntermediateFormTreeNode.DummyRead("x" asVarIn context, true)).toCfg()
+                )
+                    merge IntermediateFormTreeNode.DummyCall("f" asFunIn context, emptyList(), callResult1)
+                    merge IntermediateFormTreeNode.RegisterWrite(r2, callResult1)
+                    merge IntermediateFormTreeNode.Add(IntermediateFormTreeNode.RegisterRead(r1), IntermediateFormTreeNode.RegisterRead(r2))
+                )
+        )
+        assert(
+            functionCallsInConditional hasSameStructureAs (
+                IntermediateFormTreeNode.RegisterWrite(r1, IntermediateFormTreeNode.DummyRead("x" asVarIn context, true))
+                    merge IntermediateFormTreeNode.RegisterWrite(r2, IntermediateFormTreeNode.DummyRead("y" asVarIn context, true))
+                    merge IntermediateFormTreeNode.RegisterWrite(r3, IntermediateFormTreeNode.DummyRead("z" asVarIn context, true))
+                    merge mergeCFGsConditionally(
+                        IntermediateFormTreeNode.DummyCall("f" asFunIn context, emptyList(), callResult1)
+                            merge IntermediateFormTreeNode.RegisterWrite(r4, callResult1)
+                            merge IntermediateFormTreeNode.RegisterRead(r4),
+                        IntermediateFormTreeNode.DummyCall("g" asFunIn context, emptyList(), callResult2)
+                            merge IntermediateFormTreeNode.RegisterWrite(r5, callResult2)
+                            merge IntermediateFormTreeNode.RegisterWrite(r7, IntermediateFormTreeNode.RegisterRead(r5)),
+                        IntermediateFormTreeNode.DummyCall("h" asFunIn context, emptyList(), callResult3)
+                            merge IntermediateFormTreeNode.RegisterWrite(r6, callResult3)
+                            merge IntermediateFormTreeNode.RegisterWrite(r7, IntermediateFormTreeNode.RegisterRead(r6))
+                    )
+                    merge IntermediateFormTreeNode.Add(
+                        IntermediateFormTreeNode.Add(
+                            IntermediateFormTreeNode.Add(
+                                IntermediateFormTreeNode.RegisterRead(r1),
+                                IntermediateFormTreeNode.RegisterRead(r2)
+                            ),
+                            IntermediateFormTreeNode.RegisterRead(r3)
+                        ),
+                        IntermediateFormTreeNode.RegisterRead(r7)
+                    )
+                )
+        )
 
         assert(
             andWithFunction hasSameStructureAs (
                 mergeCFGsConditionally(
                     IntermediateFormTreeNode.DummyRead("x" asVarIn context, true).toCfg(),
-                    IntermediateFormTreeNode.DummyCall("f" asFunIn context, emptyList(), callResult)
-                        merge IntermediateFormTreeNode.RegisterWrite(r2, callResult)
+                    IntermediateFormTreeNode.DummyCall("f" asFunIn context, emptyList(), callResult1)
+                        merge IntermediateFormTreeNode.RegisterWrite(r2, callResult1)
                         merge IntermediateFormTreeNode.RegisterWrite(r1, IntermediateFormTreeNode.RegisterRead(r2)),
                     IntermediateFormTreeNode.RegisterWrite(r1, IntermediateFormTreeNode.Const(0)).toCfg()
+                )
+                    merge IntermediateFormTreeNode.RegisterRead(r1)
+                )
+        )
+
+        assert(
+            variableAndFunctionInTernary hasSameStructureAs (
+                mergeCFGsConditionally(
+                    IntermediateFormTreeNode.DummyRead("x" asVarIn context, true).toCfg(),
+                    IntermediateFormTreeNode.RegisterWrite(r1, IntermediateFormTreeNode.DummyRead("x" asVarIn context, true)).toCfg(),
+                    IntermediateFormTreeNode.DummyCall("f" asFunIn context, emptyList(), callResult1)
+                        merge IntermediateFormTreeNode.RegisterWrite(r2, callResult1)
+                        merge IntermediateFormTreeNode.RegisterWrite(r1, IntermediateFormTreeNode.RegisterRead(r2))
                 )
                     merge IntermediateFormTreeNode.RegisterRead(r1)
                 )
@@ -395,8 +535,14 @@ class ExpressionControlFlowTest {
         val read1 = IntermediateFormTreeNode.RegisterRead(r1)
         val read2 = IntermediateFormTreeNode.RegisterRead(r2)
 
-        val multipleArguments = context.createCfg("g" withArgs listOf("x" asVarExprIn context, "f" asFunCallIn context) asFunCallIn context)
-        val nestedArguments = context.createCfg(("x" asVarExprIn context) add ("h" withArgs listOf("f" asFunCallIn context) asFunCallIn context))
+        val multipleArguments = context.createCfg( // g( x, f() ), f -> x
+            "g" withArgs listOf("x" asVarExprIn context, "f" asFunCallIn context)
+                asFunCallIn context
+        )
+        val nestedArguments = context.createCfg( // x + h(f()), f -> x
+            ("x" asVarExprIn context)
+                add ("h" withArgs listOf("f" asFunCallIn context) asFunCallIn context)
+        )
 
         assert(
             multipleArguments hasSameStructureAs (
@@ -420,6 +566,98 @@ class ExpressionControlFlowTest {
                     merge IntermediateFormTreeNode.DummyCall("g" asFunIn context, listOf(read2), callResult2)
                     merge IntermediateFormTreeNode.RegisterWrite(r3, callResult2)
                     merge IntermediateFormTreeNode.Add(IntermediateFormTreeNode.RegisterRead(r1), IntermediateFormTreeNode.RegisterRead(r3))
+                )
+        )
+    }
+
+    @Ignore
+    @Test
+    fun `execution order test`() {
+        val context = ExpressionContext(
+            setOf("x", "y", "a", "b"),
+            mapOf(
+                "f" to listOf(Type.Number),
+                "g" to listOf(Type.Number, Type.Number, Type.Number),
+                "h" to listOf(Type.Number),
+            ),
+            mapOf(
+                "f" to setOf("x"),
+                "h" to setOf("b"),
+            )
+        )
+
+        val r1 = Register()
+        val r2 = Register()
+        val r3 = Register()
+        val r4 = Register()
+        val r5 = Register()
+        val r6 = Register()
+        val r7 = Register()
+        val r8 = Register()
+        val callResult1 = IntermediateFormTreeNode.DummyCallResult()
+        val callResult2 = IntermediateFormTreeNode.DummyCallResult()
+        val callResult3 = IntermediateFormTreeNode.DummyCallResult()
+
+        val read3 = IntermediateFormTreeNode.RegisterRead(r3)
+        val read4 = IntermediateFormTreeNode.RegisterRead(r4)
+
+        val cfg = context.createCfg( //   x + ( g( a + f() , b ) + ( ( b + x ) + ( h() ? x : y ) ) )
+            ("x" asVarExprIn context)
+                add (
+                    (
+                        "g" withArgs listOf(
+                            ("a" asVarExprIn context) add ("f" asFunCallIn context),
+                            ("b" asVarExprIn context)
+                        ) asFunCallIn context
+                        )
+                        add (
+                            (("b" asVarExprIn context) add ("x" asVarExprIn context))
+                                add ternary(
+                                    "h" asFunCallIn context,
+                                    "x" asVarExprIn context,
+                                    "y" asVarExprIn context
+                                )
+                            )
+                    )
+        )
+
+        assert(
+            cfg hasSameStructureAs (
+                IntermediateFormTreeNode.RegisterWrite(r1, IntermediateFormTreeNode.DummyRead("x" asVarIn context, true))
+                    merge IntermediateFormTreeNode.DummyCall("f" asFunIn context, emptyList(), callResult1)
+                    merge IntermediateFormTreeNode.RegisterWrite(r2, callResult1)
+                    merge IntermediateFormTreeNode.RegisterWrite(
+                        r3,
+                        IntermediateFormTreeNode.Add(
+                            IntermediateFormTreeNode.DummyRead("a" asVarIn context, true),
+                            IntermediateFormTreeNode.RegisterRead(r2)
+                        )
+                    )
+                    merge IntermediateFormTreeNode.RegisterWrite(r4, IntermediateFormTreeNode.DummyRead("b" asVarIn context, true))
+                    merge read3 merge read4
+                    merge IntermediateFormTreeNode.DummyCall("g" asFunIn context, listOf(read3, read4), callResult2)
+                    merge IntermediateFormTreeNode.RegisterWrite(r5, callResult2)
+                    merge IntermediateFormTreeNode.RegisterWrite(r6, IntermediateFormTreeNode.DummyRead("b" asVarIn context, true))
+                    merge IntermediateFormTreeNode.DummyCall("h" asFunIn context, emptyList(), callResult3)
+                    merge IntermediateFormTreeNode.RegisterWrite(r7, callResult3)
+                    merge mergeCFGsConditionally(
+                        IntermediateFormTreeNode.RegisterRead(r7).toCfg(),
+                        IntermediateFormTreeNode.RegisterWrite(r8, IntermediateFormTreeNode.DummyRead("x" asVarIn context, true)).toCfg(),
+                        IntermediateFormTreeNode.RegisterWrite(r8, IntermediateFormTreeNode.DummyRead("y" asVarIn context, true)).toCfg()
+                    )
+                    merge IntermediateFormTreeNode.Add(
+                        IntermediateFormTreeNode.RegisterRead(r1),
+                        IntermediateFormTreeNode.Add(
+                            IntermediateFormTreeNode.RegisterRead(r5),
+                            IntermediateFormTreeNode.Add(
+                                IntermediateFormTreeNode.Add(
+                                    IntermediateFormTreeNode.RegisterRead(r6),
+                                    IntermediateFormTreeNode.DummyRead("x" asVarIn context, true)
+                                ),
+                                IntermediateFormTreeNode.RegisterRead(r8)
+                            )
+                        )
+                    )
                 )
         )
     }

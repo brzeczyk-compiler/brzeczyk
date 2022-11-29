@@ -59,14 +59,16 @@ class ExpressionControlFlowTest {
         val argumentResolution: ReferenceHashMap<Expression.FunctionCall.Argument, Function.Parameter> = ReferenceHashMap()
 
         init {
+            val mutableVariableProperties = ReferenceHashMap<Any, VariablePropertiesAnalyzer.MutableVariableProperties>()
+
             nameToVarMap = varNames.associateWith { Variable(Variable.Kind.VARIABLE, it, Type.Number, null) }
             for (name in varNames) {
-                variableProperties[nameToVarMap[name]!!] = VariablePropertiesAnalyzer.VariableProperties(currentFunction, mutableSetOf(), mutableSetOf())
+                mutableVariableProperties[nameToVarMap[name]!!] = VariablePropertiesAnalyzer.MutableVariableProperties(currentFunction)
             }
             nameToFunMap = functions.keys.associateWith {
                 Function(
                     it,
-                    functions[it]!!.second.map { Function.Parameter("", it, null) },
+                    functions[it]!!.second.map { paramType -> Function.Parameter("", paramType, null) },
                     functions[it]!!.first,
                     emptyList()
                 )
@@ -79,9 +81,12 @@ class ExpressionControlFlowTest {
             }
             funToAffectedVar.forEach {
                 for (variable in it.value) {
-                    variableProperties[nameToVarMap[variable]]!!.writtenIn.add(nameToFunMap[it.key]!!)
+                    mutableVariableProperties[nameToVarMap[variable]]!!.writtenIn.add(nameToFunMap[it.key]!!)
                 }
             }
+
+            for ((variable, mutableVP) in mutableVariableProperties.entries)
+                variableProperties[variable] = VariablePropertiesAnalyzer.fixVariableProperties(mutableVP)
         }
 
         fun createCfg(expr: Expression, targetVariable: Variable? = null): ControlFlowGraph {
@@ -109,7 +114,7 @@ class ExpressionControlFlowTest {
 
     private infix fun Pair<String, List<Expression>>.asFunCallIn(exprContext: ExpressionContext): Expression.FunctionCall {
         val result = Expression.FunctionCall(this.first, this.second.map { Expression.FunctionCall.Argument(null, it) })
-        for (i in 0 until result.arguments.size) {
+        for (i in result.arguments.indices) {
             exprContext.argumentResolution[result.arguments[i]] = (this.first asFunIn exprContext).parameters[i]
         }
         exprContext.nameResolution[result] = exprContext.nameToFunMap[this.first]!!

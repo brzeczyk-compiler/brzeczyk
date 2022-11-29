@@ -12,7 +12,7 @@ class ReferenceHashMap<K, V> : IdentityHashMap<K, V>(), MutableReferenceMap<K, V
             if (this.size != other.size) return false
             this.keys.forEach {
                 if (!other.containsKey(it)) return false
-                if (!this[it]!!.equals(other[it])) return false
+                if (this[it]!! != other[it]) return false
             }
             return true
         }
@@ -29,7 +29,6 @@ class ReferenceEntry<K, V>(val key: K, var value: V) {
 }
 
 val <K, V> ReferenceMap<K, V>.referenceEntries get() = entries.map { ReferenceEntry(it.key, it.value) }.toSet()
-
 val <K, V> ReferenceMap<K, V>.referenceKeys get() = referenceSetOf(referenceEntries.map { it.key })
 
 fun <K, V> combineReferenceMaps(maps: List<ReferenceMap<K, V>>): ReferenceMap<K, V> {

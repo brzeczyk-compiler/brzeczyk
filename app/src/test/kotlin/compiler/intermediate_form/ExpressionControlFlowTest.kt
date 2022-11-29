@@ -304,8 +304,6 @@ class ExpressionControlFlowTest {
             Expression.BinaryOperation(Expression.BinaryOperation.Kind.GREATER_THAN, xExpr, yExpr) to IntermediateFormTreeNode.GreaterThan(xVarRead, yVarRead),
             Expression.BinaryOperation(Expression.BinaryOperation.Kind.GREATER_THAN_OR_EQUALS, xExpr, yExpr) to IntermediateFormTreeNode.GreaterThanOrEquals(xVarRead, yVarRead),
         )
-        println(IntermediateFormTreeNode.DummyRead("x" asVarIn context, true).toCfg())
-        println(basic)
         assertTrue(basic hasSameStructureAs IntermediateFormTreeNode.DummyRead("x" asVarIn context, true).toCfg())
 
         for ((expr, iftNode) in operatorTests) {

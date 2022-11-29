@@ -6,9 +6,6 @@ import compiler.ast.NamedNode
 import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.common.intermediate_form.FunctionDetailsGeneratorInterface
-import compiler.common.intermediate_form.addTreeToCFG
-import compiler.common.intermediate_form.mergeCFGsConditionally
-import compiler.common.intermediate_form.mergeCFGsUnconditionally
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.referenceMapOf
@@ -23,7 +20,7 @@ class ExpressionControlFlowTest {
         override fun generateCall(args: List<IntermediateFormTreeNode>): FunctionDetailsGeneratorInterface.FunctionCallIntermediateForm {
             val callResult = IntermediateFormTreeNode.DummyCallResult()
             return FunctionDetailsGeneratorInterface.FunctionCallIntermediateForm(
-                addTreeToCFG(null, IntermediateFormTreeNode.DummyCall(function, args, callResult)),
+                ControlFlowGraphBuilder().addSingleTree(IntermediateFormTreeNode.DummyCall(function, args, callResult)).build(),
                 callResult
             )
         }
@@ -61,14 +58,16 @@ class ExpressionControlFlowTest {
         val argumentResolution: ReferenceHashMap<Expression.FunctionCall.Argument, Function.Parameter> = ReferenceHashMap()
 
         init {
+            val mutableVariableProperties = ReferenceHashMap<Any, VariablePropertiesAnalyzer.MutableVariableProperties>()
+
             nameToVarMap = varNames.associateWith { Variable(Variable.Kind.VARIABLE, it, Type.Number, null) }
             for (name in varNames) {
-                variableProperties[nameToVarMap[name]!!] = VariablePropertiesAnalyzer.VariableProperties(currentFunction, mutableSetOf(), mutableSetOf())
+                mutableVariableProperties[nameToVarMap[name]!!] = VariablePropertiesAnalyzer.MutableVariableProperties(currentFunction)
             }
             nameToFunMap = functions.keys.associateWith {
                 Function(
                     it,
-                    functions[it]!!.second.map { Function.Parameter("", it, null) },
+                    functions[it]!!.second.map { paramType -> Function.Parameter("", paramType, null) },
                     functions[it]!!.first,
                     emptyList()
                 )
@@ -81,9 +80,12 @@ class ExpressionControlFlowTest {
             }
             funToAffectedVar.forEach {
                 for (variable in it.value) {
-                    variableProperties[nameToVarMap[variable]]!!.writtenIn.add(nameToFunMap[it.key]!!)
+                    mutableVariableProperties[nameToVarMap[variable]]!!.writtenIn.add(nameToFunMap[it.key]!!)
                 }
             }
+
+            for ((variable, mutableVP) in mutableVariableProperties.entries)
+                variableProperties[variable] = VariablePropertiesAnalyzer.fixVariableProperties(mutableVP)
         }
 
         fun createCfg(expr: Expression, targetVariable: Variable? = null): ControlFlowGraph {
@@ -111,7 +113,7 @@ class ExpressionControlFlowTest {
 
     private infix fun Pair<String, List<Expression>>.asFunCallIn(exprContext: ExpressionContext): Expression.FunctionCall {
         val result = Expression.FunctionCall(this.first, this.second.map { Expression.FunctionCall.Argument(null, it) })
-        for (i in 0 until result.arguments.size) {
+        for (i in result.arguments.indices) {
             exprContext.argumentResolution[result.arguments[i]] = (this.first asFunIn exprContext).parameters[i]
         }
         exprContext.nameResolution[result] = exprContext.nameToFunMap[this.first]!!
@@ -242,19 +244,21 @@ class ExpressionControlFlowTest {
     }
 
     private fun IntermediateFormTreeNode.toCfg(): ControlFlowGraph =
-        addTreeToCFG(null, this)
-
-    private infix fun IntermediateFormTreeNode.merge(cfg: ControlFlowGraph): ControlFlowGraph =
-        mergeCFGsUnconditionally(this.toCfg(), cfg)!!
-
+        ControlFlowGraphBuilder().addSingleTree(this).build()
     private infix fun ControlFlowGraph.merge(cfg: ControlFlowGraph): ControlFlowGraph =
-        mergeCFGsUnconditionally(this, cfg)!!
+        ControlFlowGraphBuilder().mergeUnconditionally(this).mergeUnconditionally(cfg).build()
+    private infix fun IntermediateFormTreeNode.merge(cfg: ControlFlowGraph): ControlFlowGraph =
+        this.toCfg() merge cfg
 
     private infix fun ControlFlowGraph.merge(iftNode: IntermediateFormTreeNode): ControlFlowGraph =
-        mergeCFGsUnconditionally(this, iftNode.toCfg())!!
+        this merge iftNode.toCfg()
 
     private infix fun IntermediateFormTreeNode.merge(iftNode: IntermediateFormTreeNode): ControlFlowGraph =
-        mergeCFGsUnconditionally(this.toCfg(), iftNode.toCfg())!!
+        this.toCfg() merge iftNode.toCfg()
+
+    private fun mergeCFGsConditionally(condition: ControlFlowGraph, cfgTrue: ControlFlowGraph, cfgFalse: ControlFlowGraph): ControlFlowGraph {
+        return ControlFlowGraphBuilder().mergeUnconditionally(condition).mergeConditionally(cfgTrue, cfgFalse).build()
+    }
 
     @Test
     fun `basic expressions`() {
@@ -300,7 +304,8 @@ class ExpressionControlFlowTest {
             Expression.BinaryOperation(Expression.BinaryOperation.Kind.GREATER_THAN, xExpr, yExpr) to IntermediateFormTreeNode.GreaterThan(xVarRead, yVarRead),
             Expression.BinaryOperation(Expression.BinaryOperation.Kind.GREATER_THAN_OR_EQUALS, xExpr, yExpr) to IntermediateFormTreeNode.GreaterThanOrEquals(xVarRead, yVarRead),
         )
-
+        println(IntermediateFormTreeNode.DummyRead("x" asVarIn context, true).toCfg())
+        println(basic)
         assertTrue(basic hasSameStructureAs IntermediateFormTreeNode.DummyRead("x" asVarIn context, true).toCfg())
 
         for ((expr, iftNode) in operatorTests) {

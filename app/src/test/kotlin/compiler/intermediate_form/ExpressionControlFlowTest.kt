@@ -6,9 +6,6 @@ import compiler.ast.NamedNode
 import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.common.intermediate_form.FunctionDetailsGeneratorInterface
-import compiler.common.intermediate_form.addTreeToCFG
-import compiler.common.intermediate_form.mergeCFGsConditionally
-import compiler.common.intermediate_form.mergeCFGsUnconditionally
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.referenceMapOf
@@ -24,7 +21,7 @@ class ExpressionControlFlowTest {
         override fun generateCall(args: List<IntermediateFormTreeNode>): FunctionDetailsGeneratorInterface.FunctionCallIntermediateForm {
             val callResult = IntermediateFormTreeNode.DummyCallResult()
             return FunctionDetailsGeneratorInterface.FunctionCallIntermediateForm(
-                addTreeToCFG(null, IntermediateFormTreeNode.DummyCall(function, args, callResult)),
+                ControlFlowGraphBuilder().addSingleTree(IntermediateFormTreeNode.DummyCall(function, args, callResult)).build(),
                 callResult
             )
         }
@@ -243,19 +240,21 @@ class ExpressionControlFlowTest {
     }
 
     private fun IntermediateFormTreeNode.toCfg(): ControlFlowGraph =
-        addTreeToCFG(null, this)
-
-    private infix fun IntermediateFormTreeNode.merge(cfg: ControlFlowGraph): ControlFlowGraph =
-        mergeCFGsUnconditionally(this.toCfg(), cfg)!!
-
+        ControlFlowGraphBuilder().addSingleTree(this).build()
     private infix fun ControlFlowGraph.merge(cfg: ControlFlowGraph): ControlFlowGraph =
-        mergeCFGsUnconditionally(this, cfg)!!
+        ControlFlowGraphBuilder().mergeUnconditionally(this).mergeUnconditionally(cfg).build()
+    private infix fun IntermediateFormTreeNode.merge(cfg: ControlFlowGraph): ControlFlowGraph =
+        this.toCfg() merge cfg
 
     private infix fun ControlFlowGraph.merge(iftNode: IntermediateFormTreeNode): ControlFlowGraph =
-        mergeCFGsUnconditionally(this, iftNode.toCfg())!!
+        this merge iftNode.toCfg()
 
     private infix fun IntermediateFormTreeNode.merge(iftNode: IntermediateFormTreeNode): ControlFlowGraph =
-        mergeCFGsUnconditionally(this.toCfg(), iftNode.toCfg())!!
+        this.toCfg() merge iftNode.toCfg()
+
+    private fun mergeCFGsConditionally(condition: ControlFlowGraph, cfgTrue: ControlFlowGraph, cfgFalse: ControlFlowGraph): ControlFlowGraph {
+        return ControlFlowGraphBuilder().mergeUnconditionally(condition).mergeConditionally(cfgTrue, cfgFalse).build()
+    }
 
     @Ignore
     @Test
@@ -302,7 +301,8 @@ class ExpressionControlFlowTest {
             Expression.BinaryOperation(Expression.BinaryOperation.Kind.GREATER_THAN, xExpr, yExpr) to IntermediateFormTreeNode.GreaterThan(xVarRead, yVarRead),
             Expression.BinaryOperation(Expression.BinaryOperation.Kind.GREATER_THAN_OR_EQUALS, xExpr, yExpr) to IntermediateFormTreeNode.GreaterThanOrEquals(xVarRead, yVarRead),
         )
-
+        println(IntermediateFormTreeNode.DummyRead("x" asVarIn context, true).toCfg())
+        println(basic)
         assertTrue(basic hasSameStructureAs IntermediateFormTreeNode.DummyRead("x" asVarIn context, true).toCfg())
 
         for ((expr, iftNode) in operatorTests) {

@@ -10,6 +10,9 @@ class ControlFlowGraphBuilder {
     private var entryTreeRoot: IFTNode? = null
 
     fun addLink(from: Pair<IFTNode, CFGLinkType>?, to: IFTNode) {
+        if (!treeRoots.contains(to))
+            treeRoots.add(to)
+
         if (from != null) {
             if (!treeRoots.contains(from.first))
                 treeRoots.add(from.first)

@@ -9,6 +9,7 @@ import compiler.ast.StatementBlock
 import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic.ControlFlowDiagnostic
 import compiler.common.diagnostics.Diagnostics
+import compiler.common.intermediate_form.FunctionDetailsGeneratorInterface
 import compiler.common.reference_collections.MutableReferenceSet
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceHashSet
@@ -30,7 +31,7 @@ object ControlFlow {
         nameResolution: ReferenceMap<Any, NamedNode>,
         variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>,
         callGraph: ReferenceMap<Function, ReferenceSet<Function>>,
-        functionDetailsGenerators: ReferenceMap<Function, FunctionDetailsGenerator>,
+        functionDetailsGenerators: ReferenceMap<Function, FunctionDetailsGeneratorInterface>,
         argumentResolution: ArgumentResolutionResult,
         defaultParameterValues: ReferenceMap<Function.Parameter, Variable>
     ): ControlFlowGraph {
@@ -79,17 +80,15 @@ object ControlFlow {
                 }
 
                 is Expression.FunctionCall -> {
-                    val variablesModifiedInArguments = ReferenceHashSet<Variable>()
-                    for (argumentNode in astNode.arguments) {
-                        val modifiedVariables = ReferenceHashSet<Variable>()
-                        firstStageRecursion(argumentNode.value, modifiedVariables)
-                        variablesModifiedInArguments.addAll(modifiedVariables)
+                    val modifiedInArguments = ReferenceHashSet<Variable>()
+                    astNode.arguments.reversed().forEach { argumentNode ->
+                        firstStageRecursion(argumentNode.value, modifiedInArguments)
                     }
 
                     val variablesModifiedByCall = getVariablesModifiedBy(nameResolution[astNode] as Function)
                     invalidatedVariables[astNode] = variablesModifiedByCall
                     modifiedUnderCurrentBase.addAll(variablesModifiedByCall)
-                    modifiedUnderCurrentBase.addAll(variablesModifiedInArguments)
+                    modifiedUnderCurrentBase.addAll(modifiedInArguments)
                 }
 
                 is Expression.Conditional -> {

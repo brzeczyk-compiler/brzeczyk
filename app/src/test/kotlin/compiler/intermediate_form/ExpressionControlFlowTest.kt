@@ -11,7 +11,6 @@ import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.referenceMapOf
 import compiler.common.reference_collections.referenceSetOf
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
-import org.junit.Ignore
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
@@ -261,7 +260,6 @@ class ExpressionControlFlowTest {
         return ControlFlowGraphBuilder().mergeUnconditionally(condition).mergeConditionally(cfgTrue, cfgFalse).build()
     }
 
-    @Ignore
     @Test
     fun `basic expressions`() {
         val context = ExpressionContext(
@@ -315,7 +313,6 @@ class ExpressionControlFlowTest {
         }
     }
 
-    @Ignore
     @Test
     fun `assignment`() {
         val context = ExpressionContext(
@@ -329,7 +326,6 @@ class ExpressionControlFlowTest {
         )
     }
 
-    @Ignore
     @Test
     fun `function calls test`() {
         val context = ExpressionContext(
@@ -440,7 +436,6 @@ class ExpressionControlFlowTest {
         )
     }
 
-    @Ignore
     @Test
     fun `conditionals`() {
         val context = ExpressionContext(
@@ -498,7 +493,6 @@ class ExpressionControlFlowTest {
         )
     }
 
-    @Ignore
     @Test
     fun `conditionals with function calls`() {
         val context = ExpressionContext(
@@ -621,7 +615,6 @@ class ExpressionControlFlowTest {
         )
     }
 
-    @Ignore
     @Test
     fun `function calls with arguments`() {
         val context = ExpressionContext(
@@ -677,7 +670,6 @@ class ExpressionControlFlowTest {
         )
     }
 
-    @Ignore
     @Test
     fun `execution order test`() {
         val context = ExpressionContext(

@@ -12,7 +12,7 @@ class ReferenceHashMap<K, V> : IdentityHashMap<K, V>(), MutableReferenceMap<K, V
             if (this.size != other.size) return false
             this.keys.forEach {
                 if (!other.containsKey(it)) return false
-                if (!this[it]!!.equals(other[it])) return false
+                if (this[it]!! != other[it]) return false
             }
             return true
         }
@@ -29,12 +29,14 @@ class ReferenceEntry<K, V>(val key: K, var value: V) {
 }
 
 val <K, V> ReferenceMap<K, V>.referenceEntries get() = entries.map { ReferenceEntry(it.key, it.value) }.toSet()
-
 val <K, V> ReferenceMap<K, V>.referenceKeys get() = referenceSetOf(referenceEntries.map { it.key })
 
-fun <K, V> referenceMapOf(vararg pairs: Pair<K, V>): ReferenceMap<K, V> {
+fun <K, V> referenceHashMapOf(pairs: List<Pair<K, V> >): ReferenceHashMap<K, V> {
     val map = ReferenceHashMap<K, V>()
     for ((key, value) in pairs)
         map[key] = value
     return map
 }
+
+fun <K, V> referenceMapOf(pairs: List<Pair<K, V> >): ReferenceMap<K, V> = referenceHashMapOf(pairs)
+fun <K, V> referenceMapOf(vararg pairs: Pair<K, V>): ReferenceMap<K, V> = referenceMapOf(pairs.asList())

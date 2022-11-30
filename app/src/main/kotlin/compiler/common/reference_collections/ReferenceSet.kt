@@ -6,7 +6,9 @@ interface ReferenceSet<E> : Set<E>
 
 interface MutableReferenceSet<E> : MutableSet<E>, ReferenceSet<E>
 
-class ReferenceHashSet<E> : MutableSet<E> by Collections.newSetFromMap(ReferenceHashMap()), MutableReferenceSet<E>
+class ReferenceHashSet<E> : MutableSet<E> by Collections.newSetFromMap(ReferenceHashMap()), MutableReferenceSet<E> {
+    override fun equals(other: Any?): Boolean = other is ReferenceHashSet<*> && this.referenceElements == other.referenceElements
+}
 
 class ReferenceElement<E>(val element: E) {
     override fun equals(other: Any?): Boolean = other is ReferenceElement<*> && element === other.element

@@ -35,41 +35,32 @@ data class FunctionDetailsGenerator(
     fun genCall(
         args: List<IntermediateFormTreeNode>,
     ): FunctionCallIntermediateForm {
-        val cfgBuilder = ControlFlowGraphBuilder()
-        var last: Pair<IFTNode, CFGLinkType>? = null
+        // First, it moves parameter values to appropriate location based on args (using genWrite).
+        // At the end it adds an instruction to store function result in FUNCTION_RESULT_REGISTER, when it isn't Unit
+        // returning function, and then it creates temporary IFTNode outside CFG in result,
+        // which simply reads value from that register.
 
+        val cfgBuilder = ControlFlowGraphBuilder()
+
+        var last: Pair<IFTNode, CFGLinkType>? = null
         // write arg values to params
         for ((arg, param) in args zip parameters) {
-            val node = genWrite(param, arg, true)
+            val node = genWrite(param, arg, false)
             cfgBuilder.addLink(last, node)
             last = Pair(node, CFGLinkType.UNCONDITIONAL)
         }
 
         // add function graph
-        cfgBuilder.addAllFrom(functionCFG)
+        cfgBuilder.addAllFrom(functionCFG, false)
         cfgBuilder.addLink(last, functionCFG.entryTreeRoot!!)
 
         fun modifyReturnNodesToStoreResultInAppropriateRegister(functionCfg: ControlFlowGraph): FunctionCallIntermediateForm {
-            val finalNodes = functionCfg.finalTreeRoots
-
             val modifiedCfgBuilder = ControlFlowGraphBuilder()
+            modifiedCfgBuilder.addAllFrom(functionCfg, true)
+            modifiedCfgBuilder.updateNodes({ it in functionCfg.finalTreeRoots }, {
+                IntermediateFormTreeNode.RegisterWrite(FUNCTION_RESULT_REGISTER, it)
+            })
 
-            val linksToIterateOver = hashMapOf(
-                CFGLinkType.UNCONDITIONAL to functionCfg.unconditionalLinks,
-                CFGLinkType.CONDITIONAL_TRUE to functionCfg.conditionalTrueLinks,
-                CFGLinkType.CONDITIONAL_FALSE to functionCfg.conditionalFalseLinks
-            )
-
-            for ((linkType, links) in linksToIterateOver) {
-                for ((from, to) in links) {
-                    if (to !in finalNodes)
-                        modifiedCfgBuilder.addLink(Pair(from, linkType), to)
-                    else {
-                        val newReturnNode = IntermediateFormTreeNode.RegisterWrite(FUNCTION_RESULT_REGISTER, to)
-                        modifiedCfgBuilder.addLink(Pair(from, linkType), newReturnNode)
-                    }
-                }
-            }
             return FunctionCallIntermediateForm(
                 modifiedCfgBuilder.build(),
                 IntermediateFormTreeNode.RegisterRead(FUNCTION_RESULT_REGISTER)

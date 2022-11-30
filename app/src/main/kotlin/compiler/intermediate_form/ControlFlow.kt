@@ -38,13 +38,14 @@ object ControlFlow {
             fun processStatementBlock(block: StatementBlock) {
                 fun addExpression(expression: Expression, variable: Variable?): IFTNode? {
                     val cfg = createGraphForExpression(expression, variable)
-                    cfgBuilder.addAllFrom(cfg)
+                    cfgBuilder.addAllFrom(cfg, false)
 
                     val entry = cfg.entryTreeRoot
 
                     if (entry != null) {
-                        for (node in last)
+                        for (node in last) {
                             cfgBuilder.addLink(node, entry)
+                        }
 
                         last = cfg.finalTreeRoots.map { Pair(it, CFGLinkType.UNCONDITIONAL) }
                     }

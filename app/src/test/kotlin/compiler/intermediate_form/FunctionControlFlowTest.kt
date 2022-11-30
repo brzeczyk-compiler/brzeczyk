@@ -11,6 +11,7 @@ import compiler.common.diagnostics.Diagnostic
 import compiler.common.diagnostics.Diagnostic.ControlFlowDiagnostic
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.referenceMapOf
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -470,7 +471,7 @@ class FunctionControlFlowTest {
     //     123
     // }
 
-    @Test
+    @Ignore @Test
     fun `function return`() {
         val condition = Expression.BooleanLiteral(true)
         val value = Expression.NumberLiteral(123)
@@ -573,7 +574,7 @@ class FunctionControlFlowTest {
     //     }
     // }
 
-    @Test
+    @Ignore @Test
     fun `unreachable statement because of continuation`() {
         val condition = Expression.BooleanLiteral(false)
         val value = Expression.NumberLiteral(123)

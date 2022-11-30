@@ -1,4 +1,5 @@
 package compiler.intermediate_form
+
 import compiler.ast.Expression
 import compiler.ast.Function
 import compiler.ast.NamedNode
@@ -14,13 +15,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class FunctionDependenciesAnalyzerTest {
-    private fun assertContentEquals(expected: ReferenceMap<Function, ReferenceSet<Function>>, actual: ReferenceMap<Function, ReferenceSet<Function>>) {
-        expected.referenceKeys.forEach {
-            assertTrue(it in actual.referenceKeys)
-            assertEquals(expected[it]!!.referenceElements, actual[it]!!.referenceElements)
-        }
-    }
-
     @Test fun `test function details generator creation`() {
         /*
         czynność f() {
@@ -65,10 +59,10 @@ class FunctionDependenciesAnalyzerTest {
         )
         val program = Program(listOf(Program.Global.FunctionDefinition(functionF)))
         val variableProperties = referenceMapOf<Any, VariablePropertiesAnalyzer.VariableProperties>(
-            par to VariablePropertiesAnalyzer.VariableProperties(functionG, mutableSetOf(), mutableSetOf()),
-            varA to VariablePropertiesAnalyzer.VariableProperties(functionF, mutableSetOf(), mutableSetOf(functionG)),
-            varB to VariablePropertiesAnalyzer.VariableProperties(functionF, mutableSetOf(functionG), mutableSetOf()),
-            varC to VariablePropertiesAnalyzer.VariableProperties(functionF, mutableSetOf(), mutableSetOf())
+            par to VariablePropertiesAnalyzer.VariableProperties(functionG, referenceSetOf(), referenceSetOf()),
+            varA to VariablePropertiesAnalyzer.VariableProperties(functionF, referenceSetOf(), referenceSetOf(functionG)),
+            varB to VariablePropertiesAnalyzer.VariableProperties(functionF, referenceSetOf(functionG), referenceSetOf()),
+            varC to VariablePropertiesAnalyzer.VariableProperties(functionF, referenceSetOf(), referenceSetOf())
         )
 
         val expectedResult = referenceMapOf(

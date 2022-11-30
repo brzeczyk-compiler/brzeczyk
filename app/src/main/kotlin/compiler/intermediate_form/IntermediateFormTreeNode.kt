@@ -1,11 +1,11 @@
 package compiler.intermediate_form
 
 sealed class IntermediateFormTreeNode {
-    data class MemoryRead(val address: Addressing) : IntermediateFormTreeNode()
+    data class MemoryRead(val address: IntermediateFormTreeNode) : IntermediateFormTreeNode()
     data class RegisterRead(val register: Register) : IntermediateFormTreeNode()
     data class Const(val value: Long) : IntermediateFormTreeNode()
 
-    data class MemoryWrite(val address: Addressing, val node: IntermediateFormTreeNode) : IntermediateFormTreeNode()
+    data class MemoryWrite(val address: IntermediateFormTreeNode, val node: IntermediateFormTreeNode) : IntermediateFormTreeNode()
     data class RegisterWrite(val register: Register, val node: IntermediateFormTreeNode) : IntermediateFormTreeNode()
 
     // no logical and, or, since they have a short circuit semantic
@@ -35,7 +35,7 @@ sealed class IntermediateFormTreeNode {
 
     data class StackPush(val node: IntermediateFormTreeNode) : IntermediateFormTreeNode()
     data class StackPopToRegister(val register: Register) : IntermediateFormTreeNode()
-    data class StackPopToMemory(val address: Addressing) : IntermediateFormTreeNode()
+    data class StackPopToMemory(val address: IntermediateFormTreeNode) : IntermediateFormTreeNode()
 
     class NoOp : IntermediateFormTreeNode() // For testing
 }

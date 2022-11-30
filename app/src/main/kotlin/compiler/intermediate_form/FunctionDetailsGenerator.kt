@@ -10,18 +10,12 @@ data class FunctionCallIntermediateForm(
     val result: IntermediateFormTreeNode?
 )
 
-data class VariableDisplayInfo(
-    val depth: ULong, // of parent function in display
-    val offset: ULong // from rbp of parent function
-)
-
 enum class VariableLocationType {
     MEMORY,
     REGISTER
 }
 
 val FUNCTION_RESULT_REGISTER = Register()
-val HELPER_REGISTER = Register()
 val BASE_POINTER_REGISTER = Register()
 val STACK_POINTER_REGISTER = Register()
 
@@ -31,13 +25,12 @@ data class FunctionDetailsGenerator(
     val parameters: List<Function.Parameter>,
     val functionCFG: ControlFlowGraph,
     val function: Function,
-    val variablesDisplayInfo: MutableMap<String, VariableDisplayInfo>,
     val displayAddress: MemoryAddress
 ) {
 
-    private val variablesDisplayInfoToRestore: MutableMap<String, VariableDisplayInfo> = HashMap()
-    private val variablesRegisters: MutableMap<String, Register> = ReferenceHashMap()
-    var prologueOffset: ULong = 0u
+    private val variablesStackOffsets: MutableMap<NamedNode, ULong> = ReferenceHashMap()
+    private val variablesRegisters: MutableMap<NamedNode, Register> = ReferenceHashMap()
+    private var prologueOffset: ULong = 0u
 
     fun genCall(
         args: List<IntermediateFormTreeNode>,
@@ -48,9 +41,8 @@ data class FunctionDetailsGenerator(
         // write arg values to params
         for ((arg, param) in args zip parameters) {
             val node = genWrite(param, arg, true)
-            cfgBuilder.addAllFrom(node)
-            cfgBuilder.addLink(last, node.entryTreeRoot!!)
-            last = Pair(node.finalTreeRoots[0], CFGLinkType.UNCONDITIONAL)
+            cfgBuilder.addLink(last, node)
+            last = Pair(node, CFGLinkType.UNCONDITIONAL)
         }
 
         // add function graph
@@ -105,10 +97,12 @@ data class FunctionDetailsGenerator(
 
         // update display
         val savePreviousRbp = IntermediateFormTreeNode.StackPush(
-            IntermediateFormTreeNode.MemoryRead(Addressing.Displacement(displayAddress + memoryUnitSize * depth))
+            IntermediateFormTreeNode.MemoryRead(
+                IntermediateFormTreeNode.Const((displayAddress + memoryUnitSize * depth).toLong())
+            )
         )
         val updateRbpAtDepth = IntermediateFormTreeNode.MemoryWrite(
-            Addressing.Displacement(displayAddress + memoryUnitSize * depth),
+            IntermediateFormTreeNode.Const((displayAddress + memoryUnitSize * depth).toLong()),
             IntermediateFormTreeNode.RegisterRead(BASE_POINTER_REGISTER)
         )
         cfgBuilder.addLink(last, savePreviousRbp)
@@ -124,17 +118,14 @@ data class FunctionDetailsGenerator(
                     val node = IntermediateFormTreeNode.StackPush(IntermediateFormTreeNode.Const(0))
                     cfgBuilder.addLink(last, node)
                     last = Pair(node, CFGLinkType.UNCONDITIONAL)
-                    prologueOffset += memoryUnitSize
 
-                    // update variable display info
-                    if (variablesDisplayInfo.containsKey(variable.name))
-                        variablesDisplayInfoToRestore[variable.name] = variablesDisplayInfo[variable.name]!!
-                    variablesDisplayInfo[variable.name] = VariableDisplayInfo(depth, prologueOffset)
+                    variablesStackOffsets[variable] = 3u * memoryUnitSize + prologueOffset
+                    prologueOffset += memoryUnitSize
                 }
 
                 VariableLocationType.REGISTER -> {
                     // create a register for the variable TODO: is some register assignment logic already needed here?
-                    variablesRegisters[variable.name] = Register()
+                    variablesRegisters[variable] = Register()
                 }
             }
         }
@@ -159,17 +150,11 @@ data class FunctionDetailsGenerator(
 
         // restore previous rbp in display at depth
         val popPreviousRbp = IntermediateFormTreeNode.StackPopToMemory(
-            Addressing.Displacement(displayAddress + memoryUnitSize * depth),
+            IntermediateFormTreeNode.Const((displayAddress + memoryUnitSize * depth).toLong()),
         )
 
         cfgBuilder.addLink(last, popPreviousRbp)
         last = Pair(popPreviousRbp, CFGLinkType.UNCONDITIONAL)
-
-        // restore variable display info
-        for (variable in variablesLocationTypes.filter { entry -> entry.value == VariableLocationType.MEMORY }.keys)
-            variablesDisplayInfo.remove(variable.name)
-        for ((variableName, displayInfo) in variablesDisplayInfoToRestore)
-            variablesDisplayInfo[variableName] = displayInfo
 
         // restore rbp
         val movRspRbp = IntermediateFormTreeNode.RegisterWrite(
@@ -185,79 +170,55 @@ data class FunctionDetailsGenerator(
         return cfgBuilder.build()
     }
 
-    fun genRead(variable: NamedNode, isDirect: Boolean): ControlFlowGraph {
-        val cfgBuilder = ControlFlowGraphBuilder()
-
+    fun genRead(variable: NamedNode, isDirect: Boolean): IntermediateFormTreeNode {
         if (isDirect) {
-            cfgBuilder.addLink(
-                null,
-                when (variablesLocationTypes[variable]!!) {
-                    VariableLocationType.MEMORY -> {
-                        val offsetFromRbp = variablesDisplayInfo[variable.name]!!.offset
-                        IntermediateFormTreeNode.MemoryRead(
-                            Addressing.IndexAndDisplacement(BASE_POINTER_REGISTER, 1U, offsetFromRbp)
+            return when (variablesLocationTypes[variable]!!) {
+                VariableLocationType.MEMORY -> {
+                    IntermediateFormTreeNode.MemoryRead(
+                        IntermediateFormTreeNode.Add(
+                            IntermediateFormTreeNode.RegisterRead(BASE_POINTER_REGISTER),
+                            IntermediateFormTreeNode.Const(variablesStackOffsets[variable]!!.toLong())
                         )
-                    }
-                    VariableLocationType.REGISTER ->
-                        IntermediateFormTreeNode.RegisterRead(variablesRegisters[variable.name]!!)
+                    )
                 }
-            )
+                VariableLocationType.REGISTER ->
+                    IntermediateFormTreeNode.RegisterRead(variablesRegisters[variable]!!)
+            }
         } else {
-            val parentDisplayDepth = variablesDisplayInfo[variable.name]!!.depth
-            val offsetFromParentRbp = variablesDisplayInfo[variable.name]!!.offset
-            val displayElementAddress = displayAddress + memoryUnitSize * parentDisplayDepth
-
-            val prepareHelperRegister = IntermediateFormTreeNode.RegisterWrite(
-                HELPER_REGISTER,
-                IntermediateFormTreeNode.MemoryRead(Addressing.Displacement(displayElementAddress)) // parent rbp
+            val displayElementAddress = displayAddress + memoryUnitSize * depth
+            return IntermediateFormTreeNode.MemoryRead(
+                IntermediateFormTreeNode.Add(
+                    IntermediateFormTreeNode.MemoryRead(IntermediateFormTreeNode.Const(displayElementAddress.toLong())),
+                    IntermediateFormTreeNode.Const(variablesStackOffsets[variable]!!.toLong())
+                )
             )
-            val valueRead = IntermediateFormTreeNode.MemoryRead(
-                Addressing.IndexAndDisplacement(HELPER_REGISTER, 1U, offsetFromParentRbp)
-            )
-
-            cfgBuilder.addLink(null, prepareHelperRegister)
-            cfgBuilder.addLink(Pair(prepareHelperRegister, CFGLinkType.UNCONDITIONAL), valueRead)
         }
-
-        return cfgBuilder.build()
     }
 
-    fun genWrite(variable: NamedNode, value: IntermediateFormTreeNode, isDirect: Boolean): ControlFlowGraph {
-        val cfgBuilder = ControlFlowGraphBuilder()
-
+    fun genWrite(variable: NamedNode, value: IntermediateFormTreeNode, isDirect: Boolean): IntermediateFormTreeNode {
         if (isDirect) {
-            cfgBuilder.addLink(
-                null,
-                when (variablesLocationTypes[variable]!!) {
-                    VariableLocationType.MEMORY -> {
-                        val offsetFromRbp = variablesDisplayInfo[variable.name]!!.offset
-                        IntermediateFormTreeNode.MemoryWrite(
-                            Addressing.IndexAndDisplacement(BASE_POINTER_REGISTER, 1U, offsetFromRbp),
-                            value
-                        )
-                    }
-                    VariableLocationType.REGISTER ->
-                        IntermediateFormTreeNode.RegisterWrite(variablesRegisters[variable.name]!!, value)
+            return when (variablesLocationTypes[variable]!!) {
+                VariableLocationType.MEMORY -> {
+                    IntermediateFormTreeNode.MemoryWrite(
+                        IntermediateFormTreeNode.Add(
+                            IntermediateFormTreeNode.RegisterRead(BASE_POINTER_REGISTER),
+                            IntermediateFormTreeNode.Const(variablesStackOffsets[variable]!!.toLong())
+                        ),
+                        value
+                    )
                 }
-            )
+                VariableLocationType.REGISTER ->
+                    IntermediateFormTreeNode.RegisterWrite(variablesRegisters[variable]!!, value)
+            }
         } else {
-            val parentDisplayDepth = variablesDisplayInfo[variable.name]!!.depth
-            val offsetFromParentRbp = variablesDisplayInfo[variable.name]!!.offset
-            val displayElementAddress = displayAddress + memoryUnitSize * parentDisplayDepth
-
-            val prepareHelperRegister = IntermediateFormTreeNode.RegisterWrite(
-                HELPER_REGISTER,
-                IntermediateFormTreeNode.MemoryRead(Addressing.Displacement(displayElementAddress)) // parent rbp
-            )
-            val valueWrite = IntermediateFormTreeNode.MemoryWrite(
-                Addressing.IndexAndDisplacement(HELPER_REGISTER, 1U, offsetFromParentRbp),
+            val displayElementAddress = displayAddress + memoryUnitSize * depth
+            return IntermediateFormTreeNode.MemoryWrite(
+                IntermediateFormTreeNode.Add(
+                    IntermediateFormTreeNode.MemoryRead(IntermediateFormTreeNode.Const(displayElementAddress.toLong())),
+                    IntermediateFormTreeNode.Const(variablesStackOffsets[variable]!!.toLong())
+                ),
                 value
             )
-
-            cfgBuilder.addLink(null, prepareHelperRegister)
-            cfgBuilder.addLink(Pair(prepareHelperRegister, CFGLinkType.UNCONDITIONAL), valueWrite)
         }
-
-        return cfgBuilder.build()
     }
 }

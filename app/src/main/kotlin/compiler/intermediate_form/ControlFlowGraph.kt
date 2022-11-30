@@ -15,3 +15,9 @@ data class ControlFlowGraph(
         it !in unconditionalLinks && it !in conditionalTrueLinks && it !in conditionalFalseLinks
     }
 }
+
+enum class CFGLinkType {
+    UNCONDITIONAL,
+    CONDITIONAL_TRUE,
+    CONDITIONAL_FALSE
+}

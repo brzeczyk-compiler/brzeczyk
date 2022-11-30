@@ -7,18 +7,13 @@ import compiler.ast.Statement
 import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.common.reference_collections.ReferenceMap
-import compiler.common.reference_collections.ReferenceSet
-import compiler.common.reference_collections.referenceElements
-import compiler.common.reference_collections.referenceKeys
 import compiler.common.reference_collections.referenceMapOf
 import compiler.common.reference_collections.referenceSetOf
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class FunctionDependenciesAnalyzerTest {
-
     private fun assertContentEquals(expected: ReferenceMap<Function, ReferenceSet<Function>>, actual: ReferenceMap<Function, ReferenceSet<Function>>) {
         expected.referenceKeys.forEach {
             assertTrue(it in actual.referenceKeys)
@@ -112,7 +107,7 @@ class FunctionDependenciesAnalyzerTest {
             fFunction to referenceSetOf<Function>(),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test a function that calls another function`() {
@@ -145,7 +140,7 @@ class FunctionDependenciesAnalyzerTest {
             gFunction to referenceSetOf(fFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test inner functions`() {
@@ -187,7 +182,7 @@ class FunctionDependenciesAnalyzerTest {
             hFunction to referenceSetOf(gFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test recursion`() {
@@ -215,7 +210,7 @@ class FunctionDependenciesAnalyzerTest {
             fFunction to referenceSetOf(fFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test transitivity`() {
@@ -259,7 +254,7 @@ class FunctionDependenciesAnalyzerTest {
             hFunction to referenceSetOf(fFunction, gFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test a cycle`() {
@@ -318,7 +313,7 @@ class FunctionDependenciesAnalyzerTest {
             iFunction to referenceSetOf(fFunction, gFunction, hFunction, iFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test buried recursion`() {
@@ -389,7 +384,7 @@ class FunctionDependenciesAnalyzerTest {
             iFunction to referenceSetOf(fFunction, gFunction, hFunction, iFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test operators`() {
@@ -468,7 +463,7 @@ class FunctionDependenciesAnalyzerTest {
             testFunction to referenceSetOf(fFunction, gFunction, hFunction, iFunction, jFunction, kFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test variable definition and assignment`() {
@@ -496,7 +491,7 @@ class FunctionDependenciesAnalyzerTest {
 
         val yAssignment = Statement.Assignment("y", gFunctionCall)
         val xVariable = Variable(Variable.Kind.VALUE, "x", Type.Number, fFunctionCall)
-        val yVariable = Variable(Variable.Kind.VALUE, "y", Type.Number, null)
+        val yVariable = Variable(Variable.Kind.VARIABLE, "y", Type.Number, null)
 
         val fFunction = Function("f", listOf(), Type.Number, listOf(Statement.FunctionReturn(Expression.NumberLiteral(17))))
         val gFunction = Function("g", listOf(), Type.Number, listOf(Statement.FunctionReturn(Expression.NumberLiteral(18))))
@@ -528,7 +523,7 @@ class FunctionDependenciesAnalyzerTest {
             testFunction to referenceSetOf(fFunction, gFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test control flow`() {
@@ -628,7 +623,7 @@ class FunctionDependenciesAnalyzerTest {
             testFunction to referenceSetOf(fFunction, gFunction, hFunction, iFunction, jFunction, kFunction, lFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test arguments`() {
@@ -719,7 +714,7 @@ class FunctionDependenciesAnalyzerTest {
             testFunction to referenceSetOf(fFunction, gFunction, hFunction, iFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test default arguments`() {
@@ -772,7 +767,7 @@ class FunctionDependenciesAnalyzerTest {
             testFunction to referenceSetOf(fFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test comparison by reference`() {
@@ -831,6 +826,82 @@ class FunctionDependenciesAnalyzerTest {
             pgFunction to referenceSetOf(),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
+    }
+
+    @Test fun `test comparison by reference - sets`() {
+        /*
+        Create AST for program:
+        ---------------------------------
+
+        czynność test() {
+            czynność f() {
+                czynność p() { }
+                p()
+            }
+            f()
+
+            czynność g() {
+                czynność p() { }
+                p()
+            }
+            g()
+        }
+
+        */
+
+        val fFunctionCall = Expression.FunctionCall("f", listOf())
+        val gFunctionCall = Expression.FunctionCall("g", listOf())
+        val pfFunctionCall = Expression.FunctionCall("p", listOf())
+        val pgFunctionCall = Expression.FunctionCall("p", listOf())
+
+        val pfFunction = Function("p", listOf(), Type.Unit, listOf())
+        val pgFunction = Function("p", listOf(), Type.Unit, listOf())
+
+        val fFunction = Function(
+            "f", listOf(), Type.Unit,
+            listOf(
+                Statement.FunctionDefinition(pfFunction),
+                Statement.Evaluation(pfFunctionCall),
+            )
+        )
+        val gFunction = Function(
+            "g", listOf(), Type.Unit,
+            listOf(
+                Statement.FunctionDefinition(pgFunction),
+                Statement.Evaluation(pgFunctionCall),
+            )
+        )
+        val testFunction = Function(
+            "test", listOf(), Type.Unit,
+            listOf(
+                Statement.FunctionDefinition(fFunction),
+                Statement.Evaluation(fFunctionCall),
+                Statement.FunctionDefinition(gFunction),
+                Statement.Evaluation(gFunctionCall),
+            )
+        )
+        val globals = listOf(
+            Program.Global.FunctionDefinition(testFunction),
+        )
+
+        val program = Program(globals)
+        val nameResolution: ReferenceMap<Any, NamedNode> = referenceMapOf(
+            pfFunctionCall to pfFunction,
+            pgFunctionCall to pgFunction,
+            fFunctionCall to fFunction,
+            gFunctionCall to gFunction,
+        )
+        val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
+
+        val expectedCallGraph = referenceMapOf(
+            fFunction to referenceSetOf(pfFunction),
+            gFunction to referenceSetOf(pgFunction),
+            pfFunction to referenceSetOf(),
+            pgFunction to referenceSetOf(),
+            testFunction to referenceSetOf(fFunction, gFunction, pfFunction, pgFunction)
+        )
+
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 }

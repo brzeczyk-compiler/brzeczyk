@@ -3,34 +3,32 @@ package compiler.intermediate_form
 import compiler.ast.Function
 import compiler.ast.NamedNode
 import compiler.ast.Variable
+import compiler.common.intermediate_form.FunctionDetailsGeneratorInterface
 
 data class FunctionDetailsGenerator(
     val depth: ULong,
     val vars: Map<NamedNode, Boolean>,
     val parameters: List<Function.Parameter>
-)
-data class FunctionCallIntermediateForm(
-    val callGraph: ControlFlowGraph,
-    val result: IntermediateFormTreeNode?
-)
+) : FunctionDetailsGeneratorInterface {
 
-fun generateCall(args: List<IntermediateFormTreeNode>): FunctionCallIntermediateForm {
-    return TODO()
-}
+    override fun generateCall(args: List<IntermediateFormTreeNode>): FunctionDetailsGeneratorInterface.FunctionCallIntermediateForm {
+        return TODO()
+    }
 
-fun genPrologue(): ControlFlowGraph {
-    return TODO()
-}
+    override fun genPrologue(): ControlFlowGraph {
+        return TODO()
+    }
 
-fun genEpilogue(): ControlFlowGraph {
-    return TODO()
-}
+    override fun genEpilogue(): ControlFlowGraph {
+        return TODO()
+    }
 
-fun genRead(variable: Variable, isDirect: Boolean): IntermediateFormTreeNode {
-    // the caller is supposed to retrieve the value and assign it
-    return TODO()
-}
+    override fun genRead(variable: Variable, isDirect: Boolean): IntermediateFormTreeNode {
+        // the caller is supposed to retrieve the value and assign it
+        return TODO()
+    }
 
-fun genWrite(variable: Variable, value: IntermediateFormTreeNode, isDirect: Boolean): IntermediateFormTreeNode {
-    return TODO()
+    override fun genWrite(variable: Variable, value: IntermediateFormTreeNode, isDirect: Boolean): IntermediateFormTreeNode {
+        return TODO()
+    }
 }

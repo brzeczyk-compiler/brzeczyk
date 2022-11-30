@@ -60,10 +60,6 @@ object FunctionDependenciesAnalyzer {
         return result
     }
 
-    fun mapFunctionParametersToDummyVariables(ast: Program, nameResolution: ReferenceMap<Any, NamedNode>): ReferenceMap<Function.Parameter, Variable> {
-        return TODO()
-    }
-
     fun createCallGraph(ast: Program, nameResolution: ReferenceMap<Any, NamedNode>): ReferenceMap<Function, ReferenceSet<Function>> {
 
         val functionCalls: ReferenceHashMap<Function, ReferenceSet<Function>> = ReferenceHashMap()

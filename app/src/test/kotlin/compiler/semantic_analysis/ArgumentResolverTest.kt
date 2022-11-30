@@ -9,9 +9,15 @@ import compiler.ast.StatementBlock
 import compiler.ast.Type
 import compiler.common.diagnostics.CompilerDiagnostics
 import compiler.common.diagnostics.Diagnostic
+import compiler.common.reference_collections.ReferenceMap
+import compiler.common.reference_collections.ReferenceSet
+import compiler.common.reference_collections.referenceElements
+import compiler.common.reference_collections.referenceKeys
 import compiler.common.reference_collections.referenceMapOf
+import compiler.common.reference_collections.referenceSetOf
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 internal class ArgumentResolverTest {
     private fun namedArgument(name: String?, expr: Expression) = Expression.FunctionCall.Argument(name, expr)
@@ -36,6 +42,17 @@ internal class ArgumentResolverTest {
     private fun defaultBoolParameter(name: String, value: Boolean) =
         Function.Parameter(name, Type.Boolean, Expression.BooleanLiteral(value))
 
+    private fun assertContentEquals(
+        expected: ReferenceMap<Expression.FunctionCall, ReferenceSet<Function.Parameter>>,
+        actual: ReferenceMap<Expression.FunctionCall, ReferenceSet<Function.Parameter>>,
+    ) {
+        assertEquals(expected.referenceKeys.size, actual.referenceKeys.size)
+        expected.referenceKeys.forEach {
+            assertTrue(it in actual.referenceKeys)
+            assertEquals(expected[it]!!.referenceElements, actual[it]!!.referenceElements)
+        }
+    }
+
     @Test
     fun `test simple argument resolution`() {
         /*
@@ -56,7 +73,7 @@ internal class ArgumentResolverTest {
         val argumentResolution = ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
 
         assertEquals(emptyList(), diagnostics.diagnostics.toList())
-        assertEquals(referenceMapOf(argument to parameter), argumentResolution)
+        assertEquals(referenceMapOf(argument to parameter), argumentResolution.argumentsToParametersMap)
     }
 
     @Test
@@ -81,7 +98,7 @@ internal class ArgumentResolverTest {
         val argumentResolution = ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
 
         assertEquals(emptyList(), diagnostics.diagnostics.toList())
-        assertEquals(referenceMapOf(innerArg to par, outerArg to par), argumentResolution)
+        assertEquals(referenceMapOf(innerArg to par, outerArg to par), argumentResolution.argumentsToParametersMap)
     }
 
     @Test
@@ -110,7 +127,7 @@ internal class ArgumentResolverTest {
         val expected = referenceMapOf(arg1 to parA, arg2 to parC, arg3 to parB)
 
         assertEquals(emptyList(), diagnostics.diagnostics.toList())
-        assertEquals(expected, argumentResolution)
+        assertEquals(expected, argumentResolution.argumentsToParametersMap)
     }
 
     @Test
@@ -138,7 +155,8 @@ internal class ArgumentResolverTest {
         val expected = referenceMapOf(arg1 to parA, arg2 to parC)
 
         assertEquals(emptyList(), diagnostics.diagnostics.toList())
-        assertEquals(expected, argumentResolution)
+        assertEquals(expected, argumentResolution.argumentsToParametersMap)
+        assertContentEquals(referenceMapOf(call to referenceSetOf(parB)), argumentResolution.accessedDefaultValues)
     }
 
     @Test
@@ -162,7 +180,8 @@ internal class ArgumentResolverTest {
         val argumentResolution = ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
 
         assertEquals(emptyList(), diagnostics.diagnostics.toList())
-        assertEquals(referenceMapOf(), argumentResolution)
+        assertEquals(referenceMapOf(), argumentResolution.argumentsToParametersMap)
+        assertContentEquals(referenceMapOf(call to referenceSetOf(parA, parB, parC)), argumentResolution.accessedDefaultValues)
     }
 
     @Test
@@ -187,7 +206,7 @@ internal class ArgumentResolverTest {
         val expected = referenceMapOf(arg to par)
 
         assertEquals(emptyList(), diagnostics.diagnostics.toList())
-        assertEquals(expected, argumentResolution)
+        assertEquals(expected, argumentResolution.argumentsToParametersMap)
     }
 
     @Test

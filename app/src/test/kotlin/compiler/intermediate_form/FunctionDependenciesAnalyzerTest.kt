@@ -1,4 +1,5 @@
 package compiler.intermediate_form
+
 import compiler.ast.Expression
 import compiler.ast.Function
 import compiler.ast.NamedNode
@@ -9,10 +10,74 @@ import compiler.ast.Variable
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.referenceMapOf
 import compiler.common.reference_collections.referenceSetOf
+import compiler.semantic_analysis.VariablePropertiesAnalyzer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class FunctionDependenciesAnalyzerTest {
+    @Test fun `test function details generator creation`() {
+        /*
+        czynność f() {
+            zm a: Liczba = 4
+            zm b: Czy = fałsz
+            zm c: Liczba = 10
+            czynność g(x: Liczba) {
+                a = b ? 3 : 2
+            }
+        }
+         */
+
+        val varA = Variable(Variable.Kind.VARIABLE, "a", Type.Number, Expression.NumberLiteral(4))
+        val varB = Variable(Variable.Kind.VARIABLE, "b", Type.Boolean, Expression.BooleanLiteral(false))
+        val varC = Variable(Variable.Kind.VARIABLE, "c", Type.Number, Expression.NumberLiteral(10))
+        val par = Function.Parameter("x", Type.Number, null)
+        val functionG = Function(
+            "g",
+            listOf(par),
+            Type.Unit,
+            listOf(
+                Statement.Assignment(
+                    "a",
+                    Expression.Conditional(
+                        Expression.Variable("b"),
+                        Expression.NumberLiteral(3),
+                        Expression.NumberLiteral(2)
+                    )
+                )
+            )
+        )
+        val functionF = Function(
+            "f",
+            emptyList(),
+            Type.Unit,
+            listOf(
+                Statement.VariableDefinition(varA),
+                Statement.VariableDefinition(varB),
+                Statement.VariableDefinition(varC),
+                Statement.FunctionDefinition(functionG)
+            )
+        )
+        val program = Program(listOf(Program.Global.FunctionDefinition(functionF)))
+        val variableProperties = referenceMapOf<Any, VariablePropertiesAnalyzer.VariableProperties>(
+            par to VariablePropertiesAnalyzer.VariableProperties(functionG, referenceSetOf(), referenceSetOf()),
+            varA to VariablePropertiesAnalyzer.VariableProperties(functionF, referenceSetOf(), referenceSetOf(functionG)),
+            varB to VariablePropertiesAnalyzer.VariableProperties(functionF, referenceSetOf(functionG), referenceSetOf()),
+            varC to VariablePropertiesAnalyzer.VariableProperties(functionF, referenceSetOf(), referenceSetOf())
+        )
+
+        val expectedResult = referenceMapOf(
+            functionF to FunctionDetailsGenerator(
+                0u,
+                referenceMapOf(varA to true, varB to true, varC to false),
+                emptyList()
+            ),
+            functionG to FunctionDetailsGenerator(1u, referenceMapOf(par to false), listOf(par))
+        )
+
+        val actualResult = FunctionDependenciesAnalyzer.createFunctionDetailsGenerators(program, variableProperties)
+
+        assertEquals(expectedResult, actualResult)
+    }
 
     @Test fun `test a function that does not call`() {
         /*

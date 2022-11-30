@@ -1,12 +1,14 @@
 package compiler.intermediate_form
 
+import compiler.ast.Function
+import compiler.ast.NamedNode
 import compiler.ast.Variable
 import compiler.common.intermediate_form.FunctionDetailsGeneratorInterface
 
-class FunctionDetailsGenerator(
-    val depth: Int,
-    val vars: Map<Variable, Boolean>,
-    val parameters: List<Variable>
+data class FunctionDetailsGenerator(
+    val depth: ULong,
+    val vars: Map<NamedNode, Boolean>,
+    val parameters: List<Function.Parameter>
 ) : FunctionDetailsGeneratorInterface {
 
     override fun generateCall(args: List<IntermediateFormTreeNode>): FunctionDetailsGeneratorInterface.FunctionCallIntermediateForm {

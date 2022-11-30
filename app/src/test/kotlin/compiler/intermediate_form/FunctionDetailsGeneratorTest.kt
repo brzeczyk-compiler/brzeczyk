@@ -56,7 +56,10 @@ class FunctionDetailsGeneratorTest {
         val fdg = FunctionDetailsGenerator(
             listOf(),
             function42NoReturnCFG,
-            function42NoReturn
+            function42NoReturn,
+            0u,
+            mapOf(),
+            0u
         )
         val result = fdg.genCall(listOf())
         assertEquals(function42NoReturnCFG, result.callGraph)
@@ -84,7 +87,10 @@ class FunctionDetailsGeneratorTest {
         val fdg = FunctionDetailsGenerator(
             listOf(),
             functionReturn42CFG,
-            functionReturn42
+            functionReturn42,
+            0u,
+            mapOf(),
+            0u
         )
         val result = fdg.genCall(listOf())
 
@@ -135,11 +141,14 @@ class FunctionDetailsGeneratorTest {
             FunctionDetailsGenerator(
                 listOf(passedVariable),
                 maxWith0CFG,
-                maxWith0Function
+                maxWith0Function,
+                0u,
+                mapOf(),
+                0u
             )
         )
-        val mockedWriteCFG = ControlFlowGraphBuilder(IntermediateFormTreeNode.NoOp()).build()
-        every { mockedFDG.genWrite(passedVariable, any(), any()) } returns mockedWriteCFG
+        val mockedWriteIFT = IntermediateFormTreeNode.NoOp()
+        every { mockedFDG.genWrite(passedVariable, any(), any()) } returns mockedWriteIFT
 
         val result = mockedFDG.genCall(listOf(passedValue))
         val cfg = result.callGraph
@@ -147,10 +156,10 @@ class FunctionDetailsGeneratorTest {
         assertEquals(result.result, IntermediateFormTreeNode.RegisterRead(FUNCTION_RESULT_REGISTER))
 
         // first instruction should write parameter value to appropriate place
-        assertEquals(mockedWriteCFG.entryTreeRoot, cfg.entryTreeRoot)
+        assertEquals(mockedWriteIFT, cfg.entryTreeRoot)
 
         // second instruction should be comparing values
-        val secondNode = cfg.unconditionalLinks[mockedWriteCFG.entryTreeRoot]
+        val secondNode = cfg.unconditionalLinks[mockedWriteIFT]
         assert(secondNode!! is IntermediateFormTreeNode.GreaterThanOrEquals)
 
         // if true, we should read value from arg Variable's location and store it in FUNCTION_RESULT_REGISTER

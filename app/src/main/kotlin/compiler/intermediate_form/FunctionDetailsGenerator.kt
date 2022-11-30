@@ -20,11 +20,11 @@ val BASE_POINTER_REGISTER = Register()
 val STACK_POINTER_REGISTER = Register()
 
 data class FunctionDetailsGenerator(
-    val depth: ULong,
-    val variablesLocationTypes: Map<NamedNode, VariableLocationType>, // should contain parameters
-    val parameters: List<Function.Parameter>,
+    val parameters: List<NamedNode>,
     val functionCFG: ControlFlowGraph,
     val function: Function,
+    val depth: ULong,
+    val variablesLocationTypes: Map<NamedNode, VariableLocationType>, // should contain parameters
     val displayAddress: MemoryAddress
 ) {
 

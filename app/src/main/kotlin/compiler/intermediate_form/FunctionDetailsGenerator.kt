@@ -1,11 +1,12 @@
 package compiler.intermediate_form
 
 import compiler.ast.Function
+import compiler.ast.NamedNode
 import compiler.ast.Variable
 
 data class FunctionDetailsGenerator(
-    val depth: Int,
-    val vars: Map<Variable, Boolean>,
+    val depth: ULong,
+    val vars: Map<NamedNode, Boolean>,
     val parameters: List<Function.Parameter>
 )
 data class FunctionCallIntermediateForm(

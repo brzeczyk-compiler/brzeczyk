@@ -23,26 +23,24 @@ object FunctionDependenciesAnalyzer {
 
         val result = ReferenceHashMap<Function, FunctionDetailsGenerator>()
 
-        fun createDetailsGenerator(function: Function, depth: Int) {
-            val variables = ReferenceHashMap<Variable, Boolean>()
+        fun createDetailsGenerator(function: Function, depth: ULong) {
+            val variables = ReferenceHashMap<NamedNode, Boolean>()
             variableProperties
-                .filter { it.key is Variable }
-                .map { it.key as Variable to it.value }
                 .filter { (_, properties) -> properties.owner === function }
                 .forEach { (variable, properties) ->
-                    variables[variable] = (properties.accessedIn.any { it != function } || properties.writtenIn.any { it != function })
+                    variables[variable as NamedNode] = (properties.accessedIn.any { it != function } || properties.writtenIn.any { it != function })
                 }
 
             result[function] = FunctionDetailsGenerator(depth, variables, function.parameters)
         }
 
-        fun processFunction(function: Function, depth: Int) {
+        fun processFunction(function: Function, depth: ULong) {
             createDetailsGenerator(function, depth)
 
             fun processBlock(block: StatementBlock) {
                 for (statement in block) {
                     when (statement) {
-                        is Statement.FunctionDefinition -> processFunction(statement.function, depth + 1)
+                        is Statement.FunctionDefinition -> processFunction(statement.function, depth + 1u)
                         is Statement.Block -> processBlock(statement.block)
                         is Statement.Conditional -> {
                             processBlock(statement.actionWhenTrue)
@@ -57,7 +55,7 @@ object FunctionDependenciesAnalyzer {
             processBlock(function.body)
         }
 
-        program.globals.forEach { if (it is Program.Global.FunctionDefinition) processFunction(it.function, 0) }
+        program.globals.forEach { if (it is Program.Global.FunctionDefinition) processFunction(it.function, 0u) }
 
         return result
     }

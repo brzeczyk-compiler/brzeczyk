@@ -70,6 +70,7 @@ class FunctionDependenciesAnalyzerTest {
         )
         val program = Program(listOf(Program.Global.FunctionDefinition(functionF)))
         val variableProperties = referenceMapOf<Any, VariablePropertiesAnalyzer.VariableProperties>(
+            par to VariablePropertiesAnalyzer.VariableProperties(functionG, mutableSetOf(), mutableSetOf()),
             varA to VariablePropertiesAnalyzer.VariableProperties(functionF, mutableSetOf(), mutableSetOf(functionG)),
             varB to VariablePropertiesAnalyzer.VariableProperties(functionF, mutableSetOf(functionG), mutableSetOf()),
             varC to VariablePropertiesAnalyzer.VariableProperties(functionF, mutableSetOf(), mutableSetOf())
@@ -77,11 +78,11 @@ class FunctionDependenciesAnalyzerTest {
 
         val expectedResult = referenceMapOf(
             functionF to FunctionDetailsGenerator(
-                0,
+                0u,
                 referenceMapOf(varA to true, varB to true, varC to false),
                 emptyList()
             ),
-            functionG to FunctionDetailsGenerator(1, emptyMap(), listOf(par))
+            functionG to FunctionDetailsGenerator(1u, referenceMapOf(par to false), listOf(par))
         )
 
         val actualResult = FunctionDependenciesAnalyzer.createFunctionDetailsGenerators(program, variableProperties)

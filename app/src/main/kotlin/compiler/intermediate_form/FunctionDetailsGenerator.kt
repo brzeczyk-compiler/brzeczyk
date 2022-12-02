@@ -18,6 +18,7 @@ val BASE_POINTER_REGISTER = Register()
 val STACK_POINTER_REGISTER = Register()
 
 val argPositionToRegister = listOf(Register.RDI, Register.RSI, Register.RDX, Register.RCX, Register.R8, Register.R9)
+val caleeSavedRegistersWithoutRBPAndRSP = listOf(Register.RBX, Register.R12, Register.R13, Register.R14, Register.R15)
 
 data class FunctionDetailsGenerator(
     val parameters: List<NamedNode>,
@@ -85,6 +86,32 @@ data class FunctionDetailsGenerator(
 
     fun genPrologue(): ControlFlowGraph {
         val cfgBuilder = ControlFlowGraphBuilder()
+
+        // move args from Regsters and Stack
+        for ((param, register) in parameters zip argPositionToRegister) {
+            cfgBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL,
+                genWrite(
+                    param,
+                    IntermediateFormTreeNode.RegisterRead(register),
+                    true
+                )
+            )
+        }
+        for (param in parameters.drop(argPositionToRegister.size)) {
+            cfgBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL,
+                genWrite(
+                    param,
+                    IntermediateFormTreeNode.StackPop(),
+                    true
+                )
+            )
+        }
+
+        // backup other calee-saved registers
+        for(register in caleeSavedRegistersWithoutRBPAndRSP.reversed())
+            cfgBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL,
+                IntermediateFormTreeNode.StackPush(IntermediateFormTreeNode.RegisterRead(register))
+            )
 
         // save rbp
         val pushRbp = IntermediateFormTreeNode.StackPush(IntermediateFormTreeNode.RegisterRead(BASE_POINTER_REGISTER))
@@ -160,6 +187,12 @@ data class FunctionDetailsGenerator(
         cfgBuilder.addLink(last, movRspRbp)
         last = Pair(movRspRbp, CFGLinkType.UNCONDITIONAL)
         cfgBuilder.addLink(last, popRbp)
+
+        // restore other calee-saved registers
+        for(register in caleeSavedRegistersWithoutRBPAndRSP)
+            cfgBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL,
+                IntermediateFormTreeNode.RegisterWrite(register, IntermediateFormTreeNode.StackPop())
+            )
 
         return cfgBuilder.build()
     }

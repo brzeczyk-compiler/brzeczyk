@@ -8,8 +8,8 @@ import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.referenceEntries
-import compiler.common.reference_collections.referenceKeys
 import compiler.common.reference_collections.referenceHashMapOf
+import compiler.common.reference_collections.referenceKeys
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotSame

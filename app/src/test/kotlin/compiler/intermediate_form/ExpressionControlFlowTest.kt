@@ -8,7 +8,7 @@ import compiler.ast.Variable
 import compiler.common.intermediate_form.FunctionDetailsGeneratorInterface
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceSet
-import compiler.common.reference_collections.referenceMapOf
+import compiler.common.reference_collections.referenceHashMapOf
 import compiler.common.reference_collections.referenceSetOf
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
 import kotlin.test.Test
@@ -98,7 +98,7 @@ class ExpressionControlFlowTest {
                 finalCallGraph,
                 functionDetailsGenerators,
                 argumentResolution,
-                referenceMapOf()
+                referenceHashMapOf()
             )
         }
     }

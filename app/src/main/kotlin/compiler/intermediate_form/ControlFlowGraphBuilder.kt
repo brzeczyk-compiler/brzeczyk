@@ -19,6 +19,14 @@ class ControlFlowGraphBuilder(var entryTreeRoot: IFTNode? = null) {
         entryTreeRoot?.let { treeRoots.add(it) }
     }
 
+    fun makeRoot(root: IFTNode) {
+        if (entryTreeRoot != null)
+            throw IncorrectControlFlowGraphError("Tried to create second entryTreeRoot in CFGBuilder")
+        entryTreeRoot = root
+        if (!treeRoots.contains(root))
+            treeRoots.add(root)
+    }
+
     fun addLink(from: Pair<IFTNode, CFGLinkType>?, to: IFTNode, addDestination: Boolean = true) {
         if (addDestination && !treeRoots.contains(to))
             treeRoots.add(to)
@@ -47,48 +55,15 @@ class ControlFlowGraphBuilder(var entryTreeRoot: IFTNode? = null) {
             makeRoot(to)
     }
 
-    fun makeRoot(root: IFTNode) {
-        if (entryTreeRoot != null)
-            throw IncorrectControlFlowGraphError("Tried to create second entryTreeRoot in CFGBuilder")
-        entryTreeRoot = root
-        if (!treeRoots.contains(root))
-            treeRoots.add(root)
-    }
-
     fun addAllFrom(cfg: ControlFlowGraph, modifyEntryTreeRoot: Boolean = false) {
         treeRoots.addAll(cfg.treeRoots)
 
         if (modifyEntryTreeRoot || entryTreeRoot == null)
             entryTreeRoot = cfg.entryTreeRoot
+
         unconditionalLinks.putAll(cfg.unconditionalLinks)
         conditionalTrueLinks.putAll(cfg.conditionalTrueLinks)
         conditionalFalseLinks.putAll(cfg.conditionalFalseLinks)
-    }
-
-    fun updateNodes(nodeFilter: (IFTNode) -> Boolean, nodeUpdate: (IFTNode) -> IFTNode) {
-        val newTreeRoots = treeRoots.associateWith {
-            if (nodeFilter(it)) nodeUpdate(it) else it
-        }
-
-        fun linkReplacer(fromAndTo: Map.Entry<IFTNode, IFTNode>): Pair<IFTNode, IFTNode> {
-            return Pair(newTreeRoots[fromAndTo.key]!!, newTreeRoots[fromAndTo.value]!!)
-        }
-
-        unconditionalLinks = referenceHashMapOf(unconditionalLinks.map { linkReplacer(it) }.toList())
-        conditionalTrueLinks = referenceHashMapOf(conditionalTrueLinks.map { linkReplacer(it) }.toList())
-        conditionalFalseLinks = referenceHashMapOf(conditionalFalseLinks.map { linkReplacer(it) }.toList())
-        entryTreeRoot = newTreeRoots[entryTreeRoot]
-        treeRoots = ArrayList(treeRoots.map { newTreeRoots[it]!! })
-    }
-
-    fun build(): ControlFlowGraph {
-        return ControlFlowGraph(
-            treeRoots,
-            entryTreeRoot,
-            unconditionalLinks,
-            conditionalTrueLinks,
-            conditionalFalseLinks
-        )
     }
 
     fun mergeUnconditionally(cfg: ControlFlowGraph): ControlFlowGraphBuilder {
@@ -118,5 +93,15 @@ class ControlFlowGraphBuilder(var entryTreeRoot: IFTNode? = null) {
             )
         )
         return this
+    }
+
+    fun build(): ControlFlowGraph {
+        return ControlFlowGraph(
+            treeRoots,
+            entryTreeRoot,
+            unconditionalLinks,
+            conditionalTrueLinks,
+            conditionalFalseLinks
+        )
     }
 }

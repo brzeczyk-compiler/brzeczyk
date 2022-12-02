@@ -12,8 +12,8 @@ import compiler.common.diagnostics.Diagnostic
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.referenceElements
-import compiler.common.reference_collections.referenceKeys
 import compiler.common.reference_collections.referenceHashMapOf
+import compiler.common.reference_collections.referenceKeys
 import compiler.common.reference_collections.referenceSetOf
 import kotlin.test.Test
 import kotlin.test.assertEquals

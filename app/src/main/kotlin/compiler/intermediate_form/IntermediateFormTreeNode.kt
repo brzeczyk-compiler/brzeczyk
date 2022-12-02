@@ -13,7 +13,7 @@ sealed class IntermediateFormTreeNode {
     data class RegisterRead(val register: Register) : IntermediateFormTreeNode()
     data class Const(val value: Long) : IntermediateFormTreeNode()
 
-    data class MemoryWrite(val address: IntermediateFormTreeNode, val node: IntermediateFormTreeNode) : IntermediateFormTreeNode()
+    data class MemoryWrite(val address: IntermediateFormTreeNode, val value: IntermediateFormTreeNode) : IntermediateFormTreeNode()
     data class RegisterWrite(val register: Register, val node: IntermediateFormTreeNode) : IntermediateFormTreeNode()
 
     sealed class BinaryOperator(open val left: IntermediateFormTreeNode, open val right: IntermediateFormTreeNode) : IntermediateFormTreeNode()

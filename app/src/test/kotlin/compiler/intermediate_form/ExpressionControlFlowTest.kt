@@ -57,7 +57,7 @@ class ExpressionControlFlowTest {
         val variableProperties = ReferenceHashMap<Any, VariablePropertiesAnalyzer.VariableProperties>()
         val finalCallGraph: ReferenceHashMap<Function, ReferenceSet<Function>> = ReferenceHashMap()
         val argumentResolution: ReferenceHashMap<Expression.FunctionCall.Argument, Function.Parameter> = ReferenceHashMap()
-
+        val globalVariablesAccessGenerator: GlobalVariablesAccessGenerator
         init {
             val mutableVariableProperties = ReferenceHashMap<Any, VariablePropertiesAnalyzer.MutableVariableProperties>()
 
@@ -90,6 +90,8 @@ class ExpressionControlFlowTest {
 
             for ((variable, mutableVP) in mutableVariableProperties.entries)
                 variableProperties[variable] = VariablePropertiesAnalyzer.fixVariableProperties(mutableVP)
+
+            globalVariablesAccessGenerator = GlobalVariablesAccessGenerator(variableProperties)
         }
 
         fun createCfg(expr: Expression, targetVariable: Variable? = null): ControlFlowGraph {
@@ -102,7 +104,8 @@ class ExpressionControlFlowTest {
                 finalCallGraph,
                 functionDetailsGenerators,
                 argumentResolution,
-                referenceMapOf()
+                referenceMapOf(),
+                globalVariablesAccessGenerator
             )
         }
     }
@@ -191,7 +194,7 @@ class ExpressionControlFlowTest {
 
                 is IntermediateFormTreeNode.DummyCallResult -> callResultsMap.ensurePairSymmetrical(this, iftNode as IntermediateFormTreeNode.DummyCallResult)
                 is IntermediateFormTreeNode.DummyWrite -> (this.variable == (iftNode as IntermediateFormTreeNode.DummyWrite).variable) && (this.isDirect == iftNode.isDirect) && (nodeMap.ensurePairSymmetrical(this.value, iftNode.value))
-                is IntermediateFormTreeNode.MemoryWrite -> (this.address == (iftNode as IntermediateFormTreeNode.MemoryWrite).address) && (this.node hasSameStructureAs iftNode.node)
+                is IntermediateFormTreeNode.MemoryWrite -> (this.address == (iftNode as IntermediateFormTreeNode.MemoryWrite).address) && (this.value hasSameStructureAs iftNode.value)
                 is IntermediateFormTreeNode.RegisterWrite -> registersMap.ensurePairSymmetrical(this.register, (iftNode as IntermediateFormTreeNode.RegisterWrite).register) && (this.node hasSameStructureAs iftNode.node)
                 is IntermediateFormTreeNode.RegisterRead -> registersMap.ensurePairSymmetrical(this.register, (iftNode as IntermediateFormTreeNode.RegisterRead).register)
                 else -> {
@@ -379,7 +382,7 @@ class ExpressionControlFlowTest {
             ).toCfg()
 
         for (i in 0 until 3) {
-            assertTrue(cfgs.filter { it hasSameStructureAs cfgForOffset(i * 4.toLong()) }.size == 1)
+            assertTrue(cfgs.filter { it hasSameStructureAs cfgForOffset(i * 4L) }.size == 1)
         }
     }
 

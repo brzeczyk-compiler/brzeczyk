@@ -67,7 +67,7 @@ class VariablePropertiesAnalyzerTest {
     // zm x: Liczba = 123
 
     @Test
-    fun `test unused variable has no parent`() {
+    fun `test unused variable is global`() {
         val variable = Variable(Variable.Kind.VALUE, "x", Type.Number, Expression.NumberLiteral(123))
         val input = VariablePropertyInput(Program(listOf(VariableDefinition(variable))), referenceMapOf())
 

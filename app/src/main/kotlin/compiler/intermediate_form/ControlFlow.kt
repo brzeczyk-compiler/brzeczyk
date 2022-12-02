@@ -7,7 +7,7 @@ import compiler.ast.Program
 import compiler.ast.Statement
 import compiler.ast.StatementBlock
 import compiler.ast.Variable
-import compiler.common.dfa.VariablesOwner
+import compiler.common.ast.VariablesOwner
 import compiler.common.diagnostics.Diagnostic.ControlFlowDiagnostic
 import compiler.common.diagnostics.Diagnostics
 import compiler.common.intermediate_form.FunctionDetailsGeneratorInterface
@@ -34,7 +34,8 @@ object ControlFlow {
         callGraph: ReferenceMap<Function, ReferenceSet<Function>>,
         functionDetailsGenerators: ReferenceMap<Function, FunctionDetailsGeneratorInterface>,
         argumentResolution: ArgumentResolutionResult,
-        defaultParameterValues: ReferenceMap<Function.Parameter, Variable>
+        defaultParameterValues: ReferenceMap<Function.Parameter, Variable>,
+        globalVariablesAccessGenerator: GlobalVariablesAccessGenerator
     ): ControlFlowGraph {
         fun getVariablesModifiedBy(function: Function): ReferenceSet<Variable> {
             val possiblyCalledFunctions = combineReferenceSets(callGraph[function]!!, referenceSetOf(function))
@@ -49,7 +50,7 @@ object ControlFlow {
             val result = ReferenceHashMap<VariablesOwner, VariableAccessGenerator>()
 
             result.putAll(functionDetailsGenerators)
-            result[VariablePropertiesAnalyzer.GlobalContext] = GlobalVariablesAccessGenerator(variableProperties)
+            result[VariablePropertiesAnalyzer.GlobalContext] = globalVariablesAccessGenerator
             result
         }
 

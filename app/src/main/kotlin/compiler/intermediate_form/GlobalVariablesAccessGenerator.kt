@@ -6,19 +6,18 @@ import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceMap
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
 
-class GlobalVariablesAccessGenerator(private val variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>) : VariableAccessGenerator {
+class GlobalVariablesAccessGenerator(variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>) : VariableAccessGenerator {
 
     companion object {
         const val VARIABLE_SIZE = 4
         const val GLOBALS_MEMORY_LABEL = "globals"
     }
 
-    private val offsets = run {
-        var currentOffset: Long = 0
-        val result = ReferenceHashMap<Variable, Long>()
-
-        result.putAll(variableProperties.filter { it.value.owner === VariablePropertiesAnalyzer.GlobalContext }.map { it.key as Variable to (currentOffset++) * VARIABLE_SIZE }.toMap())
-        result
+    private val offsets = ReferenceHashMap<Variable, Long>().apply {
+        this.putAll(
+            variableProperties.filter { it.value.owner === VariablePropertiesAnalyzer.GlobalContext }
+                .asIterable().mapIndexed { index, value -> value.key as Variable to index.toLong() * VARIABLE_SIZE }
+        )
     }
 
     private fun getMemoryAddress(variable: Variable) =

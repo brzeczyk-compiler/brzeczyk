@@ -1,6 +1,6 @@
 package compiler.ast
 
-import compiler.common.dfa.VariablesOwner
+import compiler.common.ast.VariablesOwner
 
 data class Function(
     val name: String,

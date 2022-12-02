@@ -16,7 +16,7 @@ import compiler.common.reference_collections.ReferenceHashSet
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.referenceEntries
-import compiler.common.reference_collections.referenceMapOf
+import compiler.common.reference_collections.referenceHashMapOf
 import compiler.common.reference_collections.referenceSetOf
 
 object VariablePropertiesAnalyzer {
@@ -122,6 +122,6 @@ object VariablePropertiesAnalyzer {
         }.toList()
 
         fixedVariableProperties.addAll(defaultParametersDummyVariablesProperties)
-        return referenceMapOf(fixedVariableProperties)
+        return referenceHashMapOf(fixedVariableProperties)
     }
 }

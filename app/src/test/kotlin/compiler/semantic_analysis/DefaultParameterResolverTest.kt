@@ -9,7 +9,7 @@ import compiler.ast.Variable
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.referenceEntries
 import compiler.common.reference_collections.referenceKeys
-import compiler.common.reference_collections.referenceMapOf
+import compiler.common.reference_collections.referenceHashMapOf
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotSame
@@ -73,7 +73,7 @@ class DefaultParameterResolverTest {
         val program = Program(globals)
         val actualMapping = DefaultParameterResolver.mapFunctionParametersToDummyVariables(program)
 
-        val expectedMappingSimplified = referenceMapOf(
+        val expectedMappingSimplified = referenceHashMapOf(
             cParameter to Variable(Variable.Kind.CONSTANT, "test", Type.Number, cValue),
             dParameter to Variable(Variable.Kind.CONSTANT, "test", Type.Boolean, dValue),
         )
@@ -123,7 +123,7 @@ class DefaultParameterResolverTest {
         val program = Program(globals)
         val actualMapping = DefaultParameterResolver.mapFunctionParametersToDummyVariables(program)
 
-        val expectedMappingSimplified = referenceMapOf(
+        val expectedMappingSimplified = referenceHashMapOf(
             cParameter to Variable(Variable.Kind.VALUE, "test", Type.Number, cValue),
             dParameter to Variable(Variable.Kind.VALUE, "test", Type.Boolean, dValue),
         )
@@ -187,7 +187,7 @@ class DefaultParameterResolverTest {
         val program = Program(globals)
         val actualMapping = DefaultParameterResolver.mapFunctionParametersToDummyVariables(program)
 
-        val expectedMappingSimplified = referenceMapOf(
+        val expectedMappingSimplified = referenceHashMapOf(
             aParameter to Variable(Variable.Kind.VALUE, "test", Type.Number, aValue),
             bParameter to Variable(Variable.Kind.VALUE, "test", Type.Number, bValue),
             cParameter to Variable(Variable.Kind.VALUE, "test", Type.Number, cValue),
@@ -239,7 +239,7 @@ class DefaultParameterResolverTest {
         val program = Program(globals)
         val actualMapping = DefaultParameterResolver.mapFunctionParametersToDummyVariables(program)
 
-        val expectedMappingSimplified = referenceMapOf(
+        val expectedMappingSimplified = referenceHashMapOf(
             afParameter to Variable(Variable.Kind.VALUE, "test", Type.Number, afValue),
             agParameter to Variable(Variable.Kind.VALUE, "test", Type.Number, agValue),
         )

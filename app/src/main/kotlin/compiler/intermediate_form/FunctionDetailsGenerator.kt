@@ -14,11 +14,8 @@ enum class VariableLocationType {
     REGISTER
 }
 
-val BASE_POINTER_REGISTER = Register()
-val STACK_POINTER_REGISTER = Register()
-
 val argPositionToRegister = listOf(Register.RDI, Register.RSI, Register.RDX, Register.RCX, Register.R8, Register.R9)
-val caleeSavedRegistersWithoutRBPAndRSP = listOf(Register.RBX, Register.R12, Register.R13, Register.R14, Register.R15)
+val caleeSavedRegistersWithoutRSP = listOf(Register.RBX, Register.RBP, Register.R12, Register.R13, Register.R14, Register.R15)
 
 data class FunctionDetailsGenerator(
     val parameters: List<NamedNode>,
@@ -108,20 +105,18 @@ data class FunctionDetailsGenerator(
         }
 
         // backup other calee-saved registers
-        for(register in caleeSavedRegistersWithoutRBPAndRSP.reversed())
+        for(register in caleeSavedRegistersWithoutRSP.reversed())
             cfgBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL,
                 IntermediateFormTreeNode.StackPush(IntermediateFormTreeNode.RegisterRead(register))
             )
 
-        // save rbp
-        val pushRbp = IntermediateFormTreeNode.StackPush(IntermediateFormTreeNode.RegisterRead(BASE_POINTER_REGISTER))
         val movRbpRsp = IntermediateFormTreeNode.RegisterWrite(
-            BASE_POINTER_REGISTER,
-            IntermediateFormTreeNode.RegisterRead(STACK_POINTER_REGISTER)
+            Register.RBP,
+            IntermediateFormTreeNode.RegisterRead(Register.RSP)
         )
+        cfgBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, movRbpRsp)
 
-        cfgBuilder.addLink(null, pushRbp)
-        cfgBuilder.addLink(Pair(pushRbp, CFGLinkType.UNCONDITIONAL), movRbpRsp)
+
         var last: Pair<IFTNode, CFGLinkType> = Pair(movRbpRsp, CFGLinkType.UNCONDITIONAL)
 
         // update display
@@ -132,7 +127,7 @@ data class FunctionDetailsGenerator(
         )
         val updateRbpAtDepth = IntermediateFormTreeNode.MemoryWrite(
             IntermediateFormTreeNode.Const((displayAddress + memoryUnitSize * depth).toLong()),
-            IntermediateFormTreeNode.RegisterRead(BASE_POINTER_REGISTER)
+            IntermediateFormTreeNode.RegisterRead(Register.RBP)
         )
         cfgBuilder.addLink(last, savePreviousRbp)
         last = Pair(savePreviousRbp, CFGLinkType.UNCONDITIONAL)
@@ -158,9 +153,9 @@ data class FunctionDetailsGenerator(
 
         // abandon stack variables
         val addRspOffset = IntermediateFormTreeNode.RegisterWrite(
-            STACK_POINTER_REGISTER,
+            Register.RSP,
             IntermediateFormTreeNode.Add(
-                IntermediateFormTreeNode.RegisterRead(STACK_POINTER_REGISTER),
+                IntermediateFormTreeNode.RegisterRead(Register.RSP),
                 IntermediateFormTreeNode.Const(prologueOffset.toLong())
             )
         )
@@ -179,17 +174,14 @@ data class FunctionDetailsGenerator(
 
         // restore rbp
         val movRspRbp = IntermediateFormTreeNode.RegisterWrite(
-            STACK_POINTER_REGISTER,
-            IntermediateFormTreeNode.RegisterRead(BASE_POINTER_REGISTER)
+            Register.RSP,
+            IntermediateFormTreeNode.RegisterRead(Register.RBP)
         )
-        val popRbp = IntermediateFormTreeNode.RegisterWrite(BASE_POINTER_REGISTER, IntermediateFormTreeNode.StackPop())
 
         cfgBuilder.addLink(last, movRspRbp)
-        last = Pair(movRspRbp, CFGLinkType.UNCONDITIONAL)
-        cfgBuilder.addLink(last, popRbp)
 
         // restore other calee-saved registers
-        for(register in caleeSavedRegistersWithoutRBPAndRSP)
+        for(register in caleeSavedRegistersWithoutRSP)
             cfgBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL,
                 IntermediateFormTreeNode.RegisterWrite(register, IntermediateFormTreeNode.StackPop())
             )
@@ -203,7 +195,7 @@ data class FunctionDetailsGenerator(
                 VariableLocationType.MEMORY -> {
                     IntermediateFormTreeNode.MemoryRead(
                         IntermediateFormTreeNode.Add(
-                            IntermediateFormTreeNode.RegisterRead(BASE_POINTER_REGISTER),
+                            IntermediateFormTreeNode.RegisterRead(Register.RBP),
                             IntermediateFormTreeNode.Const(variablesStackOffsets[variable]!!.toLong())
                         )
                     )
@@ -228,7 +220,7 @@ data class FunctionDetailsGenerator(
                 VariableLocationType.MEMORY -> {
                     IntermediateFormTreeNode.MemoryWrite(
                         IntermediateFormTreeNode.Add(
-                            IntermediateFormTreeNode.RegisterRead(BASE_POINTER_REGISTER),
+                            IntermediateFormTreeNode.RegisterRead(Register.RBP),
                             IntermediateFormTreeNode.Const(variablesStackOffsets[variable]!!.toLong())
                         ),
                         value

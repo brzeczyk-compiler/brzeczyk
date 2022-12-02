@@ -6,11 +6,13 @@ data class Function(
     val name: String,
     val parameters: List<Parameter>,
     val returnType: Type,
-    val body: StatementBlock
-) : NamedNode, VariablesOwner {
+    val body: StatementBlock,
+    override val location: NodeLocation? = null,
+) : NamedNode, AstNode, VariablesOwner {
     data class Parameter(
         val name: String,
         val type: Type,
-        val defaultValue: Expression?
-    ) : NamedNode
+        val defaultValue: Expression?,
+        override val location: NodeLocation? = null,
+    ) : NamedNode, AstNode
 }

@@ -105,7 +105,8 @@ class TypeChecker(private val nameResolution: ReferenceMap<Any, NamedNode>, priv
                         checkBlock(statement.action)
                     }
 
-                    is Statement.LoopBreak, Statement.LoopContinuation -> { } // TODO: check if inside a loop
+                    is Statement.LoopBreak -> { } // TODO: check if inside a loop
+                    is Statement.LoopContinuation -> { } // TODO: check if inside a loop
 
                     is Statement.FunctionReturn -> checkExpression(statement.value, function.returnType)
                 }

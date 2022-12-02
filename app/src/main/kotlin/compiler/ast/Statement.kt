@@ -2,33 +2,51 @@ package compiler.ast
 
 typealias StatementBlock = List<Statement>
 
-sealed class Statement {
-    data class Evaluation(val expression: Expression) : Statement()
+sealed class Statement : AstNode() {
+    data class Evaluation(
+        val expression: Expression,
+        override val location: NodeLocation? = null,
+    ) : Statement()
 
-    data class VariableDefinition(val variable: Variable) : Statement()
-    data class FunctionDefinition(val function: Function) : Statement()
+    data class VariableDefinition(
+        val variable: Variable,
+        override val location: NodeLocation? = null,
+    ) : Statement()
+    data class FunctionDefinition(
+        val function: Function,
+        override val location: NodeLocation? = null,
+    ) : Statement()
 
     data class Assignment(
         val variableName: String,
-        val value: Expression
+        val value: Expression,
+        override val location: NodeLocation? = null,
     ) : Statement()
 
-    data class Block(val block: StatementBlock) : Statement()
+    data class Block(
+        val block: StatementBlock,
+        override val location: NodeLocation? = null,
+    ) : Statement()
 
     data class Conditional(
         val condition: Expression,
         val actionWhenTrue: StatementBlock,
-        val actionWhenFalse: StatementBlock?
+        val actionWhenFalse: StatementBlock?,
+        override val location: NodeLocation? = null,
     ) : Statement()
 
     data class Loop(
         val condition: Expression,
-        val action: StatementBlock
+        val action: StatementBlock,
+        override val location: NodeLocation? = null,
     ) : Statement()
 
-    object LoopBreak : Statement()
+    data class LoopBreak(override val location: NodeLocation? = null) : Statement()
 
-    object LoopContinuation : Statement()
+    data class LoopContinuation(override val location: NodeLocation? = null) : Statement()
 
-    data class FunctionReturn(val value: Expression) : Statement()
+    data class FunctionReturn(
+        val value: Expression,
+        override val location: NodeLocation? = null,
+    ) : Statement()
 }

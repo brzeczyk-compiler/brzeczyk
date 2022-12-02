@@ -1,25 +1,28 @@
 package compiler.ast
 
-sealed class Expression {
-    object UnitLiteral : Expression()
-    data class BooleanLiteral(val value: Boolean) : Expression()
-    data class NumberLiteral(val value: Int) : Expression()
+sealed class Expression : AstNode() {
+    data class UnitLiteral(override val location: NodeLocation? = null) : Expression()
+    data class BooleanLiteral(val value: Boolean, override val location: NodeLocation? = null) : Expression()
+    data class NumberLiteral(val value: Int, override val location: NodeLocation? = null) : Expression()
 
-    data class Variable(val name: String) : Expression()
+    data class Variable(val name: String, override val location: NodeLocation? = null) : Expression()
 
     data class FunctionCall(
         val name: String,
-        val arguments: List<Argument>
+        val arguments: List<Argument>,
+        override val location: NodeLocation? = null,
     ) : Expression() {
         data class Argument(
             val name: String?,
-            val value: Expression
-        )
+            val value: Expression,
+            override val location: NodeLocation? = null,
+        ) : AstNode()
     }
 
     data class UnaryOperation(
         val kind: Kind,
-        val operand: Expression
+        val operand: Expression,
+        override val location: NodeLocation? = null,
     ) : Expression() {
         enum class Kind {
             NOT,
@@ -32,7 +35,8 @@ sealed class Expression {
     data class BinaryOperation(
         val kind: Kind,
         val leftOperand: Expression,
-        val rightOperand: Expression
+        val rightOperand: Expression,
+        override val location: NodeLocation? = null,
     ) : Expression() {
         enum class Kind {
             AND,
@@ -54,13 +58,14 @@ sealed class Expression {
             LESS_THAN,
             LESS_THAN_OR_EQUALS,
             GREATER_THAN,
-            GREATER_THAN_OR_EQUALS
+            GREATER_THAN_OR_EQUALS,
         }
     }
 
     data class Conditional(
         val condition: Expression,
         val resultWhenTrue: Expression,
-        val resultWhenFalse: Expression
+        val resultWhenFalse: Expression,
+        override val location: NodeLocation? = null,
     ) : Expression()
 }

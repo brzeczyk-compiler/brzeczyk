@@ -6,6 +6,7 @@ import compiler.ast.NamedNode
 import compiler.ast.Program
 import compiler.ast.Statement
 import compiler.ast.StatementBlock
+import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic.ControlFlowDiagnostic
 import compiler.common.diagnostics.Diagnostics
@@ -24,10 +25,11 @@ object ControlFlow {
         defaultParameterValues: ReferenceMap<Function.Parameter, Variable>,
         diagnostics: Diagnostics
     ): ReferenceMap<Function, ControlFlowGraph> {
-        val controlFlowGraphs = ReferenceHashMap<Function, ControlFlowGraph>()
+        val controlFlowGraphsAdResultVariables = ReferenceHashMap<Function, ControlFlowGraph>()
 
         fun processFunction(function: Function) {
             val cfgBuilder = ControlFlowGraphBuilder()
+            var variableToStoreResult: Variable? = null
 
             fun mapLinkType(list: List<Pair<IFTNode, CFGLinkType>?>, type: CFGLinkType) = list.map { it?.copy(second = type) }
 
@@ -38,8 +40,6 @@ object ControlFlow {
             fun processStatementBlock(block: StatementBlock) {
                 fun addExpression(expression: Expression, variable: Variable?): IFTNode? {
                     val cfg = createGraphForExpression(expression, variable)
-                    cfgBuilder.addAllFrom(cfg, false)
-
                     val entry = cfg.entryTreeRoot
 
                     if (entry != null) {
@@ -49,6 +49,7 @@ object ControlFlow {
 
                         last = cfg.finalTreeRoots.map { Pair(it, CFGLinkType.UNCONDITIONAL) }
                     }
+                    cfgBuilder.addAllFrom(cfg)
 
                     return entry
                 }
@@ -140,8 +141,15 @@ object ControlFlow {
                         }
 
                         is Statement.FunctionReturn -> {
-                            addExpression(statement.value, null)
+                            if (function.returnType != Type.Unit)
+                                variableToStoreResult = Variable(
+                                    Variable.Kind.VALUE,
+                                    "TODO",
+                                    function.returnType,
+                                    null
+                                )
 
+                            addExpression(statement.value, variableToStoreResult)
                             last = emptyList()
                         }
                     }
@@ -150,11 +158,11 @@ object ControlFlow {
 
             processStatementBlock(function.body)
 
-            controlFlowGraphs[function] = cfgBuilder.build()
+            controlFlowGraphsAdResultVariables[function] = cfgBuilder.build()
         }
 
         program.globals.filterIsInstance<Program.Global.FunctionDefinition>().forEach { processFunction(it.function) }
 
-        return controlFlowGraphs
+        return controlFlowGraphsAdResultVariables
     }
 }

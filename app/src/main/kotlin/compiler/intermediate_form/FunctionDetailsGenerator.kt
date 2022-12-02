@@ -1,8 +1,7 @@
 package compiler.intermediate_form
 
-import compiler.ast.Function
 import compiler.ast.NamedNode
-import compiler.ast.Type
+import compiler.ast.Variable
 import compiler.common.reference_collections.ReferenceHashMap
 
 data class FunctionCallIntermediateForm(
@@ -19,57 +18,70 @@ val FUNCTION_RESULT_REGISTER = Register()
 val BASE_POINTER_REGISTER = Register()
 val STACK_POINTER_REGISTER = Register()
 
+val argPositionToRegister = listOf(Register.RDI, Register.RSI, Register.RDX, Register.RCX, Register.R8, Register.R9)
+
 data class FunctionDetailsGenerator(
     val parameters: List<NamedNode>,
-    val functionCFG: ControlFlowGraph,
-    val function: Function,
+    val variableToStoreFunctionResult: Variable?,
+    val functionLocationInCode: IntermediateFormTreeNode.MemoryAddress,
     val depth: ULong,
     val variablesLocationTypes: Map<NamedNode, VariableLocationType>, // should contain parameters
-    val displayAddress: MemoryAddress
+    val displayAddress: MemoryAddress,
+    val createRegisterFor: (Variable) -> Register = { Register() } // for testing
 ) {
 
     private val variablesStackOffsets: MutableMap<NamedNode, ULong> = ReferenceHashMap()
     private val variablesRegisters: MutableMap<NamedNode, Register> = ReferenceHashMap()
     private var prologueOffset: ULong = 0u
 
+    init {
+        for ((variable, locationType) in variablesLocationTypes.entries) {
+            when (locationType) {
+                VariableLocationType.MEMORY -> {
+                    variablesStackOffsets[variable] = 3u * memoryUnitSize + prologueOffset
+                    prologueOffset += memoryUnitSize
+                }
+
+                VariableLocationType.REGISTER -> {
+                    // create a register for the variable TODO: is some register assignment logic already needed here?
+                    variablesRegisters[variable] = createRegisterFor(variable as Variable)
+                }
+            }
+        }
+    }
+
     fun genCall(
         args: List<IntermediateFormTreeNode>,
     ): FunctionCallIntermediateForm {
-        // First, it moves parameter values to appropriate location based on args (using genWrite).
-        // At the end it adds an instruction to store function result in FUNCTION_RESULT_REGISTER, when it isn't Unit
-        // returning function, and then it creates temporary IFTNode outside CFG in result,
-        // which simply reads value from that register.
+        // First, it moves arguments to appropriate registers (or pushes to stack) according to x86 call convention.
+        // Then, it adds call instruction to actually call a given function
+        // At the end it creates IFTNode to get function result
 
         val cfgBuilder = ControlFlowGraphBuilder()
 
-        var last: Pair<IFTNode, CFGLinkType>? = null
-        // write arg values to params
-        for ((arg, param) in args zip parameters) {
-            val node = genWrite(param, arg, false)
-            cfgBuilder.addLink(last, node)
-            last = Pair(node, CFGLinkType.UNCONDITIONAL)
+        for ((arg, register) in args zip argPositionToRegister) {
+            val node = IntermediateFormTreeNode.RegisterWrite(register, arg)
+            cfgBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, node)
+        }
+        for (arg in args.drop(argPositionToRegister.size).reversed()) {
+            val node = IntermediateFormTreeNode.StackPush(arg)
+            cfgBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, node)
         }
 
-        // add function graph
-        cfgBuilder.addAllFrom(functionCFG, false)
-        cfgBuilder.addLink(last, functionCFG.entryTreeRoot!!)
+        cfgBuilder.addLinkFromAllFinalRoots(
+            CFGLinkType.UNCONDITIONAL,
+            IntermediateFormTreeNode.Call(functionLocationInCode)
+        )
 
-        fun modifyReturnNodesToStoreResultInAppropriateRegister(functionCfg: ControlFlowGraph): FunctionCallIntermediateForm {
-            val modifiedCfgBuilder = ControlFlowGraphBuilder()
-            modifiedCfgBuilder.addAllFrom(functionCfg, true)
-            modifiedCfgBuilder.updateNodes({ it in functionCfg.finalTreeRoots }, {
-                IntermediateFormTreeNode.RegisterWrite(FUNCTION_RESULT_REGISTER, it)
-            })
-
-            return FunctionCallIntermediateForm(
-                modifiedCfgBuilder.build(),
-                IntermediateFormTreeNode.RegisterRead(FUNCTION_RESULT_REGISTER)
+        var readResultNode: IFTNode? = null
+        if (variableToStoreFunctionResult != null) {
+            cfgBuilder.addLinkFromAllFinalRoots(
+                CFGLinkType.UNCONDITIONAL,
+                IntermediateFormTreeNode.RegisterWrite(Register.RAX, genRead(variableToStoreFunctionResult, true))
             )
+            readResultNode = IntermediateFormTreeNode.RegisterRead(Register.RAX)
         }
-
-        if (function.returnType == Type.Unit)
-            return FunctionCallIntermediateForm(cfgBuilder.build(), null)
-        return modifyReturnNodesToStoreResultInAppropriateRegister(cfgBuilder.build())
+        return FunctionCallIntermediateForm(cfgBuilder.build(), readResultNode)
     }
 
     fun genPrologue(): ControlFlowGraph {
@@ -99,27 +111,18 @@ data class FunctionDetailsGenerator(
         cfgBuilder.addLink(last, savePreviousRbp)
         last = Pair(savePreviousRbp, CFGLinkType.UNCONDITIONAL)
         cfgBuilder.addLink(last, updateRbpAtDepth)
-        last = Pair(updateRbpAtDepth, CFGLinkType.UNCONDITIONAL)
 
         // allocate memory and registers for local variables
-        for ((variable, locationType) in variablesLocationTypes.entries) {
-            when (locationType) {
-
-                VariableLocationType.MEMORY -> {
-                    val node = IntermediateFormTreeNode.StackPush(IntermediateFormTreeNode.Const(0))
-                    cfgBuilder.addLink(last, node)
-                    last = Pair(node, CFGLinkType.UNCONDITIONAL)
-
-                    variablesStackOffsets[variable] = 3u * memoryUnitSize + prologueOffset
-                    prologueOffset += memoryUnitSize
-                }
-
-                VariableLocationType.REGISTER -> {
-                    // create a register for the variable TODO: is some register assignment logic already needed here?
-                    variablesRegisters[variable] = Register()
-                }
-            }
-        }
+        cfgBuilder.addLinkFromAllFinalRoots(
+            CFGLinkType.UNCONDITIONAL,
+            IntermediateFormTreeNode.RegisterWrite(
+                Register.RSP,
+                IntermediateFormTreeNode.Add(
+                    IntermediateFormTreeNode.RegisterRead(Register.RSP),
+                    IntermediateFormTreeNode.Const(prologueOffset.toLong())
+                )
+            )
+        )
 
         return cfgBuilder.build()
     }
@@ -140,8 +143,9 @@ data class FunctionDetailsGenerator(
         var last: Pair<IFTNode, CFGLinkType> = Pair(addRspOffset, CFGLinkType.UNCONDITIONAL)
 
         // restore previous rbp in display at depth
-        val popPreviousRbp = IntermediateFormTreeNode.StackPopToMemory(
+        val popPreviousRbp = IntermediateFormTreeNode.MemoryWrite(
             IntermediateFormTreeNode.Const((displayAddress + memoryUnitSize * depth).toLong()),
+            IntermediateFormTreeNode.StackPop()
         )
 
         cfgBuilder.addLink(last, popPreviousRbp)
@@ -152,7 +156,7 @@ data class FunctionDetailsGenerator(
             STACK_POINTER_REGISTER,
             IntermediateFormTreeNode.RegisterRead(BASE_POINTER_REGISTER)
         )
-        val popRbp = IntermediateFormTreeNode.StackPopToRegister(BASE_POINTER_REGISTER)
+        val popRbp = IntermediateFormTreeNode.RegisterWrite(BASE_POINTER_REGISTER, IntermediateFormTreeNode.StackPop())
 
         cfgBuilder.addLink(last, movRspRbp)
         last = Pair(movRspRbp, CFGLinkType.UNCONDITIONAL)

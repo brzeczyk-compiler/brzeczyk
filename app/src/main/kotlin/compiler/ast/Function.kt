@@ -1,11 +1,13 @@
 package compiler.ast
 
+import compiler.common.dfa.VariablesOwner
+
 data class Function(
     val name: String,
     val parameters: List<Parameter>,
     val returnType: Type,
     val body: StatementBlock
-) : NamedNode {
+) : NamedNode, VariablesOwner {
     data class Parameter(
         val name: String,
         val type: Type,

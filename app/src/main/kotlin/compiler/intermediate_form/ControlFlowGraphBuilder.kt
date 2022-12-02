@@ -10,7 +10,7 @@ class ControlFlowGraphBuilder(var entryTreeRoot: IFTNode? = null) {
     private var conditionalTrueLinks = ReferenceHashMap<IFTNode, IFTNode>()
     private var conditionalFalseLinks = ReferenceHashMap<IFTNode, IFTNode>()
     private var treeRoots = ArrayList<IFTNode>()
-    val finalTreeRoots: List<IFTNode> get() = treeRoots.filter {
+    private val finalTreeRoots: List<IFTNode> get() = treeRoots.filter {
         it !in unconditionalLinks && it !in conditionalTrueLinks && it !in conditionalFalseLinks
     }
 

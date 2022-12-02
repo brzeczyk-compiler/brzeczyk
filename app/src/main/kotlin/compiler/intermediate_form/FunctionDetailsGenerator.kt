@@ -14,7 +14,6 @@ enum class VariableLocationType {
     REGISTER
 }
 
-val FUNCTION_RESULT_REGISTER = Register()
 val BASE_POINTER_REGISTER = Register()
 val STACK_POINTER_REGISTER = Register()
 
@@ -27,7 +26,7 @@ data class FunctionDetailsGenerator(
     val depth: ULong,
     val variablesLocationTypes: Map<NamedNode, VariableLocationType>, // should contain parameters
     val displayAddress: MemoryAddress,
-    val createRegisterFor: (Variable) -> Register = { Register() } // for testing
+    val createRegisterFor: (NamedNode) -> Register = { Register() } // for testing
 ) {
 
     private val variablesStackOffsets: MutableMap<NamedNode, ULong> = ReferenceHashMap()
@@ -44,7 +43,7 @@ data class FunctionDetailsGenerator(
 
                 VariableLocationType.REGISTER -> {
                     // create a register for the variable TODO: is some register assignment logic already needed here?
-                    variablesRegisters[variable] = createRegisterFor(variable as Variable)
+                    variablesRegisters[variable] = createRegisterFor(variable)
                 }
             }
         }

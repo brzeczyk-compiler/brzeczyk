@@ -16,11 +16,11 @@ data class ControlFlowGraph(
     }
 
     fun equalsByValue(other: ControlFlowGraph): Boolean {
-        if (treeRoots.toList() != other.treeRoots.toList()) return false
+        if (treeRoots.toSet() != other.treeRoots.toSet()) return false
         if (entryTreeRoot != other.entryTreeRoot) return false
-        if (unconditionalLinks.toList() != other.unconditionalLinks.toList()) return false
-        if (conditionalTrueLinks.toList() != other.conditionalTrueLinks.toList()) return false
-        if (conditionalFalseLinks.toList() != other.conditionalFalseLinks.toList()) return false
+        if (unconditionalLinks.toList().toSet() != other.unconditionalLinks.toList().toSet()) return false
+        if (conditionalTrueLinks.toList().toSet() != other.conditionalTrueLinks.toList().toSet()) return false
+        if (conditionalFalseLinks.toList().toSet() != other.conditionalFalseLinks.toList().toSet()) return false
         return true
     }
 }

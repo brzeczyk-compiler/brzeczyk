@@ -2,7 +2,6 @@ package compiler.intermediate_form
 
 import compiler.ast.Function
 import compiler.ast.NamedNode
-import compiler.ast.Variable
 import compiler.common.intermediate_form.FunctionDetailsGeneratorInterface
 
 data class FunctionDetailsGenerator(
@@ -23,12 +22,12 @@ data class FunctionDetailsGenerator(
         return TODO()
     }
 
-    override fun genRead(variable: Variable, isDirect: Boolean): IntermediateFormTreeNode {
+    override fun genRead(namedNode: NamedNode, isDirect: Boolean): IntermediateFormTreeNode {
         // the caller is supposed to retrieve the value and assign it
         return TODO()
     }
 
-    override fun genWrite(variable: Variable, value: IntermediateFormTreeNode, isDirect: Boolean): IntermediateFormTreeNode {
+    override fun genWrite(namedNode: NamedNode, value: IntermediateFormTreeNode, isDirect: Boolean): IntermediateFormTreeNode {
         return TODO()
     }
 }

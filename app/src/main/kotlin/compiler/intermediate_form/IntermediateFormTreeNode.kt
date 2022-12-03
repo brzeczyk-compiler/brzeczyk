@@ -1,7 +1,7 @@
 package compiler.intermediate_form
 
 import compiler.ast.Function
-import compiler.ast.Variable
+import compiler.ast.NamedNode
 
 sealed class IntermediateFormTreeNode {
     companion object {
@@ -50,8 +50,8 @@ sealed class IntermediateFormTreeNode {
 
     // test nodes
     class NoOp : IntermediateFormTreeNode()
-    data class DummyRead(val variable: Variable, val isDirect: Boolean) : IntermediateFormTreeNode()
-    data class DummyWrite(val variable: Variable, val value: IntermediateFormTreeNode, val isDirect: Boolean) : IntermediateFormTreeNode()
+    data class DummyRead(val namedNode: NamedNode, val isDirect: Boolean, val isGlobal: Boolean = false) : IntermediateFormTreeNode()
+    data class DummyWrite(val namedNode: NamedNode, val value: IntermediateFormTreeNode, val isDirect: Boolean, val isGlobal: Boolean = false) : IntermediateFormTreeNode()
     class DummyCallResult : IntermediateFormTreeNode()
     data class DummyCall(val function: Function, val args: List<IntermediateFormTreeNode>, val callResult: DummyCallResult) : IntermediateFormTreeNode()
 }

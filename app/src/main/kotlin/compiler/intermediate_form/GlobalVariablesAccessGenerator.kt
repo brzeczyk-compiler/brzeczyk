@@ -1,5 +1,6 @@
 package compiler.intermediate_form
 
+import compiler.ast.NamedNode
 import compiler.ast.Variable
 import compiler.common.intermediate_form.VariableAccessGenerator
 import compiler.common.reference_collections.ReferenceHashMap
@@ -13,22 +14,22 @@ class GlobalVariablesAccessGenerator(variableProperties: ReferenceMap<Any, Varia
         const val GLOBALS_MEMORY_LABEL = "globals"
     }
 
-    private val offsets = ReferenceHashMap<Variable, Long>().apply {
+    private val offsets = ReferenceHashMap<NamedNode, Long>().apply {
         this.putAll(
             variableProperties.filter { it.value.owner === VariablePropertiesAnalyzer.GlobalContext }
                 .asIterable().mapIndexed { index, value -> value.key as Variable to index.toLong() * VARIABLE_SIZE }
         )
     }
 
-    private fun getMemoryAddress(variable: Variable) =
+    private fun getMemoryAddress(namedNode: NamedNode) =
         IntermediateFormTreeNode.Add(
             IntermediateFormTreeNode.MemoryLabel(GLOBALS_MEMORY_LABEL),
-            IntermediateFormTreeNode.Const(offsets[variable]!!)
+            IntermediateFormTreeNode.Const(offsets[namedNode]!!)
         )
 
-    override fun genRead(variable: Variable, isDirect: Boolean): IntermediateFormTreeNode =
-        IntermediateFormTreeNode.MemoryRead(getMemoryAddress(variable))
+    override fun genRead(namedNode: NamedNode, isDirect: Boolean): IntermediateFormTreeNode =
+        IntermediateFormTreeNode.MemoryRead(getMemoryAddress(namedNode))
 
-    override fun genWrite(variable: Variable, value: IntermediateFormTreeNode, isDirect: Boolean): IntermediateFormTreeNode =
-        IntermediateFormTreeNode.MemoryWrite(getMemoryAddress(variable), value)
+    override fun genWrite(namedNode: NamedNode, value: IntermediateFormTreeNode, isDirect: Boolean): IntermediateFormTreeNode =
+        IntermediateFormTreeNode.MemoryWrite(getMemoryAddress(namedNode), value)
 }

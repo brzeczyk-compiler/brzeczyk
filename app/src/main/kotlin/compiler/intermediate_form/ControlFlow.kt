@@ -7,7 +7,6 @@ import compiler.ast.Program
 import compiler.ast.Statement
 import compiler.ast.StatementBlock
 import compiler.ast.Variable
-import compiler.common.ast.VariablesOwner
 import compiler.common.diagnostics.Diagnostic.ControlFlowDiagnostic
 import compiler.common.diagnostics.Diagnostics
 import compiler.common.intermediate_form.FunctionDetailsGeneratorInterface
@@ -19,6 +18,7 @@ import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.combineReferenceSets
 import compiler.common.reference_collections.copy
 import compiler.common.reference_collections.referenceSetOf
+import compiler.common.semantic_analysis.VariablesOwner
 import compiler.semantic_analysis.ArgumentResolutionResult
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
 
@@ -35,7 +35,7 @@ object ControlFlow {
         functionDetailsGenerators: ReferenceMap<Function, FunctionDetailsGeneratorInterface>,
         argumentResolution: ArgumentResolutionResult,
         defaultParameterValues: ReferenceMap<Function.Parameter, Variable>,
-        globalVariablesAccessGenerator: GlobalVariablesAccessGenerator
+        globalVariablesAccessGenerator: VariableAccessGenerator
     ): ControlFlowGraph {
         fun getVariablesModifiedBy(function: Function): ReferenceSet<Variable> {
             val possiblyCalledFunctions = combineReferenceSets(callGraph[function]!!, referenceSetOf(function))

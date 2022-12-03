@@ -1,6 +1,6 @@
 package compiler.ast
 
-import compiler.common.ast.VariablesOwner
+import compiler.common.semantic_analysis.VariablesOwner
 
 data class Function(
     val name: String,

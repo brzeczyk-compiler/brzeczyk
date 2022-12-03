@@ -67,12 +67,12 @@ class VariablePropertiesAnalyzerTest {
     // zm x: Liczba = 123
 
     @Test
-    fun `test unused variable has no parent`() {
+    fun `test unused variable is global`() {
         val variable = Variable(Variable.Kind.VALUE, "x", Type.Number, Expression.NumberLiteral(123))
         val input = VariablePropertyInput(Program(listOf(VariableDefinition(variable))), referenceMapOf())
 
         val expectedResults: ReferenceMap<Any, VariableProperties> = referenceMapOf(
-            variable to VariableProperties(null, referenceSetOf(), referenceSetOf()),
+            variable to VariableProperties(VariablePropertiesAnalyzer.GlobalContext, referenceSetOf(), referenceSetOf()),
         )
 
         assertAnalysisResults(input, expectedResults)
@@ -115,7 +115,7 @@ class VariablePropertiesAnalyzerTest {
 
         val expectedResults: ReferenceMap<Any, VariableProperties> = referenceMapOf(
             parameterX to VariableProperties(function, referenceSetOf(), referenceSetOf()),
-            dummyVariableX to VariableProperties(null, referenceSetOf(), referenceSetOf()),
+            dummyVariableX to VariableProperties(VariablePropertiesAnalyzer.GlobalContext, referenceSetOf(), referenceSetOf()),
         )
 
         assertAnalysisResults(input, expectedResults)
@@ -368,7 +368,7 @@ class VariablePropertiesAnalyzerTest {
 
         val expectedResults: ReferenceMap<Any, VariableProperties> = referenceMapOf(
             parameterX to VariableProperties(outer, referenceSetOf(inner), referenceSetOf()),
-            dummyVariableX to VariableProperties(null, referenceSetOf(), referenceSetOf()),
+            dummyVariableX to VariableProperties(VariablePropertiesAnalyzer.GlobalContext, referenceSetOf(), referenceSetOf()),
             variableY to VariableProperties(inner, referenceSetOf(), referenceSetOf()),
         )
 

@@ -10,6 +10,7 @@ import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic.ControlFlowDiagnostic
 import compiler.common.diagnostics.Diagnostics
 import compiler.common.intermediate_form.FunctionDetailsGeneratorInterface
+import compiler.common.intermediate_form.VariableAccessGenerator
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceHashSet
 import compiler.common.reference_collections.ReferenceMap
@@ -17,6 +18,7 @@ import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.combineReferenceSets
 import compiler.common.reference_collections.copy
 import compiler.common.reference_collections.referenceSetOf
+import compiler.common.semantic_analysis.VariablesOwner
 import compiler.semantic_analysis.ArgumentResolutionResult
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
 
@@ -32,7 +34,8 @@ object ControlFlow {
         callGraph: ReferenceMap<Function, ReferenceSet<Function>>,
         functionDetailsGenerators: ReferenceMap<Function, FunctionDetailsGeneratorInterface>,
         argumentResolution: ArgumentResolutionResult,
-        defaultParameterValues: ReferenceMap<Function.Parameter, Variable>
+        defaultParameterValues: ReferenceMap<Function.Parameter, Variable>,
+        globalVariablesAccessGenerator: VariableAccessGenerator
     ): ControlFlowGraph {
         fun getVariablesModifiedBy(function: Function): ReferenceSet<Variable> {
             val possiblyCalledFunctions = combineReferenceSets(callGraph[function]!!, referenceSetOf(function))
@@ -41,6 +44,14 @@ object ControlFlow {
                     .filter { (it.value.writtenIn intersect possiblyCalledFunctions).isNotEmpty() }
                     .map { it.key as Variable }.toList()
             )
+        }
+
+        val variableAccessGenerators: ReferenceMap<VariablesOwner, VariableAccessGenerator> = run {
+            val result = ReferenceHashMap<VariablesOwner, VariableAccessGenerator>()
+
+            result.putAll(functionDetailsGenerators)
+            result[VariablePropertiesAnalyzer.GlobalContext] = globalVariablesAccessGenerator
+            result
         }
 
         // first stage is to decide which variable usages have to be realized via temporary registers
@@ -118,8 +129,8 @@ object ControlFlow {
         }
 
         fun makeVariableReadNode(variable: Variable): IntermediateFormTreeNode {
-            val owner = variableProperties[variable]!!.owner!! // TODO: handle global variables
-            return functionDetailsGenerators[owner]!!.genRead(variable, owner == currentFunction)
+            val owner = variableProperties[variable]!!.owner
+            return variableAccessGenerators[owner]!!.genRead(variable, owner == currentFunction)
         }
 
         fun makeCFGForSubtree(astNode: Expression): IntermediateFormTreeNode {
@@ -263,8 +274,8 @@ object ControlFlow {
 
         // build last tree into CFG, possibly wrapped in variable write operation
         if (targetVariable != null) {
-            val owner = variableProperties[targetVariable]!!.owner!! // TODO: handle global variables
-            cfgBuilder.addNextTree(functionDetailsGenerators[owner]!!.genWrite(targetVariable, result, owner == currentFunction))
+            val owner = variableProperties[targetVariable]!!.owner
+            cfgBuilder.addNextTree(variableAccessGenerators[owner]!!.genWrite(targetVariable, result, owner == currentFunction))
         } else {
             cfgBuilder.addNextTree(result)
         }

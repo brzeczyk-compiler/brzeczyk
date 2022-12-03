@@ -2,6 +2,7 @@ package compiler.intermediate_form
 
 sealed class IntermediateFormTreeNode {
     data class MemoryRead(val address: IntermediateFormTreeNode) : IntermediateFormTreeNode()
+    data class MemoryAddress(val addressLabel: String) : IntermediateFormTreeNode()
     data class RegisterRead(val register: Register) : IntermediateFormTreeNode()
     data class Const(val value: Long) : IntermediateFormTreeNode()
 
@@ -34,8 +35,10 @@ sealed class IntermediateFormTreeNode {
     data class GreaterThanOrEquals(val left: IntermediateFormTreeNode, val right: IntermediateFormTreeNode) : IntermediateFormTreeNode()
 
     data class StackPush(val node: IntermediateFormTreeNode) : IntermediateFormTreeNode()
-    data class StackPopToRegister(val register: Register) : IntermediateFormTreeNode()
-    data class StackPopToMemory(val address: IntermediateFormTreeNode) : IntermediateFormTreeNode()
+    class StackPop : IntermediateFormTreeNode()
+
+    data class Call(val address: IntermediateFormTreeNode) : IntermediateFormTreeNode()
+    class Return() : IntermediateFormTreeNode()
 
     class NoOp : IntermediateFormTreeNode() // For testing
 }

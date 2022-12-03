@@ -1,175 +1,146 @@
 package compiler.intermediate_form
 
-import compiler.ast.Expression
 import compiler.ast.Function
-import compiler.ast.Program
-import compiler.ast.Statement
 import compiler.ast.Type
 import compiler.ast.Variable
-import compiler.common.reference_collections.referenceMapOf
-import io.mockk.every
-import io.mockk.spyk
-import java.lang.RuntimeException
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 
 class FunctionDetailsGeneratorTest {
-    private val expressionToCfgMock = { expression: Expression, _: Variable? ->
-        when (expression) {
-            is Expression.NumberLiteral -> {
-                val root = IntermediateFormTreeNode.Const(expression.value.toLong())
-                ControlFlowGraphBuilder(root).build()
-            }
-            is Expression.BinaryOperation -> {
-                val root = IntermediateFormTreeNode.GreaterThanOrEquals(
-                    IntermediateFormTreeNode.RegisterRead(argRegister),
-                    IntermediateFormTreeNode.Const(0L)
-                )
-                ControlFlowGraphBuilder(root).build()
-            }
-            is Expression.Variable -> {
-                ControlFlowGraphBuilder(IntermediateFormTreeNode.RegisterRead(argRegister)).build()
-            }
-            else -> throw RuntimeException("Incorrect expression type")
+    private val functionLocation = IntermediateFormTreeNode.MemoryAddress("address")
+
+    private val resultDummyVariable = Variable(Variable.Kind.VALUE, "numberResult", Type.Number, null)
+    private val resultVariableRegister = Register()
+
+    @Test
+    fun `test genCall for zero argument, Unit function`() {
+        val fdg = FunctionDetailsGenerator(
+            listOf(),
+            null,
+            functionLocation,
+            0u,
+            mapOf(),
+            0u
+        )
+        val expected = ControlFlowGraphBuilder(IntermediateFormTreeNode.Call(functionLocation)).build()
+        val result = fdg.genCall(listOf())
+
+        assert(expected.equalsByValue(result.callGraph))
+        assertEquals(null, result.result)
+    }
+
+    @Test
+    fun `test genCall for two argument, Unit return function`() {
+        val param1 = Function.Parameter("x", Type.Number, null)
+        val param2 = Function.Parameter("y", Type.Boolean, null)
+        val fdg = FunctionDetailsGenerator(
+            listOf(param1, param2),
+            null,
+            functionLocation,
+            0u,
+            mapOf(param1 to VariableLocationType.REGISTER, param2 to VariableLocationType.MEMORY),
+            0u
+        )
+
+        val arg1 = IntermediateFormTreeNode.NoOp()
+        val arg2 = IntermediateFormTreeNode.NoOp()
+        val result = fdg.genCall(listOf(arg1, arg2))
+
+        val expectedCFGBuilder = ControlFlowGraphBuilder()
+        expectedCFGBuilder.addLinkFromAllFinalRoots(
+            CFGLinkType.UNCONDITIONAL,
+            IntermediateFormTreeNode.RegisterWrite(Register.RDI, arg1)
+        )
+        expectedCFGBuilder.addLinkFromAllFinalRoots(
+            CFGLinkType.UNCONDITIONAL,
+            IntermediateFormTreeNode.RegisterWrite(Register.RSI, arg2)
+        )
+        expectedCFGBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, IntermediateFormTreeNode.Call(functionLocation))
+        val expected = expectedCFGBuilder.build()
+
+        assert(expected.equalsByValue(result.callGraph))
+        assertEquals(null, result.result)
+    }
+
+    @Test
+    fun `test genCall for zero argument, Number returning function`() {
+        val variableToRegisterMap = mapOf(resultDummyVariable to resultVariableRegister)
+        val fdg = FunctionDetailsGenerator(
+            listOf(),
+            resultDummyVariable,
+            functionLocation,
+            0u,
+            mapOf(resultDummyVariable to VariableLocationType.REGISTER),
+            0u
+        ) { variableToRegisterMap[it]!! }
+
+        val expectedCFGBuilder = ControlFlowGraphBuilder(IntermediateFormTreeNode.Call(functionLocation))
+        expectedCFGBuilder.addLinkFromAllFinalRoots(
+            CFGLinkType.UNCONDITIONAL,
+            IntermediateFormTreeNode.RegisterWrite(
+                Register.RAX,
+                IntermediateFormTreeNode.RegisterRead(resultVariableRegister)
+            )
+        )
+
+        val expectedResult = IntermediateFormTreeNode.RegisterRead(Register.RAX)
+        val expected = expectedCFGBuilder.build()
+        val result = fdg.genCall(listOf())
+        assert(expected.equalsByValue(result.callGraph))
+        assertEquals(expectedResult, result.result)
+    }
+
+    @Test
+    fun `test genCall for 8 argument, Number return function`() {
+        val params = (0..7).map { Function.Parameter(it.toString(), Type.Number, null) }.toList()
+        val variableToRegisterMap = params.associateWith { Register() } + mapOf(resultDummyVariable to resultVariableRegister)
+        val variablesLocation = params.associateWith { VariableLocationType.REGISTER } + mapOf(resultDummyVariable to VariableLocationType.REGISTER)
+
+        val fdg = FunctionDetailsGenerator(
+            params,
+            resultDummyVariable,
+            functionLocation,
+            0u,
+            variablesLocation,
+            0u
+        ) { variableToRegisterMap[it]!! }
+
+        val args = (0..7).map { IntermediateFormTreeNode.Const(it.toLong()) }.toList()
+        val result = fdg.genCall(args)
+
+        val expectedCFGBuilder = ControlFlowGraphBuilder()
+
+        // write args
+        for ((argRegister, arg) in argPositionToRegister zip args) {
+            expectedCFGBuilder.addLinkFromAllFinalRoots(
+                CFGLinkType.UNCONDITIONAL,
+                IntermediateFormTreeNode.RegisterWrite(argRegister, arg)
+            )
         }
-    }
-
-    private val function42NoReturn = Function(
-        "f42",
-        listOf(),
-        Type.Unit,
-        listOf(
-            Statement.Evaluation(Expression.NumberLiteral(42))
+        expectedCFGBuilder.addLinkFromAllFinalRoots(
+            CFGLinkType.UNCONDITIONAL,
+            IntermediateFormTreeNode.StackPush(args.last())
         )
-    ) // czynność f42() { 42; }
-    private val function42NoReturnCFG = ControlFlow.createGraphForEachFunction(
-        Program(listOf(Program.Global.FunctionDefinition(function42NoReturn))),
-        expressionToCfgMock,
-        referenceMapOf(),
-        referenceMapOf(),
-        {}
-    )[function42NoReturn]!!
-
-    @Test
-    fun `test genCall for zero argument, unit returning function`() {
-        val fdg = FunctionDetailsGenerator(
-            listOf(),
-            function42NoReturnCFG,
-            function42NoReturn,
-            0u,
-            mapOf(),
-            0u
+        expectedCFGBuilder.addLinkFromAllFinalRoots(
+            CFGLinkType.UNCONDITIONAL,
+            IntermediateFormTreeNode.StackPush(args[args.size - 2])
         )
-        val result = fdg.genCall(listOf())
-        assertEquals(function42NoReturnCFG, result.callGraph)
-        assertNull(result.result)
-    }
+        // call
+        expectedCFGBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, IntermediateFormTreeNode.Call(functionLocation))
 
-    private val functionReturn42 = Function(
-        "return42",
-        listOf(),
-        Type.Number,
-        listOf(
-            Statement.FunctionReturn(Expression.NumberLiteral(42))
-        )
-    ) // czynność return42() { zwróć 42; }
-    private val functionReturn42CFG = ControlFlow.createGraphForEachFunction(
-        Program(listOf(Program.Global.FunctionDefinition(functionReturn42))),
-        expressionToCfgMock,
-        referenceMapOf(),
-        referenceMapOf(),
-        {}
-    )[functionReturn42]!!
-
-    @Test
-    fun `test genCall for zero argument, non unit returning function`() {
-        val fdg = FunctionDetailsGenerator(
-            listOf(),
-            functionReturn42CFG,
-            functionReturn42,
-            0u,
-            mapOf(),
-            0u
-        )
-        val result = fdg.genCall(listOf())
-
-        val root = result.callGraph.entryTreeRoot as IntermediateFormTreeNode.RegisterWrite // should not fail
-        val subNode = root.node as IntermediateFormTreeNode.Const // should not fail
-        val resultNode = result.result as IntermediateFormTreeNode.RegisterRead // should not fail
-
-        assertEquals(listOf(root), result.callGraph.treeRoots)
-        assertEquals(42, subNode.value)
-
-        assertEquals(FUNCTION_RESULT_REGISTER, resultNode.register)
-        assertEquals(FUNCTION_RESULT_REGISTER, root.register)
-    }
-
-    private val maxWith0FunctionParam = Function.Parameter("x", Type.Number, null)
-    private val maxWith0Function = Function(
-        "maxWithZero",
-        listOf(maxWith0FunctionParam),
-        Type.Number,
-        listOf(
-            Statement.Conditional(
-                Expression.BinaryOperation(
-                    Expression.BinaryOperation.Kind.GREATER_THAN_OR_EQUALS,
-                    Expression.Variable("x"),
-                    Expression.NumberLiteral(0)
-                ),
-                listOf(Statement.FunctionReturn(Expression.Variable("x"))),
-                listOf(Statement.FunctionReturn(Expression.NumberLiteral(0)))
+        // read result
+        expectedCFGBuilder.addLinkFromAllFinalRoots(
+            CFGLinkType.UNCONDITIONAL,
+            IntermediateFormTreeNode.RegisterWrite(
+                Register.RAX,
+                IntermediateFormTreeNode.RegisterRead(resultVariableRegister)
             )
         )
-    ) // czynność maxWithZero(x: Liczba) { jeżeli(x >= 0) zwróć x; wpp zwróć 0; }
 
-    private val argRegister = Register()
-    private val maxWith0CFG = ControlFlow.createGraphForEachFunction(
-        Program(listOf(Program.Global.FunctionDefinition(maxWith0Function))),
-        expressionToCfgMock,
-        referenceMapOf("x" to maxWith0FunctionParam),
-        referenceMapOf(),
-        {}
-    )[maxWith0Function]!!
+        val expectedResult = IntermediateFormTreeNode.RegisterRead(Register.RAX)
+        val expected = expectedCFGBuilder.build()
 
-    @Test
-    fun `test genCall for function with arguments`() {
-        val passedValue = IntermediateFormTreeNode.Const(3L)
-        val passedVariable = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
-
-        val mockedFDG = spyk(
-            FunctionDetailsGenerator(
-                listOf(passedVariable),
-                maxWith0CFG,
-                maxWith0Function,
-                0u,
-                mapOf(),
-                0u
-            )
-        )
-        val mockedWriteIFT = IntermediateFormTreeNode.NoOp()
-        every { mockedFDG.genWrite(passedVariable, any(), any()) } returns mockedWriteIFT
-
-        val result = mockedFDG.genCall(listOf(passedValue))
-        val cfg = result.callGraph
-
-        assertEquals(result.result, IntermediateFormTreeNode.RegisterRead(FUNCTION_RESULT_REGISTER))
-
-        // first instruction should write parameter value to appropriate place
-        assertEquals(mockedWriteIFT, cfg.entryTreeRoot)
-
-        // second instruction should be comparing values
-        val secondNode = cfg.unconditionalLinks[mockedWriteIFT]
-        assert(secondNode!! is IntermediateFormTreeNode.GreaterThanOrEquals)
-
-        // if true, we should read value from arg Variable's location and store it in FUNCTION_RESULT_REGISTER
-        val conditionalTrueNode = cfg.conditionalTrueLinks[secondNode]!! as IntermediateFormTreeNode.RegisterWrite
-        assertEquals(FUNCTION_RESULT_REGISTER, conditionalTrueNode.register)
-        assertEquals(argRegister, (conditionalTrueNode.node as IntermediateFormTreeNode.RegisterRead).register)
-
-        // if false, we should store 0 in FUNCTION_RESULT_REGISTER, as function describes
-        val conditionalFalseNode = cfg.conditionalFalseLinks[secondNode]!! as IntermediateFormTreeNode.RegisterWrite
-        assertEquals(FUNCTION_RESULT_REGISTER, conditionalFalseNode.register)
-        assertEquals(0L, (conditionalFalseNode.node as IntermediateFormTreeNode.Const).value)
+        assert(expected.equalsByValue(result.callGraph))
+        assertEquals(expectedResult, result.result)
     }
 }

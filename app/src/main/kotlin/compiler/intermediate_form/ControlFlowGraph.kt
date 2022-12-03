@@ -14,6 +14,15 @@ data class ControlFlowGraph(
     val finalTreeRoots: List<IFTNode> get() = treeRoots.filter {
         it !in unconditionalLinks && it !in conditionalTrueLinks && it !in conditionalFalseLinks
     }
+
+    fun equalsByValue(other: ControlFlowGraph): Boolean {
+        if (treeRoots.toSet() != other.treeRoots.toSet()) return false
+        if (entryTreeRoot != other.entryTreeRoot) return false
+        if (unconditionalLinks.toList().toSet() != other.unconditionalLinks.toList().toSet()) return false
+        if (conditionalTrueLinks.toList().toSet() != other.conditionalTrueLinks.toList().toSet()) return false
+        if (conditionalFalseLinks.toList().toSet() != other.conditionalFalseLinks.toList().toSet()) return false
+        return true
+    }
 }
 
 enum class CFGLinkType {

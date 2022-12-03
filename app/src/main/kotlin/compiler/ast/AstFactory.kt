@@ -1,5 +1,6 @@
 package compiler.ast
 
+import compiler.Compiler.CompilationFailure
 import compiler.common.diagnostics.Diagnostic
 import compiler.common.diagnostics.Diagnostics
 import compiler.lexer.lexer_grammar.TokenType
@@ -9,7 +10,7 @@ import compiler.parser.grammar.ParserGrammar.Productions
 import compiler.parser.grammar.Symbol
 
 object AstFactory {
-    class AstCreationFailed : Throwable()
+    class AstCreationFailed : CompilationFailure()
 
     // helper methods
     private fun ParseTree<Symbol>.token(): TokenType? = (symbol as? Symbol.Terminal)?.tokenType
@@ -75,8 +76,14 @@ object AstFactory {
 
     private fun processConst(parseTree: ParseTree<Symbol>): Expression {
         val child = (parseTree as ParseTree.Branch).children[0]
+
         return when (child.token()) {
-            TokenType.INTEGER -> Expression.NumberLiteral((child as ParseTree.Leaf).content.toInt())
+            TokenType.INTEGER -> try {
+                Expression.NumberLiteral((child as ParseTree.Leaf).content.toInt())
+            } catch (_: NumberFormatException) {
+                throw AstCreationFailed()
+            }
+
             TokenType.TRUE_CONSTANT -> Expression.BooleanLiteral(true)
             TokenType.FALSE_CONSTANT -> Expression.BooleanLiteral(false)
             TokenType.UNIT_CONSTANT -> Expression.UnitLiteral

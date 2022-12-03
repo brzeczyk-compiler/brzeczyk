@@ -221,7 +221,9 @@ internal class ArgumentResolverTest {
         val nameResolution = referenceMapOf<Any, NamedNode>()
         val diagnostics = CompilerDiagnostics()
 
-        ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
+        try {
+            ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
+        } catch (_: ArgumentResolver.ResolutionFailed) { }
 
         val expected = listOf(Diagnostic.ArgumentResolutionError.DefaultParametersNotLast(function.function))
 
@@ -247,7 +249,9 @@ internal class ArgumentResolverTest {
         val nameResolution = referenceMapOf<Any, NamedNode>(call to function.function)
         val diagnostics = CompilerDiagnostics()
 
-        ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
+        try {
+            ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
+        } catch (_: ArgumentResolver.ResolutionFailed) { }
 
         val expected = listOf(Diagnostic.ArgumentResolutionError.PositionalArgumentAfterNamed(call))
 
@@ -272,7 +276,9 @@ internal class ArgumentResolverTest {
         val nameResolution = referenceMapOf<Any, NamedNode>(call to function.function)
         val diagnostics = CompilerDiagnostics()
 
-        ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
+        try {
+            ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
+        } catch (_: ArgumentResolver.ResolutionFailed) { }
 
         val expected = listOf(Diagnostic.ArgumentResolutionError.MissingArgument(call, "b"))
 
@@ -299,7 +305,9 @@ internal class ArgumentResolverTest {
         val nameResolution = referenceMapOf<Any, NamedNode>(call to function.function)
         val diagnostics = CompilerDiagnostics()
 
-        ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
+        try {
+            ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
+        } catch (_: ArgumentResolver.ResolutionFailed) { }
 
         val expected = listOf(Diagnostic.ArgumentResolutionError.TooManyArguments(call))
 
@@ -325,7 +333,9 @@ internal class ArgumentResolverTest {
         val nameResolution = referenceMapOf<Any, NamedNode>(call to function.function)
         val diagnostics = CompilerDiagnostics()
 
-        ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
+        try {
+            ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
+        } catch (_: ArgumentResolver.ResolutionFailed) { }
 
         val expected = listOf(Diagnostic.ArgumentResolutionError.RepeatedArgument(call, "a"))
 
@@ -351,7 +361,9 @@ internal class ArgumentResolverTest {
         val nameResolution = referenceMapOf<Any, NamedNode>(call to function.function)
         val diagnostics = CompilerDiagnostics()
 
-        ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
+        try {
+            ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
+        } catch (_: ArgumentResolver.ResolutionFailed) { }
 
         val expected = listOf(Diagnostic.ArgumentResolutionError.UnknownArgument(call, "c"))
 

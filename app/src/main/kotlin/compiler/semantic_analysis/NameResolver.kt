@@ -1,5 +1,6 @@
 package compiler.semantic_analysis
 
+import compiler.Compiler.CompilationFailure
 import compiler.ast.Expression
 import compiler.ast.Function
 import compiler.ast.NamedNode
@@ -15,6 +16,8 @@ import compiler.common.reference_collections.ReferenceMap
 import java.util.Stack
 
 object NameResolver {
+    class ResolutionFailed : CompilationFailure()
+
     class NameOverloadState {
         /*
         For each name we keep a NameOverloadState which consists of stacks of entities of a certain NamedNode type.
@@ -44,6 +47,8 @@ object NameResolver {
 
         val visibleNames: MutableMap<String, NameOverloadState> = HashMap()
 
+        var failed = false
+
         // Auxiliary functions for reporting issues to diagnostics
 
         fun reportIfNameConflict(name: String, scope: MutableMap<String, NamedNode>) {
@@ -52,26 +57,32 @@ object NameResolver {
                 diagnostics.report(Diagnostic.NameResolutionError.NameConflict())
         }
 
-        fun reportIfVariableUndefined(variableName: String) {
+        fun reportIfVariableUndefined(variableName: String): Boolean {
             // invariant: no node of a particular name exists <==> visibleNames[name] does not exist
+
             if (!visibleNames.containsKey(variableName))
                 diagnostics.report(Diagnostic.NameResolutionError.UndefinedVariable())
+            else if (visibleNames[variableName]!!.onlyHasFunctions())
+                diagnostics.report(Diagnostic.NameResolutionError.FunctionIsNotVariable())
+            else
+                return false
+
+            failed = true
+            return true
         }
 
-        fun reportIfFunctionUndefined(functionName: String) {
+        fun reportIfFunctionUndefined(functionName: String): Boolean {
             // invariant: no node of a particular name exists <==> visibleNames[name] does not exist
+
             if (!visibleNames.containsKey(functionName))
                 diagnostics.report(Diagnostic.NameResolutionError.UndefinedFunction())
-        }
-
-        fun reportIfVariableUsedAsFunction(variableName: String) {
-            if (visibleNames[variableName]!!.onlyHasVariables())
+            else if (visibleNames[functionName]!!.onlyHasVariables())
                 diagnostics.report(Diagnostic.NameResolutionError.VariableIsNotCallable())
-        }
+            else
+                return false
 
-        fun reportIfFunctionUsedAsVariable(functionName: String) {
-            if (visibleNames[functionName]!!.onlyHasFunctions())
-                diagnostics.report(Diagnostic.NameResolutionError.FunctionIsNotVariable())
+            failed = true
+            return true
         }
 
         // Auxiliary functions for managing scopes of names
@@ -172,16 +183,15 @@ object NameResolver {
                 // Expressions
 
                 is Expression.Variable -> {
-                    reportIfVariableUndefined(node.name)
-                    reportIfFunctionUsedAsVariable(node.name)
-                    nameDefinitions[node] = visibleNames[node.name]!!.topVariable()
+                    if (!reportIfVariableUndefined(node.name))
+                        nameDefinitions[node] = visibleNames[node.name]!!.topVariable()
                 }
 
                 is Expression.FunctionCall -> {
-                    reportIfFunctionUndefined(node.name)
-                    reportIfVariableUsedAsFunction(node.name)
-                    nameDefinitions[node] = visibleNames[node.name]!!.topFunction()
-                    node.arguments.forEach { analyzeNode(it, currentScope) }
+                    if (!reportIfFunctionUndefined(node.name)) {
+                        nameDefinitions[node] = visibleNames[node.name]!!.topFunction()
+                        node.arguments.forEach { analyzeNode(it, currentScope) }
+                    }
                 }
 
                 is Expression.FunctionCall.Argument -> {
@@ -218,10 +228,10 @@ object NameResolver {
                 }
 
                 is Statement.Assignment -> {
-                    reportIfVariableUndefined(node.variableName)
-                    reportIfFunctionUsedAsVariable(node.variableName) // when we try to assign to a function
-                    nameDefinitions[node] = visibleNames[node.variableName]!!.topVariable()
-                    analyzeNode(node.value, currentScope)
+                    if (!reportIfVariableUndefined(node.variableName)) {
+                        nameDefinitions[node] = visibleNames[node.variableName]!!.topVariable()
+                        analyzeNode(node.value, currentScope)
+                    }
                 }
 
                 is Statement.Block -> {
@@ -257,6 +267,10 @@ object NameResolver {
         }
 
         analyzeNode(ast, makeScope())
+
+        if (failed)
+            throw ResolutionFailed()
+
         return nameDefinitions
     }
 }

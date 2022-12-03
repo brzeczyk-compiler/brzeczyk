@@ -1,5 +1,6 @@
 package compiler.semantic_analysis
 
+import compiler.Compiler.CompilationFailure
 import compiler.ast.Expression
 import compiler.ast.Function
 import compiler.ast.NamedNode
@@ -32,6 +33,8 @@ object VariablePropertiesAnalyzer {
         val writtenIn: MutableReferenceSet<Function> = ReferenceHashSet(),
     )
 
+    class AnalysisFailed : CompilationFailure()
+
     fun fixVariableProperties(mutable: MutableVariableProperties): VariableProperties = VariableProperties(mutable.owner, mutable.accessedIn, mutable.writtenIn)
 
     fun calculateVariableProperties(
@@ -43,6 +46,7 @@ object VariablePropertiesAnalyzer {
     ): ReferenceMap<Any, VariableProperties> {
         val mutableVariableProperties: MutableReferenceMap<Any, MutableVariableProperties> = ReferenceHashMap()
         val functionCallsOwnership: MutableReferenceMap<Expression.FunctionCall, Function> = ReferenceHashMap()
+        var failed = false
 
         // Any = Expression | Statement
         fun analyzeVariables(node: Any, currentFunction: Function?) {
@@ -69,6 +73,7 @@ object VariablePropertiesAnalyzer {
                                 currentFunction
                             )
                         )
+                        failed = true
                     }
                     analyzeVariables(node.value, currentFunction)
                 }
@@ -122,6 +127,10 @@ object VariablePropertiesAnalyzer {
         }.toList()
 
         fixedVariableProperties.addAll(defaultParametersDummyVariablesProperties)
+
+        if (failed)
+            throw AnalysisFailed()
+
         return referenceMapOf(fixedVariableProperties)
     }
 }

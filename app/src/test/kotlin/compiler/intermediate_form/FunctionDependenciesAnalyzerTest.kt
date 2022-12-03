@@ -15,6 +15,81 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class FunctionDependenciesAnalyzerTest {
+    @Test fun `test create unique identifiers one function`() {
+        /*
+         czynność no_polish_signs() {}
+         */
+        var noPolishSigns = Function("no_polish_signs", listOf(), Type.Unit, listOf())
+
+        val program = Program(listOf(Program.Global.FunctionDefinition(noPolishSigns)))
+        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program)
+        val expectedIdentifiers = referenceMapOf(noPolishSigns to UniqueIdentifier("no_polish_signs"))
+        assertEquals(expectedIdentifiers, actualIdentifiers)
+    }
+
+    @Test fun `test create unique identifiers no polish signs`() {
+        /*
+         czynność polskie_znaki_są_żeś_zaiście_świetneż() {}
+         */
+        var polishSigns = Function("polskie_znaki_są_żeś_zaiście_świetneż", listOf(), Type.Unit, listOf())
+
+        val program = Program(listOf(Program.Global.FunctionDefinition(polishSigns)))
+        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program)
+        val expectedIdentifiers = referenceMapOf(polishSigns to UniqueIdentifier("polskie_znaki_sa_zes_zaiscie_swietnez"))
+        assertEquals(expectedIdentifiers, actualIdentifiers)
+    }
+
+    @Test fun `test create unique identifiers nested`() {
+        /*
+         czynność some_prefix() {
+             czynność no_polish_signs() {}
+         }
+         */
+        var noPolishSigns = Function("no_polish_signs", listOf(), Type.Unit, listOf())
+        var outerFunction = Function(
+            "some_prefix",
+            listOf(), Type.Unit, listOf(Statement.FunctionDefinition(noPolishSigns))
+        )
+
+        val program = Program(listOf(Program.Global.FunctionDefinition(outerFunction)))
+        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program)
+        val expectedIdentifiers = referenceMapOf(
+            noPolishSigns to UniqueIdentifier("some_prefix|no_polish_signs"),
+            outerFunction to UniqueIdentifier("some_prefix")
+        )
+        assertEquals(expectedIdentifiers, actualIdentifiers)
+    }
+
+    @Test fun `test create unique identifiers conflicts`() {
+        /*
+         czynność some_prefix() {
+             czynność żeś() {}
+             czynność żes() {}
+             czynność zes() {}
+         }
+         */
+        val inner1 = Function("żeś", listOf(), Type.Unit, listOf())
+        val inner2 = Function("żes", listOf(), Type.Unit, listOf())
+        val inner3 = Function("zes", listOf(), Type.Unit, listOf())
+        var outerFunction = Function(
+            "some_prefix",
+            listOf(), Type.Unit,
+            listOf(
+                Statement.FunctionDefinition(inner1), Statement.FunctionDefinition(inner2),
+                Statement.FunctionDefinition(inner3)
+            )
+        )
+        val program = Program(listOf(Program.Global.FunctionDefinition(outerFunction)))
+        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program)
+        val expectedIdentifiers = referenceMapOf(
+            inner1 to UniqueIdentifier("some_prefix|zes"),
+            inner2 to UniqueIdentifier("some_prefix|zes_"),
+            inner3 to UniqueIdentifier("some_prefix|zes__"),
+            outerFunction to UniqueIdentifier("some_prefix")
+        )
+        assertEquals(expectedIdentifiers, actualIdentifiers)
+    }
+
     @Test fun `test function details generator creation`() {
         /*
         czynność f() {

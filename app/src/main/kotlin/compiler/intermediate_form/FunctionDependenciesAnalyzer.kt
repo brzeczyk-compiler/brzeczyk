@@ -16,11 +16,33 @@ import compiler.common.reference_collections.referenceSetOf
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
 
 object FunctionDependenciesAnalyzer {
+    fun createUniqueIdentifiers(program: Program): ReferenceMap<Function, UniqueIdentifier> {
+        val uniqueIdentifiers = ReferenceHashMap<Function, UniqueIdentifier>()
+        val identifierFactory = UniqueIdentifierFactory()
+        fun nameFunction(function: Function, pathSoFar: String?): String? {
+            uniqueIdentifiers[function] = identifierFactory.build(pathSoFar, function.name)
+            return uniqueIdentifiers[function]!!.value
+        }
+
+        fun analyze(node: Any, pathSoFar: String?) {
+            when (node) {
+                is Program.Global.FunctionDefinition -> { analyze(node.function, pathSoFar) }
+                is Statement.FunctionDefinition -> { analyze(node.function, pathSoFar) }
+                is Function -> {
+                    val newPrefix = nameFunction(node, pathSoFar)
+                    node.body.forEach { analyze(it, newPrefix) }
+                }
+                else -> {}
+            }
+        }
+        program.globals.forEach { analyze(it, null) }
+        return uniqueIdentifiers
+    }
+
     fun createFunctionDetailsGenerators(
         program: Program,
         variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>
     ): ReferenceMap<Function, FunctionDetailsGenerator> {
-
         val result = ReferenceHashMap<Function, FunctionDetailsGenerator>()
 
         fun createDetailsGenerator(function: Function, depth: ULong) {

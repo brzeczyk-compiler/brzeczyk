@@ -1,6 +1,6 @@
 package compiler.parser
 
-import compiler.Compiler.CompilationFailure
+import compiler.Compiler.CompilationFailed
 import compiler.common.dfa.state_dfa.Dfa
 import compiler.common.dfa.state_dfa.DfaState
 import compiler.common.diagnostics.Diagnostic
@@ -85,7 +85,7 @@ class Parser<S : Comparable<S>>(
     constructor(grammar: Grammar<S>, diagnostics: Diagnostics) :
         this(AutomatonGrammar.createFromGrammar(grammar), diagnostics)
 
-    class ParsingFailed : CompilationFailure()
+    class ParsingFailed : CompilationFailed()
 
     // Parses the input token sequence and returns a parse tree as a result.
     // Each input token should be given as a leaf ParseTree with its corresponding symbol.

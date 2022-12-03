@@ -22,6 +22,7 @@ import compiler.semantic_analysis.VariablePropertiesAnalyzer.VariableProperties
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class VariablePropertiesAnalyzerTest {
 
@@ -48,11 +49,11 @@ class VariablePropertiesAnalyzerTest {
 
     private fun assertDiagnostics(
         input: VariablePropertyInput,
-        expectedDiagnostics: List<VariablePropertiesError>
+        expectedDiagnostics: List<VariablePropertiesError>,
     ) {
         val actualDiagnostics = CompilerDiagnostics()
 
-        try {
+        fun calculate() {
             VariablePropertiesAnalyzer.calculateVariableProperties(
                 input.program,
                 input.nameResolution,
@@ -60,7 +61,14 @@ class VariablePropertiesAnalyzerTest {
                 input.accessedDefaultValues,
                 actualDiagnostics,
             )
-        } catch (_: VariablePropertiesAnalyzer.AnalysisFailed) { }
+        }
+
+        if (expectedDiagnostics.isNotEmpty())
+            assertFailsWith<VariablePropertiesAnalyzer.AnalysisFailed> {
+                calculate()
+            }
+        else
+            calculate()
 
         assertContentEquals(
             expectedDiagnostics.asSequence(),

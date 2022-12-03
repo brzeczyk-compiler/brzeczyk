@@ -17,7 +17,7 @@ import java.io.Reader
 class Compiler(val diagnostics: Diagnostics) {
     // The type of exceptions thrown when, given a correct input (satisfying the invariants but not necessarily semantically correct),
     // a compilation phase is unable to produce a correct output, and so the entire compilation pipeline must be stopped.
-    abstract class CompilationFailure : Throwable()
+    abstract class CompilationFailed : Throwable()
 
     private val lexer = Lexer(Tokens.getTokens(), diagnostics)
     private val parser = Parser(ParserGrammar.getGrammar(), diagnostics)
@@ -36,6 +36,6 @@ class Compiler(val diagnostics: Diagnostics) {
             val programProperties = Resolver.resolveProgram(ast, diagnostics)
 
             // TODO: generate the code
-        } catch (_: CompilationFailure) { }
+        } catch (_: CompilationFailed) { }
     }
 }

@@ -1,6 +1,6 @@
 package compiler.semantic_analysis
 
-import compiler.Compiler.CompilationFailure
+import compiler.Compiler.CompilationFailed
 import compiler.ast.Expression
 import compiler.ast.Function
 import compiler.ast.NamedNode
@@ -23,7 +23,7 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
         val accessedDefaultValues: ReferenceMap<Expression.FunctionCall, ReferenceSet<Function.Parameter>>
     )
 
-    class ResolutionFailed : CompilationFailure()
+    class ResolutionFailed : CompilationFailed()
 
     private val argumentsToParametersMap = ReferenceHashMap<Expression.FunctionCall.Argument, Function.Parameter>()
     private val accessedDefaultValues = ReferenceHashMap<Expression.FunctionCall, ReferenceSet<Function.Parameter>>()

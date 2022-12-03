@@ -1,6 +1,6 @@
 package compiler.semantic_analysis
 
-import compiler.Compiler.CompilationFailure
+import compiler.Compiler.CompilationFailed
 import compiler.ast.Expression
 import compiler.ast.Function
 import compiler.ast.NamedNode
@@ -16,7 +16,7 @@ import compiler.common.reference_collections.ReferenceMap
 import java.util.Stack
 
 object NameResolver {
-    class ResolutionFailed : CompilationFailure()
+    class ResolutionFailed : CompilationFailed()
 
     class NameOverloadState {
         /*

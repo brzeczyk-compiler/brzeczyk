@@ -1,6 +1,6 @@
 package compiler.semantic_analysis
 
-import compiler.Compiler.CompilationFailure
+import compiler.Compiler.CompilationFailed
 import compiler.ast.Expression
 import compiler.ast.Function
 import compiler.ast.NamedNode
@@ -33,7 +33,7 @@ object VariablePropertiesAnalyzer {
         val writtenIn: MutableReferenceSet<Function> = ReferenceHashSet(),
     )
 
-    class AnalysisFailed : CompilationFailure()
+    class AnalysisFailed : CompilationFailed()
 
     fun fixVariableProperties(mutable: MutableVariableProperties): VariableProperties = VariableProperties(mutable.owner, mutable.accessedIn, mutable.writtenIn)
 

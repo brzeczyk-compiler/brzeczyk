@@ -126,7 +126,7 @@ class DefaultDefaultFunctionDetailsGeneratorTest {
         // remove arguments previously put on stack
         expectedCFGBuilder.addLinkFromAllFinalRoots(
             CFGLinkType.UNCONDITIONAL,
-            IntermediateFormTreeNode.Subtract(
+            IntermediateFormTreeNode.Add(
                 IntermediateFormTreeNode.RegisterRead(Register.RSP),
                 IntermediateFormTreeNode.Const(16)
             )

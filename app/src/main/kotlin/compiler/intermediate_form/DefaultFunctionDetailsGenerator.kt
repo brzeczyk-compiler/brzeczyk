@@ -73,7 +73,7 @@ data class DefaultFunctionDetailsGenerator(
         if (numberOfArgsPushedToStack > 0)
             cfgBuilder.addLinkFromAllFinalRoots(
                 CFGLinkType.UNCONDITIONAL,
-                IntermediateFormTreeNode.Subtract(
+                IntermediateFormTreeNode.Add(
                     IntermediateFormTreeNode.RegisterRead(Register.RSP),
                     IntermediateFormTreeNode.Const(numberOfArgsPushedToStack * memoryUnitSize.toLong())
                 )
@@ -148,7 +148,7 @@ data class DefaultFunctionDetailsGenerator(
                 CFGLinkType.UNCONDITIONAL,
                 genWrite(
                     param.value,
-                    IntermediateFormTreeNode.Subtract(
+                    IntermediateFormTreeNode.Add(
                         IntermediateFormTreeNode.RegisterRead(Register.RSP),
                         IntermediateFormTreeNode.Const(param.index * memoryUnitSize.toLong())
                     ),

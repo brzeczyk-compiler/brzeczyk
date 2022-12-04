@@ -10,40 +10,43 @@ import compiler.ast.Variable
 import compiler.lexer.Location
 import compiler.lexer.LocationRange
 
-sealed class Diagnostic {
-    abstract fun isError(): Boolean
+sealed interface Diagnostic {
+    fun isError(): Boolean
 
-    data class LexerError(val start: Location, val end: Location?, val context: List<String>, val errorSegment: String) : Diagnostic() {
-
+    sealed class LexerError(
+        val start: Location,
+        val end: Location?,
+        val context: List<String>,
+        val errorSegment: String,
+    ) : Diagnostic {
         override fun isError() = true
 
         override fun toString() = StringBuilder()
-            .append("Unable to match token at location $start - ${end ?: "eof"}.\n")
-            .append("\t\t${context.joinToString("")}-->$errorSegment<---")
+            .append("Lexer Error\n")
+            .append("The token at location $start - ${end ?: "eof"} is unexpected.\n")
+            .append("Context: \t\t${context.joinToString("")}-->$errorSegment<---\n")
             .toString()
     }
 
-    class ParserError(
+    sealed class ParserError(
         val symbol: Any?,
-        val start: Location,
-        val end: Location,
-        val expectedSymbols: List<Any>
-    ) : Diagnostic() {
+        val location: LocationRange,
+    ) : Diagnostic {
         override fun isError() = true
 
         override fun toString() = StringBuilder().apply {
+            append("Parser Error\n")
             if (symbol != null)
-                append("Unexpected symbol $symbol at location $start - $end.")
+                append("The symbol <<$symbol>> is unexpected at location $location.")
             else
-                append("Unexpected end of file.")
-            if (expectedSymbols.isNotEmpty())
-                append(" Expected symbols: ${expectedSymbols.joinToString()}.")
+                append("The end of file is unexpected.")
+            append("\n")
         }.toString()
     }
 
-    data class ObjectAssociatedToError(val message: String, val location: LocationRange?)
+    sealed class ResolutionError(astNodes: List<AstNode>) : Diagnostic {
 
-    sealed class ResolutionError(astNodes: List<AstNode>) : Diagnostic() {
+        data class ObjectAssociatedToError(val message: String, val location: LocationRange?)
 
         private val associatedObjects = astNodes.map { ObjectAssociatedToError(it.print(), it.location) }
         val associatedLocations = associatedObjects.map { it.location }

@@ -38,10 +38,7 @@ sealed interface AstNode {
         val stringBuilder = StringBuilder()
 
         if (this.location != null) {
-            stringBuilder
-                .append("at location ")
-                .append("from (${this.location!!.start.row}, ${this.location!!.start.column}) ")
-                .append("to (${this.location!!.end.row}, ${this.location!!.end.column})")
+            stringBuilder.append("at location ${this.location}")
         } else {
             stringBuilder.append("at virtual location")
         }

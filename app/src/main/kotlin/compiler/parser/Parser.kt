@@ -148,26 +148,22 @@ class Parser<S : Comparable<S>>(
                     }
 
                     is ParserAction.Reduce -> {
-                        val start: Location
-                        val end: Location
 
-                        if (parsedSubtrees.isNotEmpty()) {
-                            start = parsedSubtrees.first().location.start
-                            end = parsedSubtrees.last().location.end
+                        val location: LocationRange = if (parsedSubtrees.isNotEmpty()) {
+                            LocationRange(parsedSubtrees.first().location.start, parsedSubtrees.last().location.end)
                         } else {
                             // An empty non-terminal symbol has (somewhat arbitrarily) the location of the next input symbol.
-                            start = lookaheadStart
-                            end = lookaheadEnd
+                            LocationRange(lookaheadStart, lookaheadEnd)
                         }
 
-                        callResult = ParseTree.Branch(LocationRange(start, end), symbol, parsedSubtrees, action.production)
+                        callResult = ParseTree.Branch(location, symbol, parsedSubtrees, action.production)
                         callStack.removeLast()
                     }
 
                     null -> {
                         // Report a parsing error when the parsing table does not tell what to do.
-                        val expectedSymbols = parseActions.keys.filter { it.first == dfa && it.second == state }.mapNotNull { it.third }
-                        diagnostics.report(Diagnostic.ParserError(lookahead?.symbol, lookaheadStart, lookaheadEnd, expectedSymbols))
+                        // val expectedSymbols = parseActions.keys.filter { it.first == dfa && it.second == state }.mapNotNull { it.third }
+                        diagnostics.report(Diagnostic.ParserError(lookahead?.symbol, LocationRange(lookaheadStart, lookaheadEnd), /*expectedSymbols*/))
 
                         // Attempt to resume parsing by skipping input symbols until finding
                         // one compatible with some state in the call stack.

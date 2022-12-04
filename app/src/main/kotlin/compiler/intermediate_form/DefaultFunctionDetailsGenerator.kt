@@ -55,9 +55,12 @@ data class DefaultFunctionDetailsGenerator(
             val node = IntermediateFormTreeNode.RegisterWrite(register, arg)
             cfgBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, node)
         }
+
+        var numberOfArgsPushedToStack = 0
         for (arg in args.drop(argPositionToRegister.size).reversed()) {
             val node = IntermediateFormTreeNode.StackPush(arg)
             cfgBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, node)
+            numberOfArgsPushedToStack += 1
         }
 
         // Add call instruction to actually call a given function
@@ -65,6 +68,16 @@ data class DefaultFunctionDetailsGenerator(
             CFGLinkType.UNCONDITIONAL,
             IntermediateFormTreeNode.Call(functionLocationInCode)
         )
+
+        // Abandon arguments that were previously put on stack
+        if (numberOfArgsPushedToStack > 0)
+            cfgBuilder.addLinkFromAllFinalRoots(
+                CFGLinkType.UNCONDITIONAL,
+                IntermediateFormTreeNode.Subtract(
+                    IntermediateFormTreeNode.RegisterRead(Register.RSP),
+                    IntermediateFormTreeNode.Const(numberOfArgsPushedToStack * memoryUnitSize.toLong())
+                )
+            )
 
         // At the end create IFTNode to get function result
         val readResultNode: IFTNode? =
@@ -130,14 +143,17 @@ data class DefaultFunctionDetailsGenerator(
                 )
             )
         }
-        for (param in parameters.drop(argPositionToRegister.size)) {
+        for (param in parameters.drop(argPositionToRegister.size).withIndex()) {
             cfgBuilder.addLinkFromAllFinalRoots(
                 CFGLinkType.UNCONDITIONAL,
                 genWrite(
-                    param,
-                    IntermediateFormTreeNode.StackPop(),
+                    param.value,
+                    IntermediateFormTreeNode.Subtract(
+                        IntermediateFormTreeNode.RegisterRead(Register.RSP),
+                        IntermediateFormTreeNode.Const(param.index * memoryUnitSize.toLong())
+                    ),
                     true
-                )
+                ),
             )
         }
 

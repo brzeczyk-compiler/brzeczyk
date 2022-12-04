@@ -114,14 +114,23 @@ class DefaultDefaultFunctionDetailsGeneratorTest {
         }
         expectedCFGBuilder.addLinkFromAllFinalRoots(
             CFGLinkType.UNCONDITIONAL,
-            IntermediateFormTreeNode.StackPush(args.last())
+            IntermediateFormTreeNode.StackPush(args[7])
         )
         expectedCFGBuilder.addLinkFromAllFinalRoots(
             CFGLinkType.UNCONDITIONAL,
-            IntermediateFormTreeNode.StackPush(args[args.size - 2])
+            IntermediateFormTreeNode.StackPush(args[6])
         )
         // call
         expectedCFGBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, IntermediateFormTreeNode.Call(functionLocation))
+
+        // remove arguments previously put on stack
+        expectedCFGBuilder.addLinkFromAllFinalRoots(
+            CFGLinkType.UNCONDITIONAL,
+            IntermediateFormTreeNode.Subtract(
+                IntermediateFormTreeNode.RegisterRead(Register.RSP),
+                IntermediateFormTreeNode.Const(16)
+            )
+        )
 
         val expectedResult = IntermediateFormTreeNode.RegisterRead(Register.RAX)
         val expected = expectedCFGBuilder.build()

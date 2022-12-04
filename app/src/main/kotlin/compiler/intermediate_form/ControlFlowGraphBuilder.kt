@@ -42,7 +42,7 @@ class ControlFlowGraphBuilder(@JvmField var entryTreeRoot: IFTNode? = null) {
         } else if (entryTreeRoot == null) setEntryTreeRoot(to)
     }
 
-    fun addLinkFromAllFinalRoots(linkType: CFGLinkType, to: IFTNode) {
+    fun addLinksFromAllFinalRoots(linkType: CFGLinkType, to: IFTNode) {
         val linksToAdd = finalTreeRoots.map { Pair(Pair(it, linkType), to) }.toList()
         for (link in linksToAdd)
             addLink(link.first, link.second)

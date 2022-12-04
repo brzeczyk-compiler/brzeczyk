@@ -4,7 +4,7 @@ import compiler.lexer.LocationRange
 
 typealias StatementBlock = List<Statement>
 
-sealed class Statement : AstNode() {
+sealed class Statement : AstNode {
     data class Evaluation(
         val expression: Expression,
         override val location: LocationRange? = null,
@@ -14,6 +14,7 @@ sealed class Statement : AstNode() {
         val variable: Variable,
         override val location: LocationRange? = null,
     ) : Statement()
+
     data class FunctionDefinition(
         val function: Function,
         override val location: LocationRange? = null,
@@ -43,9 +44,13 @@ sealed class Statement : AstNode() {
         override val location: LocationRange? = null,
     ) : Statement()
 
-    data class LoopBreak(override val location: LocationRange? = null) : Statement()
+    data class LoopBreak(
+        override val location: LocationRange? = null,
+    ) : Statement()
 
-    data class LoopContinuation(override val location: LocationRange? = null) : Statement()
+    data class LoopContinuation(
+        override val location: LocationRange? = null,
+    ) : Statement()
 
     data class FunctionReturn(
         val value: Expression,

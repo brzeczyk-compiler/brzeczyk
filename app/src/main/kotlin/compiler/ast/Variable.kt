@@ -8,7 +8,7 @@ data class Variable(
     val type: Type,
     val value: Expression?,
     override val location: LocationRange? = null,
-) : NamedNode, AstNode() {
+) : NamedNode, AstNode {
     enum class Kind {
         CONSTANT,
         VALUE,

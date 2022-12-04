@@ -2,12 +2,25 @@ package compiler.ast
 
 import compiler.lexer.LocationRange
 
-sealed class Expression : AstNode() {
-    data class UnitLiteral(override val location: LocationRange? = null) : Expression()
-    data class BooleanLiteral(val value: Boolean, override val location: LocationRange? = null) : Expression()
-    data class NumberLiteral(val value: Int, override val location: LocationRange? = null) : Expression()
+sealed class Expression : AstNode {
+    data class UnitLiteral(
+        override val location: LocationRange? = null,
+    ) : Expression()
 
-    data class Variable(val name: String, override val location: LocationRange? = null) : Expression()
+    data class BooleanLiteral(
+        val value: Boolean,
+        override val location: LocationRange? = null,
+    ) : Expression()
+
+    data class NumberLiteral(
+        val value: Int,
+        override val location: LocationRange? = null,
+    ) : Expression()
+
+    data class Variable(
+        val name: String,
+        override val location: LocationRange? = null,
+    ) : Expression()
 
     data class FunctionCall(
         val name: String,
@@ -18,7 +31,7 @@ sealed class Expression : AstNode() {
             val name: String?,
             val value: Expression,
             override val location: LocationRange? = null,
-        ) : AstNode()
+        ) : AstNode
     }
 
     data class UnaryOperation(

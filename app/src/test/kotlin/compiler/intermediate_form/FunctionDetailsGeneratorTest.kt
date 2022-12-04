@@ -5,6 +5,7 @@ import compiler.ast.Type
 import compiler.ast.Variable
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class FunctionDetailsGeneratorTest {
     private val functionLocation = IntermediateFormTreeNode.MemoryAddress("address")
@@ -20,7 +21,7 @@ class FunctionDetailsGeneratorTest {
             functionLocation,
             0u,
             mapOf(),
-            0u
+            IntermediateFormTreeNode.Const(0)
         )
         val expected = ControlFlowGraphBuilder(IntermediateFormTreeNode.Call(functionLocation)).build()
         val result = fdg.genCall(listOf())
@@ -39,7 +40,7 @@ class FunctionDetailsGeneratorTest {
             functionLocation,
             0u,
             mapOf(param1 to VariableLocationType.REGISTER, param2 to VariableLocationType.MEMORY),
-            0u
+            IntermediateFormTreeNode.Const(0)
         )
 
         val arg1 = IntermediateFormTreeNode.NoOp()
@@ -71,7 +72,7 @@ class FunctionDetailsGeneratorTest {
             functionLocation,
             0u,
             mapOf(resultDummyVariable to VariableLocationType.REGISTER),
-            0u
+            IntermediateFormTreeNode.Const(0)
         ) { variableToRegisterMap[it]!! }
 
         val expectedCFGBuilder = ControlFlowGraphBuilder(IntermediateFormTreeNode.Call(functionLocation))
@@ -102,7 +103,7 @@ class FunctionDetailsGeneratorTest {
             functionLocation,
             0u,
             variablesLocation,
-            0u
+            IntermediateFormTreeNode.Const(0)
         ) { variableToRegisterMap[it]!! }
 
         val args = (0..7).map { IntermediateFormTreeNode.Const(it.toLong()) }.toList()

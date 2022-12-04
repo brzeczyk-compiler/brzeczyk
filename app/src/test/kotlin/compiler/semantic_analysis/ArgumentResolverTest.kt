@@ -13,8 +13,8 @@ import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.referenceElements
 import compiler.common.reference_collections.referenceHashMapOf
-import compiler.common.reference_collections.referenceKeys
 import compiler.common.reference_collections.referenceHashSetOf
+import compiler.common.reference_collections.referenceKeys
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

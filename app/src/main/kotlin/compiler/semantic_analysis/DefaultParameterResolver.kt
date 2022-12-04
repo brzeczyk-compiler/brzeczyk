@@ -5,8 +5,8 @@ import compiler.ast.Program
 import compiler.ast.Statement
 import compiler.ast.Variable
 import compiler.common.reference_collections.ReferenceHashMap
-import compiler.common.reference_collections.referenceHashMapOf
 import compiler.common.reference_collections.ReferenceMap
+import compiler.common.reference_collections.referenceHashMapOf
 
 object DefaultParameterResolver {
 

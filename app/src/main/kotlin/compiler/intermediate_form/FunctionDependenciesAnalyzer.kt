@@ -12,8 +12,8 @@ import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.combineReferenceSets
 import compiler.common.reference_collections.referenceHashMapOf
-import compiler.common.reference_collections.referenceKeys
 import compiler.common.reference_collections.referenceHashSetOf
+import compiler.common.reference_collections.referenceKeys
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
 
 object FunctionDependenciesAnalyzer {

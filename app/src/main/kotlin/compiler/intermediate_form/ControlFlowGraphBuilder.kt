@@ -1,6 +1,5 @@
 package compiler.intermediate_form
 
-import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.referenceHashMapOf
 
 class IncorrectControlFlowGraphError(message: String) : Exception(message)

@@ -5,17 +5,18 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class ControlFlowGraphBuilderTest {
-    private val regRead = Register()
-    private val regWrite = Register()
+    private val regToRead = Register()
+    private val regToWrite = Register()
 
-    private val innerNode = IntermediateFormTreeNode.RegisterRead(regRead)
+    private val innerNode = IntermediateFormTreeNode.RegisterRead(regToRead)
 
-    private val entryNode = IntermediateFormTreeNode.RegisterWrite(regWrite, innerNode)
+    private val entryNode = IntermediateFormTreeNode.RegisterWrite(regToWrite, innerNode)
     private val secondNode = IntermediateFormTreeNode.NoOp()
     private val conditionalTrueNode = IntermediateFormTreeNode.NoOp()
     private val conditionalFalseNode = IntermediateFormTreeNode.NoOp()
+    private val afterConditionalNode = IntermediateFormTreeNode.NoOp()
 
-    private val expectedCFG = ControlFlowGraph(
+    private val simpleCFG = ControlFlowGraph(
         treeRoots = listOf(entryNode, secondNode, conditionalTrueNode, conditionalFalseNode),
         entryTreeRoot = entryNode,
         unconditionalLinks = referenceHashMapOf(entryNode to secondNode),
@@ -50,7 +51,7 @@ class ControlFlowGraphBuilderTest {
     }
 
     @Test
-    fun `test addLink from null sets entryTreeRoot`() {
+    fun `test addLink`() {
         val cfgBuilder = ControlFlowGraphBuilder()
         cfgBuilder.addLink(null, entryNode)
         cfgBuilder.addLink(Pair(entryNode, CFGLinkType.UNCONDITIONAL), secondNode)
@@ -58,7 +59,7 @@ class ControlFlowGraphBuilderTest {
         cfgBuilder.addLink(Pair(secondNode, CFGLinkType.CONDITIONAL_FALSE), conditionalFalseNode)
 
         val cfg = cfgBuilder.build()
-        assertEquals(expectedCFG, cfg)
+        assertEquals(simpleCFG, cfg)
     }
 
     @Test
@@ -69,7 +70,7 @@ class ControlFlowGraphBuilderTest {
         cfgBuilder.addLink(Pair(secondNode, CFGLinkType.CONDITIONAL_FALSE), conditionalFalseNode)
 
         val cfg = cfgBuilder.build()
-        assertEquals(expectedCFG, cfg)
+        assertEquals(simpleCFG, cfg)
     }
 
     @Test
@@ -82,24 +83,24 @@ class ControlFlowGraphBuilderTest {
     @Test
     fun `test addAllFrom`() {
         val cfgBuilder = ControlFlowGraphBuilder()
-        cfgBuilder.addAllFrom(expectedCFG)
+        cfgBuilder.addAllFrom(simpleCFG)
 
         val cfg = cfgBuilder.build()
-        assertEquals(expectedCFG, cfg)
+        assertEquals(simpleCFG, cfg)
     }
 
     @Test
     fun `test addAllFrom without modifying entryTreeRoot`() {
         val cfgBuilder = ControlFlowGraphBuilder(entryNode)
 
-        val remainingTwoNodes = ControlFlowGraphBuilder(secondNode)
-        remainingTwoNodes.addLink(Pair(secondNode, CFGLinkType.CONDITIONAL_TRUE), conditionalTrueNode)
-        remainingTwoNodes.addLink(Pair(secondNode, CFGLinkType.CONDITIONAL_FALSE), conditionalFalseNode)
-        cfgBuilder.addAllFrom(remainingTwoNodes.build())
+        val remainingThreeNodes = ControlFlowGraphBuilder(secondNode)
+        remainingThreeNodes.addLink(Pair(secondNode, CFGLinkType.CONDITIONAL_TRUE), conditionalTrueNode)
+        remainingThreeNodes.addLink(Pair(secondNode, CFGLinkType.CONDITIONAL_FALSE), conditionalFalseNode)
+        cfgBuilder.addAllFrom(remainingThreeNodes.build())
         cfgBuilder.addLink(Pair(entryNode, CFGLinkType.UNCONDITIONAL), secondNode)
 
         val cfg = cfgBuilder.build()
-        assertEquals(expectedCFG, cfg)
+        assertEquals(simpleCFG, cfg)
     }
 
     @Test
@@ -112,7 +113,7 @@ class ControlFlowGraphBuilderTest {
         cfgBuilder.mergeUnconditionally(remaining.build())
 
         val cfg = cfgBuilder.build()
-        assertEquals(expectedCFG, cfg)
+        assertEquals(simpleCFG, cfg)
     }
 
     @Test
@@ -126,7 +127,7 @@ class ControlFlowGraphBuilderTest {
         )
 
         val cfg = cfgBuilder.build()
-        assertEquals(expectedCFG, cfg)
+        assertEquals(simpleCFG, cfg)
     }
 
     @Test
@@ -139,6 +140,6 @@ class ControlFlowGraphBuilderTest {
         )
 
         val cfg = cfgBuilder.build()
-        assertEquals(expectedCFG, cfg)
+        assertEquals(simpleCFG, cfg)
     }
 }

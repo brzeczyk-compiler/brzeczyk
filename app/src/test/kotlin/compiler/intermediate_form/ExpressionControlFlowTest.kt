@@ -9,7 +9,7 @@ import compiler.common.intermediate_form.FunctionDetailsGeneratorInterface
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.referenceHashMapOf
-import compiler.common.reference_collections.referenceSetOf
+import compiler.common.reference_collections.referenceHashSetOf
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -73,7 +73,7 @@ class ExpressionControlFlowTest {
                 )
             }
             for (name in functions.keys) {
-                finalCallGraph[nameToFunMap[name]!!] = referenceSetOf(nameToFunMap[name]!!)
+                finalCallGraph[nameToFunMap[name]!!] = referenceHashSetOf(nameToFunMap[name]!!)
             }
             for (function in nameToFunMap.values union setOf(currentFunction)) {
                 functionDetailsGenerators[function] = TestFunctionDetailsGenerator(function)

@@ -10,13 +10,12 @@ import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic.ControlFlowDiagnostic
 import compiler.common.diagnostics.Diagnostics
 import compiler.common.intermediate_form.FunctionDetailsGeneratorInterface
-import compiler.common.reference_collections.ReferenceHashSet
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.combineReferenceSets
 import compiler.common.reference_collections.copy
 import compiler.common.reference_collections.referenceHashMapOf
-import compiler.common.reference_collections.referenceSetOf
+import compiler.common.reference_collections.referenceHashSetOf
 import compiler.semantic_analysis.ArgumentResolutionResult
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
 
@@ -35,8 +34,8 @@ object ControlFlow {
         defaultParameterValues: ReferenceMap<Function.Parameter, Variable>
     ): ControlFlowGraph {
         fun getVariablesModifiedBy(function: Function): ReferenceSet<Variable> {
-            val possiblyCalledFunctions = combineReferenceSets(callGraph[function]!!, referenceSetOf(function))
-            return referenceSetOf(
+            val possiblyCalledFunctions = combineReferenceSets(callGraph[function]!!, referenceHashSetOf(function))
+            return referenceHashSetOf(
                 variableProperties.asSequence()
                     .filter { (it.value.writtenIn intersect possiblyCalledFunctions).isNotEmpty() }
                     .map { it.key as Variable }.toList()
@@ -45,7 +44,7 @@ object ControlFlow {
 
         // first stage is to decide which variable usages have to be realized via temporary registers
         // and which variables are invalidated by function calls / conditionals
-        val usagesThatRequireTempRegisters = ReferenceHashSet<Expression.Variable>()
+        val usagesThatRequireTempRegisters = referenceHashSetOf<Expression.Variable>()
         val invalidatedVariables = referenceHashMapOf<Expression, ReferenceSet<Variable>>()
 
         fun gatherVariableUsageInfo(astNode: Expression, modifiedUnderCurrentBase: ReferenceSet<Variable>): ReferenceSet<Variable> {
@@ -65,8 +64,8 @@ object ControlFlow {
 
                 is Expression.BinaryOperation -> {
                     if (astNode.kind in listOf(Expression.BinaryOperation.Kind.OR, Expression.BinaryOperation.Kind.AND)) {
-                        val leftModifiedVariables = gatherVariableUsageInfo(astNode.leftOperand, referenceSetOf())
-                        val rightModifiedVariables = gatherVariableUsageInfo(astNode.rightOperand, referenceSetOf())
+                        val leftModifiedVariables = gatherVariableUsageInfo(astNode.leftOperand, referenceHashSetOf())
+                        val rightModifiedVariables = gatherVariableUsageInfo(astNode.rightOperand, referenceHashSetOf())
 
                         invalidatedVariables[astNode] = rightModifiedVariables
                         combineReferenceSets(modifiedUnderCurrentBase, leftModifiedVariables, rightModifiedVariables)
@@ -77,7 +76,7 @@ object ControlFlow {
                 }
 
                 is Expression.FunctionCall -> {
-                    var modifiedInArguments = referenceSetOf<Variable>()
+                    var modifiedInArguments: ReferenceSet<Variable> = referenceHashSetOf<Variable>()
                     astNode.arguments.reversed().forEach { argumentNode ->
                         modifiedInArguments = gatherVariableUsageInfo(argumentNode.value, modifiedInArguments)
                     }
@@ -88,9 +87,9 @@ object ControlFlow {
                 }
 
                 is Expression.Conditional -> {
-                    val modifiedInCondition = gatherVariableUsageInfo(astNode.condition, referenceSetOf())
-                    val modifiedInTrueBranch = gatherVariableUsageInfo(astNode.resultWhenTrue, referenceSetOf())
-                    val modifiedInFalseBranch = gatherVariableUsageInfo(astNode.resultWhenFalse, referenceSetOf())
+                    val modifiedInCondition = gatherVariableUsageInfo(astNode.condition, referenceHashSetOf())
+                    val modifiedInTrueBranch = gatherVariableUsageInfo(astNode.resultWhenTrue, referenceHashSetOf())
+                    val modifiedInFalseBranch = gatherVariableUsageInfo(astNode.resultWhenFalse, referenceHashSetOf())
 
                     invalidatedVariables[astNode] = combineReferenceSets(modifiedInTrueBranch, modifiedInFalseBranch)
                     combineReferenceSets(modifiedUnderCurrentBase, modifiedInCondition, modifiedInTrueBranch, modifiedInFalseBranch)
@@ -98,7 +97,7 @@ object ControlFlow {
             }
         }
 
-        gatherVariableUsageInfo(expression, ReferenceHashSet())
+        gatherVariableUsageInfo(expression, referenceHashSetOf())
 
         // second stage is to actually produce CFG
         val cfgBuilder = ControlFlowGraphBuilder()

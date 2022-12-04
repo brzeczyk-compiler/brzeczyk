@@ -14,7 +14,7 @@ import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.referenceElements
 import compiler.common.reference_collections.referenceHashMapOf
 import compiler.common.reference_collections.referenceKeys
-import compiler.common.reference_collections.referenceSetOf
+import compiler.common.reference_collections.referenceHashSetOf
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -156,7 +156,7 @@ internal class ArgumentResolverTest {
 
         assertEquals(emptyList(), diagnostics.diagnostics.toList())
         assertEquals(expected, argumentResolution.argumentsToParametersMap)
-        assertContentEquals(referenceHashMapOf(call to referenceSetOf(parB)), argumentResolution.accessedDefaultValues)
+        assertContentEquals(referenceHashMapOf(call to referenceHashSetOf(parB)), argumentResolution.accessedDefaultValues)
     }
 
     @Test
@@ -181,7 +181,7 @@ internal class ArgumentResolverTest {
 
         assertEquals(emptyList(), diagnostics.diagnostics.toList())
         assertEquals(referenceHashMapOf(), argumentResolution.argumentsToParametersMap)
-        assertContentEquals(referenceHashMapOf(call to referenceSetOf(parA, parB, parC)), argumentResolution.accessedDefaultValues)
+        assertContentEquals(referenceHashMapOf(call to referenceHashSetOf(parA, parB, parC)), argumentResolution.accessedDefaultValues)
     }
 
     @Test

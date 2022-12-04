@@ -12,7 +12,7 @@ import compiler.common.diagnostics.Diagnostics
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.referenceHashMapOf
-import compiler.common.reference_collections.referenceSetOf
+import compiler.common.reference_collections.referenceHashSetOf
 
 typealias ArgumentResolutionResult = ReferenceMap<Expression.FunctionCall.Argument, Function.Parameter>
 
@@ -92,7 +92,7 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
                 }
             }
         }
-        accessedDefaultValues[functionCall] = referenceSetOf(parametersWithDefaultValue)
+        accessedDefaultValues[functionCall] = referenceHashSetOf(parametersWithDefaultValue)
     }
 
     private fun resolveFunctionCallsArguments(program: Program) {

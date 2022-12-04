@@ -13,7 +13,7 @@ import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.combineReferenceSets
 import compiler.common.reference_collections.referenceHashMapOf
 import compiler.common.reference_collections.referenceKeys
-import compiler.common.reference_collections.referenceSetOf
+import compiler.common.reference_collections.referenceHashSetOf
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
 
 object FunctionDependenciesAnalyzer {
@@ -67,14 +67,14 @@ object FunctionDependenciesAnalyzer {
 
         fun getCalledFunctions(global: Program.Global): ReferenceSet<Function> {
             fun getCalledFunctions(expression: Expression?): ReferenceSet<Function> = when (expression) {
-                is Expression.BooleanLiteral -> referenceSetOf()
-                is Expression.NumberLiteral -> referenceSetOf()
-                is Expression.UnitLiteral -> referenceSetOf()
-                is Expression.Variable -> referenceSetOf()
-                null -> referenceSetOf()
+                is Expression.BooleanLiteral -> referenceHashSetOf()
+                is Expression.NumberLiteral -> referenceHashSetOf()
+                is Expression.UnitLiteral -> referenceHashSetOf()
+                is Expression.Variable -> referenceHashSetOf()
+                null -> referenceHashSetOf()
 
                 is Expression.FunctionCall -> combineReferenceSets(
-                    referenceSetOf(nameResolution[expression] as Function),
+                    referenceHashSetOf(nameResolution[expression] as Function),
                     combineReferenceSets(expression.arguments.map { getCalledFunctions(it.value) }),
                 )
 
@@ -94,11 +94,11 @@ object FunctionDependenciesAnalyzer {
 
             fun getCalledFunctions(statement: Statement): ReferenceSet<Function> {
                 fun getCalledFunctions(list: List<Statement>?): ReferenceSet<Function> =
-                    if (list === null) referenceSetOf() else combineReferenceSets(list.map { getCalledFunctions(it) })
+                    if (list === null) referenceHashSetOf() else combineReferenceSets(list.map { getCalledFunctions(it) })
 
                 return when (statement) {
-                    is Statement.LoopBreak -> referenceSetOf()
-                    is Statement.LoopContinuation -> referenceSetOf()
+                    is Statement.LoopBreak -> referenceHashSetOf()
+                    is Statement.LoopContinuation -> referenceHashSetOf()
 
                     is Statement.FunctionDefinition -> {
                         functionCalls[statement.function] = getCalledFunctions(statement.function.body)
@@ -129,11 +129,11 @@ object FunctionDependenciesAnalyzer {
             }
 
             return when (global) {
-                is Program.Global.VariableDefinition -> referenceSetOf()
+                is Program.Global.VariableDefinition -> referenceHashSetOf()
 
                 is Program.Global.FunctionDefinition -> {
                     functionCalls[global.function] = combineReferenceSets(global.function.body.map { getCalledFunctions(it) })
-                    return referenceSetOf()
+                    return referenceHashSetOf()
                 }
             }
         }

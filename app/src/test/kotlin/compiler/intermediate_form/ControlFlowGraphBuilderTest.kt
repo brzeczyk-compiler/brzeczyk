@@ -24,6 +24,18 @@ class ControlFlowGraphBuilderTest {
         conditionalFalseLinks = referenceHashMapOf(secondNode to conditionalFalseNode)
     )
 
+    private val simpleCFGWithExtraFinalNode = ControlFlowGraph(
+        treeRoots = listOf(entryNode, secondNode, conditionalTrueNode, conditionalFalseNode, afterConditionalNode),
+        entryTreeRoot = entryNode,
+        unconditionalLinks = referenceHashMapOf(
+            entryNode to secondNode,
+            conditionalTrueNode to afterConditionalNode,
+            conditionalFalseNode to afterConditionalNode
+        ),
+        conditionalTrueLinks = referenceHashMapOf(secondNode to conditionalTrueNode),
+        conditionalFalseLinks = referenceHashMapOf(secondNode to conditionalFalseNode)
+    )
+
     @Test
     fun `test pass entryTreeRoot in constructor`() {
         val cfg = ControlFlowGraphBuilder(entryNode).build()
@@ -78,6 +90,16 @@ class ControlFlowGraphBuilderTest {
         val cfgBuilder = ControlFlowGraphBuilder()
         cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, entryNode)
         assertEquals(ControlFlowGraphBuilder(entryNode).build(), cfgBuilder.build())
+    }
+
+    @Test
+    fun `test addLinksFromAllFinalRoots with multiple final nodes`() {
+        val cfgBuilder = ControlFlowGraphBuilder()
+        cfgBuilder.addAllFrom(simpleCFG)
+        cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, afterConditionalNode)
+
+        val cfg = cfgBuilder.build()
+        assertEquals(simpleCFGWithExtraFinalNode, cfg)
     }
 
     @Test

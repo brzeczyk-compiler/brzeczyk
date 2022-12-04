@@ -36,7 +36,8 @@ object DefaultParameterResolver {
                                 Variable.Kind.VALUE,
                                 "_dummy_${it.name}",
                                 it.type,
-                                it.defaultValue
+                                it.defaultValue,
+                                null,
                             )
                         }
                     }
@@ -55,7 +56,8 @@ object DefaultParameterResolver {
                                 Variable.Kind.CONSTANT,
                                 "_dummy_${it.name}",
                                 it.type,
-                                it.defaultValue
+                                it.defaultValue,
+                                null,
                             )
                         }
                     }

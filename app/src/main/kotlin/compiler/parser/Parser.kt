@@ -1,10 +1,12 @@
 package compiler.parser
 
+import compiler.Compiler.CompilationFailed
 import compiler.common.dfa.state_dfa.Dfa
 import compiler.common.dfa.state_dfa.DfaState
 import compiler.common.diagnostics.Diagnostic
 import compiler.common.diagnostics.Diagnostics
 import compiler.lexer.Location
+import compiler.lexer.LocationRange
 import compiler.parser.analysis.GrammarAnalysis
 import compiler.parser.grammar.AutomatonGrammar
 import compiler.parser.grammar.Grammar
@@ -84,8 +86,7 @@ class Parser<S : Comparable<S>>(
     constructor(grammar: Grammar<S>, diagnostics: Diagnostics) :
         this(AutomatonGrammar.createFromGrammar(grammar), diagnostics)
 
-    // Thrown when the parser is unable to recover from an error.
-    class ParsingFailed : Throwable()
+    class ParsingFailed : CompilationFailed()
 
     // Parses the input token sequence and returns a parse tree as a result.
     // Each input token should be given as a leaf ParseTree with its corresponding symbol.
@@ -106,12 +107,13 @@ class Parser<S : Comparable<S>>(
         var lookahead: ParseTree<S>? = null
         var lookaheadStart = Location(1, 1)
         var lookaheadEnd = Location(1, 1)
+        var invalid = false
 
         fun shift() {
             if (input.hasNext()) {
                 lookahead = input.next()
-                lookaheadStart = lookahead!!.start
-                lookaheadEnd = lookahead!!.end
+                lookaheadStart = lookahead!!.location.start
+                lookaheadEnd = lookahead!!.location.end
             } else
                 lookahead = null
         }
@@ -150,15 +152,15 @@ class Parser<S : Comparable<S>>(
                         val end: Location
 
                         if (parsedSubtrees.isNotEmpty()) {
-                            start = parsedSubtrees.first().start
-                            end = parsedSubtrees.last().end
+                            start = parsedSubtrees.first().location.start
+                            end = parsedSubtrees.last().location.end
                         } else {
                             // An empty non-terminal symbol has (somewhat arbitrarily) the location of the next input symbol.
                             start = lookaheadStart
                             end = lookaheadEnd
                         }
 
-                        callResult = ParseTree.Branch(start, end, symbol, parsedSubtrees, action.production)
+                        callResult = ParseTree.Branch(LocationRange(start, end), symbol, parsedSubtrees, action.production)
                         callStack.removeLast()
                     }
 
@@ -173,6 +175,8 @@ class Parser<S : Comparable<S>>(
                         panic@ while (true) {
                             for ((index, call) in callStack.withIndex().reversed()) {
                                 if (Triple(call.dfa, call.state, lookahead?.symbol) in parseActions) {
+                                    if (index != callStack.lastIndex)
+                                        invalid = true
                                     while (index != callStack.lastIndex)
                                         callStack.removeLast()
                                     break@panic
@@ -188,6 +192,11 @@ class Parser<S : Comparable<S>>(
                 }
             }
         }
+
+        // If the errors caused any removals from the call stack (and not just skipping of input symbols),
+        // then the resulting parse tree is invalid and unsuitable for further analysis.
+        if (invalid)
+            throw ParsingFailed()
 
         // The call stack can only be emptied with a Reduce action,
         // and so the final callResult must be a node corresponding to a production from the start symbol.

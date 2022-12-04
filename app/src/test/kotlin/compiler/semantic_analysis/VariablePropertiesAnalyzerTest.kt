@@ -21,6 +21,7 @@ import compiler.semantic_analysis.VariablePropertiesAnalyzer.VariableProperties
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class VariablePropertiesAnalyzerTest {
 
@@ -47,16 +48,27 @@ class VariablePropertiesAnalyzerTest {
 
     private fun assertDiagnostics(
         input: VariablePropertyInput,
-        expectedDiagnostics: List<VariablePropertiesError>
+        expectedDiagnostics: List<VariablePropertiesError>,
     ) {
         val actualDiagnostics = CompilerDiagnostics()
-        VariablePropertiesAnalyzer.calculateVariableProperties(
-            input.program,
-            input.nameResolution,
-            input.defaultParameterMapping,
-            input.accessedDefaultValues,
-            actualDiagnostics,
-        )
+
+        fun calculate() {
+            VariablePropertiesAnalyzer.calculateVariableProperties(
+                input.program,
+                input.nameResolution,
+                input.defaultParameterMapping,
+                input.accessedDefaultValues,
+                actualDiagnostics,
+            )
+        }
+
+        if (expectedDiagnostics.isNotEmpty())
+            assertFailsWith<VariablePropertiesAnalyzer.AnalysisFailed> {
+                calculate()
+            }
+        else
+            calculate()
+
         assertContentEquals(
             expectedDiagnostics.asSequence(),
             actualDiagnostics.diagnostics.filter { it is VariablePropertiesError }
@@ -66,12 +78,12 @@ class VariablePropertiesAnalyzerTest {
     // zm x: Liczba = 123
 
     @Test
-    fun `test unused variable has no parent`() {
+    fun `test unused variable is global`() {
         val variable = Variable(Variable.Kind.VALUE, "x", Type.Number, Expression.NumberLiteral(123))
         val input = VariablePropertyInput(Program(listOf(VariableDefinition(variable))), referenceHashMapOf())
 
-        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceHashMapOf(
-            variable to VariableProperties(null, referenceHashSetOf(), referenceHashSetOf()),
+        val expectedResults = referenceHashMapOf<Any, VariableProperties>(
+            variable to VariableProperties(VariablePropertiesAnalyzer.GlobalContext, referenceHashSetOf(), referenceHashSetOf()),
         )
 
         assertAnalysisResults(input, expectedResults)
@@ -112,9 +124,9 @@ class VariablePropertiesAnalyzerTest {
         val defaultParameterMapping = referenceHashMapOf(parameterX to dummyVariableX)
         val input = VariablePropertyInput(Program(listOf(FunctionDefinition(function))), referenceHashMapOf(), defaultParameterMapping)
 
-        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceHashMapOf(
+        val expectedResults = referenceHashMapOf<Any, VariableProperties>(
             parameterX to VariableProperties(function, referenceHashSetOf(), referenceHashSetOf()),
-            dummyVariableX to VariableProperties(null, referenceHashSetOf(), referenceHashSetOf()),
+            dummyVariableX to VariableProperties(VariablePropertiesAnalyzer.GlobalContext, referenceHashSetOf(), referenceHashSetOf()),
         )
 
         assertAnalysisResults(input, expectedResults)
@@ -222,11 +234,6 @@ class VariablePropertiesAnalyzerTest {
             nameResolution,
         )
 
-        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceHashMapOf(
-            parameterX to VariableProperties(outer, referenceHashSetOf(), referenceHashSetOf(outer)),
-        )
-
-        assertAnalysisResults(input, expectedResults)
         assertDiagnostics(
             input,
             listOf(AssignmentToFunctionParameter(parameterX, outer, outer)),
@@ -325,11 +332,6 @@ class VariablePropertiesAnalyzerTest {
             nameResolution,
         )
 
-        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceHashMapOf(
-            parameterX to VariableProperties(outer, referenceHashSetOf(), referenceHashSetOf(inner)),
-        )
-
-        assertAnalysisResults(input, expectedResults)
         assertDiagnostics(
             input,
             listOf(AssignmentToFunctionParameter(parameterX, outer, inner)),
@@ -365,9 +367,9 @@ class VariablePropertiesAnalyzerTest {
             defaultParameterMapping,
         )
 
-        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceHashMapOf(
+        val expectedResults = referenceHashMapOf<Any, VariableProperties>(
             parameterX to VariableProperties(outer, referenceHashSetOf(inner), referenceHashSetOf()),
-            dummyVariableX to VariableProperties(null, referenceHashSetOf(), referenceHashSetOf()),
+            dummyVariableX to VariableProperties(VariablePropertiesAnalyzer.GlobalContext, referenceHashSetOf(), referenceHashSetOf()),
             variableY to VariableProperties(inner, referenceHashSetOf(), referenceHashSetOf()),
         )
 

@@ -304,7 +304,7 @@ class FunctionControlFlowTest {
         val value2 = Expression.NumberLiteral(456)
         val evaluation1 = Statement.Evaluation(value1)
         val evaluation2 = Statement.Evaluation(value2)
-        val conditional = Statement.Conditional(condition2, listOf(Statement.LoopBreak), null)
+        val conditional = Statement.Conditional(condition2, listOf(Statement.LoopBreak()), null)
         val loop = Statement.Loop(condition1, listOf(conditional, evaluation1))
         val function = Function("f", listOf(), Type.Unit, listOf(loop, evaluation2))
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
@@ -343,7 +343,7 @@ class FunctionControlFlowTest {
         val value2 = Expression.NumberLiteral(456)
         val evaluation1 = Statement.Evaluation(value1)
         val evaluation2 = Statement.Evaluation(value2)
-        val conditional = Statement.Conditional(condition2, listOf(Statement.LoopContinuation), null)
+        val conditional = Statement.Conditional(condition2, listOf(Statement.LoopContinuation()), null)
         val loop = Statement.Loop(condition1, listOf(conditional, evaluation1))
         val function = Function("f", listOf(), Type.Unit, listOf(loop, evaluation2))
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
@@ -384,8 +384,8 @@ class FunctionControlFlowTest {
         val value2 = Expression.NumberLiteral(456)
         val evaluation1 = Statement.Evaluation(value1)
         val evaluation2 = Statement.Evaluation(value2)
-        val conditional1 = Statement.Conditional(condition2, listOf(Statement.LoopBreak), null)
-        val conditional2 = Statement.Conditional(condition3, listOf(Statement.LoopContinuation), null)
+        val conditional1 = Statement.Conditional(condition2, listOf(Statement.LoopBreak()), null)
+        val conditional2 = Statement.Conditional(condition3, listOf(Statement.LoopContinuation()), null)
         val loop = Statement.Loop(condition1, listOf(conditional1, conditional2, evaluation1))
         val function = Function("f", listOf(), Type.Unit, listOf(loop, evaluation2))
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
@@ -434,10 +434,10 @@ class FunctionControlFlowTest {
         val value2 = Expression.NumberLiteral(456)
         val evaluation1 = Statement.Evaluation(value1)
         val evaluation2 = Statement.Evaluation(value2)
-        val conditional1 = Statement.Conditional(condition2, listOf(Statement.LoopContinuation), null)
-        val conditional2 = Statement.Conditional(condition4, listOf(Statement.LoopContinuation), null)
-        val conditional3 = Statement.Conditional(condition5, listOf(Statement.LoopBreak), null)
-        val conditional4 = Statement.Conditional(condition6, listOf(Statement.LoopBreak), null)
+        val conditional1 = Statement.Conditional(condition2, listOf(Statement.LoopContinuation()), null)
+        val conditional2 = Statement.Conditional(condition4, listOf(Statement.LoopContinuation()), null)
+        val conditional3 = Statement.Conditional(condition5, listOf(Statement.LoopBreak()), null)
+        val conditional4 = Statement.Conditional(condition6, listOf(Statement.LoopBreak()), null)
         val loop2 = Statement.Loop(condition3, listOf(conditional2, conditional3, evaluation1))
         val loop1 = Statement.Loop(condition1, listOf(conditional1, loop2, conditional4))
         val function = Function("f", listOf(), Type.Unit, listOf(loop1, evaluation2))
@@ -474,7 +474,7 @@ class FunctionControlFlowTest {
     fun `function return`() {
         val condition = Expression.BooleanLiteral(true)
         val value = Expression.NumberLiteral(123)
-        val functionReturn = Statement.FunctionReturn(Expression.UnitLiteral)
+        val functionReturn = Statement.FunctionReturn(Expression.UnitLiteral())
         val conditional = Statement.Conditional(condition, listOf(functionReturn), null)
         val evaluation = Statement.Evaluation(value)
         val function = Function("f", listOf(), Type.Unit, listOf(conditional, evaluation))
@@ -500,7 +500,7 @@ class FunctionControlFlowTest {
 
     @Test
     fun `break outside of loop`() {
-        val loopBreak = Statement.LoopBreak
+        val loopBreak = Statement.LoopBreak()
         val function = Function("f", listOf(), Type.Unit, listOf(loopBreak))
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
@@ -513,7 +513,7 @@ class FunctionControlFlowTest {
 
     @Test
     fun `continuation outside of loop`() {
-        val loopContinuation = Statement.LoopContinuation
+        val loopContinuation = Statement.LoopContinuation()
         val function = Function("f", listOf(), Type.Unit, listOf(loopContinuation))
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
@@ -530,7 +530,7 @@ class FunctionControlFlowTest {
     @Test
     fun `unreachable statement because of return`() {
         val value = Expression.NumberLiteral(123)
-        val functionReturn = Statement.FunctionReturn(Expression.UnitLiteral)
+        val functionReturn = Statement.FunctionReturn(Expression.UnitLiteral())
         val evaluation = Statement.Evaluation(value)
         val function = Function("f", listOf(), Type.Unit, listOf(functionReturn, evaluation))
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
@@ -554,7 +554,7 @@ class FunctionControlFlowTest {
         val condition = Expression.BooleanLiteral(false)
         val value = Expression.NumberLiteral(123)
         val evaluation = Statement.Evaluation(value)
-        val loop = Statement.Loop(condition, listOf(Statement.LoopBreak, evaluation))
+        val loop = Statement.Loop(condition, listOf(Statement.LoopBreak(), evaluation))
         val function = Function("f", listOf(), Type.Unit, listOf(loop))
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
@@ -578,7 +578,7 @@ class FunctionControlFlowTest {
         val condition = Expression.BooleanLiteral(false)
         val value = Expression.NumberLiteral(123)
         val evaluation = Statement.Evaluation(value)
-        val loop = Statement.Loop(condition, listOf(Statement.LoopContinuation, evaluation))
+        val loop = Statement.Loop(condition, listOf(Statement.LoopContinuation(), evaluation))
         val function = Function("f", listOf(), Type.Unit, listOf(loop))
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 

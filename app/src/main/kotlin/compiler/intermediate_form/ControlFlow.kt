@@ -61,7 +61,7 @@ object ControlFlow {
 
         fun gatherVariableUsageInfo(astNode: Expression, modifiedUnderCurrentBase: ReferenceSet<Variable>): ReferenceSet<Variable> {
             return when (astNode) {
-                Expression.UnitLiteral,
+                is Expression.UnitLiteral,
                 is Expression.BooleanLiteral,
                 is Expression.NumberLiteral -> modifiedUnderCurrentBase
 
@@ -135,7 +135,7 @@ object ControlFlow {
 
         fun makeCFGForSubtree(astNode: Expression): IntermediateFormTreeNode {
             return when (astNode) {
-                Expression.UnitLiteral -> IntermediateFormTreeNode.Const(IntermediateFormTreeNode.UNIT_VALUE)
+                is Expression.UnitLiteral -> IntermediateFormTreeNode.Const(IntermediateFormTreeNode.UNIT_VALUE)
 
                 is Expression.BooleanLiteral -> IntermediateFormTreeNode.Const(if (astNode.value) 1 else 0)
 

@@ -586,7 +586,7 @@ class TypeCheckerTest {
 
     @Test
     fun `correct nested block`() {
-        val evaluation = Statement.Evaluation(Expression.UnitLiteral)
+        val evaluation = Statement.Evaluation(Expression.UnitLiteral())
         val block = Statement.Block(listOf(evaluation))
         val main = mainFunction(listOf(block))
         val program = Program(listOf(Program.Global.FunctionDefinition(main)))
@@ -600,7 +600,7 @@ class TypeCheckerTest {
 
     @Test
     fun `correct conditional`() {
-        val evaluation = Statement.Evaluation(Expression.UnitLiteral)
+        val evaluation = Statement.Evaluation(Expression.UnitLiteral())
         val condition = Expression.BooleanLiteral(true)
         val conditional = Statement.Conditional(condition, listOf(evaluation), listOf(evaluation))
         val main = mainFunction(listOf(conditional))
@@ -615,7 +615,7 @@ class TypeCheckerTest {
 
     @Test
     fun `conditional with non-boolean condition`() {
-        val evaluation = Statement.Evaluation(Expression.UnitLiteral)
+        val evaluation = Statement.Evaluation(Expression.UnitLiteral())
         val condition = Expression.NumberLiteral(123)
         val conditional = Statement.Conditional(condition, listOf(evaluation), listOf(evaluation))
         val main = mainFunction(listOf(conditional))
@@ -632,7 +632,7 @@ class TypeCheckerTest {
 
     @Test
     fun `correct loop`() {
-        val evaluation = Statement.Evaluation(Expression.UnitLiteral)
+        val evaluation = Statement.Evaluation(Expression.UnitLiteral())
         val condition = Expression.BooleanLiteral(true)
         val conditional = Statement.Loop(condition, listOf(evaluation))
         val main = mainFunction(listOf(conditional))
@@ -647,7 +647,7 @@ class TypeCheckerTest {
 
     @Test
     fun `correct loop with break`() {
-        val loopBreak = Statement.LoopBreak
+        val loopBreak = Statement.LoopBreak()
         val condition = Expression.BooleanLiteral(true)
         val conditional = Statement.Loop(condition, listOf(loopBreak))
         val main = mainFunction(listOf(conditional))
@@ -662,7 +662,7 @@ class TypeCheckerTest {
 
     @Test
     fun `correct loop with continuation`() {
-        val loopContinuation = Statement.LoopContinuation
+        val loopContinuation = Statement.LoopContinuation()
         val condition = Expression.BooleanLiteral(true)
         val conditional = Statement.Loop(condition, listOf(loopContinuation))
         val main = mainFunction(listOf(conditional))
@@ -677,7 +677,7 @@ class TypeCheckerTest {
 
     @Test
     fun `loop with non-boolean condition`() {
-        val evaluation = Statement.Evaluation(Expression.UnitLiteral)
+        val evaluation = Statement.Evaluation(Expression.UnitLiteral())
         val condition = Expression.NumberLiteral(123)
         val conditional = Statement.Loop(condition, listOf(evaluation))
         val main = mainFunction(listOf(conditional))
@@ -724,7 +724,7 @@ class TypeCheckerTest {
 
     @Test
     fun `unit literal has unit type`() {
-        val value = Expression.UnitLiteral
+        val value = Expression.UnitLiteral()
         val evaluation = Statement.Evaluation(value)
         val main = mainFunction(listOf(evaluation))
         val program = Program(listOf(Program.Global.FunctionDefinition(main)))

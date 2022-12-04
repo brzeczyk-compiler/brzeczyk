@@ -35,18 +35,18 @@ class ControlFlowGraphBuilderTest {
     }
 
     @Test
-    fun `test makeRoot`() {
+    fun `test setEntryTreeRoot`() {
         val cfgBuilder = ControlFlowGraphBuilder()
-        cfgBuilder.makeRoot(entryNode)
+        cfgBuilder.setEntryTreeRoot(entryNode)
 
         val cfg = cfgBuilder.build()
         assertEquals(ControlFlowGraphBuilder(entryNode).build(), cfg)
     }
 
     @Test
-    fun `test makeRoot when already specified`() {
+    fun `test setEntryTreeRoot when already specified`() {
         val cfgBuilder = ControlFlowGraphBuilder(entryNode)
-        assertFailsWith<IncorrectControlFlowGraphError> { cfgBuilder.makeRoot(entryNode) }
+        assertFailsWith<IncorrectControlFlowGraphError> { cfgBuilder.setEntryTreeRoot(entryNode) }
     }
 
     @Test

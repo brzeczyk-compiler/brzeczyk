@@ -19,7 +19,7 @@ class ControlFlowGraphBuilder(var entryTreeRoot: IFTNode? = null) {
         entryTreeRoot?.let { treeRoots.add(it) }
     }
 
-    fun makeRoot(root: IFTNode) {
+    fun setEntryTreeRoot(root: IFTNode) {
         if (entryTreeRoot != null)
             throw IncorrectControlFlowGraphError("Tried to create second entryTreeRoot in CFGBuilder")
         entryTreeRoot = root
@@ -52,7 +52,7 @@ class ControlFlowGraphBuilder(var entryTreeRoot: IFTNode? = null) {
         for (link in linksToAdd)
             addLink(link.first, link.second)
         if (entryTreeRoot == null)
-            makeRoot(to)
+            setEntryTreeRoot(to)
     }
 
     fun addAllFrom(cfg: ControlFlowGraph, modifyEntryTreeRoot: Boolean = false) {

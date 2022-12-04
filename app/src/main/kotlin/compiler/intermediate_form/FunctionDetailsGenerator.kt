@@ -4,6 +4,7 @@ import compiler.ast.NamedNode
 import compiler.ast.Variable
 import compiler.common.intermediate_form.FunctionDetailsGeneratorInterface
 import compiler.common.reference_collections.ReferenceHashMap
+import java.lang.Exception
 
 enum class VariableLocationType {
     MEMORY,
@@ -195,6 +196,9 @@ data class FunctionDetailsGenerator(
                     IntermediateFormTreeNode.RegisterRead(variablesRegisters[variable]!!)
             }
         } else {
+            if (variablesLocationTypes[variable]!! == VariableLocationType.REGISTER)
+                throw IndirectReadFromRegister()
+
             val displayElementAddress = IntermediateFormTreeNode.Subtract(
                 displayAddress,
                 IntermediateFormTreeNode.Const((memoryUnitSize * depth).toLong())
@@ -225,6 +229,9 @@ data class FunctionDetailsGenerator(
                     IntermediateFormTreeNode.RegisterWrite(variablesRegisters[variable]!!, value)
             }
         } else {
+            if (variablesLocationTypes[variable]!! == VariableLocationType.REGISTER)
+                throw IndirectReadFromRegister()
+
             val displayElementAddress = IntermediateFormTreeNode.Subtract(
                 displayAddress,
                 IntermediateFormTreeNode.Const((memoryUnitSize * depth).toLong())
@@ -238,4 +245,6 @@ data class FunctionDetailsGenerator(
             )
         }
     }
+
+    class IndirectReadFromRegister : Exception()
 }

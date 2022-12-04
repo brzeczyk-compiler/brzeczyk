@@ -5,6 +5,7 @@ import compiler.ast.Type
 import compiler.ast.Variable
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class FunctionDetailsGeneratorTest {
@@ -143,5 +144,210 @@ class FunctionDetailsGeneratorTest {
 
         assert(expected.equalsByValue(result.callGraph))
         assertEquals(expectedResult, result.result)
+    }
+
+    @Test
+    fun `test gen read direct from memory`() {
+        val memVar: Variable = Variable(Variable.Kind.VALUE, "memVar", Type.Number, null)
+
+        val fdg = FunctionDetailsGenerator(
+            listOf(),
+            null,
+            IntermediateFormTreeNode.MemoryAddress(""),
+            0u,
+            mapOf(Pair(memVar, VariableLocationType.MEMORY)),
+            IntermediateFormTreeNode.Const(0)
+        )
+
+        var readMemVar = fdg.genRead(memVar, true)
+
+        assertTrue { readMemVar is IntermediateFormTreeNode.MemoryRead }
+
+        readMemVar = readMemVar as IntermediateFormTreeNode.MemoryRead
+        assertTrue { readMemVar.address is IntermediateFormTreeNode.Subtract }
+
+        val left = (readMemVar.address as IntermediateFormTreeNode.Subtract).left
+        val right = (readMemVar.address as IntermediateFormTreeNode.Subtract).right
+
+        assertTrue { left is IntermediateFormTreeNode.RegisterRead }
+        assertEquals(Register.RBP, (left as IntermediateFormTreeNode.RegisterRead).register)
+
+        assertTrue { right is IntermediateFormTreeNode.Const }
+        assertEquals(0, (right as IntermediateFormTreeNode.Const).value)
+    }
+
+    @Test
+    fun `test gen read indirect from memory`() {
+        val memVar: Variable = Variable(Variable.Kind.VALUE, "memVar", Type.Number, null)
+        val displayAddress = IntermediateFormTreeNode.MemoryAddress("display")
+        val depth: ULong = 5u
+        val displayElementAddress = IntermediateFormTreeNode.Subtract(
+            displayAddress,
+            IntermediateFormTreeNode.Const((memoryUnitSize * depth).toLong())
+        )
+
+        val fdg = FunctionDetailsGenerator(
+            listOf(),
+            null,
+            IntermediateFormTreeNode.MemoryAddress(""),
+            depth,
+            mapOf(Pair(memVar, VariableLocationType.MEMORY)),
+            displayAddress
+        )
+
+        var readMemVar = fdg.genRead(memVar, false)
+
+        assertTrue { readMemVar is IntermediateFormTreeNode.MemoryRead }
+
+        readMemVar = readMemVar as IntermediateFormTreeNode.MemoryRead
+        assertTrue { readMemVar.address is IntermediateFormTreeNode.Subtract }
+
+        val left = (readMemVar.address as IntermediateFormTreeNode.Subtract).left
+        val right = (readMemVar.address as IntermediateFormTreeNode.Subtract).right
+
+        assertEquals(IntermediateFormTreeNode.MemoryRead(displayElementAddress), left)
+
+        assertTrue { right is IntermediateFormTreeNode.Const }
+        assertEquals(0, (right as IntermediateFormTreeNode.Const).value)
+    }
+
+    @Test
+    fun `test gen read direct from register`() {
+        val regVar: Variable = Variable(Variable.Kind.VALUE, "regVar", Type.Number, null)
+
+        val fdg = FunctionDetailsGenerator(
+            listOf(),
+            null,
+            IntermediateFormTreeNode.MemoryAddress(""),
+            0u,
+            mapOf(Pair(regVar, VariableLocationType.REGISTER)),
+            IntermediateFormTreeNode.Const(0)
+        )
+
+        val readRegVar = fdg.genRead(regVar, true)
+
+        assertTrue { readRegVar is IntermediateFormTreeNode.RegisterRead }
+    }
+
+    @Test
+    fun `test gen read indirect from register fails`() {
+        val regVar: Variable = Variable(Variable.Kind.VALUE, "regVar", Type.Number, null)
+
+        val fdg = FunctionDetailsGenerator(
+            listOf(),
+            null,
+            IntermediateFormTreeNode.MemoryAddress(""),
+            0u,
+            mapOf(Pair(regVar, VariableLocationType.REGISTER)),
+            IntermediateFormTreeNode.Const(0)
+        )
+
+        assertFailsWith<FunctionDetailsGenerator.IndirectReadFromRegister> { fdg.genRead(regVar, false) }
+    }
+
+    @Test
+    fun `test gen write direct to memory`() {
+        val memVar: Variable = Variable(Variable.Kind.VALUE, "memVar", Type.Number, null)
+
+        val fdg = FunctionDetailsGenerator(
+            listOf(),
+            null,
+            IntermediateFormTreeNode.MemoryAddress(""),
+            0u,
+            mapOf(Pair(memVar, VariableLocationType.MEMORY)),
+            IntermediateFormTreeNode.Const(0)
+        )
+
+        val value = IntermediateFormTreeNode.Const(1)
+        var writeMemVar = fdg.genWrite(memVar, value, true)
+
+        assertTrue { writeMemVar is IntermediateFormTreeNode.MemoryWrite }
+
+        writeMemVar = writeMemVar as IntermediateFormTreeNode.MemoryWrite
+        assertTrue { writeMemVar.address is IntermediateFormTreeNode.Subtract }
+        assertTrue { writeMemVar.value == value }
+
+        val left = (writeMemVar.address as IntermediateFormTreeNode.Subtract).left
+        val right = (writeMemVar.address as IntermediateFormTreeNode.Subtract).right
+
+        assertTrue { left is IntermediateFormTreeNode.RegisterRead }
+        assertEquals(Register.RBP, (left as IntermediateFormTreeNode.RegisterRead).register)
+
+        assertTrue { right is IntermediateFormTreeNode.Const }
+        assertEquals(0, (right as IntermediateFormTreeNode.Const).value)
+    }
+
+    @Test
+    fun `test gen write indirect to memory`() {
+        val memVar: Variable = Variable(Variable.Kind.VALUE, "memVar", Type.Number, null)
+        val displayAddress = IntermediateFormTreeNode.MemoryAddress("display")
+        val depth: ULong = 5u
+        val displayElementAddress = IntermediateFormTreeNode.Subtract(
+            displayAddress,
+            IntermediateFormTreeNode.Const((memoryUnitSize * depth).toLong())
+        )
+
+        val fdg = FunctionDetailsGenerator(
+            listOf(),
+            null,
+            IntermediateFormTreeNode.MemoryAddress(""),
+            depth,
+            mapOf(Pair(memVar, VariableLocationType.MEMORY)),
+            displayAddress
+        )
+
+        val value = IntermediateFormTreeNode.Const(1)
+        var writeMemVar = fdg.genWrite(memVar, value, false)
+
+        assertTrue { writeMemVar is IntermediateFormTreeNode.MemoryWrite }
+
+        writeMemVar = writeMemVar as IntermediateFormTreeNode.MemoryWrite
+        assertTrue { writeMemVar.address is IntermediateFormTreeNode.Subtract }
+        assertTrue { writeMemVar.value == value }
+
+        val left = (writeMemVar.address as IntermediateFormTreeNode.Subtract).left
+        val right = (writeMemVar.address as IntermediateFormTreeNode.Subtract).right
+
+        assertEquals(IntermediateFormTreeNode.MemoryRead(displayElementAddress), left)
+
+        assertTrue { right is IntermediateFormTreeNode.Const }
+        assertEquals(0, (right as IntermediateFormTreeNode.Const).value)
+    }
+
+    @Test
+    fun `test gen write direct to register`() {
+        val regVar: Variable = Variable(Variable.Kind.VALUE, "regVar", Type.Number, null)
+
+        val fdg = FunctionDetailsGenerator(
+            listOf(),
+            null,
+            IntermediateFormTreeNode.MemoryAddress(""),
+            0u,
+            mapOf(Pair(regVar, VariableLocationType.REGISTER)),
+            IntermediateFormTreeNode.Const(0)
+        )
+
+        val value = IntermediateFormTreeNode.Const(1)
+        val writeRegVal = fdg.genWrite(regVar, value, true)
+
+        assertTrue { writeRegVal is IntermediateFormTreeNode.RegisterWrite }
+        assertTrue { (writeRegVal as IntermediateFormTreeNode.RegisterWrite).node == value }
+    }
+
+    @Test
+    fun `test gen write indirect to register fails`() {
+        val regVar: Variable = Variable(Variable.Kind.VALUE, "regVar", Type.Number, null)
+
+        val fdg = FunctionDetailsGenerator(
+            listOf(),
+            null,
+            IntermediateFormTreeNode.MemoryAddress(""),
+            0u,
+            mapOf(Pair(regVar, VariableLocationType.REGISTER)),
+            IntermediateFormTreeNode.Const(0)
+        )
+
+        val value = IntermediateFormTreeNode.Const(1)
+        assertFailsWith<FunctionDetailsGenerator.IndirectReadFromRegister> { fdg.genWrite(regVar, value, false) }
     }
 }

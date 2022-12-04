@@ -2,9 +2,8 @@ package compiler.intermediate_form
 
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.referenceHashMapOf
-import java.lang.RuntimeException
 
-class IncorrectControlFlowGraphError(message: String) : RuntimeException(message)
+class IncorrectControlFlowGraphError(message: String) : Exception(message)
 
 class ControlFlowGraphBuilder(var entryTreeRoot: IFTNode? = null) {
     private var unconditionalLinks = ReferenceHashMap<IFTNode, IFTNode>()

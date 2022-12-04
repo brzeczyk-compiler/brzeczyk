@@ -66,7 +66,7 @@ class VariablePropertiesAnalyzerTest {
         else
             calculate()
 
-        assertResolutionErrorsEquals(expectedDiagnostics, actualDiagnostics.diagnostics.filter { it is VariablePropertiesError })
+        assertResolutionErrorsEquals(expectedDiagnostics, actualDiagnostics.diagnostics.filter { it is VariablePropertiesError }.toList())
     }
 
     // zm x: Liczba = 123

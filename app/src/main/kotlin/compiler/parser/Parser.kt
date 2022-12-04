@@ -163,7 +163,7 @@ class Parser<S : Comparable<S>>(
                     null -> {
                         // Report a parsing error when the parsing table does not tell what to do.
                         // val expectedSymbols = parseActions.keys.filter { it.first == dfa && it.second == state }.mapNotNull { it.third }
-                        diagnostics.report(Diagnostic.ParserError(lookahead?.symbol, LocationRange(lookaheadStart, lookaheadEnd), /*expectedSymbols*/))
+                        diagnostics.report(Diagnostic.ParserError.UnexpectedToken(lookahead?.symbol, LocationRange(lookaheadStart, lookaheadEnd), /*expectedSymbols*/))
 
                         // Attempt to resume parsing by skipping input symbols until finding
                         // one compatible with some state in the call stack.

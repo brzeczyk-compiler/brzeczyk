@@ -13,7 +13,6 @@ import compiler.common.reference_collections.ReferenceHashMap
 import compiler.semantic_analysis.assertResolutionErrorsEquals
 import compiler.common.reference_collections.referenceHashMapOf
 import kotlin.test.Test
-import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 
 class FunctionControlFlowTest {

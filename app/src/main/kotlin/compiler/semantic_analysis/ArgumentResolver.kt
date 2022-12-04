@@ -47,7 +47,7 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
         }
     }
 
-    private fun report(diagnostic: Diagnostic.ArgumentResolutionError) {
+    private fun report(diagnostic: Diagnostic.ResolutionError.ArgumentResolutionError) {
         diagnostics.report(diagnostic)
         failed = true
     }

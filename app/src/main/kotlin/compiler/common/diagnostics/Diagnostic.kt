@@ -13,7 +13,7 @@ import compiler.lexer.LocationRange
 sealed interface Diagnostic {
     fun isError(): Boolean
 
-    class LexerError(
+    data class LexerError(
         val start: Location,
         val end: Location?,
         val context: List<String>,
@@ -28,20 +28,28 @@ sealed interface Diagnostic {
             .toString()
     }
 
-    class ParserError(
-        val symbol: Any?,
-        val location: LocationRange,
-    ) : Diagnostic {
+    sealed class ParserError : Diagnostic {
         override fun isError() = true
 
-        override fun toString() = StringBuilder().apply {
-            append("Parser Error\n")
-            if (symbol != null)
-                append("The symbol <<$symbol>> is unexpected at location $location.")
-            else
-                append("The end of file is unexpected.")
-            append("\n")
-        }.toString()
+        abstract val errorMessage: String
+
+        override fun toString(): String = "Parser Error\n${errorMessage}\n"
+
+        class UnexpectedToken(
+            symbol: Any?,
+            location: LocationRange,
+        ) : ParserError() {
+            override val errorMessage =
+                if (symbol != null) "The symbol <<$symbol>> is unexpected at location $location."
+                else "The end of file is unexpected."
+        }
+
+        class InvalidNumberLiteral(
+            number: String,
+            location: LocationRange,
+        ) : ParserError() {
+            override val errorMessage = "The literal <<$number>> at location $location is an invalid number literal."
+        }
     }
 
     sealed class ResolutionError(astNodes: List<AstNode>) : Diagnostic {

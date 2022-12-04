@@ -1,7 +1,7 @@
 package compiler.semantic_analysis
 
-import compiler.ast.AstNode
 import compiler.Compiler.CompilationFailed
+import compiler.ast.AstNode
 import compiler.ast.Expression
 import compiler.ast.Function
 import compiler.ast.NamedNode
@@ -58,48 +58,34 @@ object NameResolver {
                 diagnostics.report(Diagnostic.ResolutionError.NameResolutionError.NameConflict(scope[namedNode.name]!!, namedNode))
         }
 
-        fun reportIfVariableUndefined(variableName: String, astNode: AstNode): Boolean {
-            // invariant: no node of a particular name exists <==> visibleNames[name] does not exist
-            if (!visibleNames.containsKey(variableName)) {
+        fun checkVariableUsage(name: String, astNode: AstNode): Boolean {
+            if (!visibleNames.containsKey(name)) {
                 if (astNode is Expression.Variable)
                     diagnostics.report(Diagnostic.ResolutionError.NameResolutionError.UndefinedVariable(astNode))
                 if (astNode is Statement.Assignment)
                     diagnostics.report(Diagnostic.ResolutionError.NameResolutionError.AssignmentToUndefinedVariable(astNode))
-                failed = true
-                return true
+            } else if (visibleNames[name]!!.onlyHasFunctions()) {
+                if (astNode is Expression.Variable)
+                    diagnostics.report(Diagnostic.ResolutionError.NameResolutionError.FunctionIsNotVariable(visibleNames[name]!!.topFunction(), astNode))
+                if (astNode is Statement.Assignment)
+                    diagnostics.report(Diagnostic.ResolutionError.NameResolutionError.AssignmentToFunction(visibleNames[name]!!.topFunction(), astNode))
+            } else {
+                return false
             }
-            return false
+            failed = true
+            return true
         }
 
-        fun reportIfFunctionUndefined(functionCall: Expression.FunctionCall): Boolean {
-            // invariant: no node of a particular name exists <==> visibleNames[name] does not exist
+        fun checkFunctionUsage(functionCall: Expression.FunctionCall): Boolean {
             if (!visibleNames.containsKey(functionCall.name)) {
                 diagnostics.report(Diagnostic.ResolutionError.NameResolutionError.UndefinedFunction(functionCall))
-                failed = true
-                return true
-            }
-            return false
-        }
-
-        fun reportIfVariableUsedAsFunction(functionCall: Expression.FunctionCall): Boolean {
-            if (visibleNames[functionCall.name]!!.onlyHasVariables()) {
+            } else if (visibleNames[functionCall.name]!!.onlyHasVariables()) {
                 diagnostics.report(Diagnostic.ResolutionError.NameResolutionError.VariableIsNotCallable(visibleNames[functionCall.name]!!.topVariable(), functionCall))
-                failed = true
-                return true
+            } else {
+                return false
             }
-            return false
-        }
-
-        fun reportIfFunctionUsedAsVariable(functionName: String, astNode: AstNode): Boolean {
-            if (visibleNames[functionName]!!.onlyHasFunctions()) {
-                if (astNode is Expression.Variable)
-                    diagnostics.report(Diagnostic.ResolutionError.NameResolutionError.FunctionIsNotVariable(visibleNames[functionName]!!.topFunction(), astNode))
-                if (astNode is Statement.Assignment)
-                    diagnostics.report(Diagnostic.ResolutionError.NameResolutionError.AssignmentToFunction(visibleNames[functionName]!!.topFunction(), astNode))
-                failed = true
-                return true
-            }
-            return false
+            failed = true
+            return true
         }
 
         // Auxiliary functions for managing scopes of names
@@ -201,13 +187,13 @@ object NameResolver {
 
                 is Expression.Variable -> {
                     // TODO
-                    if (!reportIfVariableUndefined(node.name, node) || !reportIfFunctionUsedAsVariable(node.name, node))
+                    if (!checkVariableUsage(node.name, node) && !checkVariableUsage(node.name, node))
                         nameDefinitions[node] = visibleNames[node.name]!!.topVariable()
                 }
 
                 is Expression.FunctionCall -> {
                     // TODO
-                    if (!reportIfFunctionUndefined(node) || !reportIfVariableUsedAsFunction(node)) {
+                    if (!checkFunctionUsage(node) && !checkFunctionUsage(node)) {
                         nameDefinitions[node] = visibleNames[node.name]!!.topFunction()
                         node.arguments.forEach { analyzeNode(it, currentScope) }
                     }
@@ -247,7 +233,8 @@ object NameResolver {
                 }
 
                 is Statement.Assignment -> {
-                    if (!reportIfVariableUndefined(node.variableName, node) || !reportIfFunctionUsedAsVariable(node.variableName, node)) {
+                    // TODO
+                    if (!checkVariableUsage(node.variableName, node) && !checkVariableUsage(node.variableName, node)) {
                         nameDefinitions[node] = visibleNames[node.variableName]!!.topVariable()
                         analyzeNode(node.value, currentScope)
                     }

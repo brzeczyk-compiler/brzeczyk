@@ -35,7 +35,7 @@ object AstFactory {
         val properNode = skipPassThroughExpressions(parseTree)
         if (properNode.production !in listOf(Productions.expr2048Identifier, Productions.eExpr2048Identifier)) {
             diagnostics.report(
-                Diagnostic.ParserError(
+                Diagnostic.ParserError.UnexpectedToken(
                     properNode.symbol,
                     properNode.location,
                     // listOf(Symbol.Terminal(TokenType.IDENTIFIER)),
@@ -93,7 +93,7 @@ object AstFactory {
                     try {
                         it.toLong()
                     } catch (_: NumberFormatException) {
-                        diagnostics.report(Diagnostic.InvalidNumberLiteral(it))
+                        diagnostics.report(Diagnostic.ParserError.InvalidNumberLiteral(it, child.location))
                         0
                     }
                 },

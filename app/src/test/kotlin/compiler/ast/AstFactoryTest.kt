@@ -353,7 +353,7 @@ class AstFactoryTest {
         val reportedDiagnostics = ArrayList<Diagnostic>()
         assertFails { AstFactory.createFromParseTree(parseTree) { reportedDiagnostics.add(it) } }
         assertEquals(1, reportedDiagnostics.size)
-        assertTrue(reportedDiagnostics.first() is Diagnostic.ParserError)
+        assertTrue(reportedDiagnostics.first() is Diagnostic.ParserError.UnexpectedToken)
     }
 
     @Test fun `test correctly translates function call`() {
@@ -426,7 +426,7 @@ class AstFactoryTest {
         val reportedDiagnostics = ArrayList<Diagnostic>()
         assertFails { AstFactory.createFromParseTree(parseTree) { reportedDiagnostics.add(it) } }
         assertEquals(1, reportedDiagnostics.size)
-        assertTrue(reportedDiagnostics.first() is Diagnostic.ParserError)
+        assertTrue(reportedDiagnostics.first() is Diagnostic.ParserError.UnexpectedToken)
     }
 
     @Test fun `test correctly translates if without else`() {

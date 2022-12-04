@@ -9,13 +9,13 @@ class NameResolutionErrorTest {
     @Test
     fun `test undefined variable`() {
         assertErrorOfType(
-                """
+            """
                     czynność f() {
                         x
                     }
                     
                 """,
-                Diagnostic.ResolutionError.NameResolutionError.UndefinedVariable::class
+            Diagnostic.ResolutionError.NameResolutionError.UndefinedVariable::class
         )
     }
 
@@ -395,14 +395,14 @@ class NameResolutionErrorTest {
     @Test
     fun `test using functions in conditions`() {
         assertErrorOfType(
-                """
+            """
                     czynność f() -> Czy {
                         czynność g() { }
                         zwróć (g == 17)
                     }
                     
                 """,
-                Diagnostic.ResolutionError.NameResolutionError.FunctionIsNotVariable::class
+            Diagnostic.ResolutionError.NameResolutionError.FunctionIsNotVariable::class
         )
     }
 

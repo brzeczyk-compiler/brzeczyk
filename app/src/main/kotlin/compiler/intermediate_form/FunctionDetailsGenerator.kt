@@ -40,7 +40,7 @@ data class FunctionDetailsGenerator(
                     variablesTotalOffset += memoryUnitSize
                 }
                 VariableLocationType.REGISTER -> {
-                    variablesRegisters[variable] = Register()
+                    variablesRegisters[variable] = createRegisterFor(variable)
                 }
             }
         }
@@ -85,7 +85,8 @@ data class FunctionDetailsGenerator(
 
         // move args from Registers and Stack
         for ((param, register) in parameters zip argPositionToRegister) {
-            cfgBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL,
+            cfgBuilder.addLinkFromAllFinalRoots(
+                CFGLinkType.UNCONDITIONAL,
                 genWrite(
                     param,
                     IntermediateFormTreeNode.RegisterRead(register),
@@ -94,7 +95,8 @@ data class FunctionDetailsGenerator(
             )
         }
         for (param in parameters.drop(argPositionToRegister.size)) {
-            cfgBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL,
+            cfgBuilder.addLinkFromAllFinalRoots(
+                CFGLinkType.UNCONDITIONAL,
                 genWrite(
                     param,
                     IntermediateFormTreeNode.StackPop(),
@@ -104,8 +106,9 @@ data class FunctionDetailsGenerator(
         }
 
         // backup callee-saved registers
-        for(register in caleeSavedRegistersWithoutRSP.reversed())
-            cfgBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL,
+        for (register in caleeSavedRegistersWithoutRSP.reversed())
+            cfgBuilder.addLinkFromAllFinalRoots(
+                CFGLinkType.UNCONDITIONAL,
                 IntermediateFormTreeNode.StackPush(IntermediateFormTreeNode.RegisterRead(register))
             )
 
@@ -161,8 +164,9 @@ data class FunctionDetailsGenerator(
         cfgBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, movRspRbp)
 
         // restore callee-saved registers
-        for(register in caleeSavedRegistersWithoutRSP)
-            cfgBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL,
+        for (register in caleeSavedRegistersWithoutRSP)
+            cfgBuilder.addLinkFromAllFinalRoots(
+                CFGLinkType.UNCONDITIONAL,
                 IntermediateFormTreeNode.RegisterWrite(register, IntermediateFormTreeNode.StackPop())
             )
 

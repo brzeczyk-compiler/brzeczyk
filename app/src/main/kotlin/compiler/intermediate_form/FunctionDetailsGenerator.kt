@@ -1,13 +1,9 @@
 package compiler.intermediate_form
 
+import compiler.common.intermediate_form.FunctionDetailsGeneratorInterface
 import compiler.ast.NamedNode
 import compiler.ast.Variable
 import compiler.common.reference_collections.ReferenceHashMap
-
-data class FunctionCallIntermediateForm(
-    val callGraph: ControlFlowGraph,
-    val result: IntermediateFormTreeNode?
-)
 
 enum class VariableLocationType {
     MEMORY,
@@ -25,7 +21,7 @@ data class FunctionDetailsGenerator(
     val variablesLocationTypes: Map<NamedNode, VariableLocationType>, // should contain parameters
     val displayAddress: MemoryAddress,
     val createRegisterFor: (NamedNode) -> Register = { Register() } // for testing
-) {
+): FunctionDetailsGeneratorInterface {
 
     private val variablesStackOffsets: MutableMap<NamedNode, ULong> = ReferenceHashMap()
     private val variablesRegisters: MutableMap<NamedNode, Register> = ReferenceHashMap()
@@ -39,6 +35,7 @@ data class FunctionDetailsGenerator(
                     variablesStackOffsets[variable] = variablesTotalOffset
                     variablesTotalOffset += memoryUnitSize
                 }
+
                 VariableLocationType.REGISTER -> {
                     variablesRegisters[variable] = createRegisterFor(variable)
                 }
@@ -46,9 +43,9 @@ data class FunctionDetailsGenerator(
         }
     }
 
-    fun genCall(
+    override fun genCall(
         args: List<IntermediateFormTreeNode>,
-    ): FunctionCallIntermediateForm {
+    ): FunctionDetailsGeneratorInterface.FunctionCallIntermediateForm {
         // First, it moves arguments to appropriate registers (or pushes to stack) according to x86 call convention.
         // Then, it adds call instruction to actually call a given function
         // At the end it creates IFTNode to get function result
@@ -77,10 +74,10 @@ data class FunctionDetailsGenerator(
             )
             readResultNode = IntermediateFormTreeNode.RegisterRead(Register.RAX)
         }
-        return FunctionCallIntermediateForm(cfgBuilder.build(), readResultNode)
+        return FunctionDetailsGeneratorInterface.FunctionCallIntermediateForm(cfgBuilder.build(), readResultNode)
     }
 
-    fun genPrologue(): ControlFlowGraph {
+    override fun genPrologue(): ControlFlowGraph {
         val cfgBuilder = ControlFlowGraphBuilder()
 
         // move args from Registers and Stack
@@ -146,7 +143,7 @@ data class FunctionDetailsGenerator(
         return cfgBuilder.build()
     }
 
-    fun genEpilogue(): ControlFlowGraph {
+    override fun genEpilogue(): ControlFlowGraph {
         val cfgBuilder = ControlFlowGraphBuilder()
 
         // restore previous rbp in display at depth
@@ -173,7 +170,7 @@ data class FunctionDetailsGenerator(
         return cfgBuilder.build()
     }
 
-    fun genRead(variable: NamedNode, isDirect: Boolean): IntermediateFormTreeNode {
+    override fun genRead(variable: NamedNode, isDirect: Boolean): IntermediateFormTreeNode {
         if (isDirect) {
             return when (variablesLocationTypes[variable]!!) {
                 VariableLocationType.MEMORY -> {
@@ -184,6 +181,7 @@ data class FunctionDetailsGenerator(
                         )
                     )
                 }
+
                 VariableLocationType.REGISTER ->
                     IntermediateFormTreeNode.RegisterRead(variablesRegisters[variable]!!)
             }
@@ -198,7 +196,7 @@ data class FunctionDetailsGenerator(
         }
     }
 
-    fun genWrite(variable: NamedNode, value: IntermediateFormTreeNode, isDirect: Boolean): IntermediateFormTreeNode {
+    override fun genWrite(variable: NamedNode, value: IntermediateFormTreeNode, isDirect: Boolean): IntermediateFormTreeNode {
         if (isDirect) {
             return when (variablesLocationTypes[variable]!!) {
                 VariableLocationType.MEMORY -> {
@@ -210,6 +208,7 @@ data class FunctionDetailsGenerator(
                         value
                     )
                 }
+
                 VariableLocationType.REGISTER ->
                     IntermediateFormTreeNode.RegisterWrite(variablesRegisters[variable]!!, value)
             }

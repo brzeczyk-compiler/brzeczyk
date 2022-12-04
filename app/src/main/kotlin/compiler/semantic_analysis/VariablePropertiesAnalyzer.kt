@@ -18,16 +18,20 @@ import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.referenceEntries
 import compiler.common.reference_collections.referenceMapOf
 import compiler.common.reference_collections.referenceSetOf
+import compiler.common.semantic_analysis.VariablesOwner
 
 object VariablePropertiesAnalyzer {
+
+    object GlobalContext : VariablesOwner
+
     data class VariableProperties(
-        var owner: Function? = null,
+        var owner: VariablesOwner = GlobalContext,
         val accessedIn: ReferenceSet<Function> = referenceSetOf(),
         val writtenIn: ReferenceSet<Function> = referenceSetOf(),
     )
 
     data class MutableVariableProperties(
-        var owner: Function? = null,
+        var owner: VariablesOwner = GlobalContext,
         val accessedIn: MutableReferenceSet<Function> = ReferenceHashSet(),
         val writtenIn: MutableReferenceSet<Function> = ReferenceHashSet(),
     )
@@ -49,11 +53,11 @@ object VariablePropertiesAnalyzer {
             when (node) {
                 is Statement.Evaluation -> analyzeVariables(node.expression, currentFunction)
                 is Statement.VariableDefinition -> {
-                    mutableVariableProperties[node.variable] = MutableVariableProperties(currentFunction)
+                    mutableVariableProperties[node.variable] = MutableVariableProperties(currentFunction ?: GlobalContext)
                     analyzeVariables(node.variable, currentFunction)
                 }
                 is Global.VariableDefinition -> {
-                    mutableVariableProperties[node.variable] = MutableVariableProperties(currentFunction)
+                    mutableVariableProperties[node.variable] = MutableVariableProperties(currentFunction ?: GlobalContext)
                     analyzeVariables(node.variable, currentFunction)
                 }
                 is Statement.FunctionDefinition -> analyzeVariables(node.function, currentFunction)
@@ -65,7 +69,7 @@ object VariablePropertiesAnalyzer {
                         diagnostics.report(
                             AssignmentToFunctionParameter(
                                 resolvedVariable,
-                                mutableVariableProperties[resolvedVariable]!!.owner!!,
+                                mutableVariableProperties[resolvedVariable]!!.owner as Function,
                                 currentFunction
                             )
                         )
@@ -100,7 +104,7 @@ object VariablePropertiesAnalyzer {
                         if (it.defaultValue != null) {
                             // scope of the inner function has not begun yet
                             analyzeVariables(it.defaultValue, currentFunction)
-                            mutableVariableProperties[defaultParameterMapping[it]!!] = MutableVariableProperties(currentFunction)
+                            mutableVariableProperties[defaultParameterMapping[it]!!] = MutableVariableProperties(currentFunction ?: GlobalContext)
                         }
                     }
                     node.body.forEach { analyzeVariables(it, node) }
@@ -117,7 +121,7 @@ object VariablePropertiesAnalyzer {
         val defaultParametersDummyVariablesProperties = defaultParameterMapping.referenceEntries.map { paramToVariable ->
             val accessedIn = referenceSetOf(accessedDefaultValues.referenceEntries.filter { paramToVariable.key in it.value }.map { functionCallsOwnership[it.key]!! }.toList())
             val owner = mutableVariableProperties[paramToVariable.value]!!.owner
-            val writtenIn = if (owner != null) referenceSetOf(owner) else referenceSetOf()
+            val writtenIn = if (owner != GlobalContext) referenceSetOf(owner as Function) else referenceSetOf()
             paramToVariable.value to VariableProperties(owner, accessedIn, writtenIn)
         }.toList()
 

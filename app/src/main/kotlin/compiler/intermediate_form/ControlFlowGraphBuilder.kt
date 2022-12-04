@@ -2,6 +2,7 @@ package compiler.intermediate_form
 
 import compiler.common.reference_collections.ReferenceHashMap
 import java.lang.RuntimeException
+import compiler.common.reference_collections.referenceMapOf
 
 class IncorrectControlFlowGraphError(message: String) : RuntimeException(message)
 
@@ -26,14 +27,15 @@ class ControlFlowGraphBuilder(var entryTreeRoot: IFTNode? = null) {
             treeRoots.add(root)
     }
 
-    fun addLink(from: Pair<IFTNode, CFGLinkType>?, to: IFTNode) {
+    fun addLink(from: Pair<IFTNode, CFGLinkType>?, to: IFTNode, addDestination: Boolean = true) {
+        if (addDestination && !treeRoots.contains(to))
+            treeRoots.add(to)
         if (from == null)
             makeRoot(to)
         else {
             for (node in listOf(from.first, to))
                 if (!treeRoots.contains(node))
                     treeRoots.add(node)
-
             val links = when (from.second) {
                 CFGLinkType.UNCONDITIONAL -> unconditionalLinks
                 CFGLinkType.CONDITIONAL_TRUE -> conditionalTrueLinks
@@ -75,16 +77,6 @@ class ControlFlowGraphBuilder(var entryTreeRoot: IFTNode? = null) {
 
     private fun verifyLinkCorrectness() {
         for (node in treeRoots) {
-            if (conditionalTrueLinks.containsKey(node) && !conditionalFalseLinks.containsKey(node))
-                throw IncorrectControlFlowGraphError(
-                    "Tried to create a ControlFlowGraph with conditional true link from some node," +
-                        "but without conditional false link from it"
-                )
-            if (!conditionalTrueLinks.containsKey(node) && conditionalFalseLinks.containsKey(node))
-                throw IncorrectControlFlowGraphError(
-                    "Tried to create a ControlFlowGraph without conditional true link from some node," +
-                        "but with conditional false link from it"
-                )
             if ((conditionalTrueLinks.containsKey(node) || conditionalFalseLinks.containsKey(node)) &&
                 unconditionalLinks.containsKey(node)
             )
@@ -92,5 +84,29 @@ class ControlFlowGraphBuilder(var entryTreeRoot: IFTNode? = null) {
                     "Tried to create a ControlFlowGraph with both conditional and unconditional link from some node"
                 )
         }
+    }
+
+    fun mergeUnconditionally(cfg: ControlFlowGraph): ControlFlowGraphBuilder {
+        build().finalTreeRoots.forEach {
+            addLink(Pair(it, CFGLinkType.UNCONDITIONAL), cfg.entryTreeRoot!!, false)
+        }
+        addAllFrom(cfg)
+        if (entryTreeRoot == null) entryTreeRoot = cfg.entryTreeRoot
+        return this
+    }
+
+    fun mergeConditionally(cfgTrue: ControlFlowGraph, cfgFalse: ControlFlowGraph): ControlFlowGraphBuilder {
+        build().finalTreeRoots.forEach {
+            addLink(Pair(it, CFGLinkType.CONDITIONAL_TRUE), cfgTrue.entryTreeRoot!!, false)
+            addLink(Pair(it, CFGLinkType.CONDITIONAL_FALSE), cfgFalse.entryTreeRoot!!, false)
+        }
+        addAllFrom(cfgTrue)
+        addAllFrom(cfgFalse)
+        return this
+    }
+
+    fun addSingleTree(iftNode: IntermediateFormTreeNode): ControlFlowGraphBuilder {
+        mergeUnconditionally(ControlFlowGraph(listOf(iftNode), iftNode, referenceMapOf(), referenceMapOf(), referenceMapOf()))
+        return this
     }
 }

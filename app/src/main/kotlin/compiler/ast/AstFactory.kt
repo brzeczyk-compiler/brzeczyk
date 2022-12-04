@@ -1,5 +1,6 @@
 package compiler.ast
 
+import compiler.Compiler.CompilationFailed
 import compiler.common.diagnostics.Diagnostic
 import compiler.common.diagnostics.Diagnostics
 import compiler.lexer.lexer_grammar.TokenType
@@ -9,7 +10,7 @@ import compiler.parser.grammar.ParserGrammar.Productions
 import compiler.parser.grammar.Symbol
 
 object AstFactory {
-    class AstCreationFailed : Throwable()
+    class AstCreationFailed : CompilationFailed()
 
     // helper methods
     private fun ParseTree<Symbol>.token(): TokenType? = (symbol as? Symbol.Terminal)?.tokenType
@@ -73,13 +74,25 @@ object AstFactory {
         }
     }
 
-    private fun processConst(parseTree: ParseTree<Symbol>): Expression {
+    private fun processConst(parseTree: ParseTree<Symbol>, diagnostics: Diagnostics): Expression {
         val child = (parseTree as ParseTree.Branch).children[0]
+
         return when (child.token()) {
-            TokenType.INTEGER -> Expression.NumberLiteral((child as ParseTree.Leaf).content.toInt())
+            TokenType.INTEGER -> Expression.NumberLiteral(
+                (child as ParseTree.Leaf).content.let {
+                    try {
+                        it.toInt()
+                    } catch (_: NumberFormatException) {
+                        diagnostics.report(Diagnostic.InvalidNumberLiteral(it))
+                        0
+                    }
+                }
+            )
+
             TokenType.TRUE_CONSTANT -> Expression.BooleanLiteral(true)
             TokenType.FALSE_CONSTANT -> Expression.BooleanLiteral(false)
             TokenType.UNIT_CONSTANT -> Expression.UnitLiteral
+
             else -> throw IllegalArgumentException()
         }
     }
@@ -237,7 +250,7 @@ object AstFactory {
             in listOf(Productions.expr2048Identifier, Productions.eExpr2048Identifier) ->
                 Expression.Variable((children[0] as ParseTree.Leaf).content)
             in listOf(Productions.expr2048Const, Productions.eExpr2048Const) ->
-                processConst(children[0])
+                processConst(children[0], diagnostics)
             in listOf(Productions.expr2048Parenthesis, Productions.eExpr2048Parenthesis) ->
                 processExpression(children[1], diagnostics)
             else -> throw IllegalArgumentException()

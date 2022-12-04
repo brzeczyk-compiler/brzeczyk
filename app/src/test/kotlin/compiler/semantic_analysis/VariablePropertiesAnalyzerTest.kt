@@ -22,6 +22,7 @@ import compiler.semantic_analysis.VariablePropertiesAnalyzer.VariableProperties
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class VariablePropertiesAnalyzerTest {
 
@@ -48,16 +49,27 @@ class VariablePropertiesAnalyzerTest {
 
     private fun assertDiagnostics(
         input: VariablePropertyInput,
-        expectedDiagnostics: List<VariablePropertiesError>
+        expectedDiagnostics: List<VariablePropertiesError>,
     ) {
         val actualDiagnostics = CompilerDiagnostics()
-        VariablePropertiesAnalyzer.calculateVariableProperties(
-            input.program,
-            input.nameResolution,
-            input.defaultParameterMapping,
-            input.accessedDefaultValues,
-            actualDiagnostics,
-        )
+
+        fun calculate() {
+            VariablePropertiesAnalyzer.calculateVariableProperties(
+                input.program,
+                input.nameResolution,
+                input.defaultParameterMapping,
+                input.accessedDefaultValues,
+                actualDiagnostics,
+            )
+        }
+
+        if (expectedDiagnostics.isNotEmpty())
+            assertFailsWith<VariablePropertiesAnalyzer.AnalysisFailed> {
+                calculate()
+            }
+        else
+            calculate()
+
         assertContentEquals(
             expectedDiagnostics.asSequence(),
             actualDiagnostics.diagnostics.filter { it is VariablePropertiesError }
@@ -223,11 +235,6 @@ class VariablePropertiesAnalyzerTest {
             nameResolution,
         )
 
-        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceMapOf(
-            parameterX to VariableProperties(outer, referenceSetOf(), referenceSetOf(outer)),
-        )
-
-        assertAnalysisResults(input, expectedResults)
         assertDiagnostics(
             input,
             listOf(AssignmentToFunctionParameter(parameterX, outer, outer)),
@@ -326,11 +333,6 @@ class VariablePropertiesAnalyzerTest {
             nameResolution,
         )
 
-        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceMapOf(
-            parameterX to VariableProperties(outer, referenceSetOf(), referenceSetOf(inner)),
-        )
-
-        assertAnalysisResults(input, expectedResults)
         assertDiagnostics(
             input,
             listOf(AssignmentToFunctionParameter(parameterX, outer, inner)),

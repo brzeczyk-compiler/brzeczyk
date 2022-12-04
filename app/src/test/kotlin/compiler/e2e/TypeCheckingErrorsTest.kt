@@ -3,7 +3,7 @@ package compiler.e2e
 import compiler.common.diagnostics.Diagnostic
 import compiler.e2e.common.E2eAsserter.assertErrorOfType
 import compiler.e2e.common.E2eAsserter.assertProgramCorrect
-import org.junit.Test
+import kotlin.test.Test
 
 class TypeCheckingErrorsTest {
     private fun assertInvalidTypeError(program: String) {

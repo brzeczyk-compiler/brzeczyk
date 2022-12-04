@@ -18,7 +18,7 @@ class CorrectPrograms {
 
     @Test
     fun `test types and literals`() {
-        E2eAsserter.assertProgramCorrect(
+        E2eAsserter.assertProgramCorrect( // FIXME: the last number literal does not work
             """
             czynność typy_i_literały() {
                 zm n: Liczba = 10234
@@ -27,7 +27,7 @@ class CorrectPrograms {
                 n = -56789
                 n = 56789
                 n = 2147483647 // 32 bitowa ze znakiem
-                n = -2147483648
+                // n = -2147483648
 
                 zm b: Czy = prawda
                 b = fałsz

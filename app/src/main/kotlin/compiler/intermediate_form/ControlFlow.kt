@@ -10,7 +10,7 @@ import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic.ControlFlowDiagnostic
 import compiler.common.diagnostics.Diagnostics
-import compiler.common.intermediate_form.FunctionDetailsGeneratorInterface
+import compiler.common.intermediate_form.FunctionDetailsGenerator
 import compiler.common.intermediate_form.VariableAccessGenerator
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceHashSet
@@ -33,7 +33,7 @@ object ControlFlow {
         nameResolution: ReferenceMap<Any, NamedNode>,
         variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>,
         callGraph: ReferenceMap<Function, ReferenceSet<Function>>,
-        functionDetailsGenerators: ReferenceMap<Function, FunctionDetailsGeneratorInterface>,
+        functionDetailsGenerators: ReferenceMap<Function, FunctionDetailsGenerator>,
         argumentResolution: ArgumentResolutionResult,
         defaultParameterValues: ReferenceMap<Function.Parameter, Variable>,
         globalVariablesAccessGenerator: VariableAccessGenerator

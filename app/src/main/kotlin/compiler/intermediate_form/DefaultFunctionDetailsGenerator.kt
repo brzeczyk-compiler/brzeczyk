@@ -2,27 +2,28 @@ package compiler.intermediate_form
 
 import compiler.ast.NamedNode
 import compiler.ast.Variable
-import compiler.common.intermediate_form.FunctionDetailsGeneratorInterface
+import compiler.common.intermediate_form.FunctionDetailsGenerator
 import compiler.common.reference_collections.ReferenceHashMap
-import java.lang.Exception
 
 enum class VariableLocationType {
     MEMORY,
     REGISTER
 }
 
+const val memoryUnitSize: ULong = 8u
 val argPositionToRegister = listOf(Register.RDI, Register.RSI, Register.RDX, Register.RCX, Register.R8, Register.R9)
-val caleeSavedRegistersWithoutRSP = listOf(Register.RBX, Register.RBP, Register.R12, Register.R13, Register.R14, Register.R15)
+val calleeSavedRegistersWithoutRSP = listOf(Register.RBX, Register.RBP, Register.R12, Register.R13, Register.R14, Register.R15)
 
-data class FunctionDetailsGenerator(
+// Function Details Generator consistent with SystemV AMD64 calling convention
+data class DefaultFunctionDetailsGenerator(
     val parameters: List<NamedNode>,
     val variableToStoreFunctionResult: Variable?,
-    val functionLocationInCode: IntermediateFormTreeNode.MemoryAddress,
+    val functionLocationInCode: IntermediateFormTreeNode.MemoryLabel,
     val depth: ULong,
     val variablesLocationTypes: Map<NamedNode, VariableLocationType>, // should contain parameters
     val displayAddress: IntermediateFormTreeNode,
     val createRegisterFor: (NamedNode) -> Register = { Register() } // for testing
-) : FunctionDetailsGeneratorInterface {
+) : FunctionDetailsGenerator {
 
     private val variablesStackOffsets: MutableMap<NamedNode, ULong> = ReferenceHashMap()
     private val variablesRegisters: MutableMap<NamedNode, Register> = ReferenceHashMap()
@@ -46,13 +47,10 @@ data class FunctionDetailsGenerator(
 
     override fun genCall(
         args: List<IntermediateFormTreeNode>,
-    ): FunctionDetailsGeneratorInterface.FunctionCallIntermediateForm {
-        // First, it moves arguments to appropriate registers (or pushes to stack) according to x86 call convention.
-        // Then, it adds call instruction to actually call a given function
-        // At the end it creates IFTNode to get function result
-
+    ): FunctionDetailsGenerator.FunctionCallIntermediateForm {
         val cfgBuilder = ControlFlowGraphBuilder()
 
+        // First, move arguments to appropriate registers (or push to stack) according to call convention.
         for ((arg, register) in args zip argPositionToRegister) {
             val node = IntermediateFormTreeNode.RegisterWrite(register, arg)
             cfgBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, node)
@@ -62,11 +60,13 @@ data class FunctionDetailsGenerator(
             cfgBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, node)
         }
 
+        // Add call instruction to actually call a given function
         cfgBuilder.addLinkFromAllFinalRoots(
             CFGLinkType.UNCONDITIONAL,
             IntermediateFormTreeNode.Call(functionLocationInCode)
         )
 
+        // At the end create IFTNode to get function result
         var readResultNode: IFTNode? = null
         if (variableToStoreFunctionResult != null) {
             cfgBuilder.addLinkFromAllFinalRoots(
@@ -75,7 +75,7 @@ data class FunctionDetailsGenerator(
             )
             readResultNode = IntermediateFormTreeNode.RegisterRead(Register.RAX)
         }
-        return FunctionDetailsGeneratorInterface.FunctionCallIntermediateForm(cfgBuilder.build(), readResultNode)
+        return FunctionDetailsGenerator.FunctionCallIntermediateForm(cfgBuilder.build(), readResultNode)
     }
 
     override fun genPrologue(): ControlFlowGraph {
@@ -104,7 +104,7 @@ data class FunctionDetailsGenerator(
         }
 
         // backup callee-saved registers
-        for (register in caleeSavedRegistersWithoutRSP.reversed())
+        for (register in calleeSavedRegistersWithoutRSP.reversed())
             cfgBuilder.addLinkFromAllFinalRoots(
                 CFGLinkType.UNCONDITIONAL,
                 IntermediateFormTreeNode.StackPush(IntermediateFormTreeNode.RegisterRead(register))
@@ -171,7 +171,7 @@ data class FunctionDetailsGenerator(
         cfgBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, movRspRbp)
 
         // restore callee-saved registers
-        for (register in caleeSavedRegistersWithoutRSP)
+        for (register in calleeSavedRegistersWithoutRSP)
             cfgBuilder.addLinkFromAllFinalRoots(
                 CFGLinkType.UNCONDITIONAL,
                 IntermediateFormTreeNode.RegisterWrite(register, IntermediateFormTreeNode.StackPop())
@@ -180,24 +180,24 @@ data class FunctionDetailsGenerator(
         return cfgBuilder.build()
     }
 
-    override fun genRead(variable: NamedNode, isDirect: Boolean): IntermediateFormTreeNode {
+    override fun genRead(namedNode: NamedNode, isDirect: Boolean): IntermediateFormTreeNode {
         if (isDirect) {
-            return when (variablesLocationTypes[variable]!!) {
+            return when (variablesLocationTypes[namedNode]!!) {
                 VariableLocationType.MEMORY -> {
                     IntermediateFormTreeNode.MemoryRead(
                         IntermediateFormTreeNode.Subtract(
                             IntermediateFormTreeNode.RegisterRead(Register.RBP),
-                            IntermediateFormTreeNode.Const(variablesStackOffsets[variable]!!.toLong())
+                            IntermediateFormTreeNode.Const(variablesStackOffsets[namedNode]!!.toLong())
                         )
                     )
                 }
 
                 VariableLocationType.REGISTER ->
-                    IntermediateFormTreeNode.RegisterRead(variablesRegisters[variable]!!)
+                    IntermediateFormTreeNode.RegisterRead(variablesRegisters[namedNode]!!)
             }
         } else {
-            if (variablesLocationTypes[variable]!! == VariableLocationType.REGISTER)
-                throw IndirectReadFromRegister()
+            if (variablesLocationTypes[namedNode]!! == VariableLocationType.REGISTER)
+                throw IndirectReadFromOrWriteToRegister()
 
             val displayElementAddress = IntermediateFormTreeNode.Subtract(
                 displayAddress,
@@ -206,31 +206,31 @@ data class FunctionDetailsGenerator(
             return IntermediateFormTreeNode.MemoryRead(
                 IntermediateFormTreeNode.Subtract(
                     IntermediateFormTreeNode.MemoryRead(displayElementAddress),
-                    IntermediateFormTreeNode.Const(variablesStackOffsets[variable]!!.toLong())
+                    IntermediateFormTreeNode.Const(variablesStackOffsets[namedNode]!!.toLong())
                 )
             )
         }
     }
 
-    override fun genWrite(variable: NamedNode, value: IntermediateFormTreeNode, isDirect: Boolean): IntermediateFormTreeNode {
+    override fun genWrite(namedNode: NamedNode, value: IntermediateFormTreeNode, isDirect: Boolean): IntermediateFormTreeNode {
         if (isDirect) {
-            return when (variablesLocationTypes[variable]!!) {
+            return when (variablesLocationTypes[namedNode]!!) {
                 VariableLocationType.MEMORY -> {
                     IntermediateFormTreeNode.MemoryWrite(
                         IntermediateFormTreeNode.Subtract(
                             IntermediateFormTreeNode.RegisterRead(Register.RBP),
-                            IntermediateFormTreeNode.Const(variablesStackOffsets[variable]!!.toLong())
+                            IntermediateFormTreeNode.Const(variablesStackOffsets[namedNode]!!.toLong())
                         ),
                         value
                     )
                 }
 
                 VariableLocationType.REGISTER ->
-                    IntermediateFormTreeNode.RegisterWrite(variablesRegisters[variable]!!, value)
+                    IntermediateFormTreeNode.RegisterWrite(variablesRegisters[namedNode]!!, value)
             }
         } else {
-            if (variablesLocationTypes[variable]!! == VariableLocationType.REGISTER)
-                throw IndirectReadFromRegister()
+            if (variablesLocationTypes[namedNode]!! == VariableLocationType.REGISTER)
+                throw IndirectReadFromOrWriteToRegister()
 
             val displayElementAddress = IntermediateFormTreeNode.Subtract(
                 displayAddress,
@@ -239,12 +239,12 @@ data class FunctionDetailsGenerator(
             return IntermediateFormTreeNode.MemoryWrite(
                 IntermediateFormTreeNode.Subtract(
                     IntermediateFormTreeNode.MemoryRead(displayElementAddress),
-                    IntermediateFormTreeNode.Const(variablesStackOffsets[variable]!!.toLong())
+                    IntermediateFormTreeNode.Const(variablesStackOffsets[namedNode]!!.toLong())
                 ),
                 value
             )
         }
     }
 
-    class IndirectReadFromRegister : Exception()
+    class IndirectReadFromOrWriteToRegister : Exception()
 }

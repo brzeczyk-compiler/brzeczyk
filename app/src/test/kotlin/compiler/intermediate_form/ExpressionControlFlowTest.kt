@@ -5,7 +5,7 @@ import compiler.ast.Function
 import compiler.ast.NamedNode
 import compiler.ast.Type
 import compiler.ast.Variable
-import compiler.common.intermediate_form.FunctionDetailsGeneratorInterface
+import compiler.common.intermediate_form.FunctionDetailsGenerator
 import compiler.common.intermediate_form.VariableAccessGenerator
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceSet
@@ -17,10 +17,11 @@ import kotlin.test.assertTrue
 
 class ExpressionControlFlowTest {
 
-    private class TestFunctionDetailsGenerator(val function: Function) : FunctionDetailsGeneratorInterface {
-        override fun genCall(args: List<IntermediateFormTreeNode>): FunctionDetailsGeneratorInterface.FunctionCallIntermediateForm {
+    private class TestFunctionDetailsGenerator(val function: Function) :
+        FunctionDetailsGenerator {
+        override fun genCall(args: List<IntermediateFormTreeNode>): FunctionDetailsGenerator.FunctionCallIntermediateForm {
             val callResult = IntermediateFormTreeNode.DummyCallResult()
-            return FunctionDetailsGeneratorInterface.FunctionCallIntermediateForm(
+            return FunctionDetailsGenerator.FunctionCallIntermediateForm(
                 ControlFlowGraphBuilder().addSingleTree(IntermediateFormTreeNode.DummyCall(function, args, callResult)).build(),
                 callResult
             )
@@ -54,7 +55,7 @@ class ExpressionControlFlowTest {
         val nameResolution: ReferenceHashMap<Any, NamedNode> = ReferenceHashMap()
         var nameToVarMap: Map<String, Variable>
         var nameToFunMap: Map<String, Function>
-        val functionDetailsGenerators = ReferenceHashMap<Function, FunctionDetailsGeneratorInterface>()
+        val functionDetailsGenerators = ReferenceHashMap<Function, FunctionDetailsGenerator>()
         val variableProperties = ReferenceHashMap<Any, VariablePropertiesAnalyzer.VariableProperties>()
         val finalCallGraph: ReferenceHashMap<Function, ReferenceSet<Function>> = ReferenceHashMap()
         val argumentResolution: ReferenceHashMap<Expression.FunctionCall.Argument, Function.Parameter> = ReferenceHashMap()

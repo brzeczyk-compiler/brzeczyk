@@ -6,7 +6,6 @@ import compiler.ast.NamedNode
 import compiler.ast.Program
 import compiler.ast.Statement
 import compiler.ast.StatementBlock
-import compiler.ast.Variable
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.ReferenceSet
@@ -19,9 +18,9 @@ object FunctionDependenciesAnalyzer {
     fun createFunctionDetailsGenerators(
         program: Program,
         variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>
-    ): ReferenceMap<Function, FunctionDetailsGenerator> {
+    ): ReferenceMap<Function, DefaultFunctionDetailsGenerator> {
 
-        val result = ReferenceHashMap<Function, FunctionDetailsGenerator>()
+        val result = ReferenceHashMap<Function, DefaultFunctionDetailsGenerator>()
 
         fun createDetailsGenerator(function: Function, depth: ULong) {
             val variables = ReferenceHashMap<NamedNode, Boolean>()

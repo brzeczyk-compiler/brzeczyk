@@ -26,7 +26,7 @@ class GlobalVariablesAccessGeneratorTest {
     private fun createProperMemoryRead(offset: Long): IntermediateFormTreeNode =
         IntermediateFormTreeNode.MemoryRead(
             IntermediateFormTreeNode.Add(
-                IntermediateFormTreeNode.MemoryAddress("globals"),
+                IntermediateFormTreeNode.MemoryLabel("globals"),
                 IntermediateFormTreeNode.Const(offset)
             )
         )
@@ -34,7 +34,7 @@ class GlobalVariablesAccessGeneratorTest {
     private fun createProperMemoryWrite(offset: Long, value: IntermediateFormTreeNode) =
         IntermediateFormTreeNode.MemoryWrite(
             IntermediateFormTreeNode.Add(
-                IntermediateFormTreeNode.MemoryAddress("globals"),
+                IntermediateFormTreeNode.MemoryLabel("globals"),
                 IntermediateFormTreeNode.Const(offset)
             ),
             value

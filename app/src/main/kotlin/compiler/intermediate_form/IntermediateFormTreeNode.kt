@@ -9,7 +9,7 @@ sealed class IntermediateFormTreeNode {
     }
 
     data class MemoryRead(val address: IntermediateFormTreeNode) : IntermediateFormTreeNode()
-    data class MemoryAddress(val address: String) : IntermediateFormTreeNode()
+    data class MemoryLabel(val label: String) : IntermediateFormTreeNode()
     data class RegisterRead(val register: Register) : IntermediateFormTreeNode()
     data class Const(val value: Long) : IntermediateFormTreeNode()
 
@@ -49,7 +49,7 @@ sealed class IntermediateFormTreeNode {
     class StackPop : IntermediateFormTreeNode()
 
     data class Call(val address: IntermediateFormTreeNode) : IntermediateFormTreeNode()
-    class Return() : IntermediateFormTreeNode()
+    // return node is implicit when there's no link from a tree root
 
     // test nodes
     class NoOp : IntermediateFormTreeNode()

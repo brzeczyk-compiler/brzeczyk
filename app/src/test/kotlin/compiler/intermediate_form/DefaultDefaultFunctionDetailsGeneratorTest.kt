@@ -8,15 +8,15 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
-class FunctionDetailsGeneratorTest {
-    private val functionLocation = IntermediateFormTreeNode.MemoryAddress("address")
+class DefaultDefaultFunctionDetailsGeneratorTest {
+    private val functionLocation = IntermediateFormTreeNode.MemoryLabel("address")
 
     private val resultDummyVariable = Variable(Variable.Kind.VALUE, "numberResult", Type.Number, null)
     private val resultVariableRegister = Register()
 
     @Test
     fun `test genCall for zero argument, Unit function`() {
-        val fdg = FunctionDetailsGenerator(
+        val fdg = DefaultFunctionDetailsGenerator(
             listOf(),
             null,
             functionLocation,
@@ -35,7 +35,7 @@ class FunctionDetailsGeneratorTest {
     fun `test genCall for two argument, Unit return function`() {
         val param1 = Function.Parameter("x", Type.Number, null)
         val param2 = Function.Parameter("y", Type.Boolean, null)
-        val fdg = FunctionDetailsGenerator(
+        val fdg = DefaultFunctionDetailsGenerator(
             listOf(param1, param2),
             null,
             functionLocation,
@@ -67,7 +67,7 @@ class FunctionDetailsGeneratorTest {
     @Test
     fun `test genCall for zero argument, Number returning function`() {
         val variableToRegisterMap = mapOf(resultDummyVariable to resultVariableRegister)
-        val fdg = FunctionDetailsGenerator(
+        val fdg = DefaultFunctionDetailsGenerator(
             listOf(),
             resultDummyVariable,
             functionLocation,
@@ -98,7 +98,7 @@ class FunctionDetailsGeneratorTest {
         val variableToRegisterMap = params.associateWith { Register() } + mapOf(resultDummyVariable to resultVariableRegister)
         val variablesLocation = params.associateWith { VariableLocationType.REGISTER } + mapOf(resultDummyVariable to VariableLocationType.REGISTER)
 
-        val fdg = FunctionDetailsGenerator(
+        val fdg = DefaultFunctionDetailsGenerator(
             params,
             resultDummyVariable,
             functionLocation,
@@ -150,10 +150,10 @@ class FunctionDetailsGeneratorTest {
     fun `test gen read direct from memory`() {
         val memVar: Variable = Variable(Variable.Kind.VALUE, "memVar", Type.Number, null)
 
-        val fdg = FunctionDetailsGenerator(
+        val fdg = DefaultFunctionDetailsGenerator(
             listOf(),
             null,
-            IntermediateFormTreeNode.MemoryAddress(""),
+            IntermediateFormTreeNode.MemoryLabel(""),
             0u,
             mapOf(Pair(memVar, VariableLocationType.MEMORY)),
             IntermediateFormTreeNode.Const(0)
@@ -179,17 +179,17 @@ class FunctionDetailsGeneratorTest {
     @Test
     fun `test gen read indirect from memory`() {
         val memVar: Variable = Variable(Variable.Kind.VALUE, "memVar", Type.Number, null)
-        val displayAddress = IntermediateFormTreeNode.MemoryAddress("display")
+        val displayAddress = IntermediateFormTreeNode.MemoryLabel("display")
         val depth: ULong = 5u
         val displayElementAddress = IntermediateFormTreeNode.Subtract(
             displayAddress,
             IntermediateFormTreeNode.Const((memoryUnitSize * depth).toLong())
         )
 
-        val fdg = FunctionDetailsGenerator(
+        val fdg = DefaultFunctionDetailsGenerator(
             listOf(),
             null,
-            IntermediateFormTreeNode.MemoryAddress(""),
+            IntermediateFormTreeNode.MemoryLabel(""),
             depth,
             mapOf(Pair(memVar, VariableLocationType.MEMORY)),
             displayAddress
@@ -215,10 +215,10 @@ class FunctionDetailsGeneratorTest {
     fun `test gen read direct from register`() {
         val regVar: Variable = Variable(Variable.Kind.VALUE, "regVar", Type.Number, null)
 
-        val fdg = FunctionDetailsGenerator(
+        val fdg = DefaultFunctionDetailsGenerator(
             listOf(),
             null,
-            IntermediateFormTreeNode.MemoryAddress(""),
+            IntermediateFormTreeNode.MemoryLabel(""),
             0u,
             mapOf(Pair(regVar, VariableLocationType.REGISTER)),
             IntermediateFormTreeNode.Const(0)
@@ -233,26 +233,26 @@ class FunctionDetailsGeneratorTest {
     fun `test gen read indirect from register fails`() {
         val regVar: Variable = Variable(Variable.Kind.VALUE, "regVar", Type.Number, null)
 
-        val fdg = FunctionDetailsGenerator(
+        val fdg = DefaultFunctionDetailsGenerator(
             listOf(),
             null,
-            IntermediateFormTreeNode.MemoryAddress(""),
+            IntermediateFormTreeNode.MemoryLabel(""),
             0u,
             mapOf(Pair(regVar, VariableLocationType.REGISTER)),
             IntermediateFormTreeNode.Const(0)
         )
 
-        assertFailsWith<FunctionDetailsGenerator.IndirectReadFromRegister> { fdg.genRead(regVar, false) }
+        assertFailsWith<DefaultFunctionDetailsGenerator.IndirectReadFromOrWriteToRegister> { fdg.genRead(regVar, false) }
     }
 
     @Test
     fun `test gen write direct to memory`() {
         val memVar: Variable = Variable(Variable.Kind.VALUE, "memVar", Type.Number, null)
 
-        val fdg = FunctionDetailsGenerator(
+        val fdg = DefaultFunctionDetailsGenerator(
             listOf(),
             null,
-            IntermediateFormTreeNode.MemoryAddress(""),
+            IntermediateFormTreeNode.MemoryLabel(""),
             0u,
             mapOf(Pair(memVar, VariableLocationType.MEMORY)),
             IntermediateFormTreeNode.Const(0)
@@ -280,17 +280,17 @@ class FunctionDetailsGeneratorTest {
     @Test
     fun `test gen write indirect to memory`() {
         val memVar: Variable = Variable(Variable.Kind.VALUE, "memVar", Type.Number, null)
-        val displayAddress = IntermediateFormTreeNode.MemoryAddress("display")
+        val displayAddress = IntermediateFormTreeNode.MemoryLabel("display")
         val depth: ULong = 5u
         val displayElementAddress = IntermediateFormTreeNode.Subtract(
             displayAddress,
             IntermediateFormTreeNode.Const((memoryUnitSize * depth).toLong())
         )
 
-        val fdg = FunctionDetailsGenerator(
+        val fdg = DefaultFunctionDetailsGenerator(
             listOf(),
             null,
-            IntermediateFormTreeNode.MemoryAddress(""),
+            IntermediateFormTreeNode.MemoryLabel(""),
             depth,
             mapOf(Pair(memVar, VariableLocationType.MEMORY)),
             displayAddress
@@ -318,10 +318,10 @@ class FunctionDetailsGeneratorTest {
     fun `test gen write direct to register`() {
         val regVar: Variable = Variable(Variable.Kind.VALUE, "regVar", Type.Number, null)
 
-        val fdg = FunctionDetailsGenerator(
+        val fdg = DefaultFunctionDetailsGenerator(
             listOf(),
             null,
-            IntermediateFormTreeNode.MemoryAddress(""),
+            IntermediateFormTreeNode.MemoryLabel(""),
             0u,
             mapOf(Pair(regVar, VariableLocationType.REGISTER)),
             IntermediateFormTreeNode.Const(0)
@@ -338,16 +338,16 @@ class FunctionDetailsGeneratorTest {
     fun `test gen write indirect to register fails`() {
         val regVar: Variable = Variable(Variable.Kind.VALUE, "regVar", Type.Number, null)
 
-        val fdg = FunctionDetailsGenerator(
+        val fdg = DefaultFunctionDetailsGenerator(
             listOf(),
             null,
-            IntermediateFormTreeNode.MemoryAddress(""),
+            IntermediateFormTreeNode.MemoryLabel(""),
             0u,
             mapOf(Pair(regVar, VariableLocationType.REGISTER)),
             IntermediateFormTreeNode.Const(0)
         )
 
         val value = IntermediateFormTreeNode.Const(1)
-        assertFailsWith<FunctionDetailsGenerator.IndirectReadFromRegister> { fdg.genWrite(regVar, value, false) }
+        assertFailsWith<DefaultFunctionDetailsGenerator.IndirectReadFromOrWriteToRegister> { fdg.genWrite(regVar, value, false) }
     }
 }

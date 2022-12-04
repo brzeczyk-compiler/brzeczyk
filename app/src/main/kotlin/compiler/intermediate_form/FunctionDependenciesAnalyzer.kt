@@ -5,6 +5,7 @@ import compiler.ast.Function
 import compiler.ast.NamedNode
 import compiler.ast.Program
 import compiler.ast.Statement
+import compiler.ast.StatementBlock
 import compiler.ast.Variable
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceMap
@@ -12,10 +13,51 @@ import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.combineReferenceSets
 import compiler.common.reference_collections.referenceKeys
 import compiler.common.reference_collections.referenceSetOf
+import compiler.semantic_analysis.VariablePropertiesAnalyzer
 
 object FunctionDependenciesAnalyzer {
-    fun createFunctionDetailsGenerators(ast: Program, nameResolution: ReferenceMap<Any, NamedNode>): ReferenceMap<Function, FunctionDetailsGenerator> {
-        return TODO()
+    fun createFunctionDetailsGenerators(
+        program: Program,
+        variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>
+    ): ReferenceMap<Function, FunctionDetailsGenerator> {
+
+        val result = ReferenceHashMap<Function, FunctionDetailsGenerator>()
+
+        fun createDetailsGenerator(function: Function, depth: ULong) {
+            val variables = ReferenceHashMap<NamedNode, Boolean>()
+            variableProperties
+                .filter { (_, properties) -> properties.owner === function }
+                .forEach { (variable, properties) ->
+                    variables[variable as NamedNode] = (properties.accessedIn.any { it != function } || properties.writtenIn.any { it != function })
+                }
+
+            result[function] = TODO() // FunctionDetailsGenerator(depth, variables, function.parameters)
+        }
+
+        fun processFunction(function: Function, depth: ULong) {
+            createDetailsGenerator(function, depth)
+
+            fun processBlock(block: StatementBlock) {
+                for (statement in block) {
+                    when (statement) {
+                        is Statement.FunctionDefinition -> processFunction(statement.function, depth + 1u)
+                        is Statement.Block -> processBlock(statement.block)
+                        is Statement.Conditional -> {
+                            processBlock(statement.actionWhenTrue)
+                            statement.actionWhenFalse?.let { processBlock(it) }
+                        }
+                        is Statement.Loop -> processBlock(statement.action)
+                        else -> {}
+                    }
+                }
+            }
+
+            processBlock(function.body)
+        }
+
+        program.globals.forEach { if (it is Program.Global.FunctionDefinition) processFunction(it.function, 0u) }
+
+        return result
     }
 
     fun createCallGraph(ast: Program, nameResolution: ReferenceMap<Any, NamedNode>): ReferenceMap<Function, ReferenceSet<Function>> {

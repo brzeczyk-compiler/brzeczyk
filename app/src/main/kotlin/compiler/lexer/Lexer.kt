@@ -19,7 +19,7 @@ class Lexer<TCat>(
     // The input is read lazily as consecutive tokens are requested.
     // The matching is greedy - when multiple tokens match the input at a given location, the longest one is chosen.
     // Note that the complexity of this function is potentially quadratic if badly constructed DFAs are given.
-    fun process(input: Input): Sequence<Token<TCat>> = sequence {
+    fun process(input: Input): Sequence<Token<TCat>> = sequence<Token<TCat>> {
 
         var isErrorSegment = false
         var errorSegmentStart: Location? = null

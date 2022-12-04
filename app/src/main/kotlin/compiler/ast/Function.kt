@@ -1,11 +1,13 @@
 package compiler.ast
 
+import compiler.common.semantic_analysis.VariablesOwner
+
 data class Function(
     override val name: String,
     val parameters: List<Parameter>,
     val returnType: Type,
     val body: StatementBlock
-) : NamedNode {
+) : NamedNode, VariablesOwner {
     data class Parameter(
         override val name: String,
         val type: Type,

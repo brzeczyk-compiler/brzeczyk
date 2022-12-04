@@ -24,8 +24,9 @@ object ControlFlow {
         nameResolution: ReferenceMap<Any, NamedNode>,
         defaultParameterValues: ReferenceMap<Function.Parameter, Variable>,
         diagnostics: Diagnostics
-    ): ReferenceMap<Function, ControlFlowGraph> {
-        val controlFlowGraphsAdResultVariables = ReferenceHashMap<Function, ControlFlowGraph>()
+    ): Pair<ReferenceMap<Function, ControlFlowGraph>, ReferenceMap<Function, Variable>> {
+        val controlFlowGraphs = ReferenceHashMap<Function, ControlFlowGraph>()
+        val resultVariables = ReferenceHashMap<Function, Variable>() // only for non-Unit returning functions
 
         fun processFunction(function: Function) {
             val cfgBuilder = ControlFlowGraphBuilder()
@@ -158,11 +159,13 @@ object ControlFlow {
 
             processStatementBlock(function.body)
 
-            controlFlowGraphsAdResultVariables[function] = cfgBuilder.build()
+            controlFlowGraphs[function] = cfgBuilder.build()
+            if (function.returnType != Type.Unit)
+                resultVariables[function] = variableToStoreResult!!
         }
 
         program.globals.filterIsInstance<Program.Global.FunctionDefinition>().forEach { processFunction(it.function) }
 
-        return controlFlowGraphsAdResultVariables
+        return Pair(controlFlowGraphs, resultVariables)
     }
 }

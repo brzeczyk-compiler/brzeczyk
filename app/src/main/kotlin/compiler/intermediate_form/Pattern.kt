@@ -4,32 +4,48 @@ import kotlin.reflect.KClass
 import kotlin.reflect.cast
 
 sealed class Pattern {
+
+    // Returns null if the pattern doesn't match provided intermediate form tree
+    // If the tree matches, it returns the list of unmatched subtrees and
+    // captured values (mainly used to store values in matched leaves)
     abstract fun match(node: IntermediateFormTreeNode): Pair<List<IntermediateFormTreeNode>, Map<String, Any>>?
 
     sealed class ArgumentPattern<T> {
         abstract fun match(value: T): Map<String, Any>?
     }
 
-    class AnyArgument<T>(val name: String? = null) : ArgumentPattern<T>() {
+    // Matches any value of type T and maps it to the provided name
+    data class AnyArgument<T>(val name: String? = null) : ArgumentPattern<T>() {
         override fun match(value: T): Map<String, Any>? {
             return if (name == null) emptyMap() else mapOf(name to value as Any)
         }
     }
 
-    class ArgumentOf<T>(private val allowed: Set<T>, val name: String? = null) : ArgumentPattern<T>() {
+    // Matches any value in allowed set and maps it to the provided name
+    data class ArgumentOf<T>(private val allowed: Set<T>, val name: String? = null) : ArgumentPattern<T>() {
         override fun match(value: T): Map<String, Any>? {
             if (!allowed.contains(value)) return null
             return if (name == null) emptyMap() else mapOf(name to value as Any)
         }
     }
 
+    data class ArgumentWhere<T>(val name: String? = null, val predicate: (T) -> Boolean) : ArgumentPattern<T>() {
+        override fun match(value: T): Map<String, Any>? {
+            if (!predicate(value)) return null
+            return if (name == null) emptyMap() else mapOf(name to value as Any)
+        }
+    }
+
+    // Matches every intermediate form tree node
     class AnyNode : Pattern() {
         override fun match(node: IntermediateFormTreeNode): Pair<List<IntermediateFormTreeNode>, Map<String, Any>>? {
             return Pair(listOf(node), emptyMap())
         }
     }
 
-    data class FirstOf(val name: String, val possiblePatterns: List<Pair<String, Pattern>>) : Pattern() {
+    // Matches the first matching pattern in the provided list
+    // Stores the name of the pattern under name
+    data class FirstOf(val name: String, val possiblePatterns: List<Pair<Any, Pattern>>) : Pattern() {
         override fun match(node: IntermediateFormTreeNode): Pair<List<IntermediateFormTreeNode>, Map<String, Any>>? {
             for ((patternName, pattern) in possiblePatterns) {
                 val match = pattern.match(node)
@@ -49,7 +65,7 @@ sealed class Pattern {
         override fun match(node: IntermediateFormTreeNode): Pair<List<IntermediateFormTreeNode>, Map<String, Any>>? {
             if (!type.isInstance(node)) return null
             val leftMatch = leftPattern.match(type.cast(node).left) ?: return null
-            val rightMatch = leftPattern.match(type.cast(node).right) ?: return null
+            val rightMatch = rightPattern.match(type.cast(node).right) ?: return null
             return Pair(leftMatch.first + rightMatch.first, leftMatch.second + rightMatch.second)
         }
     }

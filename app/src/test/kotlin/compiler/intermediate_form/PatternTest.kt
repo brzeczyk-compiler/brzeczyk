@@ -10,6 +10,7 @@ internal class PatternTest {
         val pattern2 = Pattern.ArgumentOf(setOf(1L, 2L, 4L, 8L), "arg")
         val pattern3 = Pattern.AnyArgument<String>("arg")
         val pattern4 = Pattern.ArgumentOf(setOf(Register.RAX, Register.RDI), "reg")
+        val pattern5 = Pattern.ArgumentWhere<Int>("val") { it < 0 }
 
         assertEquals(mapOf("arg" to 13L), pattern1.match(13L))
         assertEquals(mapOf("arg" to -2L), pattern1.match(-2L))
@@ -30,6 +31,15 @@ internal class PatternTest {
         assertEquals(null, pattern4.match(Register.R11))
         assertEquals(null, pattern4.match(Register.RDX))
         assertEquals(null, pattern4.match(Register()))
+
+        assertEquals(mapOf("val" to -142), pattern5.match(-142))
+        assertEquals(mapOf("val" to -16), pattern5.match(-16))
+        assertEquals(mapOf("val" to -3), pattern5.match(-3))
+        assertEquals(mapOf("val" to -1), pattern5.match(-1))
+        assertEquals(null, pattern5.match(0))
+        assertEquals(null, pattern5.match(1))
+        assertEquals(null, pattern5.match(17))
+        assertEquals(null, pattern5.match(1236))
     }
 
     @Test
@@ -146,5 +156,44 @@ internal class PatternTest {
         assertEquals(Pair(listOf(left, right), emptyMap()), patternLessThanOrEquals.match(nodeLessThanOrEquals))
         assertEquals(Pair(listOf(left, right), emptyMap()), patternGreaterThan.match(nodeGreaterThan))
         assertEquals(Pair(listOf(left, right), emptyMap()), patternGreaterThanOrEquals.match(nodeGreaterThanOrEquals))
+    }
+
+    @Test
+    fun `test expression pattern`() {
+        val pattern = Pattern.BinaryOperator(
+            IntermediateFormTreeNode.Add::class,
+            Pattern.BinaryOperator(
+                IntermediateFormTreeNode.Multiply::class,
+                Pattern.Const(Pattern.ArgumentOf(setOf(1L, 2L, 4L, 8L), "size")),
+                Pattern.AnyNode()
+            ),
+            Pattern.AnyNode()
+        )
+
+        val leaf1 = IntermediateFormTreeNode.Subtract(
+            IntermediateFormTreeNode.MemoryRead(IntermediateFormTreeNode.MemoryAddress("asdf")),
+            IntermediateFormTreeNode.Const(1L)
+        )
+        val leaf2 = IntermediateFormTreeNode.Add(
+            IntermediateFormTreeNode.Const(10L),
+            IntermediateFormTreeNode.RegisterRead(Register())
+        )
+        val node1 = IntermediateFormTreeNode.Add(
+            IntermediateFormTreeNode.Multiply(
+                IntermediateFormTreeNode.Const(4L),
+                leaf1
+            ),
+            leaf2
+        )
+        val node2 = IntermediateFormTreeNode.Add(
+            IntermediateFormTreeNode.Multiply(
+                IntermediateFormTreeNode.Const(3L),
+                IntermediateFormTreeNode.RegisterRead(Register.RAX)
+            ),
+            IntermediateFormTreeNode.Const(2L)
+        )
+
+        assertEquals(Pair(listOf(leaf1, leaf2), mapOf("size" to 4L)), pattern.match(node1))
+        assertEquals(null, pattern.match(node2))
     }
 }

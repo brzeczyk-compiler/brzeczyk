@@ -36,6 +36,8 @@ class Compiler(val diagnostics: Diagnostics) {
             val programProperties = Resolver.resolveProgram(ast, diagnostics)
 
             // TODO: generate the code
-        } catch (_: CompilationFailed) { }
+        } catch (_: CompilationFailed) { } finally {
+            println(diagnostics)
+        }
     }
 }

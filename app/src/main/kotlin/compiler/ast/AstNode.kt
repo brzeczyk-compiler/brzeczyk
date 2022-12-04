@@ -24,7 +24,7 @@ sealed interface AstNode {
                     is Expression.Variable -> this.name
                 }
 
-                is Variable -> "${this.kind} ${this.name}: ${this.type} = ${this.value}"
+                is Variable -> "${this.kind} ${this.name}: ${this.type}${if (this.value != null) "= ${this.value.printSimple()}" else ""}"
                 is Function -> "czynność ${this.name}(${this.parameters.joinToString { it.printSimple() }}) -> ${this.returnType}"
                 is Function.Parameter -> "${this.name}: ${this.type}${if (this.defaultValue != null) " = ${this.defaultValue.printSimple()}" else ""}"
                 is Expression.FunctionCall.Argument -> "${if (this.name != null) "${this.name} = " else ""}${this.value.printSimple()}"

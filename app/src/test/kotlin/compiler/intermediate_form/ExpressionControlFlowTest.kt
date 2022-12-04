@@ -47,18 +47,18 @@ class ExpressionControlFlowTest {
         functions: Map<String, Pair<Type, List<Type>>> = emptyMap(), // first element is return type
         funToAffectedVar: Map<String, Set<String>> = emptyMap(),
         val currentFunction: Function = Function("dummy", emptyList(), Type.Unit, emptyList()),
-        val callGraph: ReferenceHashMap<String, ReferenceSet<String>> = ReferenceHashMap()
+        val callGraph: ReferenceHashMap<String, ReferenceSet<String>> = referenceHashMapOf()
     ) {
-        val nameResolution: ReferenceHashMap<Any, NamedNode> = ReferenceHashMap()
+        val nameResolution: ReferenceHashMap<Any, NamedNode> = referenceHashMapOf()
         var nameToVarMap: Map<String, Variable>
         var nameToFunMap: Map<String, Function>
-        val functionDetailsGenerators = ReferenceHashMap<Function, FunctionDetailsGeneratorInterface>()
-        val variableProperties = ReferenceHashMap<Any, VariablePropertiesAnalyzer.VariableProperties>()
-        val finalCallGraph: ReferenceHashMap<Function, ReferenceSet<Function>> = ReferenceHashMap()
-        val argumentResolution: ReferenceHashMap<Expression.FunctionCall.Argument, Function.Parameter> = ReferenceHashMap()
+        val functionDetailsGenerators = referenceHashMapOf<Function, FunctionDetailsGeneratorInterface>()
+        val variableProperties = referenceHashMapOf<Any, VariablePropertiesAnalyzer.VariableProperties>()
+        val finalCallGraph = referenceHashMapOf<Function, ReferenceSet<Function>>()
+        val argumentResolution: ReferenceHashMap<Expression.FunctionCall.Argument, Function.Parameter> = referenceHashMapOf()
 
         init {
-            val mutableVariableProperties = ReferenceHashMap<Any, VariablePropertiesAnalyzer.MutableVariableProperties>()
+            val mutableVariableProperties = referenceHashMapOf<Any, VariablePropertiesAnalyzer.MutableVariableProperties>()
 
             nameToVarMap = varNames.associateWith { Variable(Variable.Kind.VARIABLE, it, Type.Number, null) }
             for (name in varNames) {
@@ -151,9 +151,9 @@ class ExpressionControlFlowTest {
     }
 
     private infix fun ControlFlowGraph.hasSameStructureAs(cfg: ControlFlowGraph): Boolean {
-        val registersMap = ReferenceHashMap<Register, Register>()
-        val callResultsMap = ReferenceHashMap<IntermediateFormTreeNode.DummyCallResult, IntermediateFormTreeNode.DummyCallResult>()
-        val nodeMap = ReferenceHashMap<IntermediateFormTreeNode, IntermediateFormTreeNode>()
+        val registersMap = referenceHashMapOf<Register, Register>()
+        val callResultsMap = referenceHashMapOf<IntermediateFormTreeNode.DummyCallResult, IntermediateFormTreeNode.DummyCallResult>()
+        val nodeMap = referenceHashMapOf<IntermediateFormTreeNode, IntermediateFormTreeNode>()
 
         fun <T> ReferenceHashMap<T, T>.ensurePairSymmetrical(a: T, b: T): Boolean {
             if (!this.containsKey(a)) {

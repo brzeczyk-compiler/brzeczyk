@@ -10,12 +10,12 @@ import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic.ControlFlowDiagnostic
 import compiler.common.diagnostics.Diagnostics
 import compiler.common.intermediate_form.FunctionDetailsGeneratorInterface
-import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceHashSet
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.combineReferenceSets
 import compiler.common.reference_collections.copy
+import compiler.common.reference_collections.referenceHashMapOf
 import compiler.common.reference_collections.referenceSetOf
 import compiler.semantic_analysis.ArgumentResolutionResult
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
@@ -46,7 +46,7 @@ object ControlFlow {
         // first stage is to decide which variable usages have to be realized via temporary registers
         // and which variables are invalidated by function calls / conditionals
         val usagesThatRequireTempRegisters = ReferenceHashSet<Expression.Variable>()
-        val invalidatedVariables = ReferenceHashMap<Expression, ReferenceSet<Variable>>()
+        val invalidatedVariables = referenceHashMapOf<Expression, ReferenceSet<Variable>>()
 
         fun gatherVariableUsageInfo(astNode: Expression, modifiedUnderCurrentBase: ReferenceSet<Variable>): ReferenceSet<Variable> {
             return when (astNode) {
@@ -103,7 +103,7 @@ object ControlFlow {
         // second stage is to actually produce CFG
         val cfgBuilder = ControlFlowGraphBuilder()
         var last = listOf<Pair<IFTNode, CFGLinkType>?>(null)
-        var currentTemporaryRegisters = ReferenceHashMap<Variable, Register>()
+        var currentTemporaryRegisters = referenceHashMapOf<Variable, Register>()
 
         fun ControlFlowGraphBuilder.addNextCFG(nextCFG: ControlFlowGraph) {
             addAllFrom(nextCFG)
@@ -279,7 +279,7 @@ object ControlFlow {
         defaultParameterValues: ReferenceMap<Function.Parameter, Variable>,
         diagnostics: Diagnostics
     ): ReferenceMap<Function, ControlFlowGraph> {
-        val controlFlowGraphs = ReferenceHashMap<Function, ControlFlowGraph>()
+        val controlFlowGraphs = referenceHashMapOf<Function, ControlFlowGraph>()
 
         fun processFunction(function: Function) {
             val cfgBuilder = ControlFlowGraphBuilder()

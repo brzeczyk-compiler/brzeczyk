@@ -32,7 +32,7 @@ val <K, V> ReferenceMap<K, V>.referenceEntries get() = entries.map { ReferenceEn
 val <K, V> ReferenceMap<K, V>.referenceKeys get() = referenceSetOf(referenceEntries.map { it.key })
 
 fun <K, V> combineReferenceMaps(maps: List<ReferenceMap<K, V>>): ReferenceMap<K, V> {
-    val combinedMaps = ReferenceHashMap<K, V>()
+    val combinedMaps = referenceHashMapOf<K, V>()
     maps.forEach { combinedMaps.putAll(it) }
     return combinedMaps
 }

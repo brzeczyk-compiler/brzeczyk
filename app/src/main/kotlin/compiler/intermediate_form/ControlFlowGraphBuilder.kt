@@ -6,9 +6,9 @@ import compiler.common.reference_collections.referenceHashMapOf
 class IncorrectControlFlowGraphError(message: String) : Exception(message)
 
 class ControlFlowGraphBuilder(@JvmField var entryTreeRoot: IFTNode? = null) {
-    private var unconditionalLinks = ReferenceHashMap<IFTNode, IFTNode>()
-    private var conditionalTrueLinks = ReferenceHashMap<IFTNode, IFTNode>()
-    private var conditionalFalseLinks = ReferenceHashMap<IFTNode, IFTNode>()
+    private var unconditionalLinks = referenceHashMapOf<IFTNode, IFTNode>()
+    private var conditionalTrueLinks = referenceHashMapOf<IFTNode, IFTNode>()
+    private var conditionalFalseLinks = referenceHashMapOf<IFTNode, IFTNode>()
     private var treeRoots = ArrayList<IFTNode>()
     private val finalTreeRoots: List<IFTNode> get() = treeRoots.filter {
         it !in unconditionalLinks && it !in conditionalTrueLinks && it !in conditionalFalseLinks

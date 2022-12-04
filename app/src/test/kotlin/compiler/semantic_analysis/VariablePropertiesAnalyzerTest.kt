@@ -13,7 +13,6 @@ import compiler.ast.Variable
 import compiler.common.diagnostics.CompilerDiagnostics
 import compiler.common.diagnostics.Diagnostic.VariablePropertiesError
 import compiler.common.diagnostics.Diagnostic.VariablePropertiesError.AssignmentToFunctionParameter
-import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.referenceHashMapOf
@@ -90,7 +89,7 @@ class VariablePropertiesAnalyzerTest {
             "zewnętrzna", listOf(), Type.Unit,
             listOf(Statement.VariableDefinition(variable))
         )
-        val input = VariablePropertyInput(Program(listOf(FunctionDefinition(function))), ReferenceHashMap())
+        val input = VariablePropertyInput(Program(listOf(FunctionDefinition(function))), referenceHashMapOf())
 
         val expectedResults: ReferenceMap<Any, VariableProperties> = referenceHashMapOf(
             variable to VariableProperties(function, referenceSetOf(), referenceSetOf()),

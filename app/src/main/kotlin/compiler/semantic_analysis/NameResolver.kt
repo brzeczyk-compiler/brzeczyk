@@ -10,8 +10,8 @@ import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic
 import compiler.common.diagnostics.Diagnostics
 import compiler.common.reference_collections.MutableReferenceMap
-import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceMap
+import compiler.common.reference_collections.referenceHashMapOf
 import java.util.Stack
 
 object NameResolver {
@@ -40,7 +40,7 @@ object NameResolver {
 
     fun calculateNameResolution(ast: Program, diagnostics: Diagnostics): ReferenceMap<Any, NamedNode> {
 
-        val nameDefinitions: MutableReferenceMap<Any, NamedNode> = ReferenceHashMap()
+        val nameDefinitions: MutableReferenceMap<Any, NamedNode> = referenceHashMapOf()
 
         val visibleNames: MutableMap<String, NameOverloadState> = HashMap()
 

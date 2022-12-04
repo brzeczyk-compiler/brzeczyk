@@ -11,7 +11,6 @@ import compiler.common.diagnostics.Diagnostic.VariablePropertiesError.Assignment
 import compiler.common.diagnostics.Diagnostics
 import compiler.common.reference_collections.MutableReferenceMap
 import compiler.common.reference_collections.MutableReferenceSet
-import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceHashSet
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.ReferenceSet
@@ -41,8 +40,8 @@ object VariablePropertiesAnalyzer {
         accessedDefaultValues: ReferenceMap<Expression.FunctionCall, ReferenceSet<Function.Parameter>>,
         diagnostics: Diagnostics,
     ): ReferenceMap<Any, VariableProperties> {
-        val mutableVariableProperties: MutableReferenceMap<Any, MutableVariableProperties> = ReferenceHashMap()
-        val functionCallsOwnership: MutableReferenceMap<Expression.FunctionCall, Function> = ReferenceHashMap()
+        val mutableVariableProperties: MutableReferenceMap<Any, MutableVariableProperties> = referenceHashMapOf()
+        val functionCallsOwnership: MutableReferenceMap<Expression.FunctionCall, Function> = referenceHashMapOf()
 
         // Any = Expression | Statement
         fun analyzeVariables(node: Any, currentFunction: Function?) {

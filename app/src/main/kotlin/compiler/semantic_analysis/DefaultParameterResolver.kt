@@ -5,12 +5,13 @@ import compiler.ast.Program
 import compiler.ast.Statement
 import compiler.ast.Variable
 import compiler.common.reference_collections.ReferenceHashMap
+import compiler.common.reference_collections.referenceHashMapOf
 import compiler.common.reference_collections.ReferenceMap
 
 object DefaultParameterResolver {
 
     fun mapFunctionParametersToDummyVariables(ast: Program): ReferenceMap<Function.Parameter, Variable> {
-        val resultMapping: ReferenceHashMap<Function.Parameter, Variable> = ReferenceHashMap()
+        val resultMapping: ReferenceHashMap<Function.Parameter, Variable> = referenceHashMapOf()
 
         fun process(statement: Statement) {
             fun process(vararg bunchOfBlocks: List<Statement>?) = bunchOfBlocks.toList().forEach { block -> block?.forEach { process(it) } }

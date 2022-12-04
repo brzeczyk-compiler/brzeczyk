@@ -16,14 +16,14 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 
 class FunctionControlFlowTest {
-    private val expressionNodes = ReferenceHashMap<Expression, ReferenceHashMap<Variable?, IFTNode>>()
-    private val nameResolution = ReferenceHashMap<Any, NamedNode>()
-    private val defaultParameterValues = ReferenceHashMap<Function.Parameter, Variable>()
+    private val expressionNodes = referenceHashMapOf<Expression, ReferenceHashMap<Variable?, IFTNode>>()
+    private val nameResolution = referenceHashMapOf<Any, NamedNode>()
+    private val defaultParameterValues = referenceHashMapOf<Function.Parameter, Variable>()
     private val diagnostics = mutableListOf<Diagnostic>()
 
     private fun addExpressionNode(expression: Expression, variable: Variable?): IFTNode {
         val node = IntermediateFormTreeNode.NoOp()
-        expressionNodes.putIfAbsent(expression, ReferenceHashMap())
+        expressionNodes.putIfAbsent(expression, referenceHashMapOf())
         expressionNodes[expression]!![variable] = node
         return node
     }

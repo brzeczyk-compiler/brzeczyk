@@ -23,8 +23,8 @@ fun <K, V> assertContentEquals(expected: ReferenceMap<K, V>, actual: ReferenceMa
 }
 
 class TypeCheckerTest {
-    private val nameResolution = ReferenceHashMap<Any, NamedNode>()
-    private val argumentResolution = ReferenceHashMap<Expression.FunctionCall.Argument, Function.Parameter>()
+    private val nameResolution = referenceHashMapOf<Any, NamedNode>()
+    private val argumentResolution = referenceHashMapOf<Expression.FunctionCall.Argument, Function.Parameter>()
     private val diagnostics = mutableListOf<Diagnostic>()
 
     // stała x: Liczba = 123

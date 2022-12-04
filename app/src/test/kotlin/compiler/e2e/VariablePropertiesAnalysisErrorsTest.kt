@@ -7,7 +7,7 @@ import kotlin.test.Test
 
 class VariablePropertiesAnalysisErrorsTest {
     private fun assertAssignmentToParameterError(program: String) {
-        assertErrorOfType(program, Diagnostic.VariablePropertiesError.AssignmentToFunctionParameter::class)
+        assertErrorOfType(program, Diagnostic.ResolutionError.VariablePropertiesError.AssignmentToFunctionParameter::class)
     }
 
     @Ignore // FIXME: as this is an e2e test, the error is reported by the type checker, and not the variable properties analyzer

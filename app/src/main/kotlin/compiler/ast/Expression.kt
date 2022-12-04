@@ -45,7 +45,7 @@ sealed class Expression : AstNode {
             MINUS,
             BIT_NOT;
 
-            override fun toString(): String = when(this) {
+            override fun toString(): String = when (this) {
                 NOT -> "nie"
                 PLUS -> "+"
                 MINUS -> "-"
@@ -82,7 +82,7 @@ sealed class Expression : AstNode {
             GREATER_THAN,
             GREATER_THAN_OR_EQUALS;
 
-            override fun toString(): String = when(this) {
+            override fun toString(): String = when (this) {
                 AND -> "oraz"
                 OR -> "lub"
                 IFF -> "wtw"

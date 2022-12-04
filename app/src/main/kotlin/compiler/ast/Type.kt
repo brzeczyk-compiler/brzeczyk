@@ -5,7 +5,7 @@ sealed class Type {
     object Boolean : Type()
     object Number : Type()
 
-    override fun toString(): String = when(this) {
+    override fun toString(): String = when (this) {
         Boolean -> "Czy"
         Number -> "Liczba"
         Unit -> "Nic"

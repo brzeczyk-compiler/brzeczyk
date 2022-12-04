@@ -11,10 +11,8 @@ import compiler.ast.Statement.Assignment
 import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.common.diagnostics.CompilerDiagnostics
-import compiler.common.diagnostics.Diagnostic.VariablePropertiesError
-import compiler.common.diagnostics.Diagnostic.VariablePropertiesError.AssignmentToFunctionParameter
-import compiler.common.reference_collections.ReferenceMap
-import compiler.common.reference_collections.ReferenceSet
+import compiler.common.diagnostics.Diagnostic.ResolutionError.VariablePropertiesError
+import compiler.common.diagnostics.Diagnostic.ResolutionError.VariablePropertiesError.AssignmentToFunctionParameter
 import compiler.common.reference_collections.referenceHashMapOf
 import compiler.common.reference_collections.referenceHashSetOf
 import compiler.semantic_analysis.VariablePropertiesAnalyzer.VariableProperties

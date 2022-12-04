@@ -14,7 +14,7 @@ data class Variable(
         VALUE,
         VARIABLE;
 
-        override fun toString(): String = when(this) {
+        override fun toString(): String = when (this) {
             CONSTANT -> "stała"
             VALUE -> "wart"
             VARIABLE -> "zm"

@@ -8,7 +8,7 @@ import compiler.ast.Program
 import compiler.ast.Program.Global
 import compiler.ast.Statement
 import compiler.ast.Variable
-import compiler.common.diagnostics.Diagnostic.VariablePropertiesError.AssignmentToFunctionParameter
+import compiler.common.diagnostics.Diagnostic.ResolutionError.VariablePropertiesError.AssignmentToFunctionParameter
 import compiler.common.diagnostics.Diagnostics
 import compiler.common.reference_collections.MutableReferenceMap
 import compiler.common.reference_collections.MutableReferenceSet

@@ -1,11 +1,14 @@
 package compiler.common.diagnostics
 
+import compiler.ast.AstNode
 import compiler.ast.Expression
 import compiler.ast.Function
+import compiler.ast.NamedNode
 import compiler.ast.Statement
 import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.lexer.Location
+import compiler.lexer.LocationRange
 
 sealed class Diagnostic {
     abstract fun isError(): Boolean
@@ -38,128 +41,242 @@ sealed class Diagnostic {
         }.toString()
     }
 
-    class InvalidNumberLiteral(val number: String) : Diagnostic() {
-        override fun isError() = true
-        override fun toString() = "Invalid number literal '$number'"
-    }
+    data class ObjectAssociatedToError(val message: String, val location: LocationRange?)
 
-    sealed class NameResolutionError() : Diagnostic() {
-        override fun isError() = true
-        class UndefinedVariable : NameResolutionError()
+    sealed class ResolutionError(astNodes: List<AstNode>) : Diagnostic() {
 
-        class UndefinedFunction : NameResolutionError()
-        class NameConflict : NameResolutionError()
-        class VariableIsNotCallable : NameResolutionError()
-        class FunctionIsNotVariable : NameResolutionError()
-    }
+        private val associatedObjects = astNodes.map { ObjectAssociatedToError(it.print(), it.location) }
+        val associatedLocations = associatedObjects.map { it.location }
 
-    sealed class ArgumentResolutionError() : Diagnostic() {
-        override fun isError(): Boolean = true
+        abstract val errorMessage: String
 
-        data class DefaultParametersNotLast(val function: Function) : ArgumentResolutionError() {
-            override fun toString(): String = "Error in $function - non default arguments should be before default ones"
-        }
+        override fun toString(): String = StringBuilder().apply {
+            if (isError()) append("Resolver Error") else append("Resolver Warning")
+            append("\n")
+            associatedObjects.forEach { append(it.message).append("\n") }
+            append(errorMessage).append("\n")
+        }.toString()
 
-        data class PositionalArgumentAfterNamed(val functionCall: Expression.FunctionCall) : ArgumentResolutionError() {
-            override fun toString(): String = "Positional argument after a named one in function call $functionCall"
-        }
-
-        data class MissingArgument(val functionCall: Expression.FunctionCall, val argumentName: String) : ArgumentResolutionError() {
-            override fun toString(): String = "Argument $argumentName in function call $functionCall"
-        }
-
-        data class RepeatedArgument(val functionCall: Expression.FunctionCall, val argumentName: String) : ArgumentResolutionError() {
-            override fun toString(): String = "Argument $argumentName is repeated in function call $functionCall"
-        }
-
-        data class UnknownArgument(val functionCall: Expression.FunctionCall, val argumentName: String) : ArgumentResolutionError() {
-            override fun toString(): String = "Unknown named argument $argumentName in function call $functionCall"
-        }
-
-        data class TooManyArguments(val functionCall: Expression.FunctionCall) : ArgumentResolutionError() {
-            override fun toString(): String = "Too many arguments in function call $functionCall"
-        }
-    }
-
-    sealed class TypeCheckingError : Diagnostic() {
-        override fun isError() = true
-
-        data class ConstantWithoutValue(val variable: Variable) : TypeCheckingError() {
-            override fun toString() = "A constant must have a value"
-        }
-
-        data class UninitializedGlobalVariable(val variable: Variable) : TypeCheckingError() {
-            override fun toString() = "A global variable must be initialized"
-        }
-
-        data class ImmutableAssignment(val assignment: Statement.Assignment, val variable: Variable) : TypeCheckingError() {
-            override fun toString() = "Cannot assign to a " + if (variable.kind == Variable.Kind.CONSTANT) "constant" else "value"
-        }
-
-        data class ParameterAssignment(val assignment: Statement.Assignment, val parameter: Function.Parameter) : TypeCheckingError() {
-            override fun toString() = "Cannot assign to a parameter"
-        }
-
-        data class FunctionAssignment(val assignment: Statement.Assignment, val function: Function) : TypeCheckingError() {
-            override fun toString() = "Cannot assign to a function"
-        }
-
-        data class FunctionAsValue(val expression: Expression.Variable, val function: Function) : TypeCheckingError() {
-            override fun toString() = "Cannot use a function as a value"
-        }
-
-        data class VariableCall(val call: Expression.FunctionCall, val variable: Variable) : TypeCheckingError() {
-            override fun toString() = "Cannot call a variable"
-        }
-
-        data class ParameterCall(val call: Expression.FunctionCall, val parameter: Function.Parameter) : TypeCheckingError() {
-            override fun toString() = "Cannot call a parameter"
-        }
-
-        data class ConditionalTypesMismatch(val conditional: Expression.Conditional, val typeWhenTrue: Type, val typeWhenFalse: Type) : TypeCheckingError() {
-            override fun toString() = "The results of a conditional operator cannot have distinct types '$typeWhenTrue' and '$typeWhenFalse'"
-        }
-
-        data class NonConstantExpression(val expression: Expression) : TypeCheckingError() {
-            override fun toString() = "Expected a constant expression"
-        }
-
-        data class InvalidType(val expression: Expression, val type: Type, val expectedType: Type) : TypeCheckingError() {
-            override fun toString() = "Expected type '$expectedType' instead of '$type'"
-        }
-
-        data class MissingReturnStatement(val function: Function) : TypeCheckingError() {
-            override fun toString() = "Non Unit returning function must end with a 'return' statement"
-        }
-    }
-
-    sealed class VariablePropertiesError() : Diagnostic() {
-        override fun isError() = true
-
-        data class AssignmentToFunctionParameter(
-            val parameter: Function.Parameter,
-            val owner: Function,
-            val assignedIn: Function
-        ) : VariablePropertiesError() {
-            override fun toString() = "Assignment to parameter ${parameter.name} " +
-                "of type ${parameter.type} of function ${owner.name} in function ${assignedIn.name}"
-        }
-    }
-
-    sealed class ControlFlowDiagnostic : Diagnostic() {
-        data class UnreachableStatement(val statement: Statement) : ControlFlowDiagnostic() {
-            override fun isError() = false
-            override fun toString() = "Unreachable statement"
-        }
-
-        data class BreakOutsideOfLoop(val loopBreak: Statement.LoopBreak) : ControlFlowDiagnostic() {
+        sealed class NameResolutionError(astNodes: List<AstNode>) : ResolutionError(astNodes) {
             override fun isError() = true
-            override fun toString() = "Cannot use 'break' outside of loop"
+
+            class UndefinedVariable(
+                variable: Expression.Variable,
+            ) : NameResolutionError(listOf(variable)) {
+                override val errorMessage = "The variable is undefined."
+            }
+
+            class AssignmentToUndefinedVariable(
+                assignment: Statement.Assignment,
+            ) : NameResolutionError(listOf(assignment)) {
+                override val errorMessage = "A variable to be assigned to is undefined."
+            }
+
+            class UndefinedFunction(
+                functionCall: Expression.FunctionCall,
+            ) : NameResolutionError(listOf(functionCall)) {
+                override val errorMessage = "The called function is undefined."
+            }
+
+            class NameConflict(
+                vararg nodesWithSameName: NamedNode,
+            ) : NameResolutionError(nodesWithSameName.asList()) {
+                override val errorMessage = "There is a naming conflict."
+            }
+
+            class VariableIsNotCallable(
+                variableOrParameter: NamedNode,
+                functionCall: Expression.FunctionCall,
+            ) : NameResolutionError(listOf(variableOrParameter, functionCall)) {
+                override val errorMessage = "The variable is called."
+            }
+
+            class FunctionIsNotVariable(
+                function: Function,
+                variable: Expression.Variable,
+            ) : NameResolutionError(listOf(function, variable)) {
+                override val errorMessage = "The function is used as a variable."
+            }
+
+            class AssignmentToFunction(
+                function: Function,
+                assignment: Statement.Assignment,
+            ) : NameResolutionError(listOf(function, assignment)) {
+                override val errorMessage = "The function is a left operand of the assignment."
+            }
         }
 
-        data class ContinuationOutsideOfLoop(val loopContinuation: Statement.LoopContinuation) : ControlFlowDiagnostic() {
+        sealed class ArgumentResolutionError(astNodes: List<AstNode>) : ResolutionError(astNodes) {
+            override fun isError(): Boolean = true
+
+            class DefaultParametersNotLast(
+                function: Function,
+            ) : ArgumentResolutionError(listOf(function)) {
+                override val errorMessage = "An argument with a default value is listed before an argument without a default value."
+            }
+
+            class PositionalArgumentAfterNamed(
+                functionCall: Expression.FunctionCall,
+            ) : ArgumentResolutionError(listOf(functionCall)) {
+                override val errorMessage = "A named argument is listed before a positional argument in the function call."
+            }
+
+            class MissingArgument(
+                function: Function,
+                functionCall: Expression.FunctionCall,
+                parameter: Function.Parameter,
+            ) : ArgumentResolutionError(listOf(function, functionCall, parameter)) {
+                override val errorMessage = "An argument for the parameter of the function is missing in the call."
+            }
+
+            class RepeatedArgument(
+                function: Function,
+                functionCall: Expression.FunctionCall,
+                parameter: Function.Parameter,
+            ) : ArgumentResolutionError(listOf(function, functionCall, parameter)) {
+                override val errorMessage = "Multiple arguments are provided for the parameter of the function in the call."
+            }
+
+            class UnknownArgument(
+                function: Function,
+                functionCall: Expression.FunctionCall,
+                argument: Expression.FunctionCall.Argument,
+            ) : ArgumentResolutionError(listOf(function, functionCall, argument)) {
+                override val errorMessage = "The function does not have such named parameter."
+            }
+
+            class TooManyArguments(
+                functionCall: Expression.FunctionCall,
+            ) : ArgumentResolutionError(listOf(functionCall)) {
+                override val errorMessage = "Too many arguments are provided in the function call."
+            }
+        }
+
+        sealed class TypeCheckingError(astNodes: List<AstNode>) : ResolutionError(astNodes) {
             override fun isError() = true
-            override fun toString() = "Cannot use 'continue' outside of loop"
+
+            class ConstantWithoutValue(
+                variable: Variable,
+            ) : TypeCheckingError(listOf(variable)) {
+                override val errorMessage = "The constant does not have a value."
+            }
+
+            class UninitializedGlobalVariable(
+                variable: Variable,
+            ) : TypeCheckingError(listOf(variable)) {
+                override val errorMessage = "The global variable is not initialized."
+            }
+
+            class ImmutableAssignment(
+                assignment: Statement.Assignment,
+                variable: Variable,
+            ) : TypeCheckingError(listOf(assignment, variable)) {
+                override val errorMessage = "The assignment assigns to the ${if (variable.kind == Variable.Kind.CONSTANT) "constant" else "value"}."
+            }
+
+            class ParameterAssignment(
+                assignment: Statement.Assignment,
+                parameter: Function.Parameter,
+            ) : TypeCheckingError(listOf(assignment, parameter)) {
+                override val errorMessage = "The assignment assigns to the parameter."
+            }
+
+            class FunctionAssignment(
+                assignment: Statement.Assignment,
+                function: Function,
+            ) : TypeCheckingError(listOf(assignment, function)) {
+                override val errorMessage = "The assignment assigns to the function."
+            }
+
+            class FunctionAsValue(
+                expression: Expression.Variable,
+                function: Function,
+            ) : TypeCheckingError(listOf(expression, function)) {
+                override val errorMessage = "The function is used as a value."
+            }
+
+            class VariableCall(
+                functionCall: Expression.FunctionCall,
+                variable: Variable,
+            ) : TypeCheckingError(listOf(functionCall, variable)) {
+                override val errorMessage = "The variable is called."
+            }
+
+            class ParameterCall(
+                functionCall: Expression.FunctionCall,
+                parameter: Function.Parameter,
+            ) : TypeCheckingError(listOf(functionCall, parameter)) {
+                override val errorMessage = "The parameter of a function is called."
+            }
+
+            class ConditionalTypesMismatch(
+                conditional: Expression.Conditional,
+                typeWhenTrue: Type,
+                typeWhenFalse: Type,
+            ) : TypeCheckingError(listOf(conditional)) {
+                override val errorMessage = "The results of a conditional operator have distinct types: $typeWhenTrue and $typeWhenFalse"
+            }
+
+            class NonConstantExpression(
+                expression: Expression,
+            ) : TypeCheckingError(listOf(expression)) {
+                override val errorMessage = "The expression is not constant (expected constant)."
+            }
+
+            class InvalidType(
+                expression: Expression,
+                type: Type,
+                expectedType: Type,
+            ) : TypeCheckingError(listOf(expression)) {
+                override val errorMessage = "The type of the expression is $expectedType (expected $type)."
+            }
+
+            class MissingReturnStatement(
+                function: Function,
+            ) : TypeCheckingError(listOf(function)) {
+                override val errorMessage = "The function neither returns unit, not has a 'return' statement."
+            }
+        }
+
+        sealed class VariablePropertiesError(astNodes: List<AstNode>) : ResolutionError(astNodes) {
+            override fun isError() = true
+
+            class AssignmentToFunctionParameter(
+                parameter: Function.Parameter,
+                owner: Function,
+                assignedIn: Function
+            ) : VariablePropertiesError(listOf(owner, parameter, assignedIn)) {
+                override val errorMessage = "The parameter is owned by the function ${owner.name} and is assigned in the function ${assignedIn.name}."
+            }
+        }
+
+        sealed class ControlFlowDiagnostic(astNodes: List<AstNode>) : ResolutionError(astNodes) {
+
+            sealed class Warnings(astNodes: List<AstNode>) : ControlFlowDiagnostic(astNodes) {
+                override fun isError() = false
+
+                class UnreachableStatement(
+                    statement: Statement,
+                ) : Warnings(listOf(statement)) {
+                    override val errorMessage = "The statement is unreachable."
+                }
+            }
+
+            sealed class Errors(astNodes: List<AstNode>) : ControlFlowDiagnostic(astNodes) {
+                override fun isError() = true
+
+                class BreakOutsideOfLoop(
+                    loopBreak: Statement.LoopBreak,
+                ) : Errors(listOf(loopBreak)) {
+                    override val errorMessage = "The 'break' is used outside of a loop."
+                }
+
+                class ContinuationOutsideOfLoop(
+                    loopContinuation: Statement.LoopContinuation,
+                ) : Errors(listOf(loopContinuation)) {
+                    override val errorMessage = "The 'continue' is used outside of a loop."
+                }
+            }
         }
     }
 }

@@ -8,7 +8,7 @@ import compiler.ast.Statement
 import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic
-import compiler.common.diagnostics.Diagnostic.ControlFlowDiagnostic
+import compiler.common.diagnostics.Diagnostic.ResolutionError.ControlFlowDiagnostic
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.referenceHashMapOf
 import kotlin.test.Test
@@ -506,7 +506,7 @@ class FunctionControlFlowTest {
 
         test(program)
 
-        assertContentEquals(listOf(ControlFlowDiagnostic.BreakOutsideOfLoop(loopBreak)), diagnostics)
+        assertContentEquals(listOf(ControlFlowDiagnostic.Errors.BreakOutsideOfLoop(loopBreak)), diagnostics)
     }
 
     // czynność f() { pomiń }
@@ -519,7 +519,7 @@ class FunctionControlFlowTest {
 
         test(program)
 
-        assertContentEquals(listOf(ControlFlowDiagnostic.ContinuationOutsideOfLoop(loopContinuation)), diagnostics)
+        assertContentEquals(listOf(ControlFlowDiagnostic.Errors.ContinuationOutsideOfLoop(loopContinuation)), diagnostics)
     }
 
     // czynność f() {
@@ -539,7 +539,7 @@ class FunctionControlFlowTest {
 
         test(program)
 
-        assertContentEquals(listOf(ControlFlowDiagnostic.UnreachableStatement(evaluation)), diagnostics)
+        assertContentEquals(listOf(ControlFlowDiagnostic.Warnings.UnreachableStatement(evaluation)), diagnostics)
     }
 
     // czynność f() {
@@ -563,7 +563,7 @@ class FunctionControlFlowTest {
 
         test(program)
 
-        assertContentEquals(listOf(ControlFlowDiagnostic.UnreachableStatement(evaluation)), diagnostics)
+        assertContentEquals(listOf(ControlFlowDiagnostic.Warnings.UnreachableStatement(evaluation)), diagnostics)
     }
 
     // czynność f() {
@@ -587,6 +587,6 @@ class FunctionControlFlowTest {
 
         test(program)
 
-        assertContentEquals(listOf(ControlFlowDiagnostic.UnreachableStatement(evaluation)), diagnostics)
+        assertContentEquals(listOf(ControlFlowDiagnostic.Warnings.UnreachableStatement(evaluation)), diagnostics)
     }
 }

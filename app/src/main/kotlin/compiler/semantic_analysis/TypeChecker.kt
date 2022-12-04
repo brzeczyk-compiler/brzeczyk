@@ -9,7 +9,7 @@ import compiler.ast.Statement
 import compiler.ast.StatementBlock
 import compiler.ast.Type
 import compiler.ast.Variable
-import compiler.common.diagnostics.Diagnostic.TypeCheckingError
+import compiler.common.diagnostics.Diagnostic.ResolutionError.TypeCheckingError
 import compiler.common.diagnostics.Diagnostics
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.referenceHashMapOf

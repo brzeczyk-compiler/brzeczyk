@@ -5,7 +5,7 @@ import compiler.common.reference_collections.referenceHashMapOf
 
 class IncorrectControlFlowGraphError(message: String) : Exception(message)
 
-class ControlFlowGraphBuilder(var entryTreeRoot: IFTNode? = null) {
+class ControlFlowGraphBuilder(@JvmField var entryTreeRoot: IFTNode? = null) {
     private var unconditionalLinks = ReferenceHashMap<IFTNode, IFTNode>()
     private var conditionalTrueLinks = ReferenceHashMap<IFTNode, IFTNode>()
     private var conditionalFalseLinks = ReferenceHashMap<IFTNode, IFTNode>()
@@ -39,11 +39,7 @@ class ControlFlowGraphBuilder(var entryTreeRoot: IFTNode? = null) {
                 CFGLinkType.CONDITIONAL_FALSE -> conditionalFalseLinks
             }
             links[from.first] = to
-        } else {
-            entryTreeRoot = to
-            if (!treeRoots.contains(to))
-                treeRoots.add(to)
-        }
+        } else if (entryTreeRoot == null) setEntryTreeRoot(to)
     }
 
     fun addLinkFromAllFinalRoots(linkType: CFGLinkType, to: IFTNode) {

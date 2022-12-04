@@ -13,7 +13,7 @@ import compiler.lexer.LocationRange
 sealed interface Diagnostic {
     fun isError(): Boolean
 
-    sealed class LexerError(
+    class LexerError(
         val start: Location,
         val end: Location?,
         val context: List<String>,
@@ -28,7 +28,7 @@ sealed interface Diagnostic {
             .toString()
     }
 
-    sealed class ParserError(
+    class ParserError(
         val symbol: Any?,
         val location: LocationRange,
     ) : Diagnostic {
@@ -48,8 +48,7 @@ sealed interface Diagnostic {
 
         data class ObjectAssociatedToError(val message: String, val location: LocationRange?)
 
-        private val associatedObjects = astNodes.map { ObjectAssociatedToError(it.print(), it.location) }
-        val associatedLocations = associatedObjects.map { it.location }
+        val associatedObjects = astNodes.map { ObjectAssociatedToError(it.print(), it.location) }
 
         abstract val errorMessage: String
 

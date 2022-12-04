@@ -17,7 +17,6 @@ import compiler.common.reference_collections.referenceHashMapOf
 import compiler.common.reference_collections.referenceHashSetOf
 import compiler.semantic_analysis.VariablePropertiesAnalyzer.VariableProperties
 import kotlin.test.Test
-import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
@@ -67,10 +66,7 @@ class VariablePropertiesAnalyzerTest {
         else
             calculate()
 
-        assertContentEquals(
-            expectedDiagnostics.asSequence(),
-            actualDiagnostics.diagnostics.filter { it is VariablePropertiesError }
-        )
+        assertResolutionErrorsEquals(expectedDiagnostics, actualDiagnostics.diagnostics.filter { it is VariablePropertiesError })
     }
 
     // zm x: Liczba = 123

@@ -15,10 +15,10 @@ sealed interface AstNode {
 
                 is Expression -> when (this) {
                     is Expression.BinaryOperation -> "${this.leftOperand.printSimple()} ${this.kind} ${this.rightOperand.printSimple()}"
-                    is Expression.BooleanLiteral -> this.toString()
+                    is Expression.BooleanLiteral -> this.value.toString()
                     is Expression.Conditional -> "${this.condition.printSimple()} ? ${this.resultWhenTrue.printSimple()} : ${this.resultWhenFalse.printSimple()}"
                     is Expression.FunctionCall -> "${this.name}(${this.arguments.joinToString { it.printSimple() }})"
-                    is Expression.NumberLiteral -> this.toString()
+                    is Expression.NumberLiteral -> this.value.toString()
                     is Expression.UnaryOperation -> "${this.kind} ${this.operand}"
                     is Expression.UnitLiteral -> "nic"
                     is Expression.Variable -> this.name

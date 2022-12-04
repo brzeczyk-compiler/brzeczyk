@@ -9,13 +9,26 @@ class NameResolutionErrorTest {
     @Test
     fun `test undefined variable`() {
         assertErrorOfType(
+                """
+                    czynność f() {
+                        x
+                    }
+                    
+                """,
+                Diagnostic.ResolutionError.NameResolutionError.UndefinedVariable::class
+        )
+    }
+
+    @Test
+    fun `test undefined variable assignment`() {
+        assertErrorOfType(
             """
                     czynność f() {
                         x = 17
                     }
                     
                 """,
-            Diagnostic.ResolutionError.NameResolutionError.UndefinedVariable::class
+            Diagnostic.ResolutionError.NameResolutionError.AssignmentToUndefinedVariable::class
         )
     }
 
@@ -29,7 +42,7 @@ class NameResolutionErrorTest {
                     }
                     
                 """,
-            Diagnostic.ResolutionError.NameResolutionError.UndefinedVariable::class
+            Diagnostic.ResolutionError.NameResolutionError.AssignmentToUndefinedVariable::class
         )
     }
 
@@ -43,7 +56,7 @@ class NameResolutionErrorTest {
                     }
                     
                 """,
-            Diagnostic.ResolutionError.NameResolutionError.UndefinedVariable::class
+            Diagnostic.ResolutionError.NameResolutionError.AssignmentToUndefinedVariable::class
         )
     }
 
@@ -366,16 +379,30 @@ class NameResolutionErrorTest {
     }
 
     @Test
-    fun `test using functions in conditions`() {
+    fun `test assignment to a function`() {
         assertErrorOfType(
             """
+                    czynność f() -> Czy {
+                        czynność g() { }
+                        g = 15
+                    }
+                    
+                """,
+            Diagnostic.ResolutionError.NameResolutionError.AssignmentToFunction::class
+        )
+    }
+
+    @Test
+    fun `test using functions in conditions`() {
+        assertErrorOfType(
+                """
                     czynność f() -> Czy {
                         czynność g() { }
                         zwróć (g == 17)
                     }
                     
                 """,
-            Diagnostic.ResolutionError.NameResolutionError.FunctionIsNotVariable::class
+                Diagnostic.ResolutionError.NameResolutionError.FunctionIsNotVariable::class
         )
     }
 

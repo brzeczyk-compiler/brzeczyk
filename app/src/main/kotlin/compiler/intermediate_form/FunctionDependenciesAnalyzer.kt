@@ -31,7 +31,7 @@ object FunctionDependenciesAnalyzer {
                     variables[variable as NamedNode] = (properties.accessedIn.any { it != function } || properties.writtenIn.any { it != function })
                 }
 
-            result[function] = FunctionDetailsGenerator(depth, variables, function.parameters)
+            result[function] = TODO() // FunctionDetailsGenerator(depth, variables, function.parameters)
         }
 
         fun processFunction(function: Function, depth: ULong) {

@@ -9,7 +9,7 @@ sealed class IntermediateFormTreeNode {
     }
 
     data class MemoryRead(val address: IntermediateFormTreeNode) : IntermediateFormTreeNode()
-    data class MemoryLabel(val label: String) : IntermediateFormTreeNode()
+    data class MemoryAddress(val address: String) : IntermediateFormTreeNode()
     data class RegisterRead(val register: Register) : IntermediateFormTreeNode()
     data class Const(val value: Long) : IntermediateFormTreeNode()
 

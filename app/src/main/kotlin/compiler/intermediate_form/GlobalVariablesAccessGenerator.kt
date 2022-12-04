@@ -23,7 +23,7 @@ class GlobalVariablesAccessGenerator(variableProperties: ReferenceMap<Any, Varia
 
     private fun getMemoryAddress(namedNode: NamedNode) =
         IntermediateFormTreeNode.Add(
-            IntermediateFormTreeNode.MemoryLabel(GLOBALS_MEMORY_LABEL),
+            IntermediateFormTreeNode.MemoryAddress(GLOBALS_MEMORY_LABEL),
             IntermediateFormTreeNode.Const(offsets[namedNode]!!)
         )
 

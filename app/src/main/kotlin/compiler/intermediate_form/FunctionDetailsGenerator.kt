@@ -1,8 +1,8 @@
 package compiler.intermediate_form
 
-import compiler.common.intermediate_form.FunctionDetailsGeneratorInterface
 import compiler.ast.NamedNode
 import compiler.ast.Variable
+import compiler.common.intermediate_form.FunctionDetailsGeneratorInterface
 import compiler.common.reference_collections.ReferenceHashMap
 
 enum class VariableLocationType {
@@ -21,7 +21,7 @@ data class FunctionDetailsGenerator(
     val variablesLocationTypes: Map<NamedNode, VariableLocationType>, // should contain parameters
     val displayAddress: MemoryAddress,
     val createRegisterFor: (NamedNode) -> Register = { Register() } // for testing
-): FunctionDetailsGeneratorInterface {
+) : FunctionDetailsGeneratorInterface {
 
     private val variablesStackOffsets: MutableMap<NamedNode, ULong> = ReferenceHashMap()
     private val variablesRegisters: MutableMap<NamedNode, Register> = ReferenceHashMap()

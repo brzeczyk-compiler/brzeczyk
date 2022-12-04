@@ -118,11 +118,11 @@ object ControlFlow {
         var currentTemporaryRegisters = ReferenceHashMap<Variable, Register>()
 
         fun ControlFlowGraphBuilder.addNextCFG(nextCFG: ControlFlowGraph) {
-            addAllFrom(nextCFG)
             if (nextCFG.entryTreeRoot != null) {
                 last.forEach { addLink(it, nextCFG.entryTreeRoot) }
                 last = nextCFG.finalTreeRoots.map { Pair(it, CFGLinkType.UNCONDITIONAL) }
             }
+            addAllFrom(nextCFG)
         }
 
         fun ControlFlowGraphBuilder.addNextTree(nextTree: IntermediateFormTreeNode) {
@@ -234,7 +234,7 @@ object ControlFlow {
                         parameterValues[it.index] = makeVariableReadNode(defaultParameterValues[it.value]!!)
                     }
 
-                    val callIntermediateForm = functionDetailsGenerators[function]!!.generateCall(parameterValues.map { it!! }.toList())
+                    val callIntermediateForm = functionDetailsGenerators[function]!!.genCall(parameterValues.map { it!! }.toList())
                     cfgBuilder.addNextCFG(callIntermediateForm.callGraph)
                     invalidatedVariables[astNode]!!.forEach { currentTemporaryRegisters.remove(it) }
 

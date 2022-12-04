@@ -31,7 +31,6 @@ class ReferenceEntry<K, V>(val key: K, var value: V) {
 val <K, V> ReferenceMap<K, V>.referenceEntries get() = entries.map { ReferenceEntry(it.key, it.value) }.toSet()
 val <K, V> ReferenceMap<K, V>.referenceKeys get() = referenceSetOf(referenceEntries.map { it.key })
 
-
 fun <K, V> combineReferenceMaps(maps: List<ReferenceMap<K, V>>): ReferenceMap<K, V> {
     val combinedMaps = ReferenceHashMap<K, V>()
     maps.forEach { combinedMaps.putAll(it) }

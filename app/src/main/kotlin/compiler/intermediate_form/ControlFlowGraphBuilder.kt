@@ -1,8 +1,8 @@
 package compiler.intermediate_form
 
 import compiler.common.reference_collections.ReferenceHashMap
-import java.lang.RuntimeException
 import compiler.common.reference_collections.referenceMapOf
+import java.lang.RuntimeException
 
 class IncorrectControlFlowGraphError(message: String) : RuntimeException(message)
 
@@ -28,14 +28,15 @@ class ControlFlowGraphBuilder(var entryTreeRoot: IFTNode? = null) {
     }
 
     fun addLink(from: Pair<IFTNode, CFGLinkType>?, to: IFTNode, addDestination: Boolean = true) {
-        if (addDestination && !treeRoots.contains(to))
-            treeRoots.add(to)
-        if (from == null)
-            makeRoot(to)
-        else {
-            for (node in listOf(from.first, to))
-                if (!treeRoots.contains(node))
-                    treeRoots.add(node)
+        if (from == null) {
+            if (addDestination)
+                makeRoot(to)
+        } else {
+            if (!treeRoots.contains(from.first))
+                treeRoots.add(from.first)
+            if (!treeRoots.contains(to) && addDestination)
+                treeRoots.add(to)
+
             val links = when (from.second) {
                 CFGLinkType.UNCONDITIONAL -> unconditionalLinks
                 CFGLinkType.CONDITIONAL_TRUE -> conditionalTrueLinks
@@ -90,8 +91,8 @@ class ControlFlowGraphBuilder(var entryTreeRoot: IFTNode? = null) {
         build().finalTreeRoots.forEach {
             addLink(Pair(it, CFGLinkType.UNCONDITIONAL), cfg.entryTreeRoot!!, false)
         }
-        addAllFrom(cfg)
         if (entryTreeRoot == null) entryTreeRoot = cfg.entryTreeRoot
+        addAllFrom(cfg)
         return this
     }
 

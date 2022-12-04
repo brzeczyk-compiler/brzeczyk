@@ -12,7 +12,7 @@ enum class VariableLocationType {
 
 const val memoryUnitSize: ULong = 8u
 val argPositionToRegister = listOf(Register.RDI, Register.RSI, Register.RDX, Register.RCX, Register.R8, Register.R9)
-val calleeSavedRegistersWithoutRSP = listOf(Register.RBX, Register.RBP, Register.R12, Register.R13, Register.R14, Register.R15)
+val calleeSavedRegistersWithoutRSPAndRBP = listOf(Register.RBX, Register.R12, Register.R13, Register.R14, Register.R15)
 
 // Function Details Generator consistent with SystemV AMD64 calling convention
 data class DefaultFunctionDetailsGenerator(
@@ -67,48 +67,20 @@ data class DefaultFunctionDetailsGenerator(
         )
 
         // At the end create IFTNode to get function result
-        var readResultNode: IFTNode? = null
-        if (variableToStoreFunctionResult != null) {
-            cfgBuilder.addLinkFromAllFinalRoots(
-                CFGLinkType.UNCONDITIONAL,
-                IntermediateFormTreeNode.RegisterWrite(Register.RAX, genRead(variableToStoreFunctionResult, true))
-            )
-            readResultNode = IntermediateFormTreeNode.RegisterRead(Register.RAX)
-        }
+        val readResultNode: IFTNode? =
+            if (variableToStoreFunctionResult != null) IntermediateFormTreeNode.RegisterRead(Register.RAX)
+            else null
         return FunctionDetailsGenerator.FunctionCallIntermediateForm(cfgBuilder.build(), readResultNode)
     }
 
     override fun genPrologue(): ControlFlowGraph {
         val cfgBuilder = ControlFlowGraphBuilder()
 
-        // move args from Registers and Stack
-        for ((param, register) in parameters zip argPositionToRegister) {
-            cfgBuilder.addLinkFromAllFinalRoots(
-                CFGLinkType.UNCONDITIONAL,
-                genWrite(
-                    param,
-                    IntermediateFormTreeNode.RegisterRead(register),
-                    true
-                )
-            )
-        }
-        for (param in parameters.drop(argPositionToRegister.size)) {
-            cfgBuilder.addLinkFromAllFinalRoots(
-                CFGLinkType.UNCONDITIONAL,
-                genWrite(
-                    param,
-                    IntermediateFormTreeNode.StackPop(),
-                    true
-                )
-            )
-        }
-
-        // backup callee-saved registers
-        for (register in calleeSavedRegistersWithoutRSP.reversed())
-            cfgBuilder.addLinkFromAllFinalRoots(
-                CFGLinkType.UNCONDITIONAL,
-                IntermediateFormTreeNode.StackPush(IntermediateFormTreeNode.RegisterRead(register))
-            )
+        // backup rbp
+        cfgBuilder.addLinkFromAllFinalRoots(
+            CFGLinkType.UNCONDITIONAL,
+            IntermediateFormTreeNode.StackPush(IntermediateFormTreeNode.RegisterRead(Register.RBP))
+        )
 
         // update rbp
         val movRbpRsp = IntermediateFormTreeNode.RegisterWrite(
@@ -147,11 +119,47 @@ data class DefaultFunctionDetailsGenerator(
         cfgBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, savePreviousRbp)
         cfgBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, updateRbpAtDepth)
 
+        // move args from Registers and Stack
+        for ((param, register) in parameters zip argPositionToRegister) {
+            cfgBuilder.addLinkFromAllFinalRoots(
+                CFGLinkType.UNCONDITIONAL,
+                genWrite(
+                    param,
+                    IntermediateFormTreeNode.RegisterRead(register),
+                    true
+                )
+            )
+        }
+        for (param in parameters.drop(argPositionToRegister.size)) {
+            cfgBuilder.addLinkFromAllFinalRoots(
+                CFGLinkType.UNCONDITIONAL,
+                genWrite(
+                    param,
+                    IntermediateFormTreeNode.StackPop(),
+                    true
+                )
+            )
+        }
+
+        // backup callee-saved registers
+        for (register in calleeSavedRegistersWithoutRSPAndRBP.reversed())
+            cfgBuilder.addLinkFromAllFinalRoots(
+                CFGLinkType.UNCONDITIONAL,
+                IntermediateFormTreeNode.StackPush(IntermediateFormTreeNode.RegisterRead(register))
+            )
+
         return cfgBuilder.build()
     }
 
     override fun genEpilogue(): ControlFlowGraph {
         val cfgBuilder = ControlFlowGraphBuilder()
+
+        // restore callee-saved registers
+        for (register in calleeSavedRegistersWithoutRSPAndRBP)
+            cfgBuilder.addLinkFromAllFinalRoots(
+                CFGLinkType.UNCONDITIONAL,
+                IntermediateFormTreeNode.RegisterWrite(register, IntermediateFormTreeNode.StackPop())
+            )
 
         // restore previous rbp in display at depth
         val restorePreviousDisplayEntry = IntermediateFormTreeNode.MemoryWrite(
@@ -170,11 +178,17 @@ data class DefaultFunctionDetailsGenerator(
         )
         cfgBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, movRspRbp)
 
-        // restore callee-saved registers
-        for (register in calleeSavedRegistersWithoutRSP)
+        // restore rbp
+        cfgBuilder.addLinkFromAllFinalRoots(
+            CFGLinkType.UNCONDITIONAL,
+            IntermediateFormTreeNode.RegisterWrite(Register.RBP, IntermediateFormTreeNode.StackPop())
+        )
+
+        // move result to RAX
+        if (variableToStoreFunctionResult != null)
             cfgBuilder.addLinkFromAllFinalRoots(
                 CFGLinkType.UNCONDITIONAL,
-                IntermediateFormTreeNode.RegisterWrite(register, IntermediateFormTreeNode.StackPop())
+                IntermediateFormTreeNode.RegisterWrite(Register.RAX, genRead(variableToStoreFunctionResult, true))
             )
 
         return cfgBuilder.build()

@@ -77,13 +77,6 @@ class DefaultDefaultFunctionDetailsGeneratorTest {
         ) { variableToRegisterMap[it]!! }
 
         val expectedCFGBuilder = ControlFlowGraphBuilder(IntermediateFormTreeNode.Call(functionLocation))
-        expectedCFGBuilder.addLinkFromAllFinalRoots(
-            CFGLinkType.UNCONDITIONAL,
-            IntermediateFormTreeNode.RegisterWrite(
-                Register.RAX,
-                IntermediateFormTreeNode.RegisterRead(resultVariableRegister)
-            )
-        )
 
         val expectedResult = IntermediateFormTreeNode.RegisterRead(Register.RAX)
         val expected = expectedCFGBuilder.build()
@@ -129,15 +122,6 @@ class DefaultDefaultFunctionDetailsGeneratorTest {
         )
         // call
         expectedCFGBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, IntermediateFormTreeNode.Call(functionLocation))
-
-        // read result
-        expectedCFGBuilder.addLinkFromAllFinalRoots(
-            CFGLinkType.UNCONDITIONAL,
-            IntermediateFormTreeNode.RegisterWrite(
-                Register.RAX,
-                IntermediateFormTreeNode.RegisterRead(resultVariableRegister)
-            )
-        )
 
         val expectedResult = IntermediateFormTreeNode.RegisterRead(Register.RAX)
         val expected = expectedCFGBuilder.build()

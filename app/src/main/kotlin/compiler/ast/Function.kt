@@ -1,7 +1,7 @@
 package compiler.ast
 
-import compiler.lexer.LocationRange
 import compiler.common.semantic_analysis.VariablesOwner
+import compiler.lexer.LocationRange
 
 data class Function(
     val name: String,

@@ -83,15 +83,15 @@ object AstFactory {
 
         return when (child.token()) {
             TokenType.INTEGER -> Expression.NumberLiteral(
-                    (child as ParseTree.Leaf).content.let {
-                        try {
-                            it.toInt()
-                        } catch (_: NumberFormatException) {
-                            diagnostics.report(Diagnostic.InvalidNumberLiteral(it))
-                            0
-                        }
-                    },
-                    child.location,
+                (child as ParseTree.Leaf).content.let {
+                    try {
+                        it.toInt()
+                    } catch (_: NumberFormatException) {
+                        diagnostics.report(Diagnostic.InvalidNumberLiteral(it))
+                        0
+                    }
+                },
+                child.location,
             )
 
             TokenType.TRUE_CONSTANT -> Expression.BooleanLiteral(true, child.location)

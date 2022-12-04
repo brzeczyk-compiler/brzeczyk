@@ -119,9 +119,9 @@ class ExpressionParsingTest : ParserTest() {
                     mulToNum,
                     branch(
                         numParentheses,
-                        Leaf('(', expr.start.row - 1),
+                        Leaf('(', expr.location.start.row - 1),
                         expr,
-                        Leaf(')', expr.end.row + 1)
+                        Leaf(')', expr.location.end.row + 1)
                     )
                 )
             )

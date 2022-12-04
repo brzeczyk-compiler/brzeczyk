@@ -27,7 +27,7 @@ class Compiler(val diagnostics: Diagnostics) {
             val tokenSequence = lexer.process(InputImpl(input))
 
             val leaves: Sequence<ParseTree<Symbol>> = tokenSequence.filter { it.category != TokenType.TO_IGNORE } // TODO: move this transformation somewhere else
-                .map { ParseTree.Leaf(it.start, it.end, Symbol.Terminal(it.category), it.content) }
+                .map { ParseTree.Leaf(it.location, Symbol.Terminal(it.category), it.content) }
 
             val parseTree = parser.process(leaves)
 

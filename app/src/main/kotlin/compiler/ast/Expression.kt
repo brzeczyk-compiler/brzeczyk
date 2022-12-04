@@ -1,28 +1,30 @@
 package compiler.ast
 
-sealed class Expression : AstNode() {
-    data class UnitLiteral(override val location: NodeLocation? = null) : Expression()
-    data class BooleanLiteral(val value: Boolean, override val location: NodeLocation? = null) : Expression()
-    data class NumberLiteral(val value: Int, override val location: NodeLocation? = null) : Expression()
+import compiler.lexer.LocationRange
 
-    data class Variable(val name: String, override val location: NodeLocation? = null) : Expression()
+sealed class Expression : AstNode() {
+    data class UnitLiteral(override val location: LocationRange? = null) : Expression()
+    data class BooleanLiteral(val value: Boolean, override val location: LocationRange? = null) : Expression()
+    data class NumberLiteral(val value: Int, override val location: LocationRange? = null) : Expression()
+
+    data class Variable(val name: String, override val location: LocationRange? = null) : Expression()
 
     data class FunctionCall(
         val name: String,
         val arguments: List<Argument>,
-        override val location: NodeLocation? = null,
+        override val location: LocationRange? = null,
     ) : Expression() {
         data class Argument(
             val name: String?,
             val value: Expression,
-            override val location: NodeLocation? = null,
+            override val location: LocationRange? = null,
         ) : AstNode()
     }
 
     data class UnaryOperation(
         val kind: Kind,
         val operand: Expression,
-        override val location: NodeLocation? = null,
+        override val location: LocationRange? = null,
     ) : Expression() {
         enum class Kind {
             NOT,
@@ -36,7 +38,7 @@ sealed class Expression : AstNode() {
         val kind: Kind,
         val leftOperand: Expression,
         val rightOperand: Expression,
-        override val location: NodeLocation? = null,
+        override val location: LocationRange? = null,
     ) : Expression() {
         enum class Kind {
             AND,
@@ -66,6 +68,6 @@ sealed class Expression : AstNode() {
         val condition: Expression,
         val resultWhenTrue: Expression,
         val resultWhenFalse: Expression,
-        override val location: NodeLocation? = null,
+        override val location: LocationRange? = null,
     ) : Expression()
 }

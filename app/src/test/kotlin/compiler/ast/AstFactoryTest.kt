@@ -3,6 +3,7 @@ package compiler.ast
 import compiler.common.diagnostics.Diagnostic
 import compiler.common.diagnostics.Diagnostics
 import compiler.lexer.Location
+import compiler.lexer.LocationRange
 import compiler.lexer.lexer_grammar.TokenType
 import compiler.parser.ParseTree
 import compiler.parser.grammar.NonTerminalType
@@ -17,13 +18,13 @@ import kotlin.test.assertTrue
 class AstFactoryTest {
     // helper procedures
     private val dummyLocation = Location(0, 0)
-    private val dummyNodeLocation = NodeLocation(dummyLocation, dummyLocation)
+    private val dummyLocationRange = LocationRange(dummyLocation, dummyLocation)
     private val dummyDiagnostics = Diagnostics { }
 
     private fun makeNTNode(nonTerminalType: NonTerminalType, production: Production<Symbol>, vararg children: ParseTree<Symbol>): ParseTree<Symbol> =
-        ParseTree.Branch(dummyLocation, dummyLocation, Symbol.NonTerminal(nonTerminalType), children.asList(), production)
+        ParseTree.Branch(dummyLocationRange, Symbol.NonTerminal(nonTerminalType), children.asList(), production)
     private fun makeTNode(tokenType: TokenType, content: String): ParseTree<Symbol> =
-        ParseTree.Leaf(dummyLocation, dummyLocation, Symbol.Terminal(tokenType), content)
+        ParseTree.Leaf(dummyLocationRange, Symbol.Terminal(tokenType), content)
 
     private fun makeProgramWithMainFunction(vararg statements: ParseTree<Symbol>) = makeNTNode(
         NonTerminalType.PROGRAM, Productions.program,
@@ -101,8 +102,8 @@ class AstFactoryTest {
         )
         val expectedAst = Program(
             listOf(
-                Program.Global.VariableDefinition(Variable(Variable.Kind.VALUE, "moja_wartość", Type.Number, null, dummyNodeLocation), dummyNodeLocation),
-                Program.Global.VariableDefinition(Variable(Variable.Kind.VARIABLE, "moja_zmienna", Type.Boolean, null, dummyNodeLocation), dummyNodeLocation)
+                Program.Global.VariableDefinition(Variable(Variable.Kind.VALUE, "moja_wartość", Type.Number, null, dummyLocationRange), dummyLocationRange),
+                Program.Global.VariableDefinition(Variable(Variable.Kind.VARIABLE, "moja_zmienna", Type.Boolean, null, dummyLocationRange), dummyLocationRange)
             )
         )
 
@@ -148,12 +149,12 @@ class AstFactoryTest {
                     Function(
                         "poboczna",
                         listOf(
-                            Function.Parameter("x", Type.Boolean, null, dummyNodeLocation),
-                            Function.Parameter("y", Type.Number, null, dummyNodeLocation),
+                            Function.Parameter("x", Type.Boolean, null, dummyLocationRange),
+                            Function.Parameter("y", Type.Number, null, dummyLocationRange),
                         ),
-                        Type.Number, listOf(), dummyNodeLocation
+                        Type.Number, listOf(), dummyLocationRange
                     ),
-                    dummyNodeLocation
+                    dummyLocationRange
                 )
             )
         )
@@ -182,12 +183,12 @@ class AstFactoryTest {
                         listOf(),
                         Type.Unit,
                         listOf(
-                            Statement.Evaluation(Expression.NumberLiteral(42, dummyNodeLocation), dummyNodeLocation),
-                            Statement.Evaluation(Expression.BooleanLiteral(true, dummyNodeLocation), dummyNodeLocation)
+                            Statement.Evaluation(Expression.NumberLiteral(42, dummyLocationRange), dummyLocationRange),
+                            Statement.Evaluation(Expression.BooleanLiteral(true, dummyLocationRange), dummyLocationRange)
                         ),
-                        dummyNodeLocation
+                        dummyLocationRange
                     ),
-                    dummyNodeLocation
+                    dummyLocationRange
                 )
             )
         )
@@ -219,17 +220,17 @@ class AstFactoryTest {
                         Type.Unit,
                         listOf(
                             Statement.Evaluation(
-                                Expression.UnaryOperation(Expression.UnaryOperation.Kind.NOT, Expression.Variable("x", dummyNodeLocation), dummyNodeLocation),
-                                dummyNodeLocation,
+                                Expression.UnaryOperation(Expression.UnaryOperation.Kind.NOT, Expression.Variable("x", dummyLocationRange), dummyLocationRange),
+                                dummyLocationRange,
                             ),
                             Statement.Evaluation(
-                                Expression.UnaryOperation(Expression.UnaryOperation.Kind.MINUS, Expression.Variable("y", dummyNodeLocation), dummyNodeLocation),
-                                dummyNodeLocation,
+                                Expression.UnaryOperation(Expression.UnaryOperation.Kind.MINUS, Expression.Variable("y", dummyLocationRange), dummyLocationRange),
+                                dummyLocationRange,
                             )
                         ),
-                        dummyNodeLocation
+                        dummyLocationRange
                     ),
-                    dummyNodeLocation
+                    dummyLocationRange
                 )
             )
         )
@@ -269,16 +270,16 @@ class AstFactoryTest {
                             Statement.Evaluation(
                                 Expression.BinaryOperation(
                                     Expression.BinaryOperation.Kind.ADD,
-                                    Expression.BinaryOperation(Expression.BinaryOperation.Kind.ADD, Expression.Variable("x", dummyNodeLocation), Expression.Variable("y", dummyNodeLocation), dummyNodeLocation),
-                                    Expression.BinaryOperation(Expression.BinaryOperation.Kind.MULTIPLY, Expression.Variable("z", dummyNodeLocation), Expression.Variable("t", dummyNodeLocation), dummyNodeLocation),
-                                    dummyNodeLocation,
+                                    Expression.BinaryOperation(Expression.BinaryOperation.Kind.ADD, Expression.Variable("x", dummyLocationRange), Expression.Variable("y", dummyLocationRange), dummyLocationRange),
+                                    Expression.BinaryOperation(Expression.BinaryOperation.Kind.MULTIPLY, Expression.Variable("z", dummyLocationRange), Expression.Variable("t", dummyLocationRange), dummyLocationRange),
+                                    dummyLocationRange,
                                 ),
-                                dummyNodeLocation
+                                dummyLocationRange
                             )
                         ),
-                        dummyNodeLocation
+                        dummyLocationRange
                     ),
-                    dummyNodeLocation
+                    dummyLocationRange
                 )
             )
         )
@@ -308,17 +309,17 @@ class AstFactoryTest {
                         listOf(
                             Statement.Evaluation(
                                 Expression.Conditional(
-                                    Expression.Variable("x", dummyNodeLocation),
-                                    Expression.Variable("y", dummyNodeLocation),
-                                    Expression.Variable("z", dummyNodeLocation),
-                                    dummyNodeLocation,
+                                    Expression.Variable("x", dummyLocationRange),
+                                    Expression.Variable("y", dummyLocationRange),
+                                    Expression.Variable("z", dummyLocationRange),
+                                    dummyLocationRange,
                                 ),
-                                dummyNodeLocation
+                                dummyLocationRange
                             )
                         ),
-                        dummyNodeLocation
+                        dummyLocationRange
                     ),
-                    dummyNodeLocation
+                    dummyLocationRange
                 )
             )
         )
@@ -384,17 +385,17 @@ class AstFactoryTest {
                                 Expression.FunctionCall(
                                     "f",
                                     listOf(
-                                        Expression.FunctionCall.Argument(null, Expression.Variable("x", dummyNodeLocation), dummyNodeLocation),
-                                        Expression.FunctionCall.Argument("y", Expression.Variable("z", dummyNodeLocation), dummyNodeLocation),
+                                        Expression.FunctionCall.Argument(null, Expression.Variable("x", dummyLocationRange), dummyLocationRange),
+                                        Expression.FunctionCall.Argument("y", Expression.Variable("z", dummyLocationRange), dummyLocationRange),
                                     ),
-                                    dummyNodeLocation
+                                    dummyLocationRange
                                 ),
-                                dummyNodeLocation
+                                dummyLocationRange
                             )
                         ),
-                        dummyNodeLocation
+                        dummyLocationRange
                     ),
-                    dummyNodeLocation
+                    dummyLocationRange
                 )
             )
         )
@@ -458,15 +459,15 @@ class AstFactoryTest {
                         Type.Unit,
                         listOf(
                             Statement.Conditional(
-                                Expression.Variable("x", dummyNodeLocation),
-                                listOf(Statement.LoopBreak(dummyNodeLocation)),
+                                Expression.Variable("x", dummyLocationRange),
+                                listOf(Statement.LoopBreak(dummyLocationRange)),
                                 null,
-                                dummyNodeLocation,
+                                dummyLocationRange,
                             )
                         ),
-                        dummyNodeLocation
+                        dummyLocationRange
                     ),
-                    dummyNodeLocation
+                    dummyLocationRange
                 )
             )
         )
@@ -560,29 +561,29 @@ class AstFactoryTest {
                         Type.Unit,
                         listOf(
                             Statement.Conditional(
-                                Expression.BinaryOperation(Expression.BinaryOperation.Kind.EQUALS, Expression.Variable("x", dummyNodeLocation), Expression.Variable("y", dummyNodeLocation), dummyNodeLocation),
-                                listOf(Statement.LoopBreak(dummyNodeLocation)),
+                                Expression.BinaryOperation(Expression.BinaryOperation.Kind.EQUALS, Expression.Variable("x", dummyLocationRange), Expression.Variable("y", dummyLocationRange), dummyLocationRange),
+                                listOf(Statement.LoopBreak(dummyLocationRange)),
                                 listOf(
                                     Statement.Conditional(
-                                        Expression.BinaryOperation(Expression.BinaryOperation.Kind.EQUALS, Expression.Variable("y", dummyNodeLocation), Expression.Variable("x", dummyNodeLocation), dummyNodeLocation),
-                                        listOf(Statement.LoopContinuation(dummyNodeLocation)),
+                                        Expression.BinaryOperation(Expression.BinaryOperation.Kind.EQUALS, Expression.Variable("y", dummyLocationRange), Expression.Variable("x", dummyLocationRange), dummyLocationRange),
+                                        listOf(Statement.LoopContinuation(dummyLocationRange)),
                                         listOf(
                                             Statement.Conditional(
-                                                Expression.BinaryOperation(Expression.BinaryOperation.Kind.NOT_EQUALS, Expression.Variable("x", dummyNodeLocation), Expression.Variable("y", dummyNodeLocation), dummyNodeLocation),
-                                                listOf(Statement.FunctionReturn(Expression.UnitLiteral(dummyNodeLocation), dummyNodeLocation)),
-                                                listOf(Statement.FunctionReturn(Expression.Variable("z", dummyNodeLocation), dummyNodeLocation)),
-                                                dummyNodeLocation,
+                                                Expression.BinaryOperation(Expression.BinaryOperation.Kind.NOT_EQUALS, Expression.Variable("x", dummyLocationRange), Expression.Variable("y", dummyLocationRange), dummyLocationRange),
+                                                listOf(Statement.FunctionReturn(Expression.UnitLiteral(dummyLocationRange), dummyLocationRange)),
+                                                listOf(Statement.FunctionReturn(Expression.Variable("z", dummyLocationRange), dummyLocationRange)),
+                                                dummyLocationRange,
                                             )
                                         ),
-                                        dummyNodeLocation
+                                        dummyLocationRange
                                     )
                                 ),
-                                dummyNodeLocation
+                                dummyLocationRange
                             )
                         ),
-                        dummyNodeLocation
+                        dummyLocationRange
                     ),
-                    dummyNodeLocation
+                    dummyLocationRange
                 )
             )
         )

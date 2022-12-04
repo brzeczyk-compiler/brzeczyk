@@ -6,6 +6,7 @@ import compiler.common.dfa.state_dfa.DfaState
 import compiler.common.diagnostics.Diagnostic
 import compiler.common.diagnostics.Diagnostics
 import compiler.lexer.Location
+import compiler.lexer.LocationRange
 import compiler.parser.analysis.GrammarAnalysis
 import compiler.parser.grammar.AutomatonGrammar
 import compiler.parser.grammar.Grammar
@@ -111,8 +112,8 @@ class Parser<S : Comparable<S>>(
         fun shift() {
             if (input.hasNext()) {
                 lookahead = input.next()
-                lookaheadStart = lookahead!!.start
-                lookaheadEnd = lookahead!!.end
+                lookaheadStart = lookahead!!.location.start
+                lookaheadEnd = lookahead!!.location.end
             } else
                 lookahead = null
         }
@@ -151,15 +152,15 @@ class Parser<S : Comparable<S>>(
                         val end: Location
 
                         if (parsedSubtrees.isNotEmpty()) {
-                            start = parsedSubtrees.first().start
-                            end = parsedSubtrees.last().end
+                            start = parsedSubtrees.first().location.start
+                            end = parsedSubtrees.last().location.end
                         } else {
                             // An empty non-terminal symbol has (somewhat arbitrarily) the location of the next input symbol.
                             start = lookaheadStart
                             end = lookaheadEnd
                         }
 
-                        callResult = ParseTree.Branch(start, end, symbol, parsedSubtrees, action.production)
+                        callResult = ParseTree.Branch(LocationRange(start, end), symbol, parsedSubtrees, action.production)
                         callStack.removeLast()
                     }
 

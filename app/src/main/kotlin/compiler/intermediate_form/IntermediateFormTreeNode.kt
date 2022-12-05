@@ -45,8 +45,10 @@ sealed class IntermediateFormTreeNode {
     data class GreaterThan(override val left: IntermediateFormTreeNode, override val right: IntermediateFormTreeNode) : BinaryOperator(left, right)
     data class GreaterThanOrEquals(override val left: IntermediateFormTreeNode, override val right: IntermediateFormTreeNode) : BinaryOperator(left, right)
 
-    data class StackPush(val Node: IntermediateFormTreeNode) : IntermediateFormTreeNode()
+    data class StackPush(val node: IntermediateFormTreeNode) : IntermediateFormTreeNode()
     class StackPop : IntermediateFormTreeNode()
+
+    data class Call(val address: IntermediateFormTreeNode) : IntermediateFormTreeNode()
 
     // test nodes
     class NoOp : IntermediateFormTreeNode()

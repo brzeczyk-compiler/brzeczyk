@@ -186,14 +186,12 @@ object NameResolver {
                 // Expressions
 
                 is Expression.Variable -> {
-                    // TODO
-                    if (!checkVariableUsage(node.name, node) && !checkVariableUsage(node.name, node))
+                    if (!checkVariableUsage(node.name, node))
                         nameDefinitions[node] = visibleNames[node.name]!!.topVariable()
                 }
 
                 is Expression.FunctionCall -> {
-                    // TODO
-                    if (!checkFunctionUsage(node) && !checkFunctionUsage(node)) {
+                    if (!checkFunctionUsage(node)) {
                         nameDefinitions[node] = visibleNames[node.name]!!.topFunction()
                         node.arguments.forEach { analyzeNode(it, currentScope) }
                     }
@@ -233,8 +231,7 @@ object NameResolver {
                 }
 
                 is Statement.Assignment -> {
-                    // TODO
-                    if (!checkVariableUsage(node.variableName, node) && !checkVariableUsage(node.variableName, node)) {
+                    if (!checkVariableUsage(node.variableName, node)) {
                         nameDefinitions[node] = visibleNames[node.variableName]!!.topVariable()
                         analyzeNode(node.value, currentScope)
                     }

@@ -3,7 +3,7 @@ package compiler.intermediate_form
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-class UniqueIdentifierTest {
+class UniqueIdentifierFactoryTest {
     private val pref = UniqueIdentifierFactory.functionPrefix
     private val sep = UniqueIdentifierFactory.levelSeparator
     private val pol = UniqueIdentifierFactory.polishSignSymbol

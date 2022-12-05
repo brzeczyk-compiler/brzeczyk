@@ -2,15 +2,20 @@ package compiler.intermediate_form
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
-
+import kotlin.test.assertFailsWith
 class UniqueIdentifierTest {
+    private val pref = UniqueIdentifierFactory.functionPrefix
+    private val sep = UniqueIdentifierFactory.levelSeparator
+    private val pol = UniqueIdentifierFactory.polishSignSymbol
+
     @Test
     fun `test basic`() {
         val factory = UniqueIdentifierFactory()
         val curr = "no_polish_signs"
         val identifier = factory.build(null, curr)
+        val expected = "${pref}${sep}$curr"
 
-        assertEquals(curr, identifier.value)
+        assertEquals(expected, identifier.value)
     }
 
     @Test
@@ -19,8 +24,9 @@ class UniqueIdentifierTest {
         val factory = UniqueIdentifierFactory()
         val curr = "polskie_znaki_są_żeś_zaiście_świetneż"
         val identifier = factory.build(null, curr)
+        val expected = "${pref}${sep}polskie_znaki_sa#_z#es#_zais#cie_s#wietnez#"
 
-        assertEquals("polskie_znaki_sa_zes_zaiscie_swietnez", identifier.value)
+        assertEquals(expected, identifier.value)
     }
 
     @Test
@@ -29,12 +35,13 @@ class UniqueIdentifierTest {
         val curr = "no_polish_signs"
         val prefix = "some_prefix"
         val identifier = factory.build(prefix, curr)
+        val expected = "${prefix}${sep}$curr"
 
-        assertEquals(prefix + "|" + curr, identifier.value)
+        assertEquals(expected, identifier.value)
     }
 
     @Test
-    fun `test conflicts are resolved by adding underscores at the end`() {
+    fun `test identical strings with accuracy to polish signs do not cause conflicts`() {
         val factory = UniqueIdentifierFactory()
         val curr1 = "żeś"
         val curr2 = "żes"
@@ -44,9 +51,29 @@ class UniqueIdentifierTest {
         val identifier1 = factory.build(commonPrefix, curr1)
         val identifier2 = factory.build(commonPrefix, curr2)
         val identifier3 = factory.build(commonPrefix, curr3)
+        val expected1 = "${commonPrefix}${sep}z#es#"
+        val expected2 = "${commonPrefix}${sep}z#es"
+        val expected3 = "${commonPrefix}${sep}zes"
 
-        assertEquals("$commonPrefix|zes", identifier1.value)
-        assertEquals("$commonPrefix|zes_", identifier2.value)
-        assertEquals("$commonPrefix|zes__", identifier3.value)
+        assertEquals(expected1, identifier1.value)
+        assertEquals(expected2, identifier2.value)
+        assertEquals(expected3, identifier3.value)
+    }
+
+    @Test
+    fun `test illegal character throws an exception`() {
+        val factory = UniqueIdentifierFactory()
+        val curr = "mwahahaha|!-"
+        assertFailsWith(IllegalCharacter::class) { factory.build(null, curr) }
+    }
+
+    @Test
+    fun `test conflict throws an exception`() {
+        val factory = UniqueIdentifierFactory()
+        val first = "żeś"
+        val second = "żes#" // not possible with our regex for identifier token
+
+        factory.build(null, first)
+        assertFailsWith(InconsistentFunctionNamingConvention::class) { factory.build(null, second) }
     }
 }

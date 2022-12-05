@@ -26,8 +26,8 @@ class CorrectPrograms {
                 n = -0
                 n = -56789
                 n = 56789
-                n = 2147483647 // 32 bitowa ze znakiem
-                // n = -2147483648
+                n = 9223372036854775807 // 64 bitowa ze znakiem
+                // n = -9223372036854775808
 
                 zm b: Czy = prawda
                 b = fałsz

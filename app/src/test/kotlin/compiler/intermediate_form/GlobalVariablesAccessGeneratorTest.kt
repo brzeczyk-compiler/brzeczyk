@@ -68,7 +68,7 @@ class GlobalVariablesAccessGeneratorTest {
 
         assertTrue(
             (0 until 3).all { index ->
-                readNodes.filter { it == createProperMemoryRead(index * 4L) }.size == 1
+                readNodes.filter { it == createProperMemoryRead(index * GlobalVariablesAccessGenerator.VARIABLE_SIZE) }.size == 1
             }
         )
     }

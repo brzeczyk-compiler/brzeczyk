@@ -23,9 +23,9 @@ import kotlin.test.assertTrue
 internal class ArgumentResolverTest {
     private fun namedArgument(name: String?, expr: Expression) = Expression.FunctionCall.Argument(name, expr)
     private fun argument(expr: Expression) = Expression.FunctionCall.Argument(null, expr)
-    private fun intArgument(integerValue: Int) = argument(Expression.NumberLiteral(integerValue))
+    private fun intArgument(integerValue: Long) = argument(Expression.NumberLiteral(integerValue))
     private fun boolArgument(booleanValue: Boolean) = argument(Expression.BooleanLiteral(booleanValue))
-    private fun namedIntArgument(name: String, value: Int) =
+    private fun namedIntArgument(name: String, value: Long) =
         namedArgument(name, Expression.NumberLiteral(value))
     private fun namedBoolArgument(name: String, value: Boolean) =
         namedArgument(name, Expression.BooleanLiteral(value))
@@ -38,7 +38,7 @@ internal class ArgumentResolverTest {
         Statement.FunctionDefinition(Function(name, parameters, Type.Unit, body))
     private fun intParameter(name: String) = Function.Parameter(name, Type.Number, null)
     private fun boolParameter(name: String) = Function.Parameter(name, Type.Boolean, null)
-    private fun defaultIntParameter(name: String, value: Int) =
+    private fun defaultIntParameter(name: String, value: Long) =
         Function.Parameter(name, Type.Boolean, Expression.NumberLiteral(value))
     private fun defaultBoolParameter(name: String, value: Boolean) =
         Function.Parameter(name, Type.Boolean, Expression.BooleanLiteral(value))

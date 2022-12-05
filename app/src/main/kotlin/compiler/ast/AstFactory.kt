@@ -85,7 +85,7 @@ object AstFactory {
             TokenType.INTEGER -> Expression.NumberLiteral(
                 (child as ParseTree.Leaf).content.let {
                     try {
-                        it.toInt()
+                        it.toLong()
                     } catch (_: NumberFormatException) {
                         diagnostics.report(Diagnostic.InvalidNumberLiteral(it))
                         0

@@ -10,7 +10,7 @@ import compiler.semantic_analysis.VariablePropertiesAnalyzer
 class GlobalVariablesAccessGenerator(variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>) : VariableAccessGenerator {
 
     companion object {
-        const val VARIABLE_SIZE = 4
+        const val VARIABLE_SIZE = 8L
         const val GLOBALS_MEMORY_LABEL = "globals"
     }
 

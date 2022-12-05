@@ -199,11 +199,11 @@ data class DefaultFunctionDetailsGenerator(
         return cfgBuilder.build()
     }
 
-    override fun genRead(namedNode: NamedNode, isDirect: Boolean): IntermediateFormTreeNode {
-        if (isDirect) {
-            return when (variablesLocationTypes[namedNode]!!) {
+    private fun genAccess(namedNode: NamedNode, isDirect: Boolean, regAccessGenerator: (Register) -> IFTNode, memAccessGenerator: (IFTNode) -> IFTNode): IFTNode {
+        return if (isDirect) {
+            when (variablesLocationTypes[namedNode]!!) {
                 VariableLocationType.MEMORY -> {
-                    IntermediateFormTreeNode.MemoryRead(
+                    memAccessGenerator(
                         IntermediateFormTreeNode.Subtract(
                             IntermediateFormTreeNode.RegisterRead(Register.RBP),
                             IntermediateFormTreeNode.Const(variablesStackOffsets[namedNode]!!.toLong())
@@ -212,13 +212,13 @@ data class DefaultFunctionDetailsGenerator(
                 }
 
                 VariableLocationType.REGISTER ->
-                    IntermediateFormTreeNode.RegisterRead(variablesRegisters[namedNode]!!)
+                    regAccessGenerator(variablesRegisters[namedNode]!!)
             }
         } else {
             if (variablesLocationTypes[namedNode]!! == VariableLocationType.REGISTER)
                 throw IndirectRegisterAccess()
 
-            return IntermediateFormTreeNode.MemoryRead(
+            memAccessGenerator(
                 IntermediateFormTreeNode.Subtract(
                     IntermediateFormTreeNode.MemoryRead(displayElementAddress()),
                     IntermediateFormTreeNode.Const(variablesStackOffsets[namedNode]!!.toLong())
@@ -227,35 +227,11 @@ data class DefaultFunctionDetailsGenerator(
         }
     }
 
-    override fun genWrite(namedNode: NamedNode, value: IntermediateFormTreeNode, isDirect: Boolean): IntermediateFormTreeNode {
-        if (isDirect) {
-            return when (variablesLocationTypes[namedNode]!!) {
-                VariableLocationType.MEMORY -> {
-                    IntermediateFormTreeNode.MemoryWrite(
-                        IntermediateFormTreeNode.Subtract(
-                            IntermediateFormTreeNode.RegisterRead(Register.RBP),
-                            IntermediateFormTreeNode.Const(variablesStackOffsets[namedNode]!!.toLong())
-                        ),
-                        value
-                    )
-                }
+    override fun genRead(namedNode: NamedNode, isDirect: Boolean): IntermediateFormTreeNode =
+        genAccess(namedNode, isDirect, { IntermediateFormTreeNode.RegisterRead(it) }, { IntermediateFormTreeNode.MemoryRead(it) })
 
-                VariableLocationType.REGISTER ->
-                    IntermediateFormTreeNode.RegisterWrite(variablesRegisters[namedNode]!!, value)
-            }
-        } else {
-            if (variablesLocationTypes[namedNode]!! == VariableLocationType.REGISTER)
-                throw IndirectRegisterAccess()
-
-            return IntermediateFormTreeNode.MemoryWrite(
-                IntermediateFormTreeNode.Subtract(
-                    IntermediateFormTreeNode.MemoryRead(displayElementAddress()),
-                    IntermediateFormTreeNode.Const(variablesStackOffsets[namedNode]!!.toLong())
-                ),
-                value
-            )
-        }
-    }
+    override fun genWrite(namedNode: NamedNode, value: IntermediateFormTreeNode, isDirect: Boolean): IntermediateFormTreeNode =
+        genAccess(namedNode, isDirect, { IntermediateFormTreeNode.RegisterWrite(it, value) }, { IntermediateFormTreeNode.MemoryWrite(it, value) })
 
     private fun displayElementAddress(): IntermediateFormTreeNode {
         return IntermediateFormTreeNode.Add(

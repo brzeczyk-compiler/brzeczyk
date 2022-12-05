@@ -295,7 +295,12 @@ object ControlFlow {
 
         fun processFunction(function: Function) {
             val cfgBuilder = ControlFlowGraphBuilder()
-            var variableToStoreResult: Variable? = null
+            val variableToStoreResult: Variable? = if (function.returnType == Type.Unit) null else Variable(
+                Variable.Kind.VALUE,
+                "TODO",
+                function.returnType,
+                null
+            )
 
             var last = listOf<Pair<IFTNode, CFGLinkType>?>(null)
             var breaking: MutableList<Pair<IFTNode, CFGLinkType>?>? = null
@@ -405,15 +410,8 @@ object ControlFlow {
                         }
 
                         is Statement.FunctionReturn -> {
-                            if (function.returnType != Type.Unit)
-                                variableToStoreResult = Variable(
-                                    Variable.Kind.VALUE,
-                                    "TODO",
-                                    function.returnType,
-                                    null
-                                )
-
-                            addExpression(statement.value, variableToStoreResult)
+                            if (variableToStoreResult != null)
+                                addExpression(statement.value, variableToStoreResult)
                             last = emptyList()
                         }
                     }

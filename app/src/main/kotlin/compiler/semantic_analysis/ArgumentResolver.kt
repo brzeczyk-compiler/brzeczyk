@@ -1,5 +1,6 @@
 package compiler.semantic_analysis
 
+import compiler.Compiler.CompilationFailed
 import compiler.ast.Expression
 import compiler.ast.Function
 import compiler.ast.NamedNode
@@ -9,10 +10,10 @@ import compiler.ast.StatementBlock
 import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic
 import compiler.common.diagnostics.Diagnostics
-import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.ReferenceSet
-import compiler.common.reference_collections.referenceSetOf
+import compiler.common.reference_collections.referenceHashMapOf
+import compiler.common.reference_collections.referenceHashSetOf
 
 typealias ArgumentResolutionResult = ReferenceMap<Expression.FunctionCall.Argument, Function.Parameter>
 
@@ -22,9 +23,11 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
         val accessedDefaultValues: ReferenceMap<Expression.FunctionCall, ReferenceSet<Function.Parameter>>
     )
 
-    private val argumentsToParametersMap = ReferenceHashMap<Expression.FunctionCall.Argument, Function.Parameter>()
-    private val accessedDefaultValues = ReferenceHashMap<Expression.FunctionCall, ReferenceSet<Function.Parameter>>()
-    private var correctDefinitions = true
+    class ResolutionFailed : CompilationFailed()
+
+    private val argumentsToParametersMap = referenceHashMapOf<Expression.FunctionCall.Argument, Function.Parameter>()
+    private val accessedDefaultValues = referenceHashMapOf<Expression.FunctionCall, ReferenceSet<Function.Parameter>>()
+    private var failed = false
 
     companion object {
         fun calculateArgumentToParameterResolution(
@@ -35,11 +38,18 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
             val resolver = ArgumentResolver(nameResolution, diagnostics)
 
             resolver.resolveFunctionDefinitions(program)
-            if (resolver.correctDefinitions)
-                resolver.resolveFunctionCallsArguments(program)
+            resolver.resolveFunctionCallsArguments(program)
+
+            if (resolver.failed)
+                throw ResolutionFailed()
 
             return ArgumentResolutionResult(resolver.argumentsToParametersMap, resolver.accessedDefaultValues)
         }
+    }
+
+    private fun report(diagnostic: Diagnostic.ArgumentResolutionError) {
+        diagnostics.report(diagnostic)
+        failed = true
     }
 
     private fun resolveFunctionCallArguments(functionCall: Expression.FunctionCall) {
@@ -48,7 +58,7 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
             if (argument.name != null) {
                 foundNamedArgument = true
             } else if (foundNamedArgument) {
-                diagnostics.report(Diagnostic.ArgumentResolutionError.PositionalArgumentAfterNamed(functionCall))
+                report(Diagnostic.ArgumentResolutionError.PositionalArgumentAfterNamed(functionCall))
                 return
             }
         }
@@ -58,7 +68,7 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
         val isMatched = function.parameters.map { false }.toMutableList()
 
         if (functionCall.arguments.size > function.parameters.size) {
-            diagnostics.report(Diagnostic.ArgumentResolutionError.TooManyArguments(functionCall))
+            report(Diagnostic.ArgumentResolutionError.TooManyArguments(functionCall))
             return
         }
 
@@ -69,11 +79,11 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
             } else {
                 val parameterIndex = parameterNames.indexOf(argument.name)
                 if (parameterIndex == -1) {
-                    diagnostics.report(Diagnostic.ArgumentResolutionError.UnknownArgument(functionCall, argument.name))
+                    report(Diagnostic.ArgumentResolutionError.UnknownArgument(functionCall, argument.name))
                     return
                 }
                 if (isMatched[parameterIndex]) {
-                    diagnostics.report(Diagnostic.ArgumentResolutionError.RepeatedArgument(functionCall, argument.name))
+                    report(Diagnostic.ArgumentResolutionError.RepeatedArgument(functionCall, argument.name))
                     return
                 }
                 argumentsToParametersMap[argument] = function.parameters[parameterIndex]
@@ -86,13 +96,13 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
         for ((index, parameter) in function.parameters.withIndex()) {
             if (!isMatched[index]) {
                 if (parameter.defaultValue == null) {
-                    diagnostics.report(Diagnostic.ArgumentResolutionError.MissingArgument(functionCall, parameterNames[index]))
+                    report(Diagnostic.ArgumentResolutionError.MissingArgument(functionCall, parameterNames[index]))
                 } else {
                     parametersWithDefaultValue.add(parameter)
                 }
             }
         }
-        accessedDefaultValues[functionCall] = referenceSetOf(parametersWithDefaultValue)
+        accessedDefaultValues[functionCall] = referenceHashSetOf(parametersWithDefaultValue)
     }
 
     private fun resolveFunctionCallsArguments(program: Program) {
@@ -171,7 +181,7 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
 
         fun processFunction(function: Function) {
             if (defaultParametersBeforeNonDefault(function)) {
-                diagnostics.report(Diagnostic.ArgumentResolutionError.DefaultParametersNotLast(function))
+                report(Diagnostic.ArgumentResolutionError.DefaultParametersNotLast(function))
             }
 
             fun processBlock(block: StatementBlock) {

@@ -80,7 +80,7 @@ class LexerTest {
 
         val result = lexer.process(input)
 
-        val token = Token(Unit, "ab", Location(1, 1), Location(1, 2))
+        val token = Token(Unit, "ab", LocationRange(Location(1, 1), Location(1, 2)))
         assertContentEquals(sequenceOf(token), result)
     }
 
@@ -92,9 +92,9 @@ class LexerTest {
 
         val result = lexer.process(input)
 
-        val token1 = Token(1, "aa", Location(1, 1), Location(1, 2))
-        val token2 = Token(2, "ab", Location(1, 3), Location(1, 4))
-        val token3 = Token(2, "ab", Location(1, 5), Location(1, 6))
+        val token1 = Token(1, "aa", LocationRange(Location(1, 1), Location(1, 2)))
+        val token2 = Token(2, "ab", LocationRange(Location(1, 3), Location(1, 4)))
+        val token3 = Token(2, "ab", LocationRange(Location(1, 5), Location(1, 6)))
         assertContentEquals(sequenceOf(token1, token2, token3), result)
     }
 
@@ -106,8 +106,8 @@ class LexerTest {
 
         val result = lexer.process(input)
 
-        val token1 = Token(2, "aa", Location(1, 1), Location(1, 2))
-        val token2 = Token(1, "a", Location(1, 3), Location(1, 3))
+        val token1 = Token(2, "aa", LocationRange(Location(1, 1), Location(1, 2)))
+        val token2 = Token(1, "a", LocationRange(Location(1, 3), Location(1, 3)))
         assertContentEquals(sequenceOf(token1, token2), result)
     }
 
@@ -119,9 +119,9 @@ class LexerTest {
 
         val result = lexer.process(input)
 
-        val token1 = Token(1, "a", Location(1, 1), Location(1, 1))
-        val token2 = Token(1, "a", Location(1, 2), Location(1, 2))
-        val token3 = Token(1, "a", Location(1, 3), Location(1, 3))
+        val token1 = Token(1, "a", LocationRange(Location(1, 1), Location(1, 1)))
+        val token2 = Token(1, "a", LocationRange(Location(1, 2), Location(1, 2)))
+        val token3 = Token(1, "a", LocationRange(Location(1, 3), Location(1, 3)))
         assertContentEquals(sequenceOf(token1, token2, token3), result)
     }
 
@@ -135,8 +135,8 @@ class LexerTest {
         val result1 = lexer1.process(input1)
         val result2 = lexer2.process(input2)
 
-        val token1 = Token(1, "ab", Location(1, 1), Location(1, 2))
-        val token2 = Token(2, "ab", Location(1, 1), Location(1, 2))
+        val token1 = Token(1, "ab", LocationRange(Location(1, 1), Location(1, 2)))
+        val token2 = Token(2, "ab", LocationRange(Location(1, 1), Location(1, 2)))
         assertContentEquals(sequenceOf(token1), result1)
         assertContentEquals(sequenceOf(token2), result2)
     }
@@ -174,8 +174,8 @@ class LexerTest {
 
         val result = lexer.process(input)
 
-        val token1 = Token(1, "token", Location(1, 2), Location(1, 6))
-        val token2 = Token(2, "othertoken", Location(1, 8), Location(1, 17))
+        val token1 = Token(1, "token", LocationRange(Location(1, 2), Location(1, 6)))
+        val token2 = Token(2, "othertoken", LocationRange(Location(1, 8), Location(1, 17)))
         assertContentEquals(sequenceOf(token1, token2), result)
     }
 

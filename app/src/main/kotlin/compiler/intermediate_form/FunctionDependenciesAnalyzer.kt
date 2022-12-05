@@ -11,13 +11,14 @@ import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.combineReferenceSets
+import compiler.common.reference_collections.referenceHashMapOf
+import compiler.common.reference_collections.referenceHashSetOf
 import compiler.common.reference_collections.referenceKeys
-import compiler.common.reference_collections.referenceSetOf
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
 
 object FunctionDependenciesAnalyzer {
     fun createUniqueIdentifiers(program: Program): ReferenceMap<Function, UniqueIdentifier> {
-        val uniqueIdentifiers = ReferenceHashMap<Function, UniqueIdentifier>()
+        val uniqueIdentifiers = referenceHashMapOf<Function, UniqueIdentifier>()
         val identifierFactory = UniqueIdentifierFactory()
         fun nameFunction(function: Function, pathSoFar: String?): String {
             uniqueIdentifiers[function] = identifierFactory.build(pathSoFar, function.name)
@@ -43,10 +44,11 @@ object FunctionDependenciesAnalyzer {
         program: Program,
         variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>
     ): ReferenceMap<Function, FunctionDetailsGenerator> {
-        val result = ReferenceHashMap<Function, FunctionDetailsGenerator>()
+
+        val result = referenceHashMapOf<Function, FunctionDetailsGenerator>()
 
         fun createDetailsGenerator(function: Function, depth: ULong) {
-            val variables = ReferenceHashMap<NamedNode, Boolean>()
+            val variables = referenceHashMapOf<NamedNode, Boolean>()
             variableProperties
                 .filter { (_, properties) -> properties.owner === function }
                 .forEach { (variable, properties) ->
@@ -84,18 +86,18 @@ object FunctionDependenciesAnalyzer {
 
     fun createCallGraph(ast: Program, nameResolution: ReferenceMap<Any, NamedNode>): ReferenceMap<Function, ReferenceSet<Function>> {
 
-        val functionCalls: ReferenceHashMap<Function, ReferenceSet<Function>> = ReferenceHashMap()
+        val functionCalls = referenceHashMapOf<Function, ReferenceSet<Function>>()
 
         fun getCalledFunctions(global: Program.Global): ReferenceSet<Function> {
             fun getCalledFunctions(expression: Expression?): ReferenceSet<Function> = when (expression) {
-                is Expression.BooleanLiteral -> referenceSetOf()
-                is Expression.NumberLiteral -> referenceSetOf()
-                is Expression.UnitLiteral -> referenceSetOf()
-                is Expression.Variable -> referenceSetOf()
-                null -> referenceSetOf()
+                is Expression.BooleanLiteral -> referenceHashSetOf()
+                is Expression.NumberLiteral -> referenceHashSetOf()
+                is Expression.UnitLiteral -> referenceHashSetOf()
+                is Expression.Variable -> referenceHashSetOf()
+                null -> referenceHashSetOf()
 
                 is Expression.FunctionCall -> combineReferenceSets(
-                    referenceSetOf(nameResolution[expression] as Function),
+                    referenceHashSetOf(nameResolution[expression] as Function),
                     combineReferenceSets(expression.arguments.map { getCalledFunctions(it.value) }),
                 )
 
@@ -115,11 +117,11 @@ object FunctionDependenciesAnalyzer {
 
             fun getCalledFunctions(statement: Statement): ReferenceSet<Function> {
                 fun getCalledFunctions(list: List<Statement>?): ReferenceSet<Function> =
-                    if (list === null) referenceSetOf() else combineReferenceSets(list.map { getCalledFunctions(it) })
+                    if (list === null) referenceHashSetOf() else combineReferenceSets(list.map { getCalledFunctions(it) })
 
                 return when (statement) {
-                    is Statement.LoopBreak -> referenceSetOf()
-                    is Statement.LoopContinuation -> referenceSetOf()
+                    is Statement.LoopBreak -> referenceHashSetOf()
+                    is Statement.LoopContinuation -> referenceHashSetOf()
 
                     is Statement.FunctionDefinition -> {
                         functionCalls[statement.function] = getCalledFunctions(statement.function.body)
@@ -150,11 +152,11 @@ object FunctionDependenciesAnalyzer {
             }
 
             return when (global) {
-                is Program.Global.VariableDefinition -> referenceSetOf()
+                is Program.Global.VariableDefinition -> referenceHashSetOf()
 
                 is Program.Global.FunctionDefinition -> {
                     functionCalls[global.function] = combineReferenceSets(global.function.body.map { getCalledFunctions(it) })
-                    return referenceSetOf()
+                    return referenceHashSetOf()
                 }
             }
         }
@@ -170,7 +172,7 @@ object FunctionDependenciesAnalyzer {
 
         repeat(allFunctions.size) {
             previousPartialTransitiveFunctionCalls = nextPartialTransitiveFunctionCalls
-            nextPartialTransitiveFunctionCalls = ReferenceHashMap()
+            nextPartialTransitiveFunctionCalls = referenceHashMapOf()
             allFunctions.forEach {
                 nextPartialTransitiveFunctionCalls[it] = combineReferenceSets(
                     previousPartialTransitiveFunctionCalls[it]!!,

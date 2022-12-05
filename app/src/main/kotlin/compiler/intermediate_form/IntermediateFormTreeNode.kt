@@ -1,18 +1,19 @@
 package compiler.intermediate_form
 
 import compiler.ast.Function
-import compiler.ast.Variable
+import compiler.ast.NamedNode
 
 sealed class IntermediateFormTreeNode {
     companion object {
         const val UNIT_VALUE: Long = 0
     }
 
-    data class MemoryRead(val address: Addressing) : IntermediateFormTreeNode()
+    data class MemoryRead(val address: IntermediateFormTreeNode) : IntermediateFormTreeNode()
+    data class MemoryLabel(val label: String) : IntermediateFormTreeNode()
     data class RegisterRead(val register: Register) : IntermediateFormTreeNode()
     data class Const(val value: Long) : IntermediateFormTreeNode()
 
-    data class MemoryWrite(val address: MemoryAddress, val node: IntermediateFormTreeNode) : IntermediateFormTreeNode()
+    data class MemoryWrite(val address: IntermediateFormTreeNode, val value: IntermediateFormTreeNode) : IntermediateFormTreeNode()
     data class RegisterWrite(val register: Register, val node: IntermediateFormTreeNode) : IntermediateFormTreeNode()
 
     sealed class BinaryOperator(open val left: IntermediateFormTreeNode, open val right: IntermediateFormTreeNode) : IntermediateFormTreeNode()
@@ -44,13 +45,15 @@ sealed class IntermediateFormTreeNode {
     data class GreaterThan(override val left: IntermediateFormTreeNode, override val right: IntermediateFormTreeNode) : BinaryOperator(left, right)
     data class GreaterThanOrEquals(override val left: IntermediateFormTreeNode, override val right: IntermediateFormTreeNode) : BinaryOperator(left, right)
 
-    data class StackPush(val Node: IntermediateFormTreeNode) : IntermediateFormTreeNode()
+    data class StackPush(val node: IntermediateFormTreeNode) : IntermediateFormTreeNode()
     class StackPop : IntermediateFormTreeNode()
+
+    data class Call(val address: IntermediateFormTreeNode) : IntermediateFormTreeNode()
 
     // test nodes
     class NoOp : IntermediateFormTreeNode()
-    data class DummyRead(val variable: Variable, val isDirect: Boolean) : IntermediateFormTreeNode()
-    data class DummyWrite(val variable: Variable, val value: IntermediateFormTreeNode, val isDirect: Boolean) : IntermediateFormTreeNode()
+    data class DummyRead(val namedNode: NamedNode, val isDirect: Boolean, val isGlobal: Boolean = false) : IntermediateFormTreeNode()
+    data class DummyWrite(val namedNode: NamedNode, val value: IntermediateFormTreeNode, val isDirect: Boolean, val isGlobal: Boolean = false) : IntermediateFormTreeNode()
     class DummyCallResult : IntermediateFormTreeNode()
     data class DummyCall(val function: Function, val args: List<IntermediateFormTreeNode>, val callResult: DummyCallResult) : IntermediateFormTreeNode()
 }

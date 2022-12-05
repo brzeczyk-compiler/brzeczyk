@@ -166,7 +166,7 @@ class DefaultDefaultFunctionDetailsGeneratorTest {
         assertEquals(Register.RBP, (left as IntermediateFormTreeNode.RegisterRead).register)
 
         assertTrue { right is IntermediateFormTreeNode.Const }
-        assertEquals(0, (right as IntermediateFormTreeNode.Const).value)
+        assertEquals(memoryUnitSize.toLong(), (right as IntermediateFormTreeNode.Const).value)
     }
 
     @Test
@@ -174,7 +174,7 @@ class DefaultDefaultFunctionDetailsGeneratorTest {
         val memVar: Variable = Variable(Variable.Kind.VALUE, "memVar", Type.Number, null)
         val displayAddress = IntermediateFormTreeNode.MemoryLabel("display")
         val depth: ULong = 5u
-        val displayElementAddress = IntermediateFormTreeNode.Subtract(
+        val displayElementAddress = IntermediateFormTreeNode.Add(
             displayAddress,
             IntermediateFormTreeNode.Const((memoryUnitSize * depth).toLong())
         )
@@ -198,10 +198,11 @@ class DefaultDefaultFunctionDetailsGeneratorTest {
         val left = (readMemVar.address as IntermediateFormTreeNode.Subtract).left
         val right = (readMemVar.address as IntermediateFormTreeNode.Subtract).right
 
+        println(left)
         assertEquals(IntermediateFormTreeNode.MemoryRead(displayElementAddress), left)
 
         assertTrue { right is IntermediateFormTreeNode.Const }
-        assertEquals(0, (right as IntermediateFormTreeNode.Const).value)
+        assertEquals(memoryUnitSize.toLong(), (right as IntermediateFormTreeNode.Const).value)
     }
 
     @Test
@@ -235,7 +236,7 @@ class DefaultDefaultFunctionDetailsGeneratorTest {
             IntermediateFormTreeNode.Const(0)
         )
 
-        assertFailsWith<DefaultFunctionDetailsGenerator.IndirectReadFromOrWriteToRegister> { fdg.genRead(regVar, false) }
+        assertFailsWith<DefaultFunctionDetailsGenerator.IndirectRegisterAccess> { fdg.genRead(regVar, false) }
     }
 
     @Test
@@ -267,7 +268,7 @@ class DefaultDefaultFunctionDetailsGeneratorTest {
         assertEquals(Register.RBP, (left as IntermediateFormTreeNode.RegisterRead).register)
 
         assertTrue { right is IntermediateFormTreeNode.Const }
-        assertEquals(0, (right as IntermediateFormTreeNode.Const).value)
+        assertEquals(memoryUnitSize.toLong(), (right as IntermediateFormTreeNode.Const).value)
     }
 
     @Test
@@ -275,7 +276,7 @@ class DefaultDefaultFunctionDetailsGeneratorTest {
         val memVar: Variable = Variable(Variable.Kind.VALUE, "memVar", Type.Number, null)
         val displayAddress = IntermediateFormTreeNode.MemoryLabel("display")
         val depth: ULong = 5u
-        val displayElementAddress = IntermediateFormTreeNode.Subtract(
+        val displayElementAddress = IntermediateFormTreeNode.Add(
             displayAddress,
             IntermediateFormTreeNode.Const((memoryUnitSize * depth).toLong())
         )
@@ -304,7 +305,7 @@ class DefaultDefaultFunctionDetailsGeneratorTest {
         assertEquals(IntermediateFormTreeNode.MemoryRead(displayElementAddress), left)
 
         assertTrue { right is IntermediateFormTreeNode.Const }
-        assertEquals(0, (right as IntermediateFormTreeNode.Const).value)
+        assertEquals(memoryUnitSize.toLong(), (right as IntermediateFormTreeNode.Const).value)
     }
 
     @Test
@@ -341,6 +342,6 @@ class DefaultDefaultFunctionDetailsGeneratorTest {
         )
 
         val value = IntermediateFormTreeNode.Const(1)
-        assertFailsWith<DefaultFunctionDetailsGenerator.IndirectReadFromOrWriteToRegister> { fdg.genWrite(regVar, value, false) }
+        assertFailsWith<DefaultFunctionDetailsGenerator.IndirectRegisterAccess> { fdg.genWrite(regVar, value, false) }
     }
 }

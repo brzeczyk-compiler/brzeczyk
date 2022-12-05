@@ -34,8 +34,8 @@ data class DefaultFunctionDetailsGenerator(
         for ((variable, locationType) in variablesLocationTypes.entries) {
             when (locationType) {
                 VariableLocationType.MEMORY -> {
-                    variablesStackOffsets[variable] = variablesTotalOffset
                     variablesTotalOffset += memoryUnitSize
+                    variablesStackOffsets[variable] = variablesTotalOffset
                 }
 
                 VariableLocationType.REGISTER -> {
@@ -115,18 +115,10 @@ data class DefaultFunctionDetailsGenerator(
         // update display
         val savePreviousRbp = IntermediateFormTreeNode.RegisterWrite(
             previousDisplayEntryRegister,
-            IntermediateFormTreeNode.MemoryRead(
-                IntermediateFormTreeNode.Subtract(
-                    displayAddress,
-                    IntermediateFormTreeNode.Const((memoryUnitSize * depth).toLong())
-                )
-            )
+            IntermediateFormTreeNode.MemoryRead(displayElementAddress())
         )
         val updateRbpAtDepth = IntermediateFormTreeNode.MemoryWrite(
-            IntermediateFormTreeNode.Subtract(
-                displayAddress,
-                IntermediateFormTreeNode.Const((memoryUnitSize * depth).toLong())
-            ),
+            displayElementAddress(),
             IntermediateFormTreeNode.RegisterRead(Register.RBP)
         )
         cfgBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, savePreviousRbp)
@@ -179,10 +171,7 @@ data class DefaultFunctionDetailsGenerator(
 
         // restore previous rbp in display at depth
         val restorePreviousDisplayEntry = IntermediateFormTreeNode.MemoryWrite(
-            IntermediateFormTreeNode.Subtract(
-                displayAddress,
-                IntermediateFormTreeNode.Const((memoryUnitSize * depth).toLong())
-            ),
+            displayElementAddress(),
             IntermediateFormTreeNode.RegisterRead(previousDisplayEntryRegister)
         )
         cfgBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, restorePreviousDisplayEntry)
@@ -227,15 +216,11 @@ data class DefaultFunctionDetailsGenerator(
             }
         } else {
             if (variablesLocationTypes[namedNode]!! == VariableLocationType.REGISTER)
-                throw IndirectReadFromOrWriteToRegister()
+                throw IndirectRegisterAccess()
 
-            val displayElementAddress = IntermediateFormTreeNode.Subtract(
-                displayAddress,
-                IntermediateFormTreeNode.Const((memoryUnitSize * depth).toLong())
-            )
             return IntermediateFormTreeNode.MemoryRead(
                 IntermediateFormTreeNode.Subtract(
-                    IntermediateFormTreeNode.MemoryRead(displayElementAddress),
+                    IntermediateFormTreeNode.MemoryRead(displayElementAddress()),
                     IntermediateFormTreeNode.Const(variablesStackOffsets[namedNode]!!.toLong())
                 )
             )
@@ -260,15 +245,11 @@ data class DefaultFunctionDetailsGenerator(
             }
         } else {
             if (variablesLocationTypes[namedNode]!! == VariableLocationType.REGISTER)
-                throw IndirectReadFromOrWriteToRegister()
+                throw IndirectRegisterAccess()
 
-            val displayElementAddress = IntermediateFormTreeNode.Subtract(
-                displayAddress,
-                IntermediateFormTreeNode.Const((memoryUnitSize * depth).toLong())
-            )
             return IntermediateFormTreeNode.MemoryWrite(
                 IntermediateFormTreeNode.Subtract(
-                    IntermediateFormTreeNode.MemoryRead(displayElementAddress),
+                    IntermediateFormTreeNode.MemoryRead(displayElementAddress()),
                     IntermediateFormTreeNode.Const(variablesStackOffsets[namedNode]!!.toLong())
                 ),
                 value
@@ -276,5 +257,12 @@ data class DefaultFunctionDetailsGenerator(
         }
     }
 
-    class IndirectReadFromOrWriteToRegister : Exception()
+    private fun displayElementAddress(): IntermediateFormTreeNode {
+        return IntermediateFormTreeNode.Add(
+            displayAddress,
+            IntermediateFormTreeNode.Const((memoryUnitSize * depth).toLong())
+        )
+    }
+
+    class IndirectRegisterAccess : Exception()
 }

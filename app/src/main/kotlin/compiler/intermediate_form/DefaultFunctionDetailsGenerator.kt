@@ -3,7 +3,7 @@ package compiler.intermediate_form
 import compiler.ast.NamedNode
 import compiler.ast.Variable
 import compiler.common.intermediate_form.FunctionDetailsGenerator
-import compiler.common.reference_collections.ReferenceHashMap
+import compiler.common.reference_collections.referenceHashMapOf
 
 enum class VariableLocationType {
     MEMORY,
@@ -25,8 +25,8 @@ data class DefaultFunctionDetailsGenerator(
     val createRegisterFor: (NamedNode) -> Register = { Register() } // for testing
 ) : FunctionDetailsGenerator {
 
-    private val variablesStackOffsets: MutableMap<NamedNode, ULong> = ReferenceHashMap()
-    private val variablesRegisters: MutableMap<NamedNode, Register> = ReferenceHashMap()
+    private val variablesStackOffsets: MutableMap<NamedNode, ULong> = referenceHashMapOf()
+    private val variablesRegisters: MutableMap<NamedNode, Register> = referenceHashMapOf()
     private var variablesTotalOffset: ULong = 0u
     private val previousDisplayEntryRegister = Register()
 

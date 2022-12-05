@@ -85,7 +85,7 @@ class Lexer<TCat>(
             } else {
                 val tokenContent = buffer.dropLast(excess).toString()
                 addToContext(tokenContent)
-                yield(Token(tokenCategory, tokenContent, tokenStart, tokenEnd))
+                yield(Token(tokenCategory, tokenContent, LocationRange(tokenStart, tokenEnd)))
             }
         }
     }

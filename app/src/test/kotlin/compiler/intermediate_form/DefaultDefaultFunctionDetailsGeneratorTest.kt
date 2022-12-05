@@ -1,6 +1,7 @@
 package compiler.intermediate_form
 
 import compiler.ast.Function
+import compiler.ast.NamedNode
 import compiler.ast.Type
 import compiler.ast.Variable
 import kotlin.test.Test
@@ -87,7 +88,7 @@ class DefaultDefaultFunctionDetailsGeneratorTest {
 
     @Test
     fun `test genCall for 8 argument, Number return function`() {
-        val params = (0..7).map { Function.Parameter(it.toString(), Type.Number, null) }.toList()
+        val params: List<NamedNode> = (0..7).map { Function.Parameter(it.toString(), Type.Number, null) }.toList()
         val variableToRegisterMap = params.associateWith { Register() } + mapOf(resultDummyVariable to resultVariableRegister)
         val variablesLocation = params.associateWith { VariableLocationType.REGISTER } + mapOf(resultDummyVariable to VariableLocationType.REGISTER)
 

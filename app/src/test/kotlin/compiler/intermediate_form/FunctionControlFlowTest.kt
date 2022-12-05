@@ -10,21 +10,20 @@ import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic
 import compiler.common.diagnostics.Diagnostic.ControlFlowDiagnostic
 import compiler.common.reference_collections.ReferenceHashMap
-import compiler.common.reference_collections.referenceMapOf
-import kotlin.test.Ignore
+import compiler.common.reference_collections.referenceHashMapOf
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 
 class FunctionControlFlowTest {
-    private val expressionNodes = ReferenceHashMap<Expression, ReferenceHashMap<Variable?, IFTNode>>()
-    private val nameResolution = ReferenceHashMap<Any, NamedNode>()
-    private val defaultParameterValues = ReferenceHashMap<Function.Parameter, Variable>()
+    private val expressionNodes = referenceHashMapOf<Expression, ReferenceHashMap<Variable?, IFTNode>>()
+    private val nameResolution = referenceHashMapOf<Any, NamedNode>()
+    private val defaultParameterValues = referenceHashMapOf<Function.Parameter, Variable>()
     private val diagnostics = mutableListOf<Diagnostic>()
 
     private fun addExpressionNode(expression: Expression, variable: Variable?): IFTNode {
         val node = IntermediateFormTreeNode.NoOp()
-        expressionNodes.putIfAbsent(expression, ReferenceHashMap())
+        expressionNodes.putIfAbsent(expression, referenceHashMapOf())
         expressionNodes[expression]!![variable] = node
         return node
     }
@@ -32,7 +31,7 @@ class FunctionControlFlowTest {
     private fun getExpressionCFG(expression: Expression, variable: Variable?, function: Function): ControlFlowGraph {
         val node = expressionNodes[expression]?.get(variable)
         val nodeList = node?.let { listOf(it) } ?: emptyList()
-        return ControlFlowGraph(nodeList, node, referenceMapOf(), referenceMapOf(), referenceMapOf())
+        return ControlFlowGraph(nodeList, node, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
     }
 
     private fun test(program: Program) = ControlFlow.createGraphForEachFunction(
@@ -52,8 +51,8 @@ class FunctionControlFlowTest {
 
         val result = test(program)
 
-        val cfg = ControlFlowGraph(listOf(), null, referenceMapOf(), referenceMapOf(), referenceMapOf())
-        assertEquals(referenceMapOf(function to cfg), result)
+        val cfg = ControlFlowGraph(listOf(), null, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
+        assertEquals(referenceHashMapOf(function to cfg), result)
     }
 
     // czynność f() { 123 }
@@ -69,8 +68,8 @@ class FunctionControlFlowTest {
 
         val result = test(program)
 
-        val cfg = ControlFlowGraph(listOf(node), node, referenceMapOf(), referenceMapOf(), referenceMapOf())
-        assertEquals(referenceMapOf(function to cfg), result)
+        val cfg = ControlFlowGraph(listOf(node), node, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
+        assertEquals(referenceHashMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -95,12 +94,12 @@ class FunctionControlFlowTest {
         val cfg = ControlFlowGraph(
             listOf(node1, node2),
             node1,
-            referenceMapOf(node1 to node2),
-            referenceMapOf(),
-            referenceMapOf()
+            referenceHashMapOf(node1 to node2),
+            referenceHashMapOf(),
+            referenceHashMapOf()
         )
 
-        assertEquals(referenceMapOf(function to cfg), result)
+        assertEquals(referenceHashMapOf(function to cfg), result)
     }
 
     // czynność f() { wart x: Liczba = 123 }
@@ -117,8 +116,8 @@ class FunctionControlFlowTest {
 
         val result = test(program)
 
-        val cfg = ControlFlowGraph(listOf(node), node, referenceMapOf(), referenceMapOf(), referenceMapOf())
-        assertEquals(referenceMapOf(function to cfg), result)
+        val cfg = ControlFlowGraph(listOf(node), node, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
+        assertEquals(referenceHashMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -140,9 +139,9 @@ class FunctionControlFlowTest {
 
         val result = test(program)
 
-        val cfg = ControlFlowGraph(listOf(node), node, referenceMapOf(), referenceMapOf(), referenceMapOf())
-        val nestedCfg = ControlFlowGraph(listOf(), null, referenceMapOf(), referenceMapOf(), referenceMapOf())
-        assertEquals(referenceMapOf(function to cfg, nestedFunction to nestedCfg), result)
+        val cfg = ControlFlowGraph(listOf(node), node, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
+        val nestedCfg = ControlFlowGraph(listOf(), null, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
+        assertEquals(referenceHashMapOf(function to cfg, nestedFunction to nestedCfg), result)
     }
 
     // czynność f() {
@@ -164,8 +163,8 @@ class FunctionControlFlowTest {
 
         val result = test(program)
 
-        val cfg = ControlFlowGraph(listOf(node), node, referenceMapOf(), referenceMapOf(), referenceMapOf())
-        assertEquals(referenceMapOf(function to cfg), result)
+        val cfg = ControlFlowGraph(listOf(node), node, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
+        assertEquals(referenceHashMapOf(function to cfg), result)
     }
 
     // czynność f() { { 123 } }
@@ -182,8 +181,8 @@ class FunctionControlFlowTest {
 
         val result = test(program)
 
-        val cfg = ControlFlowGraph(listOf(node), node, referenceMapOf(), referenceMapOf(), referenceMapOf())
-        assertEquals(referenceMapOf(function to cfg), result)
+        val cfg = ControlFlowGraph(listOf(node), node, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
+        assertEquals(referenceHashMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -211,12 +210,12 @@ class FunctionControlFlowTest {
         val cfg = ControlFlowGraph(
             listOf(node1, node2, node3),
             node1,
-            referenceMapOf(node2 to node3),
-            referenceMapOf(node1 to node2),
-            referenceMapOf(node1 to node3)
+            referenceHashMapOf(node2 to node3),
+            referenceHashMapOf(node1 to node2),
+            referenceHashMapOf(node1 to node3)
         )
 
-        assertEquals(referenceMapOf(function to cfg), result)
+        assertEquals(referenceHashMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -248,12 +247,12 @@ class FunctionControlFlowTest {
         val cfg = ControlFlowGraph(
             listOf(node1, node2, node3, node4),
             node1,
-            referenceMapOf(node2 to node4, node3 to node4),
-            referenceMapOf(node1 to node2),
-            referenceMapOf(node1 to node3)
+            referenceHashMapOf(node2 to node4, node3 to node4),
+            referenceHashMapOf(node1 to node2),
+            referenceHashMapOf(node1 to node3)
         )
 
-        assertEquals(referenceMapOf(function to cfg), result)
+        assertEquals(referenceHashMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -281,12 +280,12 @@ class FunctionControlFlowTest {
         val cfg = ControlFlowGraph(
             listOf(node1, node2, node3),
             node1,
-            referenceMapOf(node2 to node1),
-            referenceMapOf(node1 to node2),
-            referenceMapOf(node1 to node3)
+            referenceHashMapOf(node2 to node1),
+            referenceHashMapOf(node1 to node2),
+            referenceHashMapOf(node1 to node3)
         )
 
-        assertEquals(referenceMapOf(function to cfg), result)
+        assertEquals(referenceHashMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -305,7 +304,7 @@ class FunctionControlFlowTest {
         val value2 = Expression.NumberLiteral(456)
         val evaluation1 = Statement.Evaluation(value1)
         val evaluation2 = Statement.Evaluation(value2)
-        val conditional = Statement.Conditional(condition2, listOf(Statement.LoopBreak), null)
+        val conditional = Statement.Conditional(condition2, listOf(Statement.LoopBreak()), null)
         val loop = Statement.Loop(condition1, listOf(conditional, evaluation1))
         val function = Function("f", listOf(), Type.Unit, listOf(loop, evaluation2))
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
@@ -320,12 +319,12 @@ class FunctionControlFlowTest {
         val cfg = ControlFlowGraph(
             listOf(node1, node2, node3, node4),
             node1,
-            referenceMapOf(node3 to node1),
-            referenceMapOf(node1 to node2, node2 to node4),
-            referenceMapOf(node1 to node4, node2 to node3)
+            referenceHashMapOf(node3 to node1),
+            referenceHashMapOf(node1 to node2, node2 to node4),
+            referenceHashMapOf(node1 to node4, node2 to node3)
         )
 
-        assertEquals(referenceMapOf(function to cfg), result)
+        assertEquals(referenceHashMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -344,7 +343,7 @@ class FunctionControlFlowTest {
         val value2 = Expression.NumberLiteral(456)
         val evaluation1 = Statement.Evaluation(value1)
         val evaluation2 = Statement.Evaluation(value2)
-        val conditional = Statement.Conditional(condition2, listOf(Statement.LoopContinuation), null)
+        val conditional = Statement.Conditional(condition2, listOf(Statement.LoopContinuation()), null)
         val loop = Statement.Loop(condition1, listOf(conditional, evaluation1))
         val function = Function("f", listOf(), Type.Unit, listOf(loop, evaluation2))
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
@@ -359,12 +358,12 @@ class FunctionControlFlowTest {
         val cfg = ControlFlowGraph(
             listOf(node1, node2, node3, node4),
             node1,
-            referenceMapOf(node3 to node1),
-            referenceMapOf(node1 to node2, node2 to node1),
-            referenceMapOf(node1 to node4, node2 to node3)
+            referenceHashMapOf(node3 to node1),
+            referenceHashMapOf(node1 to node2, node2 to node1),
+            referenceHashMapOf(node1 to node4, node2 to node3)
         )
 
-        assertEquals(referenceMapOf(function to cfg), result)
+        assertEquals(referenceHashMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -385,8 +384,8 @@ class FunctionControlFlowTest {
         val value2 = Expression.NumberLiteral(456)
         val evaluation1 = Statement.Evaluation(value1)
         val evaluation2 = Statement.Evaluation(value2)
-        val conditional1 = Statement.Conditional(condition2, listOf(Statement.LoopBreak), null)
-        val conditional2 = Statement.Conditional(condition3, listOf(Statement.LoopContinuation), null)
+        val conditional1 = Statement.Conditional(condition2, listOf(Statement.LoopBreak()), null)
+        val conditional2 = Statement.Conditional(condition3, listOf(Statement.LoopContinuation()), null)
         val loop = Statement.Loop(condition1, listOf(conditional1, conditional2, evaluation1))
         val function = Function("f", listOf(), Type.Unit, listOf(loop, evaluation2))
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
@@ -402,12 +401,12 @@ class FunctionControlFlowTest {
         val cfg = ControlFlowGraph(
             listOf(node1, node2, node3, node4, node5),
             node1,
-            referenceMapOf(node4 to node1),
-            referenceMapOf(node1 to node2, node2 to node5, node3 to node1),
-            referenceMapOf(node1 to node5, node2 to node3, node3 to node4)
+            referenceHashMapOf(node4 to node1),
+            referenceHashMapOf(node1 to node2, node2 to node5, node3 to node1),
+            referenceHashMapOf(node1 to node5, node2 to node3, node3 to node4)
         )
 
-        assertEquals(referenceMapOf(function to cfg), result)
+        assertEquals(referenceHashMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -435,10 +434,10 @@ class FunctionControlFlowTest {
         val value2 = Expression.NumberLiteral(456)
         val evaluation1 = Statement.Evaluation(value1)
         val evaluation2 = Statement.Evaluation(value2)
-        val conditional1 = Statement.Conditional(condition2, listOf(Statement.LoopContinuation), null)
-        val conditional2 = Statement.Conditional(condition4, listOf(Statement.LoopContinuation), null)
-        val conditional3 = Statement.Conditional(condition5, listOf(Statement.LoopBreak), null)
-        val conditional4 = Statement.Conditional(condition6, listOf(Statement.LoopBreak), null)
+        val conditional1 = Statement.Conditional(condition2, listOf(Statement.LoopContinuation()), null)
+        val conditional2 = Statement.Conditional(condition4, listOf(Statement.LoopContinuation()), null)
+        val conditional3 = Statement.Conditional(condition5, listOf(Statement.LoopBreak()), null)
+        val conditional4 = Statement.Conditional(condition6, listOf(Statement.LoopBreak()), null)
         val loop2 = Statement.Loop(condition3, listOf(conditional2, conditional3, evaluation1))
         val loop1 = Statement.Loop(condition1, listOf(conditional1, loop2, conditional4))
         val function = Function("f", listOf(), Type.Unit, listOf(loop1, evaluation2))
@@ -458,12 +457,12 @@ class FunctionControlFlowTest {
         val cfg = ControlFlowGraph(
             listOf(node1, node2, node3, node4, node5, node6, node7, node8),
             node1,
-            referenceMapOf(node6 to node3),
-            referenceMapOf(node1 to node2, node2 to node1, node3 to node4, node4 to node3, node5 to node7, node7 to node8),
-            referenceMapOf(node1 to node8, node2 to node3, node3 to node7, node4 to node5, node5 to node6, node7 to node1)
+            referenceHashMapOf(node6 to node3),
+            referenceHashMapOf(node1 to node2, node2 to node1, node3 to node4, node4 to node3, node5 to node7, node7 to node8),
+            referenceHashMapOf(node1 to node8, node2 to node3, node3 to node7, node4 to node5, node5 to node6, node7 to node1)
         )
 
-        assertEquals(referenceMapOf(function to cfg), result)
+        assertEquals(referenceHashMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -471,11 +470,11 @@ class FunctionControlFlowTest {
     //     123
     // }
 
-    @Ignore @Test
+    @Test
     fun `function return`() {
         val condition = Expression.BooleanLiteral(true)
         val value = Expression.NumberLiteral(123)
-        val functionReturn = Statement.FunctionReturn(Expression.UnitLiteral)
+        val functionReturn = Statement.FunctionReturn(Expression.UnitLiteral())
         val conditional = Statement.Conditional(condition, listOf(functionReturn), null)
         val evaluation = Statement.Evaluation(value)
         val function = Function("f", listOf(), Type.Unit, listOf(conditional, evaluation))
@@ -489,19 +488,19 @@ class FunctionControlFlowTest {
         val cfg = ControlFlowGraph(
             listOf(node1, node2),
             node1,
-            referenceMapOf(),
-            referenceMapOf(),
-            referenceMapOf(node1 to node2)
+            referenceHashMapOf(),
+            referenceHashMapOf(),
+            referenceHashMapOf(node1 to node2)
         )
 
-        assertEquals(referenceMapOf(function to cfg), result)
+        assertEquals(referenceHashMapOf(function to cfg), result)
     }
 
     // czynność f() { przerwij }
 
     @Test
     fun `break outside of loop`() {
-        val loopBreak = Statement.LoopBreak
+        val loopBreak = Statement.LoopBreak()
         val function = Function("f", listOf(), Type.Unit, listOf(loopBreak))
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
@@ -514,7 +513,7 @@ class FunctionControlFlowTest {
 
     @Test
     fun `continuation outside of loop`() {
-        val loopContinuation = Statement.LoopContinuation
+        val loopContinuation = Statement.LoopContinuation()
         val function = Function("f", listOf(), Type.Unit, listOf(loopContinuation))
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
@@ -531,7 +530,7 @@ class FunctionControlFlowTest {
     @Test
     fun `unreachable statement because of return`() {
         val value = Expression.NumberLiteral(123)
-        val functionReturn = Statement.FunctionReturn(Expression.UnitLiteral)
+        val functionReturn = Statement.FunctionReturn(Expression.UnitLiteral())
         val evaluation = Statement.Evaluation(value)
         val function = Function("f", listOf(), Type.Unit, listOf(functionReturn, evaluation))
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
@@ -555,7 +554,7 @@ class FunctionControlFlowTest {
         val condition = Expression.BooleanLiteral(false)
         val value = Expression.NumberLiteral(123)
         val evaluation = Statement.Evaluation(value)
-        val loop = Statement.Loop(condition, listOf(Statement.LoopBreak, evaluation))
+        val loop = Statement.Loop(condition, listOf(Statement.LoopBreak(), evaluation))
         val function = Function("f", listOf(), Type.Unit, listOf(loop))
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
@@ -574,12 +573,12 @@ class FunctionControlFlowTest {
     //     }
     // }
 
-    @Ignore @Test
+    @Test
     fun `unreachable statement because of continuation`() {
         val condition = Expression.BooleanLiteral(false)
         val value = Expression.NumberLiteral(123)
         val evaluation = Statement.Evaluation(value)
-        val loop = Statement.Loop(condition, listOf(Statement.LoopContinuation, evaluation))
+        val loop = Statement.Loop(condition, listOf(Statement.LoopContinuation(), evaluation))
         val function = Function("f", listOf(), Type.Unit, listOf(loop))
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 

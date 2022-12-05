@@ -21,12 +21,12 @@ class ReferenceElement<E>(val element: E) {
 val <E> ReferenceSet<E>.referenceElements get() = this.map { ReferenceElement(it) }.toSet()
 
 fun <E> combineReferenceSets(sets: List<ReferenceSet<E>>): ReferenceSet<E> {
-    val combinedSets = ReferenceHashSet<E>()
+    val combinedSets = referenceHashSetOf<E>()
     sets.forEach { combinedSets.addAll(it) }
     return combinedSets
 }
 
-fun <E> referenceSetOf(elements: List<E>): ReferenceSet<E> {
+fun <E> referenceHashSetOf(elements: List<E>): ReferenceHashSet<E> {
     val set = ReferenceHashSet<E>()
     set.addAll(elements)
     return set
@@ -34,4 +34,4 @@ fun <E> referenceSetOf(elements: List<E>): ReferenceSet<E> {
 
 fun <E> combineReferenceSets(vararg sets: ReferenceSet<E>): ReferenceSet<E> = combineReferenceSets(sets.asList())
 
-fun <E> referenceSetOf(vararg elements: E): ReferenceSet<E> = referenceSetOf(elements.asList())
+fun <E> referenceHashSetOf(vararg elements: E): ReferenceHashSet<E> = referenceHashSetOf(elements.asList())

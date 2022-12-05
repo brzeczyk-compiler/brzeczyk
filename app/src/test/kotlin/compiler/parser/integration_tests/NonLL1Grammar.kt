@@ -4,7 +4,7 @@ import compiler.lexer.lexer_grammar.LexerRegexParser
 import compiler.parser.Parser
 import compiler.parser.grammar.Grammar
 import compiler.parser.grammar.Production
-import org.junit.Test
+import kotlin.test.Test
 import kotlin.test.assertFailsWith
 
 class NonLL1Grammar : ParserTest() {

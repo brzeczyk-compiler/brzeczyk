@@ -9,8 +9,8 @@ import compiler.common.intermediate_form.FunctionDetailsGenerator
 import compiler.common.intermediate_form.VariableAccessGenerator
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceSet
-import compiler.common.reference_collections.referenceMapOf
-import compiler.common.reference_collections.referenceSetOf
+import compiler.common.reference_collections.referenceHashMapOf
+import compiler.common.reference_collections.referenceHashSetOf
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -49,18 +49,20 @@ class ExpressionControlFlowTest {
         functions: Map<String, Pair<Type, List<Type>>> = emptyMap(), // first element is return type
         funToAffectedVar: Map<String, Set<String>> = emptyMap(),
         val currentFunction: Function = Function("dummy", emptyList(), Type.Unit, emptyList()),
-        val callGraph: ReferenceHashMap<String, ReferenceSet<String>> = ReferenceHashMap(),
+        val callGraph: ReferenceHashMap<String, ReferenceSet<String>> = referenceHashMapOf(),
         val globals: Set<String> = emptySet()
     ) {
-        val nameResolution: ReferenceHashMap<Any, NamedNode> = ReferenceHashMap()
+        val nameResolution: ReferenceHashMap<Any, NamedNode> = referenceHashMapOf()
         var nameToVarMap: Map<String, Variable>
         var nameToFunMap: Map<String, Function>
-        val functionDetailsGenerators = ReferenceHashMap<Function, FunctionDetailsGenerator>()
-        val variableProperties = ReferenceHashMap<Any, VariablePropertiesAnalyzer.VariableProperties>()
-        val finalCallGraph: ReferenceHashMap<Function, ReferenceSet<Function>> = ReferenceHashMap()
-        val argumentResolution: ReferenceHashMap<Expression.FunctionCall.Argument, Function.Parameter> = ReferenceHashMap()
+
+        val functionDetailsGenerators = referenceHashMapOf<Function, FunctionDetailsGenerator>()
+        val variableProperties = referenceHashMapOf<Any, VariablePropertiesAnalyzer.VariableProperties>()
+        val finalCallGraph = referenceHashMapOf<Function, ReferenceSet<Function>>()
+        val argumentResolution: ReferenceHashMap<Expression.FunctionCall.Argument, Function.Parameter> = referenceHashMapOf()
+
         init {
-            val mutableVariableProperties = ReferenceHashMap<Any, VariablePropertiesAnalyzer.MutableVariableProperties>()
+            val mutableVariableProperties = referenceHashMapOf<Any, VariablePropertiesAnalyzer.MutableVariableProperties>()
 
             nameToVarMap = varNames.associateWith { Variable(Variable.Kind.VARIABLE, it, Type.Number, null) }
             for (name in varNames) {
@@ -78,7 +80,7 @@ class ExpressionControlFlowTest {
                 )
             }
             for (name in functions.keys) {
-                finalCallGraph[nameToFunMap[name]!!] = referenceSetOf(nameToFunMap[name]!!)
+                finalCallGraph[nameToFunMap[name]!!] = referenceHashSetOf(nameToFunMap[name]!!)
             }
             for (function in nameToFunMap.values union setOf(currentFunction)) {
                 functionDetailsGenerators[function] = TestFunctionDetailsGenerator(function)
@@ -103,7 +105,7 @@ class ExpressionControlFlowTest {
                 finalCallGraph,
                 functionDetailsGenerators,
                 argumentResolution,
-                referenceMapOf(),
+                referenceHashMapOf(),
                 object : VariableAccessGenerator {
                     override fun genRead(namedNode: NamedNode, isDirect: Boolean): IntermediateFormTreeNode =
                         IntermediateFormTreeNode.DummyRead(namedNode, isDirect, true)
@@ -163,9 +165,9 @@ class ExpressionControlFlowTest {
     }
 
     private infix fun ControlFlowGraph.hasSameStructureAs(cfg: ControlFlowGraph): Boolean {
-        val registersMap = ReferenceHashMap<Register, Register>()
-        val callResultsMap = ReferenceHashMap<IntermediateFormTreeNode.DummyCallResult, IntermediateFormTreeNode.DummyCallResult>()
-        val nodeMap = ReferenceHashMap<IntermediateFormTreeNode, IntermediateFormTreeNode>()
+        val registersMap = referenceHashMapOf<Register, Register>()
+        val callResultsMap = referenceHashMapOf<IntermediateFormTreeNode.DummyCallResult, IntermediateFormTreeNode.DummyCallResult>()
+        val nodeMap = referenceHashMapOf<IntermediateFormTreeNode, IntermediateFormTreeNode>()
 
         fun <T> ReferenceHashMap<T, T>.ensurePairSymmetrical(a: T, b: T): Boolean {
             if (!this.containsKey(a)) {

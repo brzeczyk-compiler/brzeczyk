@@ -14,11 +14,7 @@ object E2eAsserter {
 
     private fun runProgram(program: String): Sequence<Diagnostic> {
         diagnostics.clear()
-        try {
-            // exceptions are part of the implementation
-            // we do care only about the diagnostics report
-            compiler.process(program.trimIndent().reader())
-        } catch (e: Throwable) {}
+        compiler.process(program.trimIndent().reader())
         return diagnostics.diagnostics
     }
 

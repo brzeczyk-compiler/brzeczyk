@@ -47,7 +47,6 @@ object InstructionSet {
             InstructionPattern(Pattern.StackPush()) { inRegisters, _, _ -> listOf(Instruction.PushR(inRegisters[0])) }, // PUSH reg0
             InstructionPattern(Pattern.StackPop()) { _, outRegister, _ -> listOf(Instruction.PopR(outRegister)) }, //      POP  out
             InstructionPattern(Pattern.Call()) { inRegisters, _, _ -> listOf(Instruction.CallR(inRegisters[0])) }, //      CALL reg0
-            InstructionPattern(Pattern.Return()) { _, _, _ -> listOf(Instruction.Ret()) }, //                              RET
             InstructionPattern(Pattern.UnaryOperator(IntermediateFormTreeNode.Negation::class)) {
                 inRegisters, outRegister, _ ->
                 listOf(

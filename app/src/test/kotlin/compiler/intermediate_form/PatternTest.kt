@@ -53,7 +53,6 @@ internal class PatternTest {
         val patternStackPush = Pattern.StackPush()
         val patternStackPop = Pattern.StackPop()
         val patternCall = Pattern.Call()
-        val patternReturn = Pattern.Return()
 
         val patternLogNeg = Pattern.UnaryOperator(IntermediateFormTreeNode.LogicalNegation::class)
         val patternLogIff = Pattern.BinaryOperator(IntermediateFormTreeNode.LogicalIff::class)
@@ -94,7 +93,6 @@ internal class PatternTest {
         val nodeStackPush = IntermediateFormTreeNode.StackPush(node)
         val nodeStackPop = IntermediateFormTreeNode.StackPop()
         val nodeCall = IntermediateFormTreeNode.Call(node)
-        val nodeReturn = IntermediateFormTreeNode.Return()
 
         val nodeLogNeg = IntermediateFormTreeNode.LogicalNegation(node)
         val nodeLogIff = IntermediateFormTreeNode.LogicalIff(left, right)
@@ -130,7 +128,6 @@ internal class PatternTest {
         assertEquals(Pair(listOf(node), emptyMap()), patternStackPush.match(nodeStackPush))
         assertEquals(Pair(emptyList(), emptyMap()), patternStackPop.match(nodeStackPop))
         assertEquals(Pair(listOf(node), emptyMap()), patternCall.match(nodeCall))
-        assertEquals(Pair(emptyList(), emptyMap()), patternReturn.match(nodeReturn))
 
         assertEquals(Pair(listOf(node), emptyMap()), patternLogNeg.match(nodeLogNeg))
         assertEquals(Pair(listOf(left, right), emptyMap()), patternLogIff.match(nodeLogIff))

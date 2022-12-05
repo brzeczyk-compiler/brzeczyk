@@ -162,11 +162,4 @@ sealed class Pattern {
             return Pair(addressMatch.first, addressMatch.second)
         }
     }
-
-    class Return : Pattern() {
-        override fun match(node: IntermediateFormTreeNode): Pair<List<IntermediateFormTreeNode>, Map<String, Any>>? {
-            if (node !is IntermediateFormTreeNode.Return) return null
-            return Pair(emptyList(), emptyMap())
-        }
-    }
 }

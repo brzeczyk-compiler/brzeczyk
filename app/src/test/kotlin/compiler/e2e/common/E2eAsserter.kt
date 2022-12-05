@@ -20,7 +20,6 @@ object E2eAsserter {
 
     fun <T : Diagnostic> assertProgramGeneratesDiagnostics(program: String, diagnostics: List<Diagnostic>, diagnosticType: KClass<T>) {
         val actualDiagnostics = runProgram(program)
-        println(actualDiagnostics.toList())
         assertContentEquals(diagnostics.asSequence(), actualDiagnostics.filter { diagnosticType.isInstance(it) })
     }
 

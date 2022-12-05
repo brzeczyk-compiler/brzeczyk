@@ -10,13 +10,14 @@ import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic.ControlFlowDiagnostic
 import compiler.common.diagnostics.Diagnostics
 import compiler.common.intermediate_form.FunctionDetailsGeneratorInterface
-import compiler.common.reference_collections.ReferenceHashMap
-import compiler.common.reference_collections.ReferenceHashSet
+import compiler.common.intermediate_form.VariableAccessGenerator
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.combineReferenceSets
 import compiler.common.reference_collections.copy
-import compiler.common.reference_collections.referenceSetOf
+import compiler.common.reference_collections.referenceHashMapOf
+import compiler.common.reference_collections.referenceHashSetOf
+import compiler.common.semantic_analysis.VariablesOwner
 import compiler.semantic_analysis.ArgumentResolutionResult
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
 
@@ -32,25 +33,34 @@ object ControlFlow {
         callGraph: ReferenceMap<Function, ReferenceSet<Function>>,
         functionDetailsGenerators: ReferenceMap<Function, FunctionDetailsGeneratorInterface>,
         argumentResolution: ArgumentResolutionResult,
-        defaultParameterValues: ReferenceMap<Function.Parameter, Variable>
+        defaultParameterValues: ReferenceMap<Function.Parameter, Variable>,
+        globalVariablesAccessGenerator: VariableAccessGenerator
     ): ControlFlowGraph {
         fun getVariablesModifiedBy(function: Function): ReferenceSet<Variable> {
-            val possiblyCalledFunctions = combineReferenceSets(callGraph[function]!!, referenceSetOf(function))
-            return referenceSetOf(
+            val possiblyCalledFunctions = combineReferenceSets(callGraph[function]!!, referenceHashSetOf(function))
+            return referenceHashSetOf(
                 variableProperties.asSequence()
                     .filter { (it.value.writtenIn intersect possiblyCalledFunctions).isNotEmpty() }
                     .map { it.key as Variable }.toList()
             )
         }
 
+        val variableAccessGenerators: ReferenceMap<VariablesOwner, VariableAccessGenerator> = run {
+            val result = referenceHashMapOf<VariablesOwner, VariableAccessGenerator>()
+
+            result.putAll(functionDetailsGenerators)
+            result[VariablePropertiesAnalyzer.GlobalContext] = globalVariablesAccessGenerator
+            result
+        }
+
         // first stage is to decide which variable usages have to be realized via temporary registers
         // and which variables are invalidated by function calls / conditionals
-        val usagesThatRequireTempRegisters = ReferenceHashSet<Expression.Variable>()
-        val invalidatedVariables = ReferenceHashMap<Expression, ReferenceSet<Variable>>()
+        val usagesThatRequireTempRegisters = referenceHashSetOf<Expression.Variable>()
+        val invalidatedVariables = referenceHashMapOf<Expression, ReferenceSet<Variable>>()
 
         fun gatherVariableUsageInfo(astNode: Expression, modifiedUnderCurrentBase: ReferenceSet<Variable>): ReferenceSet<Variable> {
             return when (astNode) {
-                Expression.UnitLiteral,
+                is Expression.UnitLiteral,
                 is Expression.BooleanLiteral,
                 is Expression.NumberLiteral -> modifiedUnderCurrentBase
 
@@ -65,8 +75,8 @@ object ControlFlow {
 
                 is Expression.BinaryOperation -> {
                     if (astNode.kind in listOf(Expression.BinaryOperation.Kind.OR, Expression.BinaryOperation.Kind.AND)) {
-                        val leftModifiedVariables = gatherVariableUsageInfo(astNode.leftOperand, referenceSetOf())
-                        val rightModifiedVariables = gatherVariableUsageInfo(astNode.rightOperand, referenceSetOf())
+                        val leftModifiedVariables = gatherVariableUsageInfo(astNode.leftOperand, referenceHashSetOf())
+                        val rightModifiedVariables = gatherVariableUsageInfo(astNode.rightOperand, referenceHashSetOf())
 
                         invalidatedVariables[astNode] = rightModifiedVariables
                         combineReferenceSets(modifiedUnderCurrentBase, leftModifiedVariables, rightModifiedVariables)
@@ -77,7 +87,7 @@ object ControlFlow {
                 }
 
                 is Expression.FunctionCall -> {
-                    var modifiedInArguments = referenceSetOf<Variable>()
+                    var modifiedInArguments: ReferenceSet<Variable> = referenceHashSetOf<Variable>()
                     astNode.arguments.reversed().forEach { argumentNode ->
                         modifiedInArguments = gatherVariableUsageInfo(argumentNode.value, modifiedInArguments)
                     }
@@ -88,9 +98,9 @@ object ControlFlow {
                 }
 
                 is Expression.Conditional -> {
-                    val modifiedInCondition = gatherVariableUsageInfo(astNode.condition, referenceSetOf())
-                    val modifiedInTrueBranch = gatherVariableUsageInfo(astNode.resultWhenTrue, referenceSetOf())
-                    val modifiedInFalseBranch = gatherVariableUsageInfo(astNode.resultWhenFalse, referenceSetOf())
+                    val modifiedInCondition = gatherVariableUsageInfo(astNode.condition, referenceHashSetOf())
+                    val modifiedInTrueBranch = gatherVariableUsageInfo(astNode.resultWhenTrue, referenceHashSetOf())
+                    val modifiedInFalseBranch = gatherVariableUsageInfo(astNode.resultWhenFalse, referenceHashSetOf())
 
                     invalidatedVariables[astNode] = combineReferenceSets(modifiedInTrueBranch, modifiedInFalseBranch)
                     combineReferenceSets(modifiedUnderCurrentBase, modifiedInCondition, modifiedInTrueBranch, modifiedInFalseBranch)
@@ -98,12 +108,12 @@ object ControlFlow {
             }
         }
 
-        gatherVariableUsageInfo(expression, ReferenceHashSet())
+        gatherVariableUsageInfo(expression, referenceHashSetOf())
 
         // second stage is to actually produce CFG
         val cfgBuilder = ControlFlowGraphBuilder()
         var last = listOf<Pair<IFTNode, CFGLinkType>?>(null)
-        var currentTemporaryRegisters = ReferenceHashMap<Variable, Register>()
+        var currentTemporaryRegisters = referenceHashMapOf<Variable, Register>()
 
         fun ControlFlowGraphBuilder.addNextCFG(nextCFG: ControlFlowGraph) {
             addAllFrom(nextCFG)
@@ -118,13 +128,13 @@ object ControlFlow {
         }
 
         fun makeVariableReadNode(variable: Variable): IntermediateFormTreeNode {
-            val owner = variableProperties[variable]!!.owner!! // TODO: handle global variables
-            return functionDetailsGenerators[owner]!!.genRead(variable, owner == currentFunction)
+            val owner = variableProperties[variable]!!.owner
+            return variableAccessGenerators[owner]!!.genRead(variable, owner == currentFunction)
         }
 
         fun makeCFGForSubtree(astNode: Expression): IntermediateFormTreeNode {
             return when (astNode) {
-                Expression.UnitLiteral -> IntermediateFormTreeNode.Const(IntermediateFormTreeNode.UNIT_VALUE)
+                is Expression.UnitLiteral -> IntermediateFormTreeNode.Const(IntermediateFormTreeNode.UNIT_VALUE)
 
                 is Expression.BooleanLiteral -> IntermediateFormTreeNode.Const(if (astNode.value) 1 else 0)
 
@@ -263,8 +273,8 @@ object ControlFlow {
 
         // build last tree into CFG, possibly wrapped in variable write operation
         if (targetVariable != null) {
-            val owner = variableProperties[targetVariable]!!.owner!! // TODO: handle global variables
-            cfgBuilder.addNextTree(functionDetailsGenerators[owner]!!.genWrite(targetVariable, result, owner == currentFunction))
+            val owner = variableProperties[targetVariable]!!.owner
+            cfgBuilder.addNextTree(variableAccessGenerators[owner]!!.genWrite(targetVariable, result, owner == currentFunction))
         } else {
             cfgBuilder.addNextTree(result)
         }
@@ -279,7 +289,7 @@ object ControlFlow {
         defaultParameterValues: ReferenceMap<Function.Parameter, Variable>,
         diagnostics: Diagnostics
     ): ReferenceMap<Function, ControlFlowGraph> {
-        val controlFlowGraphs = ReferenceHashMap<Function, ControlFlowGraph>()
+        val controlFlowGraphs = referenceHashMapOf<Function, ControlFlowGraph>()
 
         fun processFunction(function: Function) {
             val cfgBuilder = ControlFlowGraphBuilder()

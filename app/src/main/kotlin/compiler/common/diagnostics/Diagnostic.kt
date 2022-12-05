@@ -38,6 +38,11 @@ sealed class Diagnostic {
         }.toString()
     }
 
+    class InvalidNumberLiteral(val number: String) : Diagnostic() {
+        override fun isError() = true
+        override fun toString() = "Invalid number literal '$number'"
+    }
+
     sealed class NameResolutionError() : Diagnostic() {
         override fun isError() = true
         class UndefinedVariable : NameResolutionError()

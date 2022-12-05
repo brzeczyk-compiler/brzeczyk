@@ -10,21 +10,21 @@ import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic
 import compiler.common.diagnostics.Diagnostic.TypeCheckingError
-import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.referenceEntries
-import compiler.common.reference_collections.referenceMapOf
+import compiler.common.reference_collections.referenceHashMapOf
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 fun <K, V> assertContentEquals(expected: ReferenceMap<K, V>, actual: ReferenceMap<K, V>) {
     assertEquals(expected.referenceEntries, actual.referenceEntries)
 }
 
 class TypeCheckerTest {
-    private val nameResolution = ReferenceHashMap<Any, NamedNode>()
-    private val argumentResolution = ReferenceHashMap<Expression.FunctionCall.Argument, Function.Parameter>()
+    private val nameResolution = referenceHashMapOf<Any, NamedNode>()
+    private val argumentResolution = referenceHashMapOf<Expression.FunctionCall.Argument, Function.Parameter>()
     private val diagnostics = mutableListOf<Diagnostic>()
 
     // stała x: Liczba = 123
@@ -73,7 +73,9 @@ class TypeCheckerTest {
         val variable = Variable(Variable.Kind.CONSTANT, "x", Type.Number, null)
         val program = Program(listOf(Program.Global.VariableDefinition(variable)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.ConstantWithoutValue(variable)), diagnostics)
     }
@@ -85,7 +87,9 @@ class TypeCheckerTest {
         val variable = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
         val program = Program(listOf(Program.Global.VariableDefinition(variable)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.UninitializedGlobalVariable(variable)), diagnostics)
     }
@@ -97,7 +101,9 @@ class TypeCheckerTest {
         val variable = Variable(Variable.Kind.VARIABLE, "x", Type.Number, null)
         val program = Program(listOf(Program.Global.VariableDefinition(variable)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.UninitializedGlobalVariable(variable)), diagnostics)
     }
@@ -119,7 +125,9 @@ class TypeCheckerTest {
         val variable = Variable(Variable.Kind.CONSTANT, "x", Type.Number, call)
         val program = Program(listOf(Program.Global.FunctionDefinition(function), Program.Global.VariableDefinition(variable)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.NonConstantExpression(call)), diagnostics)
     }
@@ -135,7 +143,9 @@ class TypeCheckerTest {
         val variable = Variable(Variable.Kind.VALUE, "x", Type.Number, call)
         val program = Program(listOf(Program.Global.FunctionDefinition(function), Program.Global.VariableDefinition(variable)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.NonConstantExpression(call)), diagnostics)
     }
@@ -151,7 +161,9 @@ class TypeCheckerTest {
         val variable = Variable(Variable.Kind.VARIABLE, "x", Type.Number, call)
         val program = Program(listOf(Program.Global.FunctionDefinition(function), Program.Global.VariableDefinition(variable)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.NonConstantExpression(call)), diagnostics)
     }
@@ -164,7 +176,9 @@ class TypeCheckerTest {
         val variable = Variable(Variable.Kind.VARIABLE, "x", Type.Number, value)
         val program = Program(listOf(Program.Global.VariableDefinition(variable)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.InvalidType(value, Type.Boolean, Type.Number)), diagnostics)
     }
@@ -208,7 +222,9 @@ class TypeCheckerTest {
         val function2 = Function("f", listOf(parameter), Type.Unit, listOf())
         val program = Program(listOf(Program.Global.FunctionDefinition(function1), Program.Global.FunctionDefinition(function2)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.NonConstantExpression(call)), diagnostics)
     }
@@ -222,7 +238,9 @@ class TypeCheckerTest {
         val function = Function("f", listOf(parameter), Type.Unit, listOf())
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.InvalidType(value, Type.Boolean, Type.Number)), diagnostics)
     }
@@ -296,7 +314,9 @@ class TypeCheckerTest {
         val main = mainFunction(listOf(Statement.VariableDefinition(variable)))
         val program = Program(listOf(Program.Global.FunctionDefinition(main)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.ConstantWithoutValue(variable)), diagnostics)
     }
@@ -339,7 +359,9 @@ class TypeCheckerTest {
         val main = mainFunction(listOf(Statement.VariableDefinition(variable)))
         val program = Program(listOf(Program.Global.FunctionDefinition(function), Program.Global.FunctionDefinition(main)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.NonConstantExpression(call)), diagnostics)
     }
@@ -387,7 +409,9 @@ class TypeCheckerTest {
         val main = mainFunction(listOf(Statement.VariableDefinition(variable)))
         val program = Program(listOf(Program.Global.FunctionDefinition(main)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.InvalidType(value, Type.Boolean, Type.Number)), diagnostics)
     }
@@ -449,7 +473,9 @@ class TypeCheckerTest {
         val main = mainFunction(listOf(Statement.FunctionDefinition(function)))
         val program = Program(listOf(Program.Global.FunctionDefinition(main)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.InvalidType(value, Type.Boolean, Type.Number)), diagnostics)
     }
@@ -489,7 +515,9 @@ class TypeCheckerTest {
         val main = mainFunction(listOf(Statement.VariableDefinition(variable), assignment))
         val program = Program(listOf(Program.Global.FunctionDefinition(main)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.ImmutableAssignment(assignment, variable)), diagnostics)
     }
@@ -509,7 +537,9 @@ class TypeCheckerTest {
         val main = mainFunction(listOf(Statement.VariableDefinition(variable), assignment))
         val program = Program(listOf(Program.Global.FunctionDefinition(main)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.ImmutableAssignment(assignment, variable)), diagnostics)
     }
@@ -525,7 +555,9 @@ class TypeCheckerTest {
         val function = Function("f", listOf(parameter), Type.Unit, listOf(assignment))
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.ParameterAssignment(assignment, parameter)), diagnostics)
     }
@@ -542,7 +574,9 @@ class TypeCheckerTest {
         val main = mainFunction(listOf(Statement.FunctionDefinition(function), assignment))
         val program = Program(listOf(Program.Global.FunctionDefinition(function), Program.Global.FunctionDefinition(main)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.FunctionAssignment(assignment, function)), diagnostics)
     }
@@ -551,7 +585,7 @@ class TypeCheckerTest {
 
     @Test
     fun `correct nested block`() {
-        val evaluation = Statement.Evaluation(Expression.UnitLiteral)
+        val evaluation = Statement.Evaluation(Expression.UnitLiteral())
         val block = Statement.Block(listOf(evaluation))
         val main = mainFunction(listOf(block))
         val program = Program(listOf(Program.Global.FunctionDefinition(main)))
@@ -565,7 +599,7 @@ class TypeCheckerTest {
 
     @Test
     fun `correct conditional`() {
-        val evaluation = Statement.Evaluation(Expression.UnitLiteral)
+        val evaluation = Statement.Evaluation(Expression.UnitLiteral())
         val condition = Expression.BooleanLiteral(true)
         val conditional = Statement.Conditional(condition, listOf(evaluation), listOf(evaluation))
         val main = mainFunction(listOf(conditional))
@@ -580,13 +614,15 @@ class TypeCheckerTest {
 
     @Test
     fun `conditional with non-boolean condition`() {
-        val evaluation = Statement.Evaluation(Expression.UnitLiteral)
+        val evaluation = Statement.Evaluation(Expression.UnitLiteral())
         val condition = Expression.NumberLiteral(123)
         val conditional = Statement.Conditional(condition, listOf(evaluation), listOf(evaluation))
         val main = mainFunction(listOf(conditional))
         val program = Program(listOf(Program.Global.FunctionDefinition(main)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.InvalidType(condition, Type.Number, Type.Boolean)), diagnostics)
     }
@@ -595,7 +631,7 @@ class TypeCheckerTest {
 
     @Test
     fun `correct loop`() {
-        val evaluation = Statement.Evaluation(Expression.UnitLiteral)
+        val evaluation = Statement.Evaluation(Expression.UnitLiteral())
         val condition = Expression.BooleanLiteral(true)
         val conditional = Statement.Loop(condition, listOf(evaluation))
         val main = mainFunction(listOf(conditional))
@@ -610,7 +646,7 @@ class TypeCheckerTest {
 
     @Test
     fun `correct loop with break`() {
-        val loopBreak = Statement.LoopBreak
+        val loopBreak = Statement.LoopBreak()
         val condition = Expression.BooleanLiteral(true)
         val conditional = Statement.Loop(condition, listOf(loopBreak))
         val main = mainFunction(listOf(conditional))
@@ -625,7 +661,7 @@ class TypeCheckerTest {
 
     @Test
     fun `correct loop with continuation`() {
-        val loopContinuation = Statement.LoopContinuation
+        val loopContinuation = Statement.LoopContinuation()
         val condition = Expression.BooleanLiteral(true)
         val conditional = Statement.Loop(condition, listOf(loopContinuation))
         val main = mainFunction(listOf(conditional))
@@ -640,13 +676,15 @@ class TypeCheckerTest {
 
     @Test
     fun `loop with non-boolean condition`() {
-        val evaluation = Statement.Evaluation(Expression.UnitLiteral)
+        val evaluation = Statement.Evaluation(Expression.UnitLiteral())
         val condition = Expression.NumberLiteral(123)
         val conditional = Statement.Loop(condition, listOf(evaluation))
         val main = mainFunction(listOf(conditional))
         val program = Program(listOf(Program.Global.FunctionDefinition(main)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.InvalidType(condition, Type.Number, Type.Boolean)), diagnostics)
     }
@@ -674,7 +712,9 @@ class TypeCheckerTest {
         val function = Function("f", listOf(), Type.Number, listOf(functionReturn))
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.InvalidType(value, Type.Boolean, Type.Number)), diagnostics)
     }
@@ -683,14 +723,14 @@ class TypeCheckerTest {
 
     @Test
     fun `unit literal has unit type`() {
-        val value = Expression.UnitLiteral
+        val value = Expression.UnitLiteral()
         val evaluation = Statement.Evaluation(value)
         val main = mainFunction(listOf(evaluation))
         val program = Program(listOf(Program.Global.FunctionDefinition(main)))
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
 
-        assertContentEquals(referenceMapOf(value to Type.Unit), types)
+        assertContentEquals(referenceHashMapOf(value to Type.Unit), types)
         assertContentEquals(listOf(), diagnostics)
     }
 
@@ -705,7 +745,7 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
 
-        assertContentEquals(referenceMapOf(value to Type.Boolean), types)
+        assertContentEquals(referenceHashMapOf(value to Type.Boolean), types)
         assertContentEquals(listOf(), diagnostics)
     }
 
@@ -720,7 +760,7 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
 
-        assertContentEquals(referenceMapOf(value to Type.Number), types)
+        assertContentEquals(referenceHashMapOf(value to Type.Number), types)
         assertContentEquals(listOf(), diagnostics)
     }
 
@@ -741,7 +781,7 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
 
-        assertContentEquals(referenceMapOf(value to Type.Number, variableExpression to Type.Number), types)
+        assertContentEquals(referenceHashMapOf(value to Type.Number, variableExpression to Type.Number), types)
         assertContentEquals(listOf(), diagnostics)
     }
 
@@ -758,7 +798,7 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
 
-        assertContentEquals(referenceMapOf(variableExpression to Type.Number), types)
+        assertContentEquals(referenceHashMapOf(variableExpression to Type.Number), types)
         assertContentEquals(listOf(), diagnostics)
     }
 
@@ -774,7 +814,9 @@ class TypeCheckerTest {
         val main = mainFunction(listOf(evaluation))
         val program = Program(listOf(Program.Global.FunctionDefinition(main)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.FunctionAsValue(variableExpression, function)), diagnostics)
     }
@@ -794,7 +836,9 @@ class TypeCheckerTest {
         val main = mainFunction(listOf(Statement.VariableDefinition(variable), evaluation))
         val program = Program(listOf(Program.Global.FunctionDefinition(main)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.VariableCall(call, variable)), diagnostics)
     }
@@ -812,7 +856,9 @@ class TypeCheckerTest {
         val function = Function("f", listOf(parameter), Type.Unit, listOf(evaluation))
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.ParameterCall(call, parameter)), diagnostics)
     }
@@ -854,7 +900,9 @@ class TypeCheckerTest {
         val main = mainFunction(listOf(evaluation))
         val program = Program(listOf(Program.Global.FunctionDefinition(function), Program.Global.FunctionDefinition(main)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.InvalidType(value, Type.Boolean, Type.Number)), diagnostics)
     }
@@ -875,7 +923,7 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
 
-        assertContentEquals(referenceMapOf(value to Type.Number, call to Type.Number), types)
+        assertContentEquals(referenceHashMapOf(value to Type.Number, call to Type.Number), types)
         assertContentEquals(listOf(), diagnostics)
     }
 
@@ -891,7 +939,7 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
 
-        assertContentEquals(referenceMapOf(value to Type.Boolean, operation to Type.Boolean), types)
+        assertContentEquals(referenceHashMapOf(value to Type.Boolean, operation to Type.Boolean), types)
         assertContentEquals(listOf(), diagnostics)
     }
 
@@ -905,7 +953,9 @@ class TypeCheckerTest {
         val main = mainFunction(listOf(evaluation))
         val program = Program(listOf(Program.Global.FunctionDefinition(main)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.InvalidType(value, Type.Number, Type.Boolean)), diagnostics)
     }
@@ -922,7 +972,7 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
 
-        assertContentEquals(referenceMapOf(value to Type.Number, operation to Type.Number), types)
+        assertContentEquals(referenceHashMapOf(value to Type.Number, operation to Type.Number), types)
         assertContentEquals(listOf(), diagnostics)
     }
 
@@ -936,7 +986,9 @@ class TypeCheckerTest {
         val main = mainFunction(listOf(evaluation))
         val program = Program(listOf(Program.Global.FunctionDefinition(main)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.InvalidType(value, Type.Boolean, Type.Number)), diagnostics)
     }
@@ -954,7 +1006,7 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
 
-        assertContentEquals(referenceMapOf(leftValue to Type.Boolean, rightValue to Type.Boolean, operation to Type.Boolean), types)
+        assertContentEquals(referenceHashMapOf(leftValue to Type.Boolean, rightValue to Type.Boolean, operation to Type.Boolean), types)
         assertContentEquals(listOf(), diagnostics)
     }
 
@@ -969,7 +1021,9 @@ class TypeCheckerTest {
         val main = mainFunction(listOf(evaluation))
         val program = Program(listOf(Program.Global.FunctionDefinition(main)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.InvalidType(rightValue, Type.Number, Type.Boolean)), diagnostics)
     }
@@ -987,7 +1041,7 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
 
-        assertContentEquals(referenceMapOf(leftValue to Type.Number, rightValue to Type.Number, operation to Type.Number), types)
+        assertContentEquals(referenceHashMapOf(leftValue to Type.Number, rightValue to Type.Number, operation to Type.Number), types)
         assertContentEquals(listOf(), diagnostics)
     }
 
@@ -1002,7 +1056,9 @@ class TypeCheckerTest {
         val main = mainFunction(listOf(evaluation))
         val program = Program(listOf(Program.Global.FunctionDefinition(main)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.InvalidType(leftValue, Type.Boolean, Type.Number)), diagnostics)
     }
@@ -1020,7 +1076,7 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
 
-        assertContentEquals(referenceMapOf(leftValue to Type.Number, rightValue to Type.Number, operation to Type.Boolean), types)
+        assertContentEquals(referenceHashMapOf(leftValue to Type.Number, rightValue to Type.Number, operation to Type.Boolean), types)
         assertContentEquals(listOf(), diagnostics)
     }
 
@@ -1035,7 +1091,9 @@ class TypeCheckerTest {
         val main = mainFunction(listOf(evaluation))
         val program = Program(listOf(Program.Global.FunctionDefinition(main)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.InvalidType(leftValue, Type.Boolean, Type.Number)), diagnostics)
     }
@@ -1055,7 +1113,7 @@ class TypeCheckerTest {
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
 
         assertContentEquals(
-            referenceMapOf(
+            referenceHashMapOf(
                 condition to Type.Boolean,
                 valueWhenTrue to Type.Number,
                 valueWhenFalse to Type.Number,
@@ -1079,7 +1137,9 @@ class TypeCheckerTest {
         val main = mainFunction(listOf(evaluation))
         val program = Program(listOf(Program.Global.FunctionDefinition(main)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.InvalidType(condition, Type.Number, Type.Boolean)), diagnostics)
     }
@@ -1096,7 +1156,9 @@ class TypeCheckerTest {
         val main = mainFunction(listOf(evaluation))
         val program = Program(listOf(Program.Global.FunctionDefinition(main)))
 
-        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
+        }
 
         assertContentEquals(listOf(TypeCheckingError.ConditionalTypesMismatch(conditional, Type.Number, Type.Boolean)), diagnostics)
     }

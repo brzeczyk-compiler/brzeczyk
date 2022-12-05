@@ -19,7 +19,7 @@ object InstructionSet {
                 inRegisters, outRegister, _ ->
                 listOf(Instruction.MoveRM(outRegister, Addressing.Base(inRegisters[0]))) // MOV  out,  [reg0]
             },
-            InstructionPattern(Pattern.MemoryAddress(Pattern.AnyArgument("label"))) {
+            InstructionPattern(Pattern.MemoryLabel(Pattern.AnyArgument("label"))) {
                 _, outRegister, capture ->
                 listOf(
                     Instruction.Lea( // LEA  out,  [label]

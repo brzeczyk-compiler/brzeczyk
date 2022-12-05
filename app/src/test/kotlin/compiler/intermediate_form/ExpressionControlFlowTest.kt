@@ -6,10 +6,11 @@ import compiler.ast.NamedNode
 import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.common.intermediate_form.FunctionDetailsGeneratorInterface
+import compiler.common.intermediate_form.VariableAccessGenerator
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceSet
-import compiler.common.reference_collections.referenceMapOf
-import compiler.common.reference_collections.referenceSetOf
+import compiler.common.reference_collections.referenceHashMapOf
+import compiler.common.reference_collections.referenceHashSetOf
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -33,12 +34,12 @@ class ExpressionControlFlowTest {
             throw NotImplementedError()
         }
 
-        override fun genRead(variable: Variable, isDirect: Boolean): IntermediateFormTreeNode {
-            return IntermediateFormTreeNode.DummyRead(variable, isDirect)
+        override fun genRead(namedNode: NamedNode, isDirect: Boolean): IntermediateFormTreeNode {
+            return IntermediateFormTreeNode.DummyRead(namedNode, isDirect)
         }
 
-        override fun genWrite(variable: Variable, value: IntermediateFormTreeNode, isDirect: Boolean): IntermediateFormTreeNode {
-            return IntermediateFormTreeNode.DummyWrite(variable, value, isDirect)
+        override fun genWrite(namedNode: NamedNode, value: IntermediateFormTreeNode, isDirect: Boolean): IntermediateFormTreeNode {
+            return IntermediateFormTreeNode.DummyWrite(namedNode, value, isDirect)
         }
     }
 
@@ -47,22 +48,26 @@ class ExpressionControlFlowTest {
         functions: Map<String, Pair<Type, List<Type>>> = emptyMap(), // first element is return type
         funToAffectedVar: Map<String, Set<String>> = emptyMap(),
         val currentFunction: Function = Function("dummy", emptyList(), Type.Unit, emptyList()),
-        val callGraph: ReferenceHashMap<String, ReferenceSet<String>> = ReferenceHashMap()
+        val callGraph: ReferenceHashMap<String, ReferenceSet<String>> = referenceHashMapOf(),
+        val globals: Set<String> = emptySet()
     ) {
-        val nameResolution: ReferenceHashMap<Any, NamedNode> = ReferenceHashMap()
+        val nameResolution: ReferenceHashMap<Any, NamedNode> = referenceHashMapOf()
         var nameToVarMap: Map<String, Variable>
         var nameToFunMap: Map<String, Function>
-        val functionDetailsGenerators = ReferenceHashMap<Function, FunctionDetailsGeneratorInterface>()
-        val variableProperties = ReferenceHashMap<Any, VariablePropertiesAnalyzer.VariableProperties>()
-        val finalCallGraph: ReferenceHashMap<Function, ReferenceSet<Function>> = ReferenceHashMap()
-        val argumentResolution: ReferenceHashMap<Expression.FunctionCall.Argument, Function.Parameter> = ReferenceHashMap()
+        val functionDetailsGenerators = referenceHashMapOf<Function, FunctionDetailsGeneratorInterface>()
+        val variableProperties = referenceHashMapOf<Any, VariablePropertiesAnalyzer.VariableProperties>()
+        val finalCallGraph = referenceHashMapOf<Function, ReferenceSet<Function>>()
+        val argumentResolution: ReferenceHashMap<Expression.FunctionCall.Argument, Function.Parameter> = referenceHashMapOf()
 
         init {
-            val mutableVariableProperties = ReferenceHashMap<Any, VariablePropertiesAnalyzer.MutableVariableProperties>()
+            val mutableVariableProperties = referenceHashMapOf<Any, VariablePropertiesAnalyzer.MutableVariableProperties>()
 
             nameToVarMap = varNames.associateWith { Variable(Variable.Kind.VARIABLE, it, Type.Number, null) }
             for (name in varNames) {
-                mutableVariableProperties[nameToVarMap[name]!!] = VariablePropertiesAnalyzer.MutableVariableProperties(currentFunction)
+                mutableVariableProperties[nameToVarMap[name]!!] =
+                    VariablePropertiesAnalyzer.MutableVariableProperties(
+                        if (name in globals) VariablePropertiesAnalyzer.GlobalContext else currentFunction
+                    )
             }
             nameToFunMap = functions.keys.associateWith {
                 Function(
@@ -73,7 +78,7 @@ class ExpressionControlFlowTest {
                 )
             }
             for (name in functions.keys) {
-                finalCallGraph[nameToFunMap[name]!!] = referenceSetOf(nameToFunMap[name]!!)
+                finalCallGraph[nameToFunMap[name]!!] = referenceHashSetOf(nameToFunMap[name]!!)
             }
             for (function in nameToFunMap.values union setOf(currentFunction)) {
                 functionDetailsGenerators[function] = TestFunctionDetailsGenerator(function)
@@ -98,7 +103,14 @@ class ExpressionControlFlowTest {
                 finalCallGraph,
                 functionDetailsGenerators,
                 argumentResolution,
-                referenceMapOf()
+                referenceHashMapOf(),
+                object : VariableAccessGenerator {
+                    override fun genRead(namedNode: NamedNode, isDirect: Boolean): IntermediateFormTreeNode =
+                        IntermediateFormTreeNode.DummyRead(namedNode, isDirect, true)
+
+                    override fun genWrite(namedNode: NamedNode, value: IntermediateFormTreeNode, isDirect: Boolean): IntermediateFormTreeNode =
+                        IntermediateFormTreeNode.DummyWrite(namedNode, value, isDirect, true)
+                }
             )
         }
     }
@@ -151,9 +163,9 @@ class ExpressionControlFlowTest {
     }
 
     private infix fun ControlFlowGraph.hasSameStructureAs(cfg: ControlFlowGraph): Boolean {
-        val registersMap = ReferenceHashMap<Register, Register>()
-        val callResultsMap = ReferenceHashMap<IntermediateFormTreeNode.DummyCallResult, IntermediateFormTreeNode.DummyCallResult>()
-        val nodeMap = ReferenceHashMap<IntermediateFormTreeNode, IntermediateFormTreeNode>()
+        val registersMap = referenceHashMapOf<Register, Register>()
+        val callResultsMap = referenceHashMapOf<IntermediateFormTreeNode.DummyCallResult, IntermediateFormTreeNode.DummyCallResult>()
+        val nodeMap = referenceHashMapOf<IntermediateFormTreeNode, IntermediateFormTreeNode>()
 
         fun <T> ReferenceHashMap<T, T>.ensurePairSymmetrical(a: T, b: T): Boolean {
             if (!this.containsKey(a)) {
@@ -186,8 +198,8 @@ class ExpressionControlFlowTest {
                 }
 
                 is IntermediateFormTreeNode.DummyCallResult -> callResultsMap.ensurePairSymmetrical(this, iftNode as IntermediateFormTreeNode.DummyCallResult)
-                is IntermediateFormTreeNode.DummyWrite -> (this.variable == (iftNode as IntermediateFormTreeNode.DummyWrite).variable) && (this.isDirect == iftNode.isDirect) && (nodeMap.ensurePairSymmetrical(this.value, iftNode.value))
-                is IntermediateFormTreeNode.MemoryWrite -> (this.address == (iftNode as IntermediateFormTreeNode.MemoryWrite).address) && (this.node hasSameStructureAs iftNode.node)
+                is IntermediateFormTreeNode.DummyWrite -> (this.namedNode == (iftNode as IntermediateFormTreeNode.DummyWrite).namedNode) && (this.isDirect == iftNode.isDirect) && (this.isGlobal == iftNode.isGlobal) && (nodeMap.ensurePairSymmetrical(this.value, iftNode.value))
+                is IntermediateFormTreeNode.MemoryWrite -> (this.address == (iftNode as IntermediateFormTreeNode.MemoryWrite).address) && (this.value hasSameStructureAs iftNode.value)
                 is IntermediateFormTreeNode.RegisterWrite -> registersMap.ensurePairSymmetrical(this.register, (iftNode as IntermediateFormTreeNode.RegisterWrite).register) && (this.node hasSameStructureAs iftNode.node)
                 is IntermediateFormTreeNode.RegisterRead -> registersMap.ensurePairSymmetrical(this.register, (iftNode as IntermediateFormTreeNode.RegisterRead).register)
                 else -> {
@@ -245,8 +257,10 @@ class ExpressionControlFlowTest {
 
     private fun IntermediateFormTreeNode.toCfg(): ControlFlowGraph =
         ControlFlowGraphBuilder().addSingleTree(this).build()
+
     private infix fun ControlFlowGraph.merge(cfg: ControlFlowGraph): ControlFlowGraph =
         ControlFlowGraphBuilder().mergeUnconditionally(this).mergeUnconditionally(cfg).build()
+
     private infix fun IntermediateFormTreeNode.merge(cfg: ControlFlowGraph): ControlFlowGraph =
         this.toCfg() merge cfg
 
@@ -321,6 +335,35 @@ class ExpressionControlFlowTest {
 
         assertTrue(
             assignmentCfg hasSameStructureAs IntermediateFormTreeNode.DummyWrite("y" asVarIn context, IntermediateFormTreeNode.DummyRead("x" asVarIn context, true), true).toCfg()
+        )
+    }
+
+    @Test
+    fun `global variables`() {
+        val context = ExpressionContext(
+            setOf("x"),
+            globals = setOf("x")
+        )
+
+        val read = context.createCfg("x" asVarExprIn context)
+        assertTrue(
+            read hasSameStructureAs
+                IntermediateFormTreeNode.DummyRead(
+                    "x" asVarIn context,
+                    isDirect = false,
+                    isGlobal = true
+                ).toCfg()
+        )
+
+        val write = context.createCfg(Expression.NumberLiteral(10), "x" asVarIn context)
+        assertTrue(
+            write hasSameStructureAs
+                IntermediateFormTreeNode.DummyWrite(
+                    "x" asVarIn context,
+                    IntermediateFormTreeNode.Const(10),
+                    isDirect = false,
+                    isGlobal = true
+                ).toCfg()
         )
     }
 

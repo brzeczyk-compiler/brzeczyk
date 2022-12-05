@@ -88,13 +88,13 @@ sealed class Pattern {
 
     data class MemoryWrite(
         val addressPattern: Pattern = AnyNode(),
-        val nodePattern: Pattern = AnyNode()
+        val valuePattern: Pattern = AnyNode()
     ) : Pattern() {
         override fun match(node: IntermediateFormTreeNode): Pair<List<IntermediateFormTreeNode>, Map<String, Any>>? {
             if (node !is IntermediateFormTreeNode.MemoryWrite) return null
             val addressMatch = addressPattern.match(node.address) ?: return null
-            val nodeMatch = nodePattern.match(node.node) ?: return null
-            return Pair(addressMatch.first + nodeMatch.first, addressMatch.second + nodeMatch.second)
+            val valueMatch = valuePattern.match(node.value) ?: return null
+            return Pair(addressMatch.first + valueMatch.first, addressMatch.second + valueMatch.second)
         }
     }
 
@@ -125,10 +125,10 @@ sealed class Pattern {
         }
     }
 
-    data class MemoryAddress(val addressLabelPattern: ArgumentPattern<String> = AnyArgument()) : Pattern() {
+    data class MemoryLabel(val addressLabelPattern: ArgumentPattern<String> = AnyArgument()) : Pattern() {
         override fun match(node: IntermediateFormTreeNode): Pair<List<IntermediateFormTreeNode>, Map<String, Any>>? {
-            if (node !is IntermediateFormTreeNode.MemoryAddress) return null
-            val match = addressLabelPattern.match(node.addressLabel) ?: return null
+            if (node !is IntermediateFormTreeNode.MemoryLabel) return null
+            val match = addressLabelPattern.match(node.label) ?: return null
             return Pair(emptyList(), match)
         }
     }

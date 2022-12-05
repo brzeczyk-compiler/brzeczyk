@@ -45,7 +45,7 @@ internal class PatternTest {
     @Test
     fun `test simple patterns`() {
         val patternMemRead = Pattern.MemoryRead()
-        val patternMemAddress = Pattern.MemoryAddress(Pattern.AnyArgument("label"))
+        val patternMemAddress = Pattern.MemoryLabel(Pattern.AnyArgument("label"))
         val patternRegRead = Pattern.RegisterRead(Pattern.AnyArgument("reg"))
         val patternConst = Pattern.Const(Pattern.AnyArgument("val"))
         val patternMemWrite = Pattern.MemoryWrite()
@@ -86,7 +86,7 @@ internal class PatternTest {
         val reg = Register()
 
         val nodeMemRead = IntermediateFormTreeNode.MemoryRead(node)
-        val nodeMemAddress = IntermediateFormTreeNode.MemoryAddress("address")
+        val nodeMemAddress = IntermediateFormTreeNode.MemoryLabel("address")
         val nodeRegRead = IntermediateFormTreeNode.RegisterRead(reg)
         val nodeConst = IntermediateFormTreeNode.Const(0L)
         val nodeMemWrite = IntermediateFormTreeNode.MemoryWrite(left, right)
@@ -171,7 +171,7 @@ internal class PatternTest {
         )
 
         val leaf1 = IntermediateFormTreeNode.Subtract(
-            IntermediateFormTreeNode.MemoryRead(IntermediateFormTreeNode.MemoryAddress("asdf")),
+            IntermediateFormTreeNode.MemoryRead(IntermediateFormTreeNode.MemoryLabel("asdf")),
             IntermediateFormTreeNode.Const(1L)
         )
         val leaf2 = IntermediateFormTreeNode.Add(

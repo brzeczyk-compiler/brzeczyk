@@ -8,7 +8,7 @@ import compiler.ast.Statement
 import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic
-import compiler.common.diagnostics.Diagnostic.ResolutionError.ControlFlowDiagnostic
+import compiler.common.diagnostics.Diagnostic.ResolutionDiagnostic.ControlFlowDiagnostic
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.semantic_analysis.assertResolutionErrorsEquals
 import compiler.common.reference_collections.referenceHashMapOf

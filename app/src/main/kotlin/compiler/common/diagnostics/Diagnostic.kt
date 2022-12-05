@@ -52,7 +52,7 @@ sealed interface Diagnostic {
         }
     }
 
-    sealed class ResolutionError(astNodes: List<AstNode>) : Diagnostic {
+    sealed class ResolutionDiagnostic(astNodes: List<AstNode>) : Diagnostic {
 
         data class ObjectAssociatedToError(val message: String, val location: LocationRange?)
 
@@ -67,7 +67,7 @@ sealed interface Diagnostic {
             append(errorMessage).append("\n")
         }.toString()
 
-        sealed class NameResolutionError(astNodes: List<AstNode>) : ResolutionError(astNodes) {
+        sealed class NameResolutionError(astNodes: List<AstNode>) : ResolutionDiagnostic(astNodes) {
             override fun isError() = true
 
             class UndefinedVariable(
@@ -116,7 +116,7 @@ sealed interface Diagnostic {
             }
         }
 
-        sealed class ArgumentResolutionError(astNodes: List<AstNode>) : ResolutionError(astNodes) {
+        sealed class ArgumentResolutionError(astNodes: List<AstNode>) : ResolutionDiagnostic(astNodes) {
             override fun isError(): Boolean = true
 
             class DefaultParametersNotLast(
@@ -162,7 +162,7 @@ sealed interface Diagnostic {
             }
         }
 
-        sealed class TypeCheckingError(astNodes: List<AstNode>) : ResolutionError(astNodes) {
+        sealed class TypeCheckingError(astNodes: List<AstNode>) : ResolutionDiagnostic(astNodes) {
             override fun isError() = true
 
             class ConstantWithoutValue(
@@ -248,7 +248,7 @@ sealed interface Diagnostic {
             }
         }
 
-        sealed class VariablePropertiesError(astNodes: List<AstNode>) : ResolutionError(astNodes) {
+        sealed class VariablePropertiesError(astNodes: List<AstNode>) : ResolutionDiagnostic(astNodes) {
             override fun isError() = true
 
             class AssignmentToFunctionParameter(
@@ -260,7 +260,7 @@ sealed interface Diagnostic {
             }
         }
 
-        sealed class ControlFlowDiagnostic(astNodes: List<AstNode>) : ResolutionError(astNodes) {
+        sealed class ControlFlowDiagnostic(astNodes: List<AstNode>) : ResolutionDiagnostic(astNodes) {
 
             sealed class Warnings(astNodes: List<AstNode>) : ControlFlowDiagnostic(astNodes) {
                 override fun isError() = false

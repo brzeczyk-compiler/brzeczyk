@@ -9,12 +9,12 @@ import compiler.ast.StatementBlock
 import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic
-import compiler.common.diagnostics.Diagnostic.ResolutionError.TypeCheckingError
+import compiler.common.diagnostics.Diagnostic.ResolutionDiagnostic.TypeCheckingError
+import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.referenceEntries
 import compiler.common.reference_collections.referenceHashMapOf
 import kotlin.test.Test
-import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 

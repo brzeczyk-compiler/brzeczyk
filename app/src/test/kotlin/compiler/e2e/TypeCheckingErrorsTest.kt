@@ -7,27 +7,27 @@ import kotlin.test.Test
 
 class TypeCheckingErrorsTest {
     private fun assertInvalidTypeError(program: String) {
-        assertErrorOfType(program, Diagnostic.ResolutionError.TypeCheckingError.InvalidType::class)
+        assertErrorOfType(program, Diagnostic.ResolutionDiagnostic.TypeCheckingError.InvalidType::class)
     }
 
     private fun assertConditionalMismatchError(program: String) {
-        assertErrorOfType(program, Diagnostic.ResolutionError.TypeCheckingError.ConditionalTypesMismatch::class)
+        assertErrorOfType(program, Diagnostic.ResolutionDiagnostic.TypeCheckingError.ConditionalTypesMismatch::class)
     }
 
     private fun assertUninitializedGlobalVariableError(program: String) {
-        assertErrorOfType(program, Diagnostic.ResolutionError.TypeCheckingError.UninitializedGlobalVariable::class)
+        assertErrorOfType(program, Diagnostic.ResolutionDiagnostic.TypeCheckingError.UninitializedGlobalVariable::class)
     }
 
     private fun assertConstantWithoutValueError(program: String) {
-        assertErrorOfType(program, Diagnostic.ResolutionError.TypeCheckingError.ConstantWithoutValue::class)
+        assertErrorOfType(program, Diagnostic.ResolutionDiagnostic.TypeCheckingError.ConstantWithoutValue::class)
     }
 
     private fun assertNonConstantExpressionError(program: String) {
-        assertErrorOfType(program, Diagnostic.ResolutionError.TypeCheckingError.NonConstantExpression::class)
+        assertErrorOfType(program, Diagnostic.ResolutionDiagnostic.TypeCheckingError.NonConstantExpression::class)
     }
 
     private fun assertMissingReturnStatementError(program: String) {
-        assertErrorOfType(program, Diagnostic.ResolutionError.TypeCheckingError.MissingReturnStatement::class)
+        assertErrorOfType(program, Diagnostic.ResolutionDiagnostic.TypeCheckingError.MissingReturnStatement::class)
     }
 
     @Test

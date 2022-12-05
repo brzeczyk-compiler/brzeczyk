@@ -226,7 +226,7 @@ internal class ArgumentResolverTest {
             ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
         }
 
-        val expected = listOf(Diagnostic.ResolutionError.ArgumentResolutionError.DefaultParametersNotLast(function.function))
+        val expected = listOf(Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.DefaultParametersNotLast(function.function))
 
         assertResolutionErrorsEquals(expected, diagnostics.diagnostics.toList())
     }
@@ -254,7 +254,7 @@ internal class ArgumentResolverTest {
             ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
         }
 
-        val expected = listOf(Diagnostic.ResolutionError.ArgumentResolutionError.PositionalArgumentAfterNamed(call))
+        val expected = listOf(Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.PositionalArgumentAfterNamed(call))
 
         assertResolutionErrorsEquals(expected, diagnostics.diagnostics.toList())
     }
@@ -281,7 +281,7 @@ internal class ArgumentResolverTest {
             ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
         }
 
-        val expected = listOf(Diagnostic.ResolutionError.ArgumentResolutionError.MissingArgument(function.function, call, par2))
+        val expected = listOf(Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.MissingArgument(function.function, call, par2))
 
         assertResolutionErrorsEquals(expected, diagnostics.diagnostics.toList())
     }
@@ -310,7 +310,7 @@ internal class ArgumentResolverTest {
             ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
         }
 
-        val expected = listOf(Diagnostic.ResolutionError.ArgumentResolutionError.TooManyArguments(call))
+        val expected = listOf(Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.TooManyArguments(call))
 
         assertResolutionErrorsEquals(expected, diagnostics.diagnostics.toList())
     }
@@ -338,7 +338,7 @@ internal class ArgumentResolverTest {
             ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
         }
 
-        val expected = listOf(Diagnostic.ResolutionError.ArgumentResolutionError.RepeatedArgument(function.function, call, par1))
+        val expected = listOf(Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.RepeatedArgument(function.function, call, par1))
 
         assertResolutionErrorsEquals(expected, diagnostics.diagnostics.toList())
     }
@@ -366,7 +366,7 @@ internal class ArgumentResolverTest {
             ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
         }
 
-        val expected = listOf(Diagnostic.ResolutionError.ArgumentResolutionError.UnknownArgument(function.function, call, arg2))
+        val expected = listOf(Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.UnknownArgument(function.function, call, arg2))
 
         assertResolutionErrorsEquals(expected, diagnostics.diagnostics.toList())
     }

@@ -55,20 +55,20 @@ object NameResolver {
         fun reportIfNameConflict(namedNode: NamedNode, scope: MutableMap<String, NamedNode>) {
             // conflict can only appear in the same scope
             if (scope.containsKey(namedNode.name))
-                diagnostics.report(Diagnostic.ResolutionError.NameResolutionError.NameConflict(scope[namedNode.name]!!, namedNode))
+                diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.NameConflict(scope[namedNode.name]!!, namedNode))
         }
 
         fun checkVariableUsage(name: String, astNode: AstNode): Boolean {
             if (!visibleNames.containsKey(name)) {
                 if (astNode is Expression.Variable)
-                    diagnostics.report(Diagnostic.ResolutionError.NameResolutionError.UndefinedVariable(astNode))
+                    diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.UndefinedVariable(astNode))
                 if (astNode is Statement.Assignment)
-                    diagnostics.report(Diagnostic.ResolutionError.NameResolutionError.AssignmentToUndefinedVariable(astNode))
+                    diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.AssignmentToUndefinedVariable(astNode))
             } else if (visibleNames[name]!!.onlyHasFunctions()) {
                 if (astNode is Expression.Variable)
-                    diagnostics.report(Diagnostic.ResolutionError.NameResolutionError.FunctionIsNotVariable(visibleNames[name]!!.topFunction(), astNode))
+                    diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.FunctionIsNotVariable(visibleNames[name]!!.topFunction(), astNode))
                 if (astNode is Statement.Assignment)
-                    diagnostics.report(Diagnostic.ResolutionError.NameResolutionError.AssignmentToFunction(visibleNames[name]!!.topFunction(), astNode))
+                    diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.AssignmentToFunction(visibleNames[name]!!.topFunction(), astNode))
             } else {
                 return false
             }
@@ -78,9 +78,9 @@ object NameResolver {
 
         fun checkFunctionUsage(functionCall: Expression.FunctionCall): Boolean {
             if (!visibleNames.containsKey(functionCall.name)) {
-                diagnostics.report(Diagnostic.ResolutionError.NameResolutionError.UndefinedFunction(functionCall))
+                diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.UndefinedFunction(functionCall))
             } else if (visibleNames[functionCall.name]!!.onlyHasVariables()) {
-                diagnostics.report(Diagnostic.ResolutionError.NameResolutionError.VariableIsNotCallable(visibleNames[functionCall.name]!!.topVariable(), functionCall))
+                diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.VariableIsNotCallable(visibleNames[functionCall.name]!!.topVariable(), functionCall))
             } else {
                 return false
             }

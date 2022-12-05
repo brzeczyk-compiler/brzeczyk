@@ -50,15 +50,15 @@ class DefaultDefaultFunctionDetailsGeneratorTest {
         val result = fdg.genCall(listOf(arg1, arg2))
 
         val expectedCFGBuilder = ControlFlowGraphBuilder()
-        expectedCFGBuilder.addLinkFromAllFinalRoots(
+        expectedCFGBuilder.addLinksFromAllFinalRoots(
             CFGLinkType.UNCONDITIONAL,
             IntermediateFormTreeNode.RegisterWrite(Register.RDI, arg1)
         )
-        expectedCFGBuilder.addLinkFromAllFinalRoots(
+        expectedCFGBuilder.addLinksFromAllFinalRoots(
             CFGLinkType.UNCONDITIONAL,
             IntermediateFormTreeNode.RegisterWrite(Register.RSI, arg2)
         )
-        expectedCFGBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, IntermediateFormTreeNode.Call(functionLocation))
+        expectedCFGBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, IntermediateFormTreeNode.Call(functionLocation))
         val expected = expectedCFGBuilder.build()
 
         assert(expected.equalsByValue(result.callGraph))
@@ -108,24 +108,24 @@ class DefaultDefaultFunctionDetailsGeneratorTest {
 
         // write args
         for ((argRegister, arg) in argPositionToRegister zip args) {
-            expectedCFGBuilder.addLinkFromAllFinalRoots(
+            expectedCFGBuilder.addLinksFromAllFinalRoots(
                 CFGLinkType.UNCONDITIONAL,
                 IntermediateFormTreeNode.RegisterWrite(argRegister, arg)
             )
         }
-        expectedCFGBuilder.addLinkFromAllFinalRoots(
+        expectedCFGBuilder.addLinksFromAllFinalRoots(
             CFGLinkType.UNCONDITIONAL,
             IntermediateFormTreeNode.StackPush(args[7])
         )
-        expectedCFGBuilder.addLinkFromAllFinalRoots(
+        expectedCFGBuilder.addLinksFromAllFinalRoots(
             CFGLinkType.UNCONDITIONAL,
             IntermediateFormTreeNode.StackPush(args[6])
         )
         // call
-        expectedCFGBuilder.addLinkFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, IntermediateFormTreeNode.Call(functionLocation))
+        expectedCFGBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, IntermediateFormTreeNode.Call(functionLocation))
 
         // remove arguments previously put on stack
-        expectedCFGBuilder.addLinkFromAllFinalRoots(
+        expectedCFGBuilder.addLinksFromAllFinalRoots(
             CFGLinkType.UNCONDITIONAL,
             IntermediateFormTreeNode.Add(
                 IntermediateFormTreeNode.RegisterRead(Register.RSP),

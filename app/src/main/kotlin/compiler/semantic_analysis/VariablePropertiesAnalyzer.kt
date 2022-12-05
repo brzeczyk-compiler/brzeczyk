@@ -12,13 +12,11 @@ import compiler.common.diagnostics.Diagnostic.VariablePropertiesError.Assignment
 import compiler.common.diagnostics.Diagnostics
 import compiler.common.reference_collections.MutableReferenceMap
 import compiler.common.reference_collections.MutableReferenceSet
-import compiler.common.reference_collections.ReferenceHashMap
-import compiler.common.reference_collections.ReferenceHashSet
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.referenceEntries
-import compiler.common.reference_collections.referenceMapOf
-import compiler.common.reference_collections.referenceSetOf
+import compiler.common.reference_collections.referenceHashMapOf
+import compiler.common.reference_collections.referenceHashSetOf
 import compiler.common.semantic_analysis.VariablesOwner
 
 object VariablePropertiesAnalyzer {
@@ -27,14 +25,14 @@ object VariablePropertiesAnalyzer {
 
     data class VariableProperties(
         var owner: VariablesOwner = GlobalContext,
-        val accessedIn: ReferenceSet<Function> = referenceSetOf(),
-        val writtenIn: ReferenceSet<Function> = referenceSetOf(),
+        val accessedIn: ReferenceSet<Function> = referenceHashSetOf(),
+        val writtenIn: ReferenceSet<Function> = referenceHashSetOf(),
     )
 
     data class MutableVariableProperties(
         var owner: VariablesOwner = GlobalContext,
-        val accessedIn: MutableReferenceSet<Function> = ReferenceHashSet(),
-        val writtenIn: MutableReferenceSet<Function> = ReferenceHashSet(),
+        val accessedIn: MutableReferenceSet<Function> = referenceHashSetOf(),
+        val writtenIn: MutableReferenceSet<Function> = referenceHashSetOf(),
     )
 
     class AnalysisFailed : CompilationFailed()
@@ -48,8 +46,8 @@ object VariablePropertiesAnalyzer {
         accessedDefaultValues: ReferenceMap<Expression.FunctionCall, ReferenceSet<Function.Parameter>>,
         diagnostics: Diagnostics,
     ): ReferenceMap<Any, VariableProperties> {
-        val mutableVariableProperties: MutableReferenceMap<Any, MutableVariableProperties> = ReferenceHashMap()
-        val functionCallsOwnership: MutableReferenceMap<Expression.FunctionCall, Function> = ReferenceHashMap()
+        val mutableVariableProperties: MutableReferenceMap<Any, MutableVariableProperties> = referenceHashMapOf()
+        val functionCallsOwnership: MutableReferenceMap<Expression.FunctionCall, Function> = referenceHashMapOf()
         var failed = false
 
         // Any = Expression | Statement
@@ -124,9 +122,9 @@ object VariablePropertiesAnalyzer {
         val fixedVariableProperties = mutableVariableProperties.map { it.key to fixVariableProperties(it.value) }.toMutableList()
 
         val defaultParametersDummyVariablesProperties = defaultParameterMapping.referenceEntries.map { paramToVariable ->
-            val accessedIn = referenceSetOf(accessedDefaultValues.referenceEntries.filter { paramToVariable.key in it.value }.map { functionCallsOwnership[it.key]!! }.toList())
+            val accessedIn = referenceHashSetOf(accessedDefaultValues.referenceEntries.filter { paramToVariable.key in it.value }.map { functionCallsOwnership[it.key]!! }.toList())
             val owner = mutableVariableProperties[paramToVariable.value]!!.owner
-            val writtenIn = if (owner != GlobalContext) referenceSetOf(owner as Function) else referenceSetOf()
+            val writtenIn = if (owner != GlobalContext) referenceHashSetOf(owner as Function) else referenceHashSetOf()
             paramToVariable.value to VariableProperties(owner, accessedIn, writtenIn)
         }.toList()
 
@@ -135,6 +133,6 @@ object VariablePropertiesAnalyzer {
         if (failed)
             throw AnalysisFailed()
 
-        return referenceMapOf(fixedVariableProperties)
+        return referenceHashMapOf(fixedVariableProperties)
     }
 }

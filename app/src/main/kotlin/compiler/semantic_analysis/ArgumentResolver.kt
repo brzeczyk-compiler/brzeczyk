@@ -10,10 +10,10 @@ import compiler.ast.StatementBlock
 import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic
 import compiler.common.diagnostics.Diagnostics
-import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.ReferenceSet
-import compiler.common.reference_collections.referenceSetOf
+import compiler.common.reference_collections.referenceHashMapOf
+import compiler.common.reference_collections.referenceHashSetOf
 
 typealias ArgumentResolutionResult = ReferenceMap<Expression.FunctionCall.Argument, Function.Parameter>
 
@@ -25,8 +25,8 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
 
     class ResolutionFailed : CompilationFailed()
 
-    private val argumentsToParametersMap = ReferenceHashMap<Expression.FunctionCall.Argument, Function.Parameter>()
-    private val accessedDefaultValues = ReferenceHashMap<Expression.FunctionCall, ReferenceSet<Function.Parameter>>()
+    private val argumentsToParametersMap = referenceHashMapOf<Expression.FunctionCall.Argument, Function.Parameter>()
+    private val accessedDefaultValues = referenceHashMapOf<Expression.FunctionCall, ReferenceSet<Function.Parameter>>()
     private var failed = false
 
     companion object {
@@ -102,7 +102,7 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
                 }
             }
         }
-        accessedDefaultValues[functionCall] = referenceSetOf(parametersWithDefaultValue)
+        accessedDefaultValues[functionCall] = referenceHashSetOf(parametersWithDefaultValue)
     }
 
     private fun resolveFunctionCallsArguments(program: Program) {

@@ -10,10 +10,9 @@ import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic
 import compiler.common.diagnostics.Diagnostic.TypeCheckingError
-import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.referenceEntries
-import compiler.common.reference_collections.referenceMapOf
+import compiler.common.reference_collections.referenceHashMapOf
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -24,8 +23,8 @@ fun <K, V> assertContentEquals(expected: ReferenceMap<K, V>, actual: ReferenceMa
 }
 
 class TypeCheckerTest {
-    private val nameResolution = ReferenceHashMap<Any, NamedNode>()
-    private val argumentResolution = ReferenceHashMap<Expression.FunctionCall.Argument, Function.Parameter>()
+    private val nameResolution = referenceHashMapOf<Any, NamedNode>()
+    private val argumentResolution = referenceHashMapOf<Expression.FunctionCall.Argument, Function.Parameter>()
     private val diagnostics = mutableListOf<Diagnostic>()
 
     // stała x: Liczba = 123
@@ -731,7 +730,7 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
 
-        assertContentEquals(referenceMapOf(value to Type.Unit), types)
+        assertContentEquals(referenceHashMapOf(value to Type.Unit), types)
         assertContentEquals(listOf(), diagnostics)
     }
 
@@ -746,7 +745,7 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
 
-        assertContentEquals(referenceMapOf(value to Type.Boolean), types)
+        assertContentEquals(referenceHashMapOf(value to Type.Boolean), types)
         assertContentEquals(listOf(), diagnostics)
     }
 
@@ -761,7 +760,7 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
 
-        assertContentEquals(referenceMapOf(value to Type.Number), types)
+        assertContentEquals(referenceHashMapOf(value to Type.Number), types)
         assertContentEquals(listOf(), diagnostics)
     }
 
@@ -782,7 +781,7 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
 
-        assertContentEquals(referenceMapOf(value to Type.Number, variableExpression to Type.Number), types)
+        assertContentEquals(referenceHashMapOf(value to Type.Number, variableExpression to Type.Number), types)
         assertContentEquals(listOf(), diagnostics)
     }
 
@@ -799,7 +798,7 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
 
-        assertContentEquals(referenceMapOf(variableExpression to Type.Number), types)
+        assertContentEquals(referenceHashMapOf(variableExpression to Type.Number), types)
         assertContentEquals(listOf(), diagnostics)
     }
 
@@ -924,7 +923,7 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
 
-        assertContentEquals(referenceMapOf(value to Type.Number, call to Type.Number), types)
+        assertContentEquals(referenceHashMapOf(value to Type.Number, call to Type.Number), types)
         assertContentEquals(listOf(), diagnostics)
     }
 
@@ -940,7 +939,7 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
 
-        assertContentEquals(referenceMapOf(value to Type.Boolean, operation to Type.Boolean), types)
+        assertContentEquals(referenceHashMapOf(value to Type.Boolean, operation to Type.Boolean), types)
         assertContentEquals(listOf(), diagnostics)
     }
 
@@ -973,7 +972,7 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
 
-        assertContentEquals(referenceMapOf(value to Type.Number, operation to Type.Number), types)
+        assertContentEquals(referenceHashMapOf(value to Type.Number, operation to Type.Number), types)
         assertContentEquals(listOf(), diagnostics)
     }
 
@@ -1007,7 +1006,7 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
 
-        assertContentEquals(referenceMapOf(leftValue to Type.Boolean, rightValue to Type.Boolean, operation to Type.Boolean), types)
+        assertContentEquals(referenceHashMapOf(leftValue to Type.Boolean, rightValue to Type.Boolean, operation to Type.Boolean), types)
         assertContentEquals(listOf(), diagnostics)
     }
 
@@ -1042,7 +1041,7 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
 
-        assertContentEquals(referenceMapOf(leftValue to Type.Number, rightValue to Type.Number, operation to Type.Number), types)
+        assertContentEquals(referenceHashMapOf(leftValue to Type.Number, rightValue to Type.Number, operation to Type.Number), types)
         assertContentEquals(listOf(), diagnostics)
     }
 
@@ -1077,7 +1076,7 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
 
-        assertContentEquals(referenceMapOf(leftValue to Type.Number, rightValue to Type.Number, operation to Type.Boolean), types)
+        assertContentEquals(referenceHashMapOf(leftValue to Type.Number, rightValue to Type.Number, operation to Type.Boolean), types)
         assertContentEquals(listOf(), diagnostics)
     }
 
@@ -1114,7 +1113,7 @@ class TypeCheckerTest {
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics::add)
 
         assertContentEquals(
-            referenceMapOf(
+            referenceHashMapOf(
                 condition to Type.Boolean,
                 valueWhenTrue to Type.Number,
                 valueWhenFalse to Type.Number,

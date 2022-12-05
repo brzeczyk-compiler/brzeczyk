@@ -13,11 +13,10 @@ import compiler.ast.Variable
 import compiler.common.diagnostics.CompilerDiagnostics
 import compiler.common.diagnostics.Diagnostic.VariablePropertiesError
 import compiler.common.diagnostics.Diagnostic.VariablePropertiesError.AssignmentToFunctionParameter
-import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.ReferenceSet
-import compiler.common.reference_collections.referenceMapOf
-import compiler.common.reference_collections.referenceSetOf
+import compiler.common.reference_collections.referenceHashMapOf
+import compiler.common.reference_collections.referenceHashSetOf
 import compiler.semantic_analysis.VariablePropertiesAnalyzer.VariableProperties
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -29,8 +28,8 @@ class VariablePropertiesAnalyzerTest {
     private data class VariablePropertyInput(
         val program: Program,
         val nameResolution: ReferenceMap<Any, NamedNode>,
-        val defaultParameterMapping: ReferenceMap<Function.Parameter, Variable> = referenceMapOf(),
-        val accessedDefaultValues: ReferenceMap<Expression.FunctionCall, ReferenceSet<Function.Parameter>> = referenceMapOf(),
+        val defaultParameterMapping: ReferenceMap<Function.Parameter, Variable> = referenceHashMapOf(),
+        val accessedDefaultValues: ReferenceMap<Expression.FunctionCall, ReferenceSet<Function.Parameter>> = referenceHashMapOf(),
     )
 
     private fun assertAnalysisResults(
@@ -81,10 +80,10 @@ class VariablePropertiesAnalyzerTest {
     @Test
     fun `test unused variable is global`() {
         val variable = Variable(Variable.Kind.VALUE, "x", Type.Number, Expression.NumberLiteral(123))
-        val input = VariablePropertyInput(Program(listOf(VariableDefinition(variable))), referenceMapOf())
+        val input = VariablePropertyInput(Program(listOf(VariableDefinition(variable))), referenceHashMapOf())
 
-        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceMapOf(
-            variable to VariableProperties(VariablePropertiesAnalyzer.GlobalContext, referenceSetOf(), referenceSetOf()),
+        val expectedResults = referenceHashMapOf<Any, VariableProperties>(
+            variable to VariableProperties(VariablePropertiesAnalyzer.GlobalContext, referenceHashSetOf(), referenceHashSetOf()),
         )
 
         assertAnalysisResults(input, expectedResults)
@@ -102,10 +101,10 @@ class VariablePropertiesAnalyzerTest {
             "zewnętrzna", listOf(), Type.Unit,
             listOf(Statement.VariableDefinition(variable))
         )
-        val input = VariablePropertyInput(Program(listOf(FunctionDefinition(function))), ReferenceHashMap())
+        val input = VariablePropertyInput(Program(listOf(FunctionDefinition(function))), referenceHashMapOf())
 
-        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceMapOf(
-            variable to VariableProperties(function, referenceSetOf(), referenceSetOf()),
+        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceHashMapOf(
+            variable to VariableProperties(function, referenceHashSetOf(), referenceHashSetOf()),
         )
 
         assertAnalysisResults(input, expectedResults)
@@ -122,12 +121,12 @@ class VariablePropertiesAnalyzerTest {
             "zewnętrzna", listOf(parameterX), Type.Unit,
             listOf()
         )
-        val defaultParameterMapping = referenceMapOf(parameterX to dummyVariableX)
-        val input = VariablePropertyInput(Program(listOf(FunctionDefinition(function))), referenceMapOf(), defaultParameterMapping)
+        val defaultParameterMapping = referenceHashMapOf(parameterX to dummyVariableX)
+        val input = VariablePropertyInput(Program(listOf(FunctionDefinition(function))), referenceHashMapOf(), defaultParameterMapping)
 
-        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceMapOf(
-            parameterX to VariableProperties(function, referenceSetOf(), referenceSetOf()),
-            dummyVariableX to VariableProperties(VariablePropertiesAnalyzer.GlobalContext, referenceSetOf(), referenceSetOf()),
+        val expectedResults = referenceHashMapOf<Any, VariableProperties>(
+            parameterX to VariableProperties(function, referenceHashSetOf(), referenceHashSetOf()),
+            dummyVariableX to VariableProperties(VariablePropertiesAnalyzer.GlobalContext, referenceHashSetOf(), referenceHashSetOf()),
         )
 
         assertAnalysisResults(input, expectedResults)
@@ -149,12 +148,12 @@ class VariablePropertiesAnalyzerTest {
                 Statement.FunctionDefinition(innerFunction)
             )
         )
-        val defaultParameterMapping = referenceMapOf(parameterX to dummyVariableX)
-        val input = VariablePropertyInput(Program(listOf(FunctionDefinition(function))), referenceMapOf(), defaultParameterMapping)
+        val defaultParameterMapping = referenceHashMapOf(parameterX to dummyVariableX)
+        val input = VariablePropertyInput(Program(listOf(FunctionDefinition(function))), referenceHashMapOf(), defaultParameterMapping)
 
-        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceMapOf(
-            parameterX to VariableProperties(innerFunction, referenceSetOf(), referenceSetOf()),
-            dummyVariableX to VariableProperties(function, referenceSetOf(), referenceSetOf(function)),
+        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceHashMapOf(
+            parameterX to VariableProperties(innerFunction, referenceHashSetOf(), referenceHashSetOf()),
+            dummyVariableX to VariableProperties(function, referenceHashSetOf(), referenceHashSetOf(function)),
         )
 
         assertAnalysisResults(input, expectedResults)
@@ -175,15 +174,15 @@ class VariablePropertiesAnalyzerTest {
             "zewnętrzna", listOf(), Type.Unit,
             listOf(Statement.VariableDefinition(variableX), Statement.VariableDefinition(variableY))
         )
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceMapOf(readFromX to variableX)
+        val nameResolution: ReferenceMap<Any, NamedNode> = referenceHashMapOf(readFromX to variableX)
         val input = VariablePropertyInput(
             Program(listOf(FunctionDefinition(outer))),
             nameResolution,
         )
 
-        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceMapOf(
-            variableX to VariableProperties(outer, referenceSetOf(outer), referenceSetOf()),
-            variableY to VariableProperties(outer, referenceSetOf(), referenceSetOf()),
+        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceHashMapOf(
+            variableX to VariableProperties(outer, referenceHashSetOf(outer), referenceHashSetOf()),
+            variableY to VariableProperties(outer, referenceHashSetOf(), referenceHashSetOf()),
         )
 
         assertAnalysisResults(input, expectedResults)
@@ -203,14 +202,14 @@ class VariablePropertiesAnalyzerTest {
             "zewnętrzna", listOf(), Type.Unit,
             listOf(Statement.VariableDefinition(variableX), assignmentToX)
         )
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceMapOf(assignmentToX to variableX)
+        val nameResolution: ReferenceMap<Any, NamedNode> = referenceHashMapOf(assignmentToX to variableX)
         val input = VariablePropertyInput(
             Program(listOf(FunctionDefinition(outer))),
             nameResolution,
         )
 
-        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceMapOf(
-            variableX to VariableProperties(outer, referenceSetOf(), referenceSetOf(outer)),
+        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceHashMapOf(
+            variableX to VariableProperties(outer, referenceHashSetOf(), referenceHashSetOf(outer)),
         )
 
         assertAnalysisResults(input, expectedResults)
@@ -229,7 +228,7 @@ class VariablePropertiesAnalyzerTest {
             "zewnętrzna", listOf(parameterX), Type.Unit,
             listOf(assignmentToX)
         )
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceMapOf(assignmentToX to parameterX)
+        val nameResolution: ReferenceMap<Any, NamedNode> = referenceHashMapOf(assignmentToX to parameterX)
         val input = VariablePropertyInput(
             Program(listOf(FunctionDefinition(outer))),
             nameResolution,
@@ -261,15 +260,15 @@ class VariablePropertiesAnalyzerTest {
             "zewnętrzna", listOf(), Type.Unit,
             listOf(Statement.VariableDefinition(variableX), Statement.FunctionDefinition(inner))
         )
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceMapOf(readFromX to variableX)
+        val nameResolution: ReferenceMap<Any, NamedNode> = referenceHashMapOf(readFromX to variableX)
         val input = VariablePropertyInput(
             Program(listOf(FunctionDefinition(outer))),
             nameResolution,
         )
 
-        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceMapOf(
-            variableX to VariableProperties(outer, referenceSetOf(inner), referenceSetOf()),
-            variableY to VariableProperties(inner, referenceSetOf(), referenceSetOf()),
+        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceHashMapOf(
+            variableX to VariableProperties(outer, referenceHashSetOf(inner), referenceHashSetOf()),
+            variableY to VariableProperties(inner, referenceHashSetOf(), referenceHashSetOf()),
         )
 
         assertAnalysisResults(input, expectedResults)
@@ -295,14 +294,14 @@ class VariablePropertiesAnalyzerTest {
             "zewnętrzna", listOf(), Type.Unit,
             listOf(Statement.VariableDefinition(variableX), Statement.FunctionDefinition(inner))
         )
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceMapOf(assignmentToX to variableX)
+        val nameResolution: ReferenceMap<Any, NamedNode> = referenceHashMapOf(assignmentToX to variableX)
         val input = VariablePropertyInput(
             Program(listOf(FunctionDefinition(outer))),
             nameResolution,
         )
 
-        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceMapOf(
-            variableX to VariableProperties(outer, referenceSetOf(), referenceSetOf(inner)),
+        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceHashMapOf(
+            variableX to VariableProperties(outer, referenceHashSetOf(), referenceHashSetOf(inner)),
         )
 
         assertAnalysisResults(input, expectedResults)
@@ -327,7 +326,7 @@ class VariablePropertiesAnalyzerTest {
             "zewnętrzna", listOf(parameterX), Type.Unit,
             listOf(Statement.FunctionDefinition(inner))
         )
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceMapOf(assignmentToX to parameterX)
+        val nameResolution: ReferenceMap<Any, NamedNode> = referenceHashMapOf(assignmentToX to parameterX)
         val input = VariablePropertyInput(
             Program(listOf(FunctionDefinition(outer))),
             nameResolution,
@@ -360,18 +359,18 @@ class VariablePropertiesAnalyzerTest {
             "zewnętrzna", listOf(parameterX), Type.Unit,
             listOf(Statement.FunctionDefinition(inner))
         )
-        val defaultParameterMapping = referenceMapOf(parameterX to dummyVariableX)
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceMapOf(readFromX to parameterX)
+        val defaultParameterMapping = referenceHashMapOf(parameterX to dummyVariableX)
+        val nameResolution: ReferenceMap<Any, NamedNode> = referenceHashMapOf(readFromX to parameterX)
         val input = VariablePropertyInput(
             Program(listOf(FunctionDefinition(outer))),
             nameResolution,
             defaultParameterMapping,
         )
 
-        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceMapOf(
-            parameterX to VariableProperties(outer, referenceSetOf(inner), referenceSetOf()),
-            dummyVariableX to VariableProperties(VariablePropertiesAnalyzer.GlobalContext, referenceSetOf(), referenceSetOf()),
-            variableY to VariableProperties(inner, referenceSetOf(), referenceSetOf()),
+        val expectedResults = referenceHashMapOf<Any, VariableProperties>(
+            parameterX to VariableProperties(outer, referenceHashSetOf(inner), referenceHashSetOf()),
+            dummyVariableX to VariableProperties(VariablePropertiesAnalyzer.GlobalContext, referenceHashSetOf(), referenceHashSetOf()),
+            variableY to VariableProperties(inner, referenceHashSetOf(), referenceHashSetOf()),
         )
 
         assertAnalysisResults(input, expectedResults)
@@ -401,15 +400,15 @@ class VariablePropertiesAnalyzerTest {
             "zewnętrzna", listOf(), Type.Unit,
             listOf(Statement.VariableDefinition(variableX), Statement.FunctionDefinition(inner))
         )
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceMapOf(readFromX to variableX)
+        val nameResolution: ReferenceMap<Any, NamedNode> = referenceHashMapOf(readFromX to variableX)
         val input = VariablePropertyInput(
             Program(listOf(FunctionDefinition(outer))),
             nameResolution,
         )
 
-        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceMapOf(
-            variableX to VariableProperties(outer, referenceSetOf(innerDeep), referenceSetOf()),
-            variableY to VariableProperties(innerDeep, referenceSetOf(), referenceSetOf()),
+        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceHashMapOf(
+            variableX to VariableProperties(outer, referenceHashSetOf(innerDeep), referenceHashSetOf()),
+            variableY to VariableProperties(innerDeep, referenceHashSetOf(), referenceHashSetOf()),
         )
 
         assertAnalysisResults(input, expectedResults)
@@ -458,7 +457,7 @@ class VariablePropertiesAnalyzerTest {
                 Statement.FunctionDefinition(inner),
             )
         )
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceMapOf(
+        val nameResolution: ReferenceMap<Any, NamedNode> = referenceHashMapOf(
             readFromX to variableX,
             assignmentToXOuter to variableX,
             assignmentToXInner to variableX,
@@ -469,11 +468,11 @@ class VariablePropertiesAnalyzerTest {
             nameResolution,
         )
 
-        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceMapOf(
-            variableX to VariableProperties(outer, referenceSetOf(outer, inner, innerDeep), referenceSetOf(outer, inner, innerDeep)),
-            variableYOuter to VariableProperties(outer, referenceSetOf(), referenceSetOf()),
-            variableYInner to VariableProperties(inner, referenceSetOf(), referenceSetOf()),
-            variableYInnerDeep to VariableProperties(innerDeep, referenceSetOf(), referenceSetOf()),
+        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceHashMapOf(
+            variableX to VariableProperties(outer, referenceHashSetOf(outer, inner, innerDeep), referenceHashSetOf(outer, inner, innerDeep)),
+            variableYOuter to VariableProperties(outer, referenceHashSetOf(), referenceHashSetOf()),
+            variableYInner to VariableProperties(inner, referenceHashSetOf(), referenceHashSetOf()),
+            variableYInnerDeep to VariableProperties(innerDeep, referenceHashSetOf(), referenceHashSetOf()),
         )
 
         assertAnalysisResults(input, expectedResults)
@@ -498,14 +497,14 @@ class VariablePropertiesAnalyzerTest {
                 Statement.Evaluation(innerFunctionCall),
             )
         )
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceMapOf(innerFunctionCall to innerFunction)
-        val defaultParameterMapping = referenceMapOf(parameterX to dummyVariableX)
-        val accessedDefaultValues = referenceMapOf(innerFunctionCall to referenceSetOf<Function.Parameter>())
+        val nameResolution: ReferenceMap<Any, NamedNode> = referenceHashMapOf(innerFunctionCall to innerFunction)
+        val defaultParameterMapping = referenceHashMapOf(parameterX to dummyVariableX)
+        val accessedDefaultValues: ReferenceMap<Expression.FunctionCall, ReferenceSet<Function.Parameter>> = referenceHashMapOf(innerFunctionCall to referenceHashSetOf<Function.Parameter>())
         val input = VariablePropertyInput(Program(listOf(FunctionDefinition(function))), nameResolution, defaultParameterMapping, accessedDefaultValues)
 
-        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceMapOf(
-            parameterX to VariableProperties(innerFunction, referenceSetOf(), referenceSetOf()),
-            dummyVariableX to VariableProperties(function, referenceSetOf(), referenceSetOf(function)),
+        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceHashMapOf(
+            parameterX to VariableProperties(innerFunction, referenceHashSetOf(), referenceHashSetOf()),
+            dummyVariableX to VariableProperties(function, referenceHashSetOf(), referenceHashSetOf(function)),
         )
 
         assertAnalysisResults(input, expectedResults)
@@ -540,17 +539,17 @@ class VariablePropertiesAnalyzerTest {
                 Statement.FunctionDefinition(gFunction),
             )
         )
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceMapOf(
+        val nameResolution: ReferenceMap<Any, NamedNode> = referenceHashMapOf(
             fInnerFunctionCall to innerFunction,
             gInnerFunctionCall to innerFunction,
         )
-        val defaultParameterMapping = referenceMapOf(parameterX to dummyVariableX)
-        val accessedDefaultValues = referenceMapOf(fInnerFunctionCall to referenceSetOf(parameterX), gInnerFunctionCall to referenceSetOf())
+        val defaultParameterMapping = referenceHashMapOf(parameterX to dummyVariableX)
+        val accessedDefaultValues: ReferenceMap<Expression.FunctionCall, ReferenceSet<Function.Parameter>> = referenceHashMapOf(fInnerFunctionCall to referenceHashSetOf(parameterX), gInnerFunctionCall to referenceHashSetOf())
         val input = VariablePropertyInput(Program(listOf(FunctionDefinition(function))), nameResolution, defaultParameterMapping, accessedDefaultValues)
 
-        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceMapOf(
-            parameterX to VariableProperties(innerFunction, referenceSetOf(), referenceSetOf()),
-            dummyVariableX to VariableProperties(function, referenceSetOf(fFunction), referenceSetOf(function)),
+        val expectedResults: ReferenceMap<Any, VariableProperties> = referenceHashMapOf(
+            parameterX to VariableProperties(innerFunction, referenceHashSetOf(), referenceHashSetOf()),
+            dummyVariableX to VariableProperties(function, referenceHashSetOf(fFunction), referenceHashSetOf(function)),
         )
 
         assertAnalysisResults(input, expectedResults)

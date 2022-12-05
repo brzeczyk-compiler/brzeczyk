@@ -2,7 +2,7 @@ package compiler.intermediate_form
 
 import compiler.ast.Type
 import compiler.ast.Variable
-import compiler.common.reference_collections.ReferenceHashMap
+import compiler.common.reference_collections.referenceHashMapOf
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -11,7 +11,7 @@ import kotlin.test.assertTrue
 class GlobalVariablesAccessGeneratorTest {
 
     private fun createGlobalVariablesAccessGeneratorForVariables(varList: List<Variable>): GlobalVariablesAccessGenerator =
-        ReferenceHashMap<Any, VariablePropertiesAnalyzer.VariableProperties>().apply {
+        referenceHashMapOf<Any, VariablePropertiesAnalyzer.VariableProperties>().apply {
             putAll(
                 varList.associateWith {
                     VariablePropertiesAnalyzer.VariableProperties(

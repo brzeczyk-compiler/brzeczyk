@@ -11,11 +11,11 @@ import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic.TypeCheckingError
 import compiler.common.diagnostics.Diagnostics
-import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceMap
+import compiler.common.reference_collections.referenceHashMapOf
 
 class TypeChecker(private val nameResolution: ReferenceMap<Any, NamedNode>, private val argumentResolution: ArgumentResolutionResult, private val diagnostics: Diagnostics) {
-    private val expressionTypes = ReferenceHashMap<Expression, Type>()
+    private val expressionTypes = referenceHashMapOf<Expression, Type>()
     private var failed = false
 
     class TypeCheckingFailed : CompilationFailed()

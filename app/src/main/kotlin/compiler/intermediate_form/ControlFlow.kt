@@ -138,7 +138,7 @@ object ControlFlow {
 
                 is Expression.BooleanLiteral -> IntermediateFormTreeNode.Const(if (astNode.value) 1 else 0)
 
-                is Expression.NumberLiteral -> IntermediateFormTreeNode.Const(astNode.value.toLong())
+                is Expression.NumberLiteral -> IntermediateFormTreeNode.Const(astNode.value)
 
                 is Expression.Variable -> {
                     val variable = nameResolution[astNode] as Variable

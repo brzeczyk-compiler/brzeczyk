@@ -102,7 +102,7 @@ object InstructionSet {
             InstructionPattern(Pattern.BinaryOperator(IntermediateFormTreeNode.BitOr::class)) {
                 inRegisters, outRegister, _ ->
                 listOf(
-                    Instruction.OrRR(inRegisters[0], inRegisters[1]), //  AND  reg0, reg1
+                    Instruction.OrRR(inRegisters[0], inRegisters[1]), //  OR   reg0, reg1
                     Instruction.MoveRR(outRegister, inRegisters[0]) //    MOV  out,  reg0
                 )
             },

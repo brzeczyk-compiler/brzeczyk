@@ -13,7 +13,7 @@ sealed class Expression : AstNode {
     ) : Expression()
 
     data class NumberLiteral(
-        val value: Int,
+        val value: Long,
         override val location: LocationRange? = null,
     ) : Expression()
 

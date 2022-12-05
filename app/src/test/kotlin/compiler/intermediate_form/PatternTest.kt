@@ -7,9 +7,9 @@ internal class PatternTest {
     @Test
     fun `test argument patterns`() {
         val pattern1 = Pattern.AnyArgument<Long>("arg")
-        val pattern2 = Pattern.ArgumentOf(setOf(1L, 2L, 4L, 8L), "arg")
+        val pattern2 = Pattern.ArgumentIn(setOf(1L, 2L, 4L, 8L), "arg")
         val pattern3 = Pattern.AnyArgument<String>("arg")
-        val pattern4 = Pattern.ArgumentOf(setOf(Register.RAX, Register.RDI), "reg")
+        val pattern4 = Pattern.ArgumentIn(setOf(Register.RAX, Register.RDI), "reg")
         val pattern5 = Pattern.ArgumentWhere<Int>("val") { it < 0 }
 
         assertEquals(mapOf("arg" to 13L), pattern1.match(13L))
@@ -164,7 +164,7 @@ internal class PatternTest {
             IntermediateFormTreeNode.Add::class,
             Pattern.BinaryOperator(
                 IntermediateFormTreeNode.Multiply::class,
-                Pattern.Const(Pattern.ArgumentOf(setOf(1L, 2L, 4L, 8L), "size")),
+                Pattern.Const(Pattern.ArgumentIn(setOf(1L, 2L, 4L, 8L), "size")),
                 Pattern.AnyNode()
             ),
             Pattern.AnyNode()

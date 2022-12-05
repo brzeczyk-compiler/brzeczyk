@@ -1,7 +1,7 @@
 package compiler.intermediate_form
 
 import kotlin.reflect.KClass
-import kotlin.reflect.cast
+import kotlin.reflect.safeCast
 
 sealed class Pattern {
 
@@ -10,25 +10,31 @@ sealed class Pattern {
     // captured values (mainly used to store values in matched leaves)
     abstract fun match(node: IntermediateFormTreeNode): Pair<List<IntermediateFormTreeNode>, Map<String, Any>>?
 
+    // This class is used to match arguments in nodes which aren't other nodes
+    // It's used when we want to create instructions for specific values of arguments (constants, labels or registers)
     sealed class ArgumentPattern<T> {
+        // Return null if the argument doesn't match
+        // If it matches it returns a possibly empty map, which can contain information about the argument
+        // In all current cases it returns a mapping from a provided name to the value of the argument if the name is not null
         abstract fun match(value: T): Map<String, Any>?
     }
 
     // Matches any value of type T and maps it to the provided name
     data class AnyArgument<T>(val name: String? = null) : ArgumentPattern<T>() {
-        override fun match(value: T): Map<String, Any>? {
+        override fun match(value: T): Map<String, Any> {
             return if (name == null) emptyMap() else mapOf(name to value as Any)
         }
     }
 
     // Matches any value in allowed set and maps it to the provided name
-    data class ArgumentOf<T>(private val allowed: Set<T>, val name: String? = null) : ArgumentPattern<T>() {
+    data class ArgumentIn<T>(private val allowed: Set<T>, val name: String? = null) : ArgumentPattern<T>() {
         override fun match(value: T): Map<String, Any>? {
             if (!allowed.contains(value)) return null
             return if (name == null) emptyMap() else mapOf(name to value as Any)
         }
     }
 
+    // Matches any value that fulfill a provided predicate and maps it to the provided name
     data class ArgumentWhere<T>(val name: String? = null, val predicate: (T) -> Boolean) : ArgumentPattern<T>() {
         override fun match(value: T): Map<String, Any>? {
             if (!predicate(value)) return null
@@ -63,9 +69,9 @@ sealed class Pattern {
         val rightPattern: Pattern = AnyNode()
     ) : Pattern() {
         override fun match(node: IntermediateFormTreeNode): Pair<List<IntermediateFormTreeNode>, Map<String, Any>>? {
-            if (!type.isInstance(node)) return null
-            val leftMatch = leftPattern.match(type.cast(node).left) ?: return null
-            val rightMatch = rightPattern.match(type.cast(node).right) ?: return null
+            val castedNode = type.safeCast(node) ?: return null
+            val leftMatch = leftPattern.match(castedNode.left) ?: return null
+            val rightMatch = rightPattern.match(castedNode.right) ?: return null
             return Pair(leftMatch.first + rightMatch.first, leftMatch.second + rightMatch.second)
         }
     }
@@ -75,8 +81,8 @@ sealed class Pattern {
         val nodePattern: Pattern = AnyNode()
     ) : Pattern() {
         override fun match(node: IntermediateFormTreeNode): Pair<List<IntermediateFormTreeNode>, Map<String, Any>>? {
-            if (!type.isInstance(node)) return null
-            return nodePattern.match((node as IntermediateFormTreeNode.UnaryOperator).node)
+            val castedNode = type.safeCast(node) ?: return null
+            return nodePattern.match(castedNode.node)
         }
     }
 

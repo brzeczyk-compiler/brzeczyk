@@ -2,6 +2,7 @@ package compiler.intermediate_form
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+
 class UniqueIdentifierTest {
     @Test
     fun `test basic`() {

@@ -19,7 +19,7 @@ object FunctionDependenciesAnalyzer {
     fun createUniqueIdentifiers(program: Program): ReferenceMap<Function, UniqueIdentifier> {
         val uniqueIdentifiers = ReferenceHashMap<Function, UniqueIdentifier>()
         val identifierFactory = UniqueIdentifierFactory()
-        fun nameFunction(function: Function, pathSoFar: String?): String? {
+        fun nameFunction(function: Function, pathSoFar: String?): String {
             uniqueIdentifiers[function] = identifierFactory.build(pathSoFar, function.name)
             return uniqueIdentifiers[function]!!.value
         }

@@ -10,8 +10,8 @@ import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic
 import compiler.common.diagnostics.Diagnostic.ResolutionDiagnostic.ControlFlowDiagnostic
 import compiler.common.reference_collections.ReferenceHashMap
-import compiler.semantic_analysis.assertResolutionErrorsEquals
 import compiler.common.reference_collections.referenceHashMapOf
+import compiler.semantic_analysis.assertResolutionDiagnosticEquals
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -506,7 +506,7 @@ class FunctionControlFlowTest {
 
         test(program)
 
-        assertResolutionErrorsEquals(listOf(ControlFlowDiagnostic.Errors.BreakOutsideOfLoop(loopBreak)), diagnostics)
+        assertResolutionDiagnosticEquals(listOf(ControlFlowDiagnostic.Errors.BreakOutsideOfLoop(loopBreak)), diagnostics)
     }
 
     // czynność f() { pomiń }
@@ -519,7 +519,7 @@ class FunctionControlFlowTest {
 
         test(program)
 
-        assertResolutionErrorsEquals(listOf(ControlFlowDiagnostic.Errors.ContinuationOutsideOfLoop(loopContinuation)), diagnostics)
+        assertResolutionDiagnosticEquals(listOf(ControlFlowDiagnostic.Errors.ContinuationOutsideOfLoop(loopContinuation)), diagnostics)
     }
 
     // czynność f() {
@@ -539,7 +539,7 @@ class FunctionControlFlowTest {
 
         test(program)
 
-        assertResolutionErrorsEquals(listOf(ControlFlowDiagnostic.Warnings.UnreachableStatement(evaluation)), diagnostics)
+        assertResolutionDiagnosticEquals(listOf(ControlFlowDiagnostic.Warnings.UnreachableStatement(evaluation)), diagnostics)
     }
 
     // czynność f() {
@@ -563,7 +563,7 @@ class FunctionControlFlowTest {
 
         test(program)
 
-        assertResolutionErrorsEquals(listOf(ControlFlowDiagnostic.Warnings.UnreachableStatement(evaluation)), diagnostics)
+        assertResolutionDiagnosticEquals(listOf(ControlFlowDiagnostic.Warnings.UnreachableStatement(evaluation)), diagnostics)
     }
 
     // czynność f() {
@@ -587,6 +587,6 @@ class FunctionControlFlowTest {
 
         test(program)
 
-        assertResolutionErrorsEquals(listOf(ControlFlowDiagnostic.Warnings.UnreachableStatement(evaluation)), diagnostics)
+        assertResolutionDiagnosticEquals(listOf(ControlFlowDiagnostic.Warnings.UnreachableStatement(evaluation)), diagnostics)
     }
 }

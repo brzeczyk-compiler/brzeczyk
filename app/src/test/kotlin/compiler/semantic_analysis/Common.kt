@@ -3,7 +3,7 @@ import compiler.common.diagnostics.Diagnostic
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-fun assertResolutionErrorsEquals(expected: List<Diagnostic>, actual: List<Diagnostic>) {
+fun assertResolutionDiagnosticEquals(expected: List<Diagnostic>, actual: List<Diagnostic>) {
     assertEquals(expected.size, actual.size)
     (expected zip actual).forEach { assertEquals(it.first::class, it.second::class) }
 

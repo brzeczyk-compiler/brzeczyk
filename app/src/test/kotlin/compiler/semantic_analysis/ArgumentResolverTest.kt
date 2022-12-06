@@ -228,7 +228,7 @@ internal class ArgumentResolverTest {
 
         val expected = listOf(Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.DefaultParametersNotLast(function.function))
 
-        assertResolutionErrorsEquals(expected, diagnostics.diagnostics.toList())
+        assertResolutionDiagnosticEquals(expected, diagnostics.diagnostics.toList())
     }
 
     @Test
@@ -256,7 +256,7 @@ internal class ArgumentResolverTest {
 
         val expected = listOf(Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.PositionalArgumentAfterNamed(call))
 
-        assertResolutionErrorsEquals(expected, diagnostics.diagnostics.toList())
+        assertResolutionDiagnosticEquals(expected, diagnostics.diagnostics.toList())
     }
 
     @Test
@@ -283,7 +283,7 @@ internal class ArgumentResolverTest {
 
         val expected = listOf(Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.MissingArgument(function.function, call, par2))
 
-        assertResolutionErrorsEquals(expected, diagnostics.diagnostics.toList())
+        assertResolutionDiagnosticEquals(expected, diagnostics.diagnostics.toList())
     }
 
     @Test
@@ -312,7 +312,7 @@ internal class ArgumentResolverTest {
 
         val expected = listOf(Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.TooManyArguments(call))
 
-        assertResolutionErrorsEquals(expected, diagnostics.diagnostics.toList())
+        assertResolutionDiagnosticEquals(expected, diagnostics.diagnostics.toList())
     }
 
     @Test
@@ -340,7 +340,7 @@ internal class ArgumentResolverTest {
 
         val expected = listOf(Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.RepeatedArgument(function.function, call, par1))
 
-        assertResolutionErrorsEquals(expected, diagnostics.diagnostics.toList())
+        assertResolutionDiagnosticEquals(expected, diagnostics.diagnostics.toList())
     }
 
     @Test
@@ -368,6 +368,6 @@ internal class ArgumentResolverTest {
 
         val expected = listOf(Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.UnknownArgument(function.function, call, arg2))
 
-        assertResolutionErrorsEquals(expected, diagnostics.diagnostics.toList())
+        assertResolutionDiagnosticEquals(expected, diagnostics.diagnostics.toList())
     }
 }

@@ -5,7 +5,7 @@ import compiler.ast.Function
 import compiler.ast.NamedNode
 import compiler.ast.Type
 import compiler.ast.Variable
-import compiler.common.intermediate_form.FunctionDetailsGeneratorInterface
+import compiler.common.intermediate_form.FunctionDetailsGenerator
 import compiler.common.intermediate_form.VariableAccessGenerator
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceSet
@@ -17,10 +17,11 @@ import kotlin.test.assertTrue
 
 class ExpressionControlFlowTest {
 
-    private class TestFunctionDetailsGenerator(val function: Function) : FunctionDetailsGeneratorInterface {
-        override fun generateCall(args: List<IntermediateFormTreeNode>): FunctionDetailsGeneratorInterface.FunctionCallIntermediateForm {
+    private class TestFunctionDetailsGenerator(val function: Function) :
+        FunctionDetailsGenerator {
+        override fun genCall(args: List<IntermediateFormTreeNode>): FunctionDetailsGenerator.FunctionCallIntermediateForm {
             val callResult = IntermediateFormTreeNode.DummyCallResult()
-            return FunctionDetailsGeneratorInterface.FunctionCallIntermediateForm(
+            return FunctionDetailsGenerator.FunctionCallIntermediateForm(
                 ControlFlowGraphBuilder().addSingleTree(IntermediateFormTreeNode.DummyCall(function, args, callResult)).build(),
                 callResult
             )
@@ -54,7 +55,8 @@ class ExpressionControlFlowTest {
         val nameResolution: ReferenceHashMap<Any, NamedNode> = referenceHashMapOf()
         var nameToVarMap: Map<String, Variable>
         var nameToFunMap: Map<String, Function>
-        val functionDetailsGenerators = referenceHashMapOf<Function, FunctionDetailsGeneratorInterface>()
+
+        val functionDetailsGenerators = referenceHashMapOf<Function, FunctionDetailsGenerator>()
         val variableProperties = referenceHashMapOf<Any, VariablePropertiesAnalyzer.VariableProperties>()
         val finalCallGraph = referenceHashMapOf<Function, ReferenceSet<Function>>()
         val argumentResolution: ReferenceHashMap<Expression.FunctionCall.Argument, Function.Parameter> = referenceHashMapOf()
@@ -176,6 +178,7 @@ class ExpressionControlFlowTest {
         }
 
         infix fun IntermediateFormTreeNode.hasSameStructureAs(iftNode: IntermediateFormTreeNode): Boolean {
+
             if (this::class != iftNode::class) return false
             if (!(nodeMap.ensurePairSymmetrical(this, iftNode))) return false
             return when (this) {
@@ -568,7 +571,8 @@ class ExpressionControlFlowTest {
                 "x" asVarExprIn context
             ) add ("f" asFunCallIn context)
         )
-        assertTrue(
+
+        val v = (
             variableInConditional hasSameStructureAs (
                 mergeCFGsConditionally(
                     IntermediateFormTreeNode.DummyRead("x" asVarIn context, true).toCfg(),
@@ -579,7 +583,7 @@ class ExpressionControlFlowTest {
                     merge IntermediateFormTreeNode.RegisterWrite(r2, callResult1)
                     merge IntermediateFormTreeNode.Add(IntermediateFormTreeNode.RegisterRead(r1), IntermediateFormTreeNode.RegisterRead(r2))
                 )
-        )
+            )
 
         val functionCallsInConditional = context.createCfg( // x + y + z + ( f() ? g() : h() ), f -> x, g -> y, h -> z
             ("x" asVarExprIn context) add ("y" asVarExprIn context) add ("z" asVarExprIn context) add

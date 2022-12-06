@@ -38,7 +38,8 @@ class ControlFlowGraphBuilder(@JvmField var entryTreeRoot: IFTNode? = null) {
                 CFGLinkType.CONDITIONAL_FALSE -> conditionalFalseLinks
             }
             links[from.first] = to
-        } else if (entryTreeRoot == null) setEntryTreeRoot(to)
+        }
+        if (entryTreeRoot == null && addDestination) setEntryTreeRoot(to)
     }
 
     fun addLinksFromAllFinalRoots(linkType: CFGLinkType, to: IFTNode) {
@@ -47,11 +48,12 @@ class ControlFlowGraphBuilder(@JvmField var entryTreeRoot: IFTNode? = null) {
             setEntryTreeRoot(to)
     }
 
-    fun addAllFrom(cfg: ControlFlowGraph, modifyEntryTreeRoot: Boolean = false) {
-        treeRoots.addAll(cfg.treeRoots)
-
-        if (modifyEntryTreeRoot || entryTreeRoot == null)
+    fun addAllFrom(cfg: ControlFlowGraph) {
+        if (entryTreeRoot == null)
             entryTreeRoot = cfg.entryTreeRoot
+        for (treeRoot in cfg.treeRoots)
+            if (treeRoot !in treeRoots)
+                treeRoots.add(treeRoot)
 
         unconditionalLinks.putAll(cfg.unconditionalLinks)
         conditionalTrueLinks.putAll(cfg.conditionalTrueLinks)
@@ -62,8 +64,8 @@ class ControlFlowGraphBuilder(@JvmField var entryTreeRoot: IFTNode? = null) {
         build().finalTreeRoots.forEach {
             addLink(Pair(it, CFGLinkType.UNCONDITIONAL), cfg.entryTreeRoot!!, false)
         }
-        addAllFrom(cfg)
         if (entryTreeRoot == null) entryTreeRoot = cfg.entryTreeRoot
+        addAllFrom(cfg)
         return this
     }
 

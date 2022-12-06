@@ -6,10 +6,11 @@ import compiler.ast.NamedNode
 import compiler.ast.Program
 import compiler.ast.Statement
 import compiler.ast.StatementBlock
+import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic.ControlFlowDiagnostic
 import compiler.common.diagnostics.Diagnostics
-import compiler.common.intermediate_form.FunctionDetailsGeneratorInterface
+import compiler.common.intermediate_form.FunctionDetailsGenerator
 import compiler.common.intermediate_form.VariableAccessGenerator
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.ReferenceSet
@@ -31,7 +32,7 @@ object ControlFlow {
         nameResolution: ReferenceMap<Any, NamedNode>,
         variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>,
         callGraph: ReferenceMap<Function, ReferenceSet<Function>>,
-        functionDetailsGenerators: ReferenceMap<Function, FunctionDetailsGeneratorInterface>,
+        functionDetailsGenerators: ReferenceMap<Function, FunctionDetailsGenerator>,
         argumentResolution: ArgumentResolutionResult,
         defaultParameterValues: ReferenceMap<Function.Parameter, Variable>,
         globalVariablesAccessGenerator: VariableAccessGenerator
@@ -116,11 +117,11 @@ object ControlFlow {
         var currentTemporaryRegisters = referenceHashMapOf<Variable, Register>()
 
         fun ControlFlowGraphBuilder.addNextCFG(nextCFG: ControlFlowGraph) {
-            addAllFrom(nextCFG)
             if (nextCFG.entryTreeRoot != null) {
                 last.forEach { addLink(it, nextCFG.entryTreeRoot) }
                 last = nextCFG.finalTreeRoots.map { Pair(it, CFGLinkType.UNCONDITIONAL) }
             }
+            addAllFrom(nextCFG)
         }
 
         fun ControlFlowGraphBuilder.addNextTree(nextTree: IntermediateFormTreeNode) {
@@ -232,7 +233,7 @@ object ControlFlow {
                         parameterValues[it.index] = makeVariableReadNode(defaultParameterValues[it.value]!!)
                     }
 
-                    val callIntermediateForm = functionDetailsGenerators[function]!!.generateCall(parameterValues.map { it!! }.toList())
+                    val callIntermediateForm = functionDetailsGenerators[function]!!.genCall(parameterValues.map { it!! }.toList())
                     cfgBuilder.addNextCFG(callIntermediateForm.callGraph)
                     invalidatedVariables[astNode]!!.forEach { currentTemporaryRegisters.remove(it) }
 
@@ -288,11 +289,18 @@ object ControlFlow {
         nameResolution: ReferenceMap<Any, NamedNode>,
         defaultParameterValues: ReferenceMap<Function.Parameter, Variable>,
         diagnostics: Diagnostics
-    ): ReferenceMap<Function, ControlFlowGraph> {
+    ): Pair<ReferenceMap<Function, ControlFlowGraph>, ReferenceMap<Function, Variable>> {
         val controlFlowGraphs = referenceHashMapOf<Function, ControlFlowGraph>()
+        val resultVariables = referenceHashMapOf<Function, Variable>() // only for non-Unit returning functions
 
         fun processFunction(function: Function) {
             val cfgBuilder = ControlFlowGraphBuilder()
+            val variableToStoreResult: Variable? = if (function.returnType == Type.Unit) null else Variable(
+                Variable.Kind.VALUE,
+                "TODO",
+                function.returnType,
+                null
+            )
 
             var last = listOf<Pair<IFTNode, CFGLinkType>?>(null)
             var breaking: MutableList<Pair<IFTNode, CFGLinkType>?>? = null
@@ -301,16 +309,16 @@ object ControlFlow {
             fun processStatementBlock(block: StatementBlock) {
                 fun addExpression(expression: Expression, variable: Variable?): IFTNode? {
                     val cfg = createGraphForExpression(expression, variable, function)
-                    cfgBuilder.addAllFrom(cfg)
-
                     val entry = cfg.entryTreeRoot
 
                     if (entry != null) {
-                        for (node in last)
+                        for (node in last) {
                             cfgBuilder.addLink(node, entry)
+                        }
 
                         last = cfg.finalTreeRoots.map { Pair(it, CFGLinkType.UNCONDITIONAL) }
                     }
+                    cfgBuilder.addAllFrom(cfg)
 
                     return entry
                 }
@@ -402,8 +410,8 @@ object ControlFlow {
                         }
 
                         is Statement.FunctionReturn -> {
-                            addExpression(statement.value, null)
-
+                            if (variableToStoreResult != null)
+                                addExpression(statement.value, variableToStoreResult)
                             last = emptyList()
                         }
                     }
@@ -413,10 +421,12 @@ object ControlFlow {
             processStatementBlock(function.body)
 
             controlFlowGraphs[function] = cfgBuilder.build()
+            if (function.returnType != Type.Unit)
+                resultVariables[function] = variableToStoreResult!!
         }
 
         program.globals.filterIsInstance<Program.Global.FunctionDefinition>().forEach { processFunction(it.function) }
 
-        return controlFlowGraphs
+        return Pair(controlFlowGraphs, resultVariables)
     }
 }

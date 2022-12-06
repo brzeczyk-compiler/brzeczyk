@@ -1,3 +1,5 @@
 package compiler.ast
 
-sealed interface NamedNode
+sealed interface NamedNode {
+    val name: String
+}

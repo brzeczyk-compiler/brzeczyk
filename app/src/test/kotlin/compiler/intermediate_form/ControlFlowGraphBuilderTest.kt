@@ -75,34 +75,6 @@ class ControlFlowGraphBuilderTest {
     }
 
     @Test
-    fun `test addLinksFromAllFinalRoots`() {
-        val cfgBuilder = ControlFlowGraphBuilder(entryNode)
-        cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, secondNode)
-        cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.CONDITIONAL_TRUE, conditionalTrueNode)
-        cfgBuilder.addLink(Pair(secondNode, CFGLinkType.CONDITIONAL_FALSE), conditionalFalseNode)
-
-        val cfg = cfgBuilder.build()
-        assertEquals(simpleCFG, cfg)
-    }
-
-    @Test
-    fun `test addLinksFromAllFinalRoots when no entryTreeRoot`() {
-        val cfgBuilder = ControlFlowGraphBuilder()
-        cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, entryNode)
-        assertEquals(ControlFlowGraphBuilder(entryNode).build(), cfgBuilder.build())
-    }
-
-    @Test
-    fun `test addLinksFromAllFinalRoots with multiple final nodes`() {
-        val cfgBuilder = ControlFlowGraphBuilder()
-        cfgBuilder.addAllFrom(simpleCFG)
-        cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, afterConditionalNode)
-
-        val cfg = cfgBuilder.build()
-        assertEquals(simpleCFGWithExtraFinalNode, cfg)
-    }
-
-    @Test
     fun `test addAllFrom`() {
         val cfgBuilder = ControlFlowGraphBuilder()
         cfgBuilder.addAllFrom(simpleCFG)
@@ -112,9 +84,24 @@ class ControlFlowGraphBuilderTest {
     }
 
     @Test
+    fun `test addLinkFromAllFinalRoots when no entryTreeRoot`() {
+        val cfgBuilder = ControlFlowGraphBuilder()
+        cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, entryNode)
+        assertEquals(ControlFlowGraphBuilder(entryNode).build(), cfgBuilder.build())
+    }
+
+    @Test
+    fun `test addLinkFromAllFinalRoots`() {
+        val cfgBuilder = ControlFlowGraphBuilder(entryNode)
+        cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, secondNode)
+        cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.CONDITIONAL_FALSE, conditionalFalseNode)
+        cfgBuilder.addLink(Pair(secondNode, CFGLinkType.CONDITIONAL_TRUE), conditionalTrueNode)
+        assert(simpleCFG.equalsByValue(cfgBuilder.build()))
+    }
+
+    @Test
     fun `test addAllFrom without modifying entryTreeRoot`() {
         val cfgBuilder = ControlFlowGraphBuilder(entryNode)
-
         val remainingThreeNodes = ControlFlowGraphBuilder(secondNode)
         remainingThreeNodes.addLink(Pair(secondNode, CFGLinkType.CONDITIONAL_TRUE), conditionalTrueNode)
         remainingThreeNodes.addLink(Pair(secondNode, CFGLinkType.CONDITIONAL_FALSE), conditionalFalseNode)

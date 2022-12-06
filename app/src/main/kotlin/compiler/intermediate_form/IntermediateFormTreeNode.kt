@@ -49,6 +49,7 @@ sealed class IntermediateFormTreeNode {
     class StackPop : IntermediateFormTreeNode()
 
     data class Call(val address: IntermediateFormTreeNode) : IntermediateFormTreeNode()
+    // return node is implicit when there's no link from a tree root
 
     // test nodes
     class NoOp : IntermediateFormTreeNode()

@@ -4,7 +4,7 @@ import compiler.lexer.LocationRange
 
 data class Variable(
     val kind: Kind,
-    val name: String,
+    override val name: String,
     val type: Type,
     val value: Expression?,
     override val location: LocationRange? = null,

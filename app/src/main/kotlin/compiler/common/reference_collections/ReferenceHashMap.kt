@@ -43,6 +43,7 @@ fun <K, V> referenceHashMapOf(pairs: List<Pair<K, V>>): ReferenceHashMap<K, V> {
         map[key] = value
     return map
 }
+fun <K, V> referenceMapOf(pairs: List<Pair<K, V> >): ReferenceMap<K, V> = referenceHashMapOf(pairs)
 
 fun <K, V> combineReferenceMaps(vararg maps: ReferenceMap<K, V>): ReferenceMap<K, V> = combineReferenceMaps(maps.asList())
 

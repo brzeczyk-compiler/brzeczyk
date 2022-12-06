@@ -40,7 +40,7 @@ class FunctionControlFlowTest {
         nameResolution,
         defaultParameterValues,
         diagnostics::add
-    )
+    ).first
 
     // czynność f() { }
 

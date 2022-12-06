@@ -12,12 +12,111 @@ import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.referenceHashMapOf
 import compiler.common.reference_collections.referenceHashSetOf
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 
 class FunctionDependenciesAnalyzerTest {
-    @Ignore @Test fun `test function details generator creation`() {
+    @Test fun `test create unique identifiers one function`() {
+        /*
+         czynność no_polish_signs() {}
+         */
+        val identifierFactory = UniqueIdentifierFactory()
+        val noPolishSigns = Function("no_polish_signs", listOf(), Type.Unit, listOf())
+        val noPolishSignsIdentifier = identifierFactory.build(null, noPolishSigns.name)
+
+        val program = Program(listOf(Program.Global.FunctionDefinition(noPolishSigns)))
+        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program)
+        val expectedIdentifiers = referenceHashMapOf(noPolishSigns to noPolishSignsIdentifier)
+        assertEquals(expectedIdentifiers, actualIdentifiers)
+    }
+
+    @Test fun `test create unique identifiers no polish signs`() {
+        /*
+         czynność polskie_znaki_są_żeś_zaiście_świetneż() {}
+         */
+        val identifierFactory = UniqueIdentifierFactory()
+        var polishSigns = Function("polskie_znaki_są_żeś_zaiście_świetneż", listOf(), Type.Unit, listOf())
+        var polishSignsIdentifier = identifierFactory.build(null, polishSigns.name)
+
+        val program = Program(listOf(Program.Global.FunctionDefinition(polishSigns)))
+        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program)
+        val expectedIdentifiers = referenceHashMapOf(polishSigns to polishSignsIdentifier)
+        assertEquals(expectedIdentifiers, actualIdentifiers)
+    }
+
+    @Test fun `test create unique identifiers nested`() {
+        /*
+         czynność some_prefix() {
+             czynność no_polish_signs() {}
+         }
+         */
+        val identifierFactory = UniqueIdentifierFactory()
+        var noPolishSigns = Function("no_polish_signs", listOf(), Type.Unit, listOf())
+        var outerFunction = Function(
+            "some_prefix",
+            listOf(), Type.Unit, listOf(Statement.FunctionDefinition(noPolishSigns))
+        )
+        val outerFunctionIdentifier = identifierFactory.build(null, outerFunction.name)
+        val noPolishSignsIdentifier = identifierFactory.build(outerFunctionIdentifier.value, noPolishSigns.name)
+
+        val program = Program(listOf(Program.Global.FunctionDefinition(outerFunction)))
+        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program)
+        val expectedIdentifiers = referenceHashMapOf(
+            noPolishSigns to noPolishSignsIdentifier,
+            outerFunction to outerFunctionIdentifier
+        )
+        assertEquals(expectedIdentifiers, actualIdentifiers)
+    }
+
+    @Test fun `test identical function names with accuracy to polish signs do not cause identifier conflict`() {
+        /*
+         czynność some_prefix() {
+             czynność żeś() {}
+             czynność żes() {}
+             czynność zes() {}
+         }
+         */
+        val identifierFactory = UniqueIdentifierFactory()
+        val inner1 = Function("żeś", listOf(), Type.Unit, listOf())
+        val inner2 = Function("żes", listOf(), Type.Unit, listOf())
+        val inner3 = Function("zes", listOf(), Type.Unit, listOf())
+        var outerFunction = Function(
+            "some_prefix",
+            listOf(), Type.Unit,
+            listOf(
+                Statement.FunctionDefinition(inner1), Statement.FunctionDefinition(inner2),
+                Statement.FunctionDefinition(inner3)
+            )
+        )
+        val outerFunctionIdentifier = identifierFactory.build(null, outerFunction.name)
+        val inner1Identifier = identifierFactory.build(outerFunctionIdentifier.value, inner1.name)
+        val inner2Identifier = identifierFactory.build(outerFunctionIdentifier.value, inner2.name)
+        val inner3Identifier = identifierFactory.build(outerFunctionIdentifier.value, inner3.name)
+
+        val program = Program(listOf(Program.Global.FunctionDefinition(outerFunction)))
+        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program)
+        val expectedIdentifiers = referenceHashMapOf(
+            inner1 to inner1Identifier,
+            inner2 to inner2Identifier,
+            inner3 to inner3Identifier,
+            outerFunction to outerFunctionIdentifier
+        )
+        assertEquals(expectedIdentifiers, actualIdentifiers)
+    }
+
+    @Test fun `test function named globals is not assigned identifier globals`() {
+        /*
+         czynność globals() {}
+         */
+        val identifierFactory = UniqueIdentifierFactory()
+        val globals = Function("globals", listOf(), Type.Unit, listOf())
+        val globalsIdentifier = identifierFactory.build(null, globals.name)
+
+        assertNotEquals("globals", globalsIdentifier.value)
+    }
+
+    @Test fun `test function details generator creation`() {
         /*
         czynność f() {
             zm a: Liczba = 4

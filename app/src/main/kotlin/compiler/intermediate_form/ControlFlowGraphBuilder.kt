@@ -9,8 +9,15 @@ class ControlFlowGraphBuilder(@JvmField var entryTreeRoot: IFTNode? = null) {
     private var conditionalTrueLinks = referenceHashMapOf<IFTNode, IFTNode>()
     private var conditionalFalseLinks = referenceHashMapOf<IFTNode, IFTNode>()
     private var treeRoots = ArrayList<IFTNode>()
-    private val finalTreeRoots: List<IFTNode> get() = treeRoots.filter {
-        it !in unconditionalLinks && it !in conditionalTrueLinks && it !in conditionalFalseLinks
+
+    val finalTreeRoots: List<Pair<IFTNode, CFGLinkType>> get() = treeRoots.filter {
+        it !in unconditionalLinks && (it !in conditionalTrueLinks || it !in conditionalFalseLinks)
+    }.map {
+        it to when (it) {
+            in conditionalTrueLinks -> CFGLinkType.CONDITIONAL_FALSE
+            in conditionalFalseLinks -> CFGLinkType.CONDITIONAL_TRUE
+            else -> CFGLinkType.UNCONDITIONAL
+        }
     }
 
     init {
@@ -43,7 +50,15 @@ class ControlFlowGraphBuilder(@JvmField var entryTreeRoot: IFTNode? = null) {
     }
 
     fun addLinksFromAllFinalRoots(linkType: CFGLinkType, to: IFTNode) {
-        finalTreeRoots.forEach { addLink(Pair(it, linkType), to) }
+        finalTreeRoots.forEach {
+            if (it.second == CFGLinkType.UNCONDITIONAL)
+                addLink(it.copy(second = linkType), to)
+            else if (linkType == CFGLinkType.UNCONDITIONAL || linkType == it.second)
+                addLink(it, to)
+            else
+                throw IllegalArgumentException()
+        }
+
         if (entryTreeRoot == null)
             setEntryTreeRoot(to)
     }
@@ -62,7 +77,7 @@ class ControlFlowGraphBuilder(@JvmField var entryTreeRoot: IFTNode? = null) {
 
     fun mergeUnconditionally(cfg: ControlFlowGraph): ControlFlowGraphBuilder {
         build().finalTreeRoots.forEach {
-            addLink(Pair(it, CFGLinkType.UNCONDITIONAL), cfg.entryTreeRoot!!, false)
+            addLink(it, cfg.entryTreeRoot!!, false)
         }
         if (entryTreeRoot == null) entryTreeRoot = cfg.entryTreeRoot
         addAllFrom(cfg)
@@ -71,8 +86,10 @@ class ControlFlowGraphBuilder(@JvmField var entryTreeRoot: IFTNode? = null) {
 
     fun mergeConditionally(cfgTrue: ControlFlowGraph, cfgFalse: ControlFlowGraph): ControlFlowGraphBuilder {
         build().finalTreeRoots.forEach {
-            addLink(Pair(it, CFGLinkType.CONDITIONAL_TRUE), cfgTrue.entryTreeRoot!!, false)
-            addLink(Pair(it, CFGLinkType.CONDITIONAL_FALSE), cfgFalse.entryTreeRoot!!, false)
+            if (it.second != CFGLinkType.UNCONDITIONAL)
+                throw IllegalArgumentException()
+            addLink(Pair(it.first, CFGLinkType.CONDITIONAL_TRUE), cfgTrue.entryTreeRoot!!, false)
+            addLink(Pair(it.first, CFGLinkType.CONDITIONAL_FALSE), cfgFalse.entryTreeRoot!!, false)
         }
         addAllFrom(cfgTrue)
         addAllFrom(cfgFalse)

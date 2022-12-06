@@ -215,7 +215,7 @@ class NameResolutionErrorTest {
     fun `test conflicts (functions with different signatures)`() {
         assertErrorOfType(
             """
-                    czynność f() -> Liczba {
+                    czynność f() {
                         czynność g(a: Liczba) { }
                         czynność g(a: Czy) { }
                     }

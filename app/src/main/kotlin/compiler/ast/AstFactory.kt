@@ -38,7 +38,7 @@ object AstFactory {
                 Diagnostic.ParserError.UnexpectedToken(
                     properNode.symbol,
                     properNode.location,
-                    // listOf(Symbol.Terminal(TokenType.IDENTIFIER)),
+                    listOf(Symbol.Terminal(TokenType.IDENTIFIER)),
                 )
             )
             throw AstCreationFailed()

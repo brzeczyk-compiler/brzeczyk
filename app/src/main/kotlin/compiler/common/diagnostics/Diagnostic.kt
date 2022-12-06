@@ -21,11 +21,11 @@ sealed interface Diagnostic {
     ) : Diagnostic {
         override fun isError() = true
 
-        override fun toString() = StringBuilder()
-            .append("Lexer Error\n")
-            .append("The token at location $start - ${end ?: "eof"} is unexpected.\n")
-            .append("Context: \t\t${context.joinToString("")}-->$errorSegment<---\n")
-            .toString()
+        override fun toString() = StringBuilder().apply {
+            append("Lexer Error\n")
+            append("The token at location $start - ${end ?: "eof"} is unexpected.\n")
+            append("Context: \t\t${context.joinToString("")}-->$errorSegment<---\n")
+        }.toString()
     }
 
     sealed class ParserError : Diagnostic {
@@ -38,10 +38,14 @@ sealed interface Diagnostic {
         class UnexpectedToken(
             symbol: Any?,
             location: LocationRange,
+            expectedSymbols: List<Any?>,
         ) : ParserError() {
-            override val errorMessage =
-                if (symbol != null) "The symbol <<$symbol>> is unexpected at location $location."
-                else "The end of file is unexpected."
+            override val errorMessage = StringBuilder().apply {
+                if (symbol != null) append("The symbol <<${symbol.toString().drop(1)}>> is unexpected at location $location.")
+                else append("The end of file is unexpected.")
+                append("\n")
+                append("Expected one of: ${expectedSymbols.joinToString { it.toString().drop(1) }}.")
+            }.toString()
         }
 
         class InvalidNumberLiteral(
@@ -244,7 +248,7 @@ sealed interface Diagnostic {
             class MissingReturnStatement(
                 function: Function,
             ) : TypeCheckingError(listOf(function)) {
-                override val errorMessage = "The function neither returns unit, not has a 'return' statement."
+                override val errorMessage = "The function neither returns unit, nor has a 'return' statement."
             }
         }
 

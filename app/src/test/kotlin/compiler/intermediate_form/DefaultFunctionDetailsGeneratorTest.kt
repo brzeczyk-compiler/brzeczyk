@@ -9,7 +9,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
-class DefaultDefaultFunctionDetailsGeneratorTest {
+class DefaultFunctionDetailsGeneratorTest {
     private val functionLocation = IntermediateFormTreeNode.MemoryLabel("address")
 
     private val resultDummyVariable = Variable(Variable.Kind.VALUE, "numberResult", Type.Number, null)
@@ -199,7 +199,6 @@ class DefaultDefaultFunctionDetailsGeneratorTest {
         val left = (readMemVar.address as IntermediateFormTreeNode.Subtract).left
         val right = (readMemVar.address as IntermediateFormTreeNode.Subtract).right
 
-        println(left)
         assertEquals(IntermediateFormTreeNode.MemoryRead(displayElementAddress), left)
 
         assertTrue { right is IntermediateFormTreeNode.Const }

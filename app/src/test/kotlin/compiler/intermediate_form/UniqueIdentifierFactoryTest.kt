@@ -3,6 +3,7 @@ package compiler.intermediate_form
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+
 class UniqueIdentifierFactoryTest {
     private val pref = UniqueIdentifierFactory.functionPrefix
     private val sep = UniqueIdentifierFactory.levelSeparator
@@ -45,19 +46,23 @@ class UniqueIdentifierFactoryTest {
         val factory = UniqueIdentifierFactory()
         val curr1 = "żeś"
         val curr2 = "żes"
-        val curr3 = "zes"
+        val curr3 = "źes"
+        val curr4 = "zes"
 
         val commonPrefix = "some_prefix"
         val identifier1 = factory.build(commonPrefix, curr1)
         val identifier2 = factory.build(commonPrefix, curr2)
         val identifier3 = factory.build(commonPrefix, curr3)
+        val identifier4 = factory.build(commonPrefix, curr4)
         val expected1 = "${commonPrefix}${sep}z#es#"
         val expected2 = "${commonPrefix}${sep}z#es"
-        val expected3 = "${commonPrefix}${sep}zes"
+        val expected3 = "${commonPrefix}${sep}x#es"
+        val expected4 = "${commonPrefix}${sep}zes"
 
         assertEquals(expected1, identifier1.value)
         assertEquals(expected2, identifier2.value)
         assertEquals(expected3, identifier3.value)
+        assertEquals(expected4, identifier4.value)
     }
 
     @Test

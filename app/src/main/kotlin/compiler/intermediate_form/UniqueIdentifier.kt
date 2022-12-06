@@ -18,7 +18,7 @@ class UniqueIdentifierFactory() {
             'ł' to 'l',
             'ó' to 'o',
             'ś' to 's',
-            'ź' to 'z',
+            'ź' to 'x',
             'ż' to 'z',
             'Ą' to 'A',
             'Ć' to 'C',
@@ -26,14 +26,14 @@ class UniqueIdentifierFactory() {
             'Ł' to 'L',
             'Ó' to 'O',
             'Ś' to 'S',
-            'Ź' to 'Z',
+            'Ź' to 'X',
             'Ż' to 'Z'
         )
         public val forbiddenLabels = listOf("globals")
     }
 
     private val knownIdentifiers: MutableSet<String> = mutableSetOf()
-    fun build(prefix: String?, curr: String): UniqueIdentifier {
+    fun build(prefix: String?, current: String): UniqueIdentifier {
         fun convertToPlainASCII(character: Char): List<Char> {
             if (character in charactersAllowedByNasm) return listOf(character)
             if (character in knownConversionsToAllowedCharacters) return listOf(
@@ -48,8 +48,8 @@ class UniqueIdentifierFactory() {
             )
         }
         val identifierBuilder = StringBuilder().append(prefix ?: functionPrefix).append(levelSeparator)
-        curr.forEach { convertToPlainASCII(it).forEach { character -> identifierBuilder.append(character) } }
-        var identifier = identifierBuilder.toString()
+        current.forEach { convertToPlainASCII(it).forEach { character -> identifierBuilder.append(character) } }
+        val identifier = identifierBuilder.toString()
         // at the time of the addition of this class to the codebase, this should not happen ($ and # are not allowed in function names)
         // this is a sanity check for if we ever relax the regex for function identifier and allow any of the special symbols used here
         if (!knownIdentifiers.add(identifier))

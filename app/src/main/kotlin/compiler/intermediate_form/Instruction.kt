@@ -9,8 +9,13 @@ sealed class Instruction : Asmable {
     sealed class UnconditionalJumpInstruction : Instruction() {
         abstract val targetLabel: String
 
-        data class CallR(val reg: Register) : Instruction() //                      CALL reg
-        data class CallM(val address: Addressing) : Instruction() //                CALL mem
+        data class CallR(val reg: Register) : UnconditionalJumpInstruction() { //                      CALL reg
+            override val targetLabel: String = TODO()
+        }
+
+        data class CallM(val address: Addressing) : UnconditionalJumpInstruction() { //                CALL mem
+            override val targetLabel: String = TODO()
+        }
     }
 
     sealed class RetInstruction : Instruction() {

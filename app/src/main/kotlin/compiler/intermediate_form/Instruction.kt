@@ -2,22 +2,22 @@ package compiler.intermediate_form
 
 sealed class Instruction : Asmable {
 
-    abstract class ConditionalJumpInstruction : Instruction() {
+    sealed class ConditionalJumpInstruction : Instruction() {
         abstract val targetLabel: String
     }
 
-    abstract class UnconditionalJumpInstruction : Instruction() {
+    sealed class UnconditionalJumpInstruction : Instruction() {
         abstract val targetLabel: String
 
         data class CallR(val reg: Register) : Instruction() //                      CALL reg
         data class CallM(val address: Addressing) : Instruction() //                CALL mem
     }
 
-    abstract class RetInstruction : Instruction() {
+    sealed class RetInstruction : Instruction() {
         class Ret : RetInstruction() //                                                RET
     }
 
-    abstract class InPlaceInstruction : Instruction() {
+    sealed class InPlaceInstruction : Instruction() {
         data class MoveRR(val reg_dest: Register, val reg_src: Register) : InPlaceInstruction() //   MOV  reg_dest, reg_src
         data class MoveRM(val reg_dest: Register, val mem_src: Addressing) : InPlaceInstruction() // MOV  reg_dest, mem_src
         data class MoveMR(val mem_dest: Addressing, val reg_src: Register) : InPlaceInstruction() // MOV  mem_dest, reg_src

@@ -8,7 +8,13 @@ sealed class Pattern {
     // Returns null if the pattern doesn't match provided intermediate form tree
     // If the tree matches, it returns the list of unmatched subtrees and
     // captured values (mainly used to store values in matched leaves)
+    // TODO: remove this one and replace with the following ones.
+    // TODO (optional) I also suggest to change this very convoluted type: Pair<List<IntermediateFormTreeNode>, Map<String, Any>> to a data class with named fields.
     abstract fun match(node: IntermediateFormTreeNode): Pair<List<IntermediateFormTreeNode>, Map<String, Any>>?
+
+    fun matchValue(node: IntermediateFormTreeNode): Pair<List<IntermediateFormTreeNode>, Map<String, Any>>? = null
+    fun matchUnconditional(node: IntermediateFormTreeNode): Pair<List<IntermediateFormTreeNode>, Map<String, Any>>? = null
+    fun matchConditional(node: IntermediateFormTreeNode, targetLabel: String, invert: Boolean): Pair<List<IntermediateFormTreeNode>, Map<String, Any>>? = null
 
     // This class is used to match arguments in nodes which aren't other nodes
     // It's used when we want to create instructions for specific values of arguments (constants, labels or registers)

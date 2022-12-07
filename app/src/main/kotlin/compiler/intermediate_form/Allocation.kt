@@ -7,8 +7,8 @@ object Allocation {
     )
 
     fun allocateRegisters(
-        linearProgram: List<AsmAble>,
-        livelinessGraphs: Liveliness.LivelinessGraphs,
+        linearProgram: List<Asmable>,
+        livenessGraphs: Liveness.LivenessGraphs,
         accessibleRegisters: List<Register>,
     ): AllocationResult = TODO()
 }

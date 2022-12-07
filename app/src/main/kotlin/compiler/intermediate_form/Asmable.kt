@@ -1,3 +1,3 @@
 package compiler.intermediate_form
 
-sealed interface AsmAble
+sealed interface Asmable

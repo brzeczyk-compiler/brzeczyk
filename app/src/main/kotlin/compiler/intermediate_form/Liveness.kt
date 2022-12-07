@@ -1,10 +1,10 @@
 package compiler.intermediate_form
 
-object Liveliness {
-    data class LivelinessGraphs(
+object Liveness {
+    data class LivenessGraphs(
         val interferenceGraph: Map<Register, Set<Register>>,
         val copyGraph: Map<Register, Set<Register>>
     )
 
-    fun computeLiveliness(linearProgram: List<AsmAble>): LivelinessGraphs = TODO()
+    fun computeLiveness(linearProgram: List<Asmable>): LivenessGraphs = TODO()
 }

@@ -1,3 +1,3 @@
 package compiler.intermediate_form
 
-data class Label(val label: String) : AsmAble
+data class Label(val label: String) : Asmable

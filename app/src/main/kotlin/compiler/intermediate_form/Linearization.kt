@@ -6,5 +6,5 @@ object Linearization {
     fun linearize(
         cfg: ControlFlowGraph,
         covering: Covering,
-    ): List<AsmAble> = TODO()
+    ): List<Asmable> = TODO()
 }

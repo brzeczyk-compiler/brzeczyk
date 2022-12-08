@@ -41,10 +41,10 @@ sealed interface Diagnostic {
             expectedSymbols: List<Any?>,
         ) : ParserError() {
             override val errorMessage = StringBuilder().apply {
-                if (symbol != null) append("The symbol <<${symbol.toString().drop(1)}>> is unexpected at location $location.")
+                if (symbol != null) append("The symbol <<$symbol>> is unexpected at location $location.")
                 else append("The end of file is unexpected.")
                 append("\n")
-                append("Expected one of: ${expectedSymbols.joinToString { it.toString().drop(1) }}.")
+                append("Expected one of: ${expectedSymbols.joinToString { it.toString() }}.")
             }.toString()
         }
 
@@ -60,7 +60,7 @@ sealed interface Diagnostic {
 
         data class ObjectAssociatedToError(val message: String, val location: LocationRange?)
 
-        val associatedObjects = astNodes.map { ObjectAssociatedToError(it.print(), it.location) }
+        val associatedObjects = astNodes.map { ObjectAssociatedToError(it.toExtendedString(), it.location) }
 
         abstract val errorMessage: String
 

@@ -8,7 +8,7 @@ import compiler.ast.Statement
 import compiler.ast.StatementBlock
 import compiler.ast.Type
 import compiler.ast.Variable
-import compiler.common.diagnostics.Diagnostic.ControlFlowDiagnostic
+import compiler.common.diagnostics.Diagnostic.ResolutionDiagnostic.ControlFlowDiagnostic
 import compiler.common.diagnostics.Diagnostics
 import compiler.common.intermediate_form.FunctionDetailsGenerator
 import compiler.common.intermediate_form.VariableAccessGenerator
@@ -325,7 +325,7 @@ object ControlFlow {
 
                 for (statement in block) {
                     if (last.isEmpty())
-                        diagnostics.report(ControlFlowDiagnostic.UnreachableStatement(statement))
+                        diagnostics.report(ControlFlowDiagnostic.Warnings.UnreachableStatement(statement))
 
                     when (statement) {
                         is Statement.Evaluation -> addExpression(statement.expression, null)
@@ -395,7 +395,7 @@ object ControlFlow {
                             if (breaking != null)
                                 breaking!!.addAll(last)
                             else
-                                diagnostics.report(ControlFlowDiagnostic.BreakOutsideOfLoop(statement))
+                                diagnostics.report(ControlFlowDiagnostic.Errors.BreakOutsideOfLoop(statement))
 
                             last = emptyList()
                         }
@@ -404,7 +404,7 @@ object ControlFlow {
                             if (continuing != null)
                                 continuing!!.addAll(last)
                             else
-                                diagnostics.report(ControlFlowDiagnostic.ContinuationOutsideOfLoop(statement))
+                                diagnostics.report(ControlFlowDiagnostic.Errors.ContinuationOutsideOfLoop(statement))
 
                             last = emptyList()
                         }

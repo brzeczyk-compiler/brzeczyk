@@ -1,9 +1,7 @@
 package compiler.intermediate_form
 
-import compiler.common.Indexed
 import java.util.LinkedList
 import kotlin.collections.HashMap
-import kotlin.collections.HashSet
 
 object Allocation {
     data class AllocationResult(
@@ -11,113 +9,98 @@ object Allocation {
         val spilledRegisters: List<Register>,
     )
 
-    private data class Node(val registers: Set<Register>)
+    private fun Map<Register, Set<Register>>.sortedByRemovingNodesWithSmallestDeg(): List<Register> = mutableListOf<Register>().apply {
+        val graph = this@sortedByRemovingNodesWithSmallestDeg.mapValues { it.value.toHashSet() }.toMutableMap()
 
-    private interface GraphObserver {
-        fun nodeRemoved(node: Node, edgesTo: Collection<Node>)
-        fun edgesAdded(node: Node, edgesTo: Collection<Node>)
+        fun removeFromGraph(node: Register) {
+            graph[node]!!.forEach { graph[it]!!.remove(node) }
+            graph.remove(node)
+        }
+
+        fun getNodeWithSmallestDegree(): Register = graph.minByOrNull { it.value.size }!!.key
+
+        while (graph.isNotEmpty())
+            getNodeWithSmallestDegree().let {
+                removeFromGraph(it)
+                add(it)
+            }
     }
 
-    private class Graph {
-        private val nodesSet: MutableSet<Node> = HashSet()
-        private val edgesMap: MutableMap<Node, MutableSet<Node>> = HashMap()
-        private val observers: MutableList<GraphObserver> = mutableListOf()
-
-        val nodes: Set<Node>
-            get() = nodesSet
-
-        val edges: Map<Node, Set<Node>>
-            get() = edgesMap
-
-        val degreeOf
-            get() = object : Indexed<Node, Int> {
-                override fun get(a: Node): Int {
-                    return edgesMap[a]!!.size
-                }
-            }
-
-        fun removeNode(node: Node) {
-            val removedEdgesTo = edgesMap[node]!!
-            edgesMap.remove(node)
-            nodesSet.remove(node)
-            removedEdgesTo.forEach { edgesMap[it]!!.remove(node) }
-
-            observers.forEach { it.nodeRemoved(node, removedEdgesTo) }
+    private class GraphColoring(
+        val graph: Map<Register, Set<Register>>,
+        val accessibleRegisters: List<Register>
+    ) {
+        val allocationMap = HashMap<Register, Register>().apply { putAll(accessibleRegisters.associateWith { it }) }
+        private val neighbourColorsMap = HashMap<Register, HashSet<Register>>()
+        val spilledRegisters = LinkedList<Register>()
+        fun Register.isColored() = allocationMap.contains(this)
+        fun Register.color() = allocationMap[this]
+        fun Register.neighbourColors(): Set<Register> = neighbourColorsMap.getOrPut(this) { HashSet() }
+        fun Register.availableColors() = (accessibleRegisters - neighbourColors()).toSet()
+        fun Register.assignColor(color: Register) {
+            allocationMap[this] = color
+            graph[this]!!.forEach { neighbourColorsMap.getOrPut(it) { HashSet() }.add(color) }
         }
-
-        fun addEdges(node: Node, edgesTo: Collection<Node>) {
-            nodesSet.add(node)
-            edgesMap.getOrPut(node) { HashSet() }.addAll(edgesTo)
-            edgesTo.forEach {
-                nodesSet.add(it)
-                edgesMap.getOrPut(it) { HashSet() }.add(node)
-            }
-
-            observers.forEach { it.edgesAdded(node, edgesTo) }
-        }
-
-        fun mergeNodes(node1: Node, node2: Node) {
-            val nodeToAdd = Node(node1.registers union node2.registers)
-            val edgesToAdd = edges[node1]!! union edges[node2]!!
-
-            removeNode(node1)
-            removeNode(node2)
-            addEdges(nodeToAdd, edgesToAdd)
-        }
-
-        fun addObserver(observer: GraphObserver) = observers.add(observer)
     }
-
-    // helper properties
-
-    private val Map<Register, Set<Register>>.asGraph: Graph
-        get() = Graph().also { graph ->
-            forEach { entry ->
-                graph.addEdges(
-                    entry.key.asNode,
-                    entry.value.map { it.asNode }
-                )
-            }
-        }
-
-    private val Register.asNode
-        get() = Node(setOf(this))
-
-    private val Graph.nodeWithSmallestDegree: Node?
-        get() = this.nodes.minByOrNull { this.degreeOf[it] }
 
     fun allocateRegisters(
         linearProgram: List<Asmable>,
         livenessGraphs: Liveness.LivenessGraphs,
         accessibleRegisters: List<Register>,
-    ): AllocationResult {
-        val graph = livenessGraphs.interferenceGraph.asGraph
-        val allocationMap = HashMap<Register, Register>().apply { putAll(accessibleRegisters.associateWith { it }) }
-        val spilledRegisters = LinkedList<Register>()
+    ): AllocationResult = GraphColoring(livenessGraphs.interferenceGraph, accessibleRegisters).run {
+        val copyGraphWithoutInterferences = livenessGraphs.copyGraph.mapValues { it.value - livenessGraphs.interferenceGraph[it.key]!! }
 
-        fun Node.neighbourColors() =
-            this.registers.map { livenessGraphs.interferenceGraph[it]!! }.flatten().mapNotNull { allocationMap[it] }.toSet()
+        livenessGraphs.interferenceGraph.sortedByRemovingNodesWithSmallestDeg().reversed().forEach { register ->
+            if (register.isColored()) return@forEach
 
-        val nodesOrder = LinkedList<Node>().apply {
-            while (graph.nodes.isNotEmpty()) {
-                graph.nodeWithSmallestDegree!!.let {
-                    add(it)
-                    graph.removeNode(it)
-                }
+            val availableColors = register.availableColors()
+            if (availableColors.isEmpty()) {
+                spilledRegisters.add(register)
+                return@forEach
             }
-        }
 
-        for (node in nodesOrder.reversed()) {
-            val neigh = node.neighbourColors()
-            val availableRegisters = accessibleRegisters - neigh
-            if (availableRegisters.isNotEmpty()) {
-                val chosenColor = availableRegisters.first()
-                allocationMap.putAll(node.registers.associateWith { chosenColor })
-            } else {
-                spilledRegisters.addAll(node.registers)
+            if (findBestFitForColoredCopyGraphNeighbours(register, availableColors, copyGraphWithoutInterferences)) {
+                return@forEach
             }
+
+            if (findBestFitForUncoloredCopyGraphNeighbours(register, availableColors, copyGraphWithoutInterferences)) {
+                return@forEach
+            }
+
+            register.assignColor(availableColors.first())
         }
 
         return AllocationResult(allocationMap, spilledRegisters)
+    }
+
+    private fun GraphColoring.findBestFitForColoredCopyGraphNeighbours(
+        register: Register,
+        availableColors: Set<Register>,
+        copyGraphWithoutInterferences: Map<Register, Set<Register>>
+    ): Boolean {
+        val colorsOfCopyGraphNeighbours =
+            copyGraphWithoutInterferences[register]!!.filter { it.color() in availableColors }.map { it.color()!! }
+        if (colorsOfCopyGraphNeighbours.isNotEmpty()) {
+            val mostCommonColor = colorsOfCopyGraphNeighbours.groupingBy { it }.eachCount().maxByOrNull { it.value }!!.key
+            register.assignColor(mostCommonColor)
+            return true
+        }
+        return false
+    }
+
+    private fun GraphColoring.findBestFitForUncoloredCopyGraphNeighbours(
+        register: Register,
+        availableColors: Set<Register>,
+        copyGraphWithoutInterferences: Map<Register, Set<Register>>
+    ): Boolean {
+        val uncoloredCopyGraphNeighbours = copyGraphWithoutInterferences[register]!!.filter { !it.isColored() }
+        val commonAvailableColors = uncoloredCopyGraphNeighbours.map { it.availableColors() intersect availableColors }
+        commonAvailableColors.flatten().groupingBy { it }.eachCount().let {
+            if (it.isEmpty()) return@let
+            val mostCommonColor = it.maxByOrNull { it.value }!!.key
+            register.assignColor(mostCommonColor)
+            return true
+        }
+        return false
     }
 }

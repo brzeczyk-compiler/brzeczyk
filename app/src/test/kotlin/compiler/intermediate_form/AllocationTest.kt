@@ -12,10 +12,14 @@ class AllocationTest {
         copyList: List<Pair<Int, Int>> = emptyList(),
     ) {
         private val verticesToRegisters = (interferenceList.flatMap { setOf(it.first, it.second) }).associateWith { Register() }
-        val liveness = Liveness.LivenessGraphs(
-            interferenceList.asMap(),
-            copyList.asMap()
-        )
+        val liveness = run {
+            val interferenceGraph = interferenceList.asMap().toMutableMap()
+            val copyGraph = copyList.asMap().toMutableMap()
+            (interferenceGraph.keys - copyGraph.keys).forEach { copyGraph[it] = HashSet() }
+            (copyGraph.keys - interferenceGraph.keys).forEach { interferenceGraph[it] = HashSet() }
+
+            Liveness.LivenessGraphs(interferenceGraph, copyGraph)
+        }
         val result = Allocation.allocateRegisters(
             emptyList(),
             liveness,

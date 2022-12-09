@@ -12,7 +12,7 @@ typealias MatchResult = Pair<List<IntermediateFormTreeNode>, (List<Register>, Re
 typealias PatternChoices = ReferenceHashMap<IntermediateFormTreeNode, InstructionPattern>
 
 // Assumes that every possible IFTNode has at least one viable covering with the passed instruction set
-class DynamicCoveringBuilder(val instructionSet: InstructionSet) : Covering {
+class DynamicCoveringBuilder(private val instructionSet: InstructionSet) : Covering {
     private fun calculateMinCosts(
         matchPatternToParent: (InstructionPattern) -> MatchResult,
         parent: IntermediateFormTreeNode
@@ -21,14 +21,14 @@ class DynamicCoveringBuilder(val instructionSet: InstructionSet) : Covering {
         val bestPatterns: PatternChoices = referenceHashMapOf()
 
         // all IFTNodes aside from parent are treated as values
-        // as any conditional/uncoditional jumps can only be performed from the root of the tree
+        // as any conditional/unconditional jumps can only be performed from the root of the tree
         // hence recurrence is only called with matchValue
         // and we pass a custom function to deal with the parent
         fun getMinimalCost(iftNode: IntermediateFormTreeNode): Int {
             if (iftNode in minimalCosts) return minimalCosts[iftNode]!!
 
             fun calculateCostForPattern(pattern: InstructionPattern): Int {
-                return pattern.matchValue(iftNode)!!.first.map { getMinimalCost(it) }.sum() + pattern.getCost()
+                return pattern.matchValue(iftNode)!!.first.sumOf { getMinimalCost(it) } + pattern.getCost()
             }
             val bestPattern = instructionSet.getInstructionSet().filter { it.matchValue(iftNode) != null }
                 .minByOrNull(::calculateCostForPattern)!!

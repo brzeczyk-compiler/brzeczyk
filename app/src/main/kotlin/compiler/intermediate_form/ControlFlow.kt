@@ -128,9 +128,10 @@ object ControlFlow {
             addNextCFG(ControlFlowGraphBuilder().apply { addLink(null, nextTree) }.build())
         }
 
-        fun makeReadNode(namedNode: NamedNode): IntermediateFormTreeNode {
-            val owner = variableProperties[namedNode]!!.owner
-            return variableAccessGenerators[owner]!!.genRead(namedNode, owner === currentFunction)
+        fun makeReadNode(readableNode: NamedNode): IntermediateFormTreeNode {
+            // readableNode must be Variable or Function.Parameter
+            val owner = variableProperties[readableNode]!!.owner
+            return variableAccessGenerators[owner]!!.genRead(readableNode, owner === currentFunction)
         }
 
         fun makeCFGForSubtree(astNode: Expression): IntermediateFormTreeNode {

@@ -1,6 +1,5 @@
 package compiler.intermediate_form
 
-import compiler.intermediate_form.FunctionDependenciesAnalyzer.DISPLAY_LABEL_IN_MEMORY
 import compiler.semantic_analysis.builtinFunctionsByName
 
 class IllegalCharacter(message: String) : RuntimeException(message)

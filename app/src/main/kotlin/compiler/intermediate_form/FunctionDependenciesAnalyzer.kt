@@ -18,8 +18,6 @@ import compiler.semantic_analysis.VariablePropertiesAnalyzer
 import compiler.semantic_analysis.getUsedBuiltinFunctions
 
 object FunctionDependenciesAnalyzer {
-    const val DISPLAY_LABEL_IN_MEMORY = "display"
-
     fun createUniqueIdentifiers(program: Program): ReferenceMap<Function, UniqueIdentifier> {
         val uniqueIdentifiers = referenceHashMapOf<Function, UniqueIdentifier>()
         val identifierFactory = UniqueIdentifierFactory()

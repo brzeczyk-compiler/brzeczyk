@@ -134,10 +134,10 @@ class FunctionDependenciesAnalyzerTest {
         val varA = Variable(Variable.Kind.VARIABLE, "a", Type.Number, Expression.NumberLiteral(4))
         val varB = Variable(Variable.Kind.VARIABLE, "b", Type.Boolean, Expression.BooleanLiteral(false))
         val varC = Variable(Variable.Kind.VARIABLE, "c", Type.Number, Expression.NumberLiteral(10))
-        val par = Function.Parameter("x", Type.Number, null)
+        val parameter = Function.Parameter("x", Type.Number, null)
         val functionG = Function(
             "g",
-            listOf(par),
+            listOf(parameter),
             Type.Unit,
             listOf(
                 Statement.Assignment(
@@ -163,23 +163,79 @@ class FunctionDependenciesAnalyzerTest {
         )
         val program = Program(listOf(Program.Global.FunctionDefinition(functionF)))
         val variableProperties = referenceHashMapOf<Any, VariablePropertiesAnalyzer.VariableProperties>(
-            par to VariablePropertiesAnalyzer.VariableProperties(functionG, referenceHashSetOf(), referenceHashSetOf()),
+            parameter to VariablePropertiesAnalyzer.VariableProperties(functionG, referenceHashSetOf(), referenceHashSetOf()),
             varA to VariablePropertiesAnalyzer.VariableProperties(functionF, referenceHashSetOf(), referenceHashSetOf(functionG)),
             varB to VariablePropertiesAnalyzer.VariableProperties(functionF, referenceHashSetOf(functionG), referenceHashSetOf()),
             varC to VariablePropertiesAnalyzer.VariableProperties(functionF, referenceHashSetOf(), referenceHashSetOf())
         )
 
-// TODO: update FunctionDetailsGeneratorSignature and uncomment
-//        val expectedResult = referenceHashMapOf(
-//            functionF to FunctionDetailsGenerator(
-//                0u,
-//                referenceHashMapOf(varA to true, varB to true, varC to false),
-//                emptyList()
-//            ),
-//            functionG to FunctionDetailsGenerator(1u, referenceHashMapOf(par to false), listOf(par))
-//        )
-//        val actualResult = FunctionDependenciesAnalyzer.createFunctionDetailsGenerators(program, variableProperties)
-//        assertEquals(expectedResult, actualResult)
+        val expectedResult = referenceHashMapOf(
+            functionF to DefaultFunctionDetailsGenerator(
+                emptyList(),
+                null,
+                IntermediateFormTreeNode.MemoryLabel("fun\$f"),
+                0u,
+                referenceHashMapOf(varA to VariableLocationType.MEMORY, varB to VariableLocationType.MEMORY, varC to VariableLocationType.REGISTER),
+                IntermediateFormTreeNode.MemoryLabel(DISPLAY_LABEL_IN_MEMORY)
+            ),
+            functionG to DefaultFunctionDetailsGenerator(
+                listOf(parameter),
+                null,
+                IntermediateFormTreeNode.MemoryLabel("fun\$f\$g"),
+                1u,
+                referenceHashMapOf(parameter to VariableLocationType.REGISTER),
+                IntermediateFormTreeNode.MemoryLabel(DISPLAY_LABEL_IN_MEMORY)
+            )
+        )
+        val actualResult = FunctionDependenciesAnalyzer.createFunctionDetailsGenerators(program, variableProperties, referenceHashMapOf())
+        assertEquals(expectedResult, actualResult)
+    }
+
+    @Test fun `test function details generator creation for function that returns variable`() {
+        /*
+        czynność f(): Liczba {
+            zm a: Liczba = 4
+            zwróć a+1
+        }
+         */
+
+        val varA = Variable(Variable.Kind.VARIABLE, "a", Type.Number, Expression.NumberLiteral(4))
+        val functionF = Function(
+            "f",
+            listOf(),
+            Type.Number,
+            listOf(
+                Statement.VariableDefinition(varA),
+                Statement.FunctionReturn(
+                    Expression.BinaryOperation(
+                        Expression.BinaryOperation.Kind.ADD,
+                        Expression.Variable("a"),
+                        Expression.NumberLiteral(1)
+                    )
+                )
+            )
+        )
+
+        val returnVariable = Variable(Variable.Kind.VARIABLE, "_return_dummy_", Type.Number, null)
+
+        val program = Program(listOf(Program.Global.FunctionDefinition(functionF)))
+        val variableProperties = referenceHashMapOf<Any, VariablePropertiesAnalyzer.VariableProperties>(
+            varA to VariablePropertiesAnalyzer.VariableProperties(functionF, referenceHashSetOf(), referenceHashSetOf()),
+            returnVariable to VariablePropertiesAnalyzer.VariableProperties(functionF, referenceHashSetOf(), referenceHashSetOf()),
+        )
+
+        val expectedResult = referenceHashMapOf(
+            functionF to DefaultFunctionDetailsGenerator(
+                emptyList(),
+                returnVariable,
+                IntermediateFormTreeNode.MemoryLabel("fun\$f"),
+                0u,
+                referenceHashMapOf(varA to VariableLocationType.REGISTER, returnVariable to VariableLocationType.REGISTER),
+                IntermediateFormTreeNode.MemoryLabel(DISPLAY_LABEL_IN_MEMORY)
+            )
+        )
+        val actualResult = FunctionDependenciesAnalyzer.createFunctionDetailsGenerators(program, variableProperties, referenceHashMapOf(functionF to returnVariable))
+        assertEquals(expectedResult, actualResult)
     }
 
     @Test fun `test a function that does not call`() {

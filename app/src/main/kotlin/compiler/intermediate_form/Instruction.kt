@@ -1,6 +1,8 @@
 package compiler.intermediate_form
 
 sealed class Instruction : Asmable {
+    val regsUsed: Collection<Register> = listOf()
+    val regsDefined: Collection<Register> = listOf()
 
     sealed class ConditionalJumpInstruction : Instruction() {
         abstract val targetLabel: String

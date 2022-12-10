@@ -30,24 +30,19 @@ object FunctionDependenciesAnalyzer {
                 is Statement.FunctionDefinition -> { analyze(node.function, pathSoFar) }
                 is Function -> {
                     val newPrefix = nameFunction(node, pathSoFar)
-                    var blockNumber = -1
+                    var blockNumber = 0
+                    fun handleNestedBlock(statements: List<Statement>) = statements.forEach { analyze(it, newPrefix + "@block" + blockNumber++) }
                     for (statement in node.body) {
                         when (statement) {
                             is Statement.Block -> {
-                                blockNumber++
-                                statement.block.forEach { analyze(it, newPrefix + blockNumber) }
-                                analyze(statement, newPrefix + blockNumber)
+                                handleNestedBlock(statement.block)
                             }
                             is Statement.Conditional -> {
-                                blockNumber++
-                                statement.actionWhenTrue.forEach { analyze(it, newPrefix + blockNumber) }
-                                blockNumber++
-                                statement.actionWhenFalse?.forEach { analyze(it, newPrefix + blockNumber) }
+                                handleNestedBlock(statement.actionWhenTrue)
+                                handleNestedBlock(statement.actionWhenFalse ?: listOf())
                             }
                             is Statement.Loop -> {
-                                blockNumber++
-                                statement.action.forEach { analyze(it, newPrefix + blockNumber) }
-                                analyze(statement, newPrefix + blockNumber)
+                                handleNestedBlock(statement.action)
                             }
                             else -> analyze(statement, newPrefix)
                         }

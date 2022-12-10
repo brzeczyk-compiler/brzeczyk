@@ -143,18 +143,18 @@ object ControlFlow {
                 is Expression.NumberLiteral -> IntermediateFormTreeNode.Const(astNode.value)
 
                 is Expression.Variable -> {
-                    val namedNode = nameResolution[astNode]!!
+                    val readableNode = nameResolution[astNode]!!
                     if (astNode !in usagesThatRequireTempRegisters) {
-                        makeReadNode(namedNode)
+                        makeReadNode(readableNode)
                     } else {
-                        if (namedNode !in currentTemporaryRegisters) {
-                            val valueNode = makeReadNode(namedNode)
+                        if (readableNode !in currentTemporaryRegisters) {
+                            val valueNode = makeReadNode(readableNode)
                             val temporaryRegister = Register()
                             val assignmentNode = IntermediateFormTreeNode.RegisterWrite(temporaryRegister, valueNode)
-                            currentTemporaryRegisters[namedNode] = temporaryRegister
+                            currentTemporaryRegisters[readableNode] = temporaryRegister
                             cfgBuilder.addNextTree(assignmentNode)
                         }
-                        IntermediateFormTreeNode.RegisterRead(currentTemporaryRegisters[namedNode]!!)
+                        IntermediateFormTreeNode.RegisterRead(currentTemporaryRegisters[readableNode]!!)
                     }
                 }
 

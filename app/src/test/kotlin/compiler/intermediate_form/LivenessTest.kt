@@ -252,4 +252,24 @@ class LivenessTest {
         val livenessGraphs = Liveness.computeLiveness(linearProgram)
         assertEquals(expectedLivenessGraphs, livenessGraphs)
     }
+
+    @Test
+    fun `multiple exit points`() {
+        val linearProgram = listOf(
+            Instruction.InPlaceInstruction.Dummy(regsDefined = listOf(reg1)),
+            Instruction.ConditionalJumpInstruction.Dummy("alternative_ending"),
+            Instruction.InPlaceInstruction.Dummy(regsUsed = listOf(reg2)),
+            Instruction.RetInstruction.Dummy(),
+            Label("alternative_ending"),
+            Instruction.InPlaceInstruction.Dummy(regsUsed = listOf(reg3)),
+            Instruction.RetInstruction.Dummy()
+        )
+        val expectedLivenessGraphs = Liveness.LivenessGraphs(
+            mapOf(reg1 to setOf(reg2, reg3), reg2 to setOf(reg1), reg3 to setOf(reg1)),
+            mapOf(reg1 to setOf(), reg2 to setOf(), reg3 to setOf())
+        )
+
+        val livenessGraphs = Liveness.computeLiveness(linearProgram)
+        assertEquals(expectedLivenessGraphs, livenessGraphs)
+    }
 }

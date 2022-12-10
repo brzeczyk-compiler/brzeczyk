@@ -21,7 +21,7 @@ abstract class DataFlowAnalyser<SL> {
         val instructionList = linearProgram.filterIsInstance<Instruction>()
 
         // calculate label to instruction translation
-        val labelToInstruction = referenceHashMapOf<String, Instruction>()
+        val labelToInstruction = mutableMapOf<String, Instruction>()
         for ((index, asmable) in linearProgram.withIndex().reversed())
             if (asmable is Label)
                 labelToInstruction[asmable.label] = linearProgram[index + 1].let {

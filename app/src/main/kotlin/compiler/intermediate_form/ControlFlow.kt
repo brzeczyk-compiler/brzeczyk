@@ -31,7 +31,7 @@ object ControlFlow {
         program: Program,
         programProperties: Resolver.ProgramProperties,
         diagnostics: Diagnostics
-    ): ControlFlowGraph? {
+    ): ReferenceMap<Function, ControlFlowGraph> {
         val globalVariablesAccessGenerator = GlobalVariablesAccessGenerator(programProperties.variableProperties)
         val functionDetailsGenerators = createFunctionDetailsGenerators(program, programProperties.variableProperties, programProperties.functionReturnedValueVariables)
         val callGraph = createCallGraph(program, programProperties.nameResolution)
@@ -60,7 +60,39 @@ object ControlFlow {
             diagnostics
         )
 
-        return null
+        return referenceHashMapOf(
+            cfgForEachFunction.entries.map {
+                (function, bodyCFG) ->
+                Pair(
+                    function,
+                    attachPrologueAndEpilogue(
+                        bodyCFG,
+                        functionDetailsGenerators[function]!!.genPrologue(),
+                        functionDetailsGenerators[function]!!.genEpilogue()
+                    )
+                )
+            }
+        )
+    }
+
+    fun attachPrologueAndEpilogue(body: ControlFlowGraph, prologue: ControlFlowGraph, epilogue: ControlFlowGraph): ControlFlowGraph {
+        val builder = ControlFlowGraphBuilder()
+        builder.addAllFrom(prologue)
+        if (body.entryTreeRoot != null) {
+            builder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, body.entryTreeRoot)
+            builder.addAllFrom(body)
+            builder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, epilogue.entryTreeRoot!!)
+
+            for (node in body.treeRoots) {
+                if (body.conditionalFalseLinks.containsKey(node) && !body.conditionalTrueLinks.containsKey(node))
+                    builder.addLink(Pair(node, CFGLinkType.CONDITIONAL_TRUE), epilogue.entryTreeRoot)
+                if (!body.conditionalFalseLinks.containsKey(node) && body.conditionalTrueLinks.containsKey(node))
+                    builder.addLink(Pair(node, CFGLinkType.CONDITIONAL_FALSE), epilogue.entryTreeRoot)
+            }
+        } else
+            builder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, epilogue.entryTreeRoot!!)
+        builder.addAllFrom(epilogue)
+        return builder.build()
     }
 
     fun createGraphForExpression(

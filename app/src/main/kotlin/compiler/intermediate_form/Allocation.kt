@@ -30,17 +30,19 @@ object Allocation {
         val graph: Map<Register, Set<Register>>,
         val accessibleRegisters: List<Register>
     ) {
-        val allocationMap = HashMap<Register, Register>().apply { putAll(accessibleRegisters.associateWith { it }) }
-        private val neighbourColorsMap = HashMap<Register, HashSet<Register>>()
-        val spilledRegisters = LinkedList<Register>()
+        private val allocationMap = HashMap<Register, Register>().apply { putAll(accessibleRegisters.associateWith { it }) }
+        private val availableColorsMap = HashMap<Register, HashSet<Register>>()
+        private val spilledRegisters = LinkedList<Register>()
         fun Register.isColored() = allocationMap.contains(this)
         fun Register.color() = allocationMap[this]
-        fun Register.neighbourColors(): Set<Register> = neighbourColorsMap.getOrPut(this) { HashSet() }
-        fun Register.availableColors() = (accessibleRegisters - neighbourColors()).toSet()
+        fun Register.availableColors() = availableColorsMap.getOrPut(this) { accessibleRegisters.toHashSet() }
         fun Register.assignColor(color: Register) {
             allocationMap[this] = color
-            graph[this]!!.forEach { neighbourColorsMap.getOrPut(it) { HashSet() }.add(color) }
+            graph[this]!!.forEach { availableColorsMap.getOrPut(it) { accessibleRegisters.toHashSet() }.remove(color) }
         }
+
+        fun Register.spill() = spilledRegisters.add(this)
+        fun createAllocationResult() = AllocationResult(allocationMap, spilledRegisters)
     }
 
     fun allocateRegisters(
@@ -50,57 +52,54 @@ object Allocation {
     ): AllocationResult = GraphColoring(livenessGraphs.interferenceGraph, accessibleRegisters).run {
         val copyGraphWithoutInterferences = livenessGraphs.copyGraph.mapValues { it.value - livenessGraphs.interferenceGraph[it.key]!! }
 
-        livenessGraphs.interferenceGraph.sortedByRemovingNodesWithSmallestDeg().reversed().forEach { register ->
-            if (register.isColored()) return@forEach
+        for (register in livenessGraphs.interferenceGraph.sortedByRemovingNodesWithSmallestDeg().reversed()) {
 
-            val availableColors = register.availableColors()
-            if (availableColors.isEmpty()) {
-                spilledRegisters.add(register)
-                return@forEach
+            val bestForColored: Register? by lazy(LazyThreadSafetyMode.NONE) {
+                findBestFitForColoredCopyGraphNeighbours(register, copyGraphWithoutInterferences)
+            }
+            val bestForUncolored: Register? by lazy(LazyThreadSafetyMode.NONE) {
+                findBestFitForUncoloredCopyGraphNeighbours(register, copyGraphWithoutInterferences)
             }
 
-            if (findBestFitForColoredCopyGraphNeighbours(register, availableColors, copyGraphWithoutInterferences)) {
-                return@forEach
-            }
+            when {
+                register.isColored() -> {}
 
-            if (findBestFitForUncoloredCopyGraphNeighbours(register, availableColors, copyGraphWithoutInterferences)) {
-                return@forEach
-            }
+                register.availableColors().isEmpty() -> {
+                    register.spill()
+                }
 
-            register.assignColor(availableColors.first())
+                bestForColored != null -> {
+                    register.assignColor(bestForColored!!)
+                }
+
+                bestForUncolored != null -> {
+                    register.assignColor(bestForUncolored!!)
+                }
+
+                else -> {
+                    register.assignColor(register.availableColors().first())
+                }
+            }
         }
 
-        return AllocationResult(allocationMap, spilledRegisters)
+        return createAllocationResult()
     }
 
     private fun GraphColoring.findBestFitForColoredCopyGraphNeighbours(
         register: Register,
-        availableColors: Set<Register>,
         copyGraphWithoutInterferences: Map<Register, Set<Register>>
-    ): Boolean {
+    ): Register? {
         val colorsOfCopyGraphNeighbours =
-            copyGraphWithoutInterferences[register]!!.filter { it.color() in availableColors }.map { it.color()!! }
-        if (colorsOfCopyGraphNeighbours.isNotEmpty()) {
-            val mostCommonColor = colorsOfCopyGraphNeighbours.groupingBy { it }.eachCount().maxByOrNull { it.value }!!.key
-            register.assignColor(mostCommonColor)
-            return true
-        }
-        return false
+            copyGraphWithoutInterferences[register]!!.filter { it.color() in register.availableColors() }.map { it.color()!! }
+        return colorsOfCopyGraphNeighbours.groupingBy { it }.eachCount().maxByOrNull { it.value }?.key
     }
 
     private fun GraphColoring.findBestFitForUncoloredCopyGraphNeighbours(
         register: Register,
-        availableColors: Set<Register>,
         copyGraphWithoutInterferences: Map<Register, Set<Register>>
-    ): Boolean {
+    ): Register? {
         val uncoloredCopyGraphNeighbours = copyGraphWithoutInterferences[register]!!.filter { !it.isColored() }
-        val commonAvailableColors = uncoloredCopyGraphNeighbours.map { it.availableColors() intersect availableColors }
-        commonAvailableColors.flatten().groupingBy { it }.eachCount().let {
-            if (it.isEmpty()) return@let
-            val mostCommonColor = it.maxByOrNull { it.value }!!.key
-            register.assignColor(mostCommonColor)
-            return true
-        }
-        return false
+        val commonAvailableColors = uncoloredCopyGraphNeighbours.map { it.availableColors() intersect register.availableColors() }
+        return commonAvailableColors.flatten().groupingBy { it }.eachCount().maxByOrNull { it.value }?.key
     }
 }

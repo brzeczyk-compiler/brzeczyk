@@ -24,18 +24,39 @@ object FunctionDependenciesAnalyzer {
             return uniqueIdentifiers[function]!!.value
         }
 
-        fun analyze(node: Any, pathSoFar: String?) {
+        fun analyze(node: Any, pathSoFar: String? = null) {
             when (node) {
                 is Program.Global.FunctionDefinition -> { analyze(node.function, pathSoFar) }
                 is Statement.FunctionDefinition -> { analyze(node.function, pathSoFar) }
                 is Function -> {
                     val newPrefix = nameFunction(node, pathSoFar)
-                    node.body.forEach { analyze(it, newPrefix) }
+                    var blockNumber = -1
+                    for (statement in node.body) {
+                        when (statement) {
+                            is Statement.Block -> {
+                                blockNumber++
+                                statement.block.forEach { analyze(it, newPrefix + blockNumber) }
+                                analyze(statement, newPrefix + blockNumber)
+                            }
+                            is Statement.Conditional -> {
+                                blockNumber++
+                                statement.actionWhenTrue.forEach { analyze(it, newPrefix + blockNumber) }
+                                blockNumber++
+                                statement.actionWhenFalse?.forEach { analyze(it, newPrefix + blockNumber) }
+                            }
+                            is Statement.Loop -> {
+                                blockNumber++
+                                statement.action.forEach { analyze(it, newPrefix + blockNumber) }
+                                analyze(statement, newPrefix + blockNumber)
+                            }
+                            else -> analyze(statement, newPrefix)
+                        }
+                    }
                 }
                 else -> {}
             }
         }
-        program.globals.forEach { analyze(it, null) }
+        program.globals.forEach { analyze(it) }
         return uniqueIdentifiers
     }
 

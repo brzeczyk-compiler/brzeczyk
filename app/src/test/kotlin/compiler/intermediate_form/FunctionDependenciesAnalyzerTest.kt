@@ -13,6 +13,7 @@ import compiler.common.reference_collections.referenceHashMapOf
 import compiler.common.reference_collections.referenceHashSetOf
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
@@ -114,6 +115,106 @@ class FunctionDependenciesAnalyzerTest {
         val globalsIdentifier = identifierFactory.build(null, globals.name)
 
         assertNotEquals("globals", globalsIdentifier.value)
+    }
+
+    @Test fun `test functions created in nested block receive identifiers`() {
+        /*
+         czynność some_prefix() {
+             if (tak) {
+                 czynność no_polish_signs() {}
+             }
+             dopóki (tak) {
+                 czynność no_polish_signs2() {}
+             }
+             {
+                 czynność no_polish_signs3() {}
+             }
+         }
+         */
+        var noPolishSigns = Function("no_polish_signs", listOf(), Type.Unit, listOf())
+        var noPolishSigns2 = Function("no_polish_signs2", listOf(), Type.Unit, listOf())
+        var noPolishSigns3 = Function("no_polish_signs3", listOf(), Type.Unit, listOf())
+        var outerFunction = Function(
+            "some_prefix",
+            listOf(), Type.Unit,
+            listOf(
+                Statement.Conditional(
+                    Expression.BooleanLiteral(true),
+                    listOf(Statement.FunctionDefinition(noPolishSigns)), null
+                ),
+                Statement.Loop(
+                    Expression.BooleanLiteral(true),
+                    listOf(Statement.FunctionDefinition(noPolishSigns2)), null
+                ),
+                Statement.Block(
+                    listOf(Statement.FunctionDefinition(noPolishSigns3)), null
+                )
+            )
+        )
+
+        val program = Program(listOf(Program.Global.FunctionDefinition(outerFunction)))
+        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program)
+        assertContains(actualIdentifiers, noPolishSigns)
+        assertContains(actualIdentifiers, noPolishSigns2)
+        assertContains(actualIdentifiers, noPolishSigns3)
+        assertContains(actualIdentifiers, outerFunction)
+    }
+
+    @Test fun `test functions at same level blocks with identical names do not cause conflicts`() {
+        /*
+         czynność some_prefix() {
+             if (tak) {
+                 czynność no_polish_signs() {}
+             } wpp {
+                 czynność no_polish_signs() {}
+             }
+             dopóki (tak) {
+                 czynność no_polish_signs() {}
+             }
+             {
+                 czynność no_polish_signs() {}
+             }
+         }
+         */
+        val identifierFactory = UniqueIdentifierFactory()
+        var noPolishSigns = Function("no_polish_signs", listOf(), Type.Unit, listOf())
+        var noPolishSignsCopy1 = Function("no_polish_signs", listOf(), Type.Unit, listOf())
+        var noPolishSignsCopy2 = Function("no_polish_signs", listOf(), Type.Unit, listOf())
+        var noPolishSignsCopy3 = Function("no_polish_signs", listOf(), Type.Unit, listOf())
+        var outerFunction = Function(
+            "some_prefix",
+            listOf(), Type.Unit,
+            listOf(
+                Statement.Conditional(
+                    Expression.BooleanLiteral(true),
+                    listOf(Statement.FunctionDefinition(noPolishSigns)),
+                    listOf(Statement.FunctionDefinition(noPolishSignsCopy1))
+                ),
+                Statement.Loop(
+                    Expression.BooleanLiteral(true),
+                    listOf(Statement.FunctionDefinition(noPolishSignsCopy2)), null
+                ),
+                Statement.Block(
+                    listOf(Statement.FunctionDefinition(noPolishSignsCopy3)), null
+                )
+            )
+        )
+
+        val program = Program(listOf(Program.Global.FunctionDefinition(outerFunction)))
+        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program)
+        val outerFunctionIdentifier = identifierFactory.build(null, outerFunction.name)
+        val noPolishSignsIdentifier = identifierFactory.build(outerFunctionIdentifier.value + "0", noPolishSigns.name)
+        val noPolishSignsCopy1Identifier = identifierFactory.build(outerFunctionIdentifier.value + "1", noPolishSigns.name)
+        val noPolishSignsCopy2Identifier = identifierFactory.build(outerFunctionIdentifier.value + "2", noPolishSigns.name)
+        val noPolishSignsCopy3Identifier = identifierFactory.build(outerFunctionIdentifier.value + "3", noPolishSigns.name)
+        val expectedIdentifiers = referenceHashMapOf(
+            outerFunction to outerFunctionIdentifier,
+            noPolishSigns to noPolishSignsIdentifier,
+            noPolishSignsCopy1 to noPolishSignsCopy1Identifier,
+            noPolishSignsCopy2 to noPolishSignsCopy2Identifier,
+            noPolishSignsCopy3 to noPolishSignsCopy3Identifier,
+        )
+        assertEquals(expectedIdentifiers, actualIdentifiers)
     }
 
     @Test fun `test function details generator creation`() {

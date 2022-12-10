@@ -33,7 +33,7 @@ abstract class DataFlowAnalyser<SL> {
 
         // calculate the predecessors map (forward direction)
         val predecessors = referenceHashMapOf<Instruction, MutableList<Instruction>>()
-        linearProgram.filterIsInstance<Instruction>().forEach { predecessors[it] = mutableListOf() }
+        instructionList.forEach { predecessors[it] = mutableListOf() }
         fun addPredecessor(from: Instruction, to: Instruction) {
             if (backward) predecessors[from]!!.add(to)
             else predecessors[to]!!.add(from)

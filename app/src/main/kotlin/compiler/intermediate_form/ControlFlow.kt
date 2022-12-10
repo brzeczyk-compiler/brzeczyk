@@ -88,7 +88,7 @@ object ControlFlow {
                 }
 
                 is Expression.FunctionCall -> {
-                    var modifiedInArguments: ReferenceSet<Variable> = referenceHashSetOf<Variable>()
+                    var modifiedInArguments: ReferenceSet<Variable> = referenceHashSetOf()
                     astNode.arguments.reversed().forEach { argumentNode ->
                         modifiedInArguments = gatherVariableUsageInfo(argumentNode.value, modifiedInArguments)
                     }
@@ -114,7 +114,7 @@ object ControlFlow {
         // second stage is to actually produce CFG
         val cfgBuilder = ControlFlowGraphBuilder()
         var last = listOf<Pair<IFTNode, CFGLinkType>?>(null)
-        var currentTemporaryRegisters = referenceHashMapOf<Variable, Register>()
+        var currentTemporaryRegisters = referenceHashMapOf<NamedNode, Register>()
 
         fun ControlFlowGraphBuilder.addNextCFG(nextCFG: ControlFlowGraph) {
             if (nextCFG.entryTreeRoot != null) {
@@ -128,9 +128,10 @@ object ControlFlow {
             addNextCFG(ControlFlowGraphBuilder().apply { addLink(null, nextTree) }.build())
         }
 
-        fun makeVariableReadNode(variable: Variable): IntermediateFormTreeNode {
-            val owner = variableProperties[variable]!!.owner
-            return variableAccessGenerators[owner]!!.genRead(variable, owner == currentFunction)
+        fun makeReadNode(readableNode: NamedNode): IntermediateFormTreeNode {
+            // readableNode must be Variable or Function.Parameter
+            val owner = variableProperties[readableNode]!!.owner
+            return variableAccessGenerators[owner]!!.genRead(readableNode, owner === currentFunction)
         }
 
         fun makeCFGForSubtree(astNode: Expression): IntermediateFormTreeNode {
@@ -142,18 +143,18 @@ object ControlFlow {
                 is Expression.NumberLiteral -> IntermediateFormTreeNode.Const(astNode.value)
 
                 is Expression.Variable -> {
-                    val variable = nameResolution[astNode] as Variable
+                    val readableNode = nameResolution[astNode]!!
                     if (astNode !in usagesThatRequireTempRegisters) {
-                        makeVariableReadNode(variable)
+                        makeReadNode(readableNode)
                     } else {
-                        if (variable !in currentTemporaryRegisters) {
-                            val valueNode = makeVariableReadNode(variable)
+                        if (readableNode !in currentTemporaryRegisters) {
+                            val valueNode = makeReadNode(readableNode)
                             val temporaryRegister = Register()
                             val assignmentNode = IntermediateFormTreeNode.RegisterWrite(temporaryRegister, valueNode)
-                            currentTemporaryRegisters[variable] = temporaryRegister
+                            currentTemporaryRegisters[readableNode] = temporaryRegister
                             cfgBuilder.addNextTree(assignmentNode)
                         }
-                        IntermediateFormTreeNode.RegisterRead(currentTemporaryRegisters.getValue(variable))
+                        IntermediateFormTreeNode.RegisterRead(currentTemporaryRegisters[readableNode]!!)
                     }
                 }
 
@@ -230,7 +231,7 @@ object ControlFlow {
                     for ((argument, resultNode) in astNode.arguments zip explicitArgumentsResultNodes) // explicit arguments
                         parameterValues[function.parameters.indexOfFirst { it === argumentResolution[argument] }] = resultNode
                     function.parameters.withIndex().filter { parameterValues[it.index] == null }.forEach { // default arguments
-                        parameterValues[it.index] = makeVariableReadNode(defaultParameterValues[it.value]!!)
+                        parameterValues[it.index] = makeReadNode(defaultParameterValues[it.value]!!)
                     }
 
                     val callIntermediateForm = functionDetailsGenerators[function]!!.genCall(parameterValues.map { it!! }.toList())
@@ -275,7 +276,7 @@ object ControlFlow {
         // build last tree into CFG, possibly wrapped in variable write operation
         if (targetVariable != null) {
             val owner = variableProperties[targetVariable]!!.owner
-            cfgBuilder.addNextTree(variableAccessGenerators[owner]!!.genWrite(targetVariable, result, owner == currentFunction))
+            cfgBuilder.addNextTree(variableAccessGenerators[owner]!!.genWrite(targetVariable, result, owner === currentFunction))
         } else {
             cfgBuilder.addNextTree(result)
         }

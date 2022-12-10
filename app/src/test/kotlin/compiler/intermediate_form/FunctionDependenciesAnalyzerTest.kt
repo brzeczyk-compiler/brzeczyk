@@ -27,7 +27,7 @@ class FunctionDependenciesAnalyzerTest {
         val noPolishSignsIdentifier = identifierFactory.build(null, noPolishSigns.name)
 
         val program = Program(listOf(Program.Global.FunctionDefinition(noPolishSigns)))
-        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program)
+        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program, false)
         val expectedIdentifiers = referenceHashMapOf(noPolishSigns to noPolishSignsIdentifier)
         assertEquals(expectedIdentifiers, actualIdentifiers)
     }
@@ -41,7 +41,7 @@ class FunctionDependenciesAnalyzerTest {
         var polishSignsIdentifier = identifierFactory.build(null, polishSigns.name)
 
         val program = Program(listOf(Program.Global.FunctionDefinition(polishSigns)))
-        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program)
+        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program, false)
         val expectedIdentifiers = referenceHashMapOf(polishSigns to polishSignsIdentifier)
         assertEquals(expectedIdentifiers, actualIdentifiers)
     }
@@ -62,7 +62,7 @@ class FunctionDependenciesAnalyzerTest {
         val noPolishSignsIdentifier = identifierFactory.build(outerFunctionIdentifier.value, noPolishSigns.name)
 
         val program = Program(listOf(Program.Global.FunctionDefinition(outerFunction)))
-        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program)
+        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program, false)
         val expectedIdentifiers = referenceHashMapOf(
             noPolishSigns to noPolishSignsIdentifier,
             outerFunction to outerFunctionIdentifier
@@ -96,7 +96,7 @@ class FunctionDependenciesAnalyzerTest {
         val inner3Identifier = identifierFactory.build(outerFunctionIdentifier.value, inner3.name)
 
         val program = Program(listOf(Program.Global.FunctionDefinition(outerFunction)))
-        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program)
+        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program, false)
         val expectedIdentifiers = referenceHashMapOf(
             inner1 to inner1Identifier,
             inner2 to inner2Identifier,

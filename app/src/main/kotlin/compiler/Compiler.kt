@@ -36,9 +36,7 @@ class Compiler(val diagnostics: CompilerDiagnostics) {
 
             val programProperties = Resolver.resolveProgram(ast, diagnostics)
 
-            if (!diagnostics.hasErrors()) {
-                val cfg = createGraphForProgram(ast, programProperties, diagnostics)
-            }
+            val cfg = createGraphForProgram(ast, programProperties, diagnostics, diagnostics.hasErrors())
             // TODO: generate the code
         } catch (_: CompilationFailed) { }
 

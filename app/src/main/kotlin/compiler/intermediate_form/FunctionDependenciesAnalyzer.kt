@@ -18,11 +18,20 @@ import compiler.semantic_analysis.VariablePropertiesAnalyzer
 import compiler.semantic_analysis.getUsedBuiltinFunctions
 
 object FunctionDependenciesAnalyzer {
-    fun createUniqueIdentifiers(program: Program): ReferenceMap<Function, UniqueIdentifier> {
+    fun createUniqueIdentifiers(program: Program, allowInconsistentNamingErrors: Boolean): ReferenceMap<Function, UniqueIdentifier> {
         val uniqueIdentifiers = referenceHashMapOf<Function, UniqueIdentifier>()
         val identifierFactory = UniqueIdentifierFactory()
         fun nameFunction(function: Function, pathSoFar: String?): String {
-            uniqueIdentifiers[function] = identifierFactory.build(pathSoFar, function.name)
+            try {
+                uniqueIdentifiers[function] = identifierFactory.build(pathSoFar, function.name)
+            } catch (error: InconsistentFunctionNamingConvention) {
+                // Such errors should occur only as a consequence of skipped NameConflict error in name resolution.
+                // Hence, if `allowInconsistentNamingErrors`, which is only set when there were already some errors
+                // in diagnostics, we can safely ignore such errors, cause the compilation would be failed later anyway.
+                if (!allowInconsistentNamingErrors)
+                    throw error
+                uniqueIdentifiers[function] = UniqueIdentifier("\$INVALID")
+            }
             return uniqueIdentifiers[function]!!.value
         }
 
@@ -45,10 +54,11 @@ object FunctionDependenciesAnalyzer {
     fun createFunctionDetailsGenerators(
         program: Program,
         variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>,
-        functionReturnedValueVariables: ReferenceMap<Function, Variable>
+        functionReturnedValueVariables: ReferenceMap<Function, Variable>,
+        allowInconsistentNamingErrors: Boolean = false
     ): ReferenceMap<Function, DefaultFunctionDetailsGenerator> {
         val result = referenceHashMapOf<Function, DefaultFunctionDetailsGenerator>()
-        val functionIdentifiers = createUniqueIdentifiers(program)
+        val functionIdentifiers = createUniqueIdentifiers(program, allowInconsistentNamingErrors)
 
         fun createDetailsGenerator(function: Function, depth: ULong) {
             val variablesLocationTypes = referenceHashMapOf<NamedNode, VariableLocationType>()

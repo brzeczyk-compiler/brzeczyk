@@ -30,10 +30,11 @@ object ControlFlow {
     fun createGraphForProgram(
         program: Program,
         programProperties: Resolver.ProgramProperties,
-        diagnostics: Diagnostics
+        diagnostics: Diagnostics,
+        allowInconsistentNamingErrors: Boolean = false
     ): ReferenceMap<Function, ControlFlowGraph> {
         val globalVariablesAccessGenerator = GlobalVariablesAccessGenerator(programProperties.variableProperties)
-        val functionDetailsGenerators = createFunctionDetailsGenerators(program, programProperties.variableProperties, programProperties.functionReturnedValueVariables)
+        val functionDetailsGenerators = createFunctionDetailsGenerators(program, programProperties.variableProperties, programProperties.functionReturnedValueVariables, allowInconsistentNamingErrors)
         val callGraph = createCallGraph(program, programProperties.nameResolution)
 
         fun partiallyAppliedCreateGraphForExpression(expression: Expression, targetVariable: Variable?, currentFunction: Function): ControlFlowGraph {

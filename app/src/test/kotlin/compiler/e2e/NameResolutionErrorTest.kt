@@ -225,6 +225,19 @@ class NameResolutionErrorTest {
         )
     }
 
+    @Test
+    fun `test conflicts (functions with signatures being a proper prefix of another)`() {
+        assertErrorOfType(
+            """
+                    czynność f() {
+                        czynność g(a: Liczba) { }
+                        czynność g(a: Liczba, b: Czy) { }
+                    }
+                    
+                """,
+            Diagnostic.ResolutionDiagnostic.NameResolutionError.NameConflict::class
+        )
+    }
     // ----------- Parameters tests ---------------------------------------------
 
     @Test

@@ -15,6 +15,7 @@ import compiler.common.reference_collections.referenceHashMapOf
 import compiler.common.reference_collections.referenceHashSetOf
 import compiler.common.reference_collections.referenceKeys
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
+import compiler.semantic_analysis.getUsedBuiltinFunctions
 
 object FunctionDependenciesAnalyzer {
     const val DISPLAY_LABEL_IN_MEMORY = "display"
@@ -39,6 +40,7 @@ object FunctionDependenciesAnalyzer {
             }
         }
         program.globals.forEach { analyze(it, null) }
+        getUsedBuiltinFunctions(program).forEach { nameFunction(it, null) }
         return uniqueIdentifiers
     }
 
@@ -93,6 +95,7 @@ object FunctionDependenciesAnalyzer {
         }
 
         program.globals.forEach { if (it is Program.Global.FunctionDefinition) processFunction(it.function, 0u) }
+        getUsedBuiltinFunctions(program).forEach { createDetailsGenerator(it, 0u) }
 
         return result
     }
@@ -109,10 +112,12 @@ object FunctionDependenciesAnalyzer {
                 is Expression.Variable -> referenceHashSetOf()
                 null -> referenceHashSetOf()
 
-                is Expression.FunctionCall -> combineReferenceSets(
-                    referenceHashSetOf(nameResolution[expression] as Function),
-                    combineReferenceSets(expression.arguments.map { getCalledFunctions(it.value) }),
-                )
+                is Expression.FunctionCall -> {
+                    combineReferenceSets(
+                        referenceHashSetOf(nameResolution[expression] as Function),
+                        combineReferenceSets(expression.arguments.map { getCalledFunctions(it.value) }),
+                    )
+                }
 
                 is Expression.UnaryOperation -> getCalledFunctions(expression.operand)
 
@@ -175,6 +180,7 @@ object FunctionDependenciesAnalyzer {
         }
 
         ast.globals.forEach { getCalledFunctions(it) }
+        getUsedBuiltinFunctions(ast).forEach { functionCalls[it] = referenceHashSetOf() }
 
         val allFunctions = functionCalls.referenceKeys
         var previousPartialTransitiveFunctionCalls: ReferenceHashMap<Function, ReferenceSet<Function>>

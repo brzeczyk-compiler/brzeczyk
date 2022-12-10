@@ -18,11 +18,50 @@ import compiler.common.reference_collections.copy
 import compiler.common.reference_collections.referenceHashMapOf
 import compiler.common.reference_collections.referenceHashSetOf
 import compiler.common.semantic_analysis.VariablesOwner
+import compiler.intermediate_form.FunctionDependenciesAnalyzer.createCallGraph
+import compiler.intermediate_form.FunctionDependenciesAnalyzer.createFunctionDetailsGenerators
 import compiler.semantic_analysis.ArgumentResolutionResult
+import compiler.semantic_analysis.Resolver
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
 
 object ControlFlow {
     private fun mapLinkType(list: List<Pair<IFTNode, CFGLinkType>?>, type: CFGLinkType) = list.map { it?.copy(second = type) }
+
+    fun createGraphForProgram(
+        program: Program,
+        programProperties: Resolver.ProgramProperties,
+        diagnostics: Diagnostics
+    ): ControlFlowGraph? {
+        val globalVariablesAccessGenerator = GlobalVariablesAccessGenerator(programProperties.variableProperties)
+        val functionDetailsGenerators = createFunctionDetailsGenerators(program, programProperties.variableProperties, programProperties.functionReturnedValueVariables)
+        val callGraph = createCallGraph(program, programProperties.nameResolution)
+
+        fun partiallyAppliedCreateGraphForExpression(expression: Expression, targetVariable: Variable?, currentFunction: Function): ControlFlowGraph {
+            return createGraphForExpression(
+                expression,
+                targetVariable,
+                currentFunction,
+                programProperties.nameResolution,
+                programProperties.variableProperties,
+                callGraph,
+                functionDetailsGenerators,
+                programProperties.argumentResolution,
+                programProperties.defaultParameterMapping,
+                globalVariablesAccessGenerator
+            )
+        }
+
+        val cfgForEachFunction = createGraphForEachFunction(
+            program,
+            ::partiallyAppliedCreateGraphForExpression,
+            programProperties.nameResolution,
+            programProperties.defaultParameterMapping,
+            programProperties.functionReturnedValueVariables,
+            diagnostics
+        )
+
+        return null
+    }
 
     fun createGraphForExpression(
         expression: Expression,
@@ -31,7 +70,7 @@ object ControlFlow {
         nameResolution: ReferenceMap<Any, NamedNode>,
         variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>,
         callGraph: ReferenceMap<Function, ReferenceSet<Function>>,
-        functionDetailsGenerators: ReferenceMap<Function, FunctionDetailsGenerator>,
+        functionDetailsGenerators: ReferenceMap<Function, out FunctionDetailsGenerator>,
         argumentResolution: ArgumentResolutionResult,
         defaultParameterMapping: ReferenceMap<Function.Parameter, Variable>,
         globalVariablesAccessGenerator: VariableAccessGenerator
@@ -113,7 +152,7 @@ object ControlFlow {
         // second stage is to actually produce CFG
         val cfgBuilder = ControlFlowGraphBuilder()
         var last = listOf<Pair<IFTNode, CFGLinkType>?>(null)
-        var currentTemporaryRegisters = referenceHashMapOf<Variable, Register>()
+        var currentTemporaryRegisters = referenceHashMapOf<NamedNode, Register>() // NamedNode to capture both parameter or variable
 
         fun ControlFlowGraphBuilder.addNextCFG(nextCFG: ControlFlowGraph) {
             if (nextCFG.entryTreeRoot != null) {
@@ -127,9 +166,9 @@ object ControlFlow {
             addNextCFG(ControlFlowGraphBuilder().apply { addLink(null, nextTree) }.build())
         }
 
-        fun makeVariableReadNode(variable: Variable): IntermediateFormTreeNode {
-            val owner = variableProperties[variable]!!.owner
-            return variableAccessGenerators[owner]!!.genRead(variable, owner == currentFunction)
+        fun makeVariableReadNode(variableOrParameter: NamedNode): IntermediateFormTreeNode {
+            val owner = variableProperties[variableOrParameter]!!.owner
+            return variableAccessGenerators[owner]!!.genRead(variableOrParameter, owner == currentFunction)
         }
 
         fun makeCFGForSubtree(astNode: Expression): IntermediateFormTreeNode {
@@ -141,7 +180,7 @@ object ControlFlow {
                 is Expression.NumberLiteral -> IntermediateFormTreeNode.Const(astNode.value)
 
                 is Expression.Variable -> {
-                    val variable = nameResolution[astNode] as Variable
+                    val variable = nameResolution[astNode] as NamedNode
                     if (astNode !in usagesThatRequireTempRegisters) {
                         makeVariableReadNode(variable)
                     } else {

@@ -88,7 +88,9 @@ object VariablePropertiesAnalyzer {
                     ).forEach { analyzeVariables(it, currentFunction) }
                 is Statement.Loop -> (sequenceOf(node.condition) + node.action.asSequence())
                     .forEach { analyzeVariables(it, currentFunction) }
-                is Statement.FunctionReturn -> analyzeVariables(node.value, currentFunction)
+                is Statement.FunctionReturn -> {
+                    analyzeVariables(node.value, currentFunction)
+                }
                 is Expression.Variable -> {
                     val resolvedVariable: NamedNode = nameResolution[node]!!
                     mutableVariableProperties[resolvedVariable]!!.accessedIn.add(currentFunction!!)

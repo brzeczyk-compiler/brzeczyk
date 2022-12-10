@@ -53,6 +53,8 @@ object ReturnValueVariableCreator {
             globalFunction.function.body.forEach { process(it) }
         }
 
+        builtinFunctionsByName.values.forEach { createReturnVariableFor(it) }
+
         return resultMapping
     }
 }

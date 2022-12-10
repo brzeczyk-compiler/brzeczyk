@@ -7,7 +7,6 @@ import compiler.ast.Function
 import compiler.ast.NamedNode
 import compiler.ast.Program
 import compiler.ast.Statement
-import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic
 import compiler.common.diagnostics.Diagnostics
@@ -54,8 +53,9 @@ object NameResolver {
 
         fun reportIfNameConflict(namedNode: NamedNode, scope: MutableMap<String, NamedNode>) {
             // conflict can only appear in the same scope
-            if (scope.containsKey(namedNode.name))
+            if (scope.containsKey(namedNode.name)) {
                 diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.NameConflict(scope[namedNode.name]!!, namedNode))
+            }
         }
 
         fun checkVariableUsage(name: String, astNode: AstNode): Boolean {
@@ -130,15 +130,8 @@ object NameResolver {
                 is Program -> {
                     val newScope = makeScope()
 
-                    // we have to be able to map "napisz(...)" FunctionCalls to something
-                    // TODO: napiszNode has to actually have some meaning
-                    val dummyNapiszNode: Function = Function(
-                        "napisz",
-                        listOf(Function.Parameter("wartość", Type.Number, null)),
-                        Type.Unit,
-                        listOf()
-                    )
-                    addName("napisz", dummyNapiszNode, newScope)
+                    for ((name, function) in builtinFunctionsByName.entries)
+                        addName(name, function, newScope)
 
                     node.globals.forEach { analyzeNode(it, newScope) }
                     destroyScope(newScope)

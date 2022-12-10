@@ -19,6 +19,7 @@ class FunctionControlFlowTest {
     private val expressionNodes = referenceHashMapOf<Expression, ReferenceHashMap<Variable?, IFTNode>>()
     private val nameResolution = referenceHashMapOf<Any, NamedNode>()
     private val defaultParameterValues = referenceHashMapOf<Function.Parameter, Variable>()
+    private val functionReturnedValueVariables = referenceHashMapOf<Function, Variable>()
     private val diagnostics = mutableListOf<Diagnostic>()
 
     private fun addExpressionNode(expression: Expression, variable: Variable?): IFTNode {
@@ -39,8 +40,9 @@ class FunctionControlFlowTest {
         this::getExpressionCFG,
         nameResolution,
         defaultParameterValues,
+        functionReturnedValueVariables,
         diagnostics::add
-    ).first
+    )
 
     // czynność f() { }
 

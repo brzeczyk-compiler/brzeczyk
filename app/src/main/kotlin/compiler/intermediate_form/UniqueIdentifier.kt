@@ -1,5 +1,7 @@
 package compiler.intermediate_form
 
+import compiler.intermediate_form.FunctionDependenciesAnalyzer.DISPLAY_LABEL_IN_MEMORY
+
 class IllegalCharacter(message: String) : RuntimeException(message)
 class InconsistentFunctionNamingConvention(message: String) : RuntimeException(message)
 
@@ -16,6 +18,7 @@ class UniqueIdentifierFactory() {
             'ć' to 'c',
             'ę' to 'e',
             'ł' to 'l',
+            'ń' to 'n',
             'ó' to 'o',
             'ś' to 's',
             'ź' to 'x',
@@ -24,12 +27,13 @@ class UniqueIdentifierFactory() {
             'Ć' to 'C',
             'Ę' to 'E',
             'Ł' to 'L',
+            'Ń' to 'N',
             'Ó' to 'O',
             'Ś' to 'S',
             'Ź' to 'X',
             'Ż' to 'Z'
         )
-        public val forbiddenLabels = listOf("globals")
+        public val forbiddenLabels = listOf(GlobalVariablesAccessGenerator.GLOBALS_MEMORY_LABEL, DISPLAY_LABEL_IN_MEMORY)
     }
 
     private val knownIdentifiers: MutableSet<String> = mutableSetOf()

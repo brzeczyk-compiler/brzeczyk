@@ -28,6 +28,7 @@ class VariablePropertiesAnalyzerTest {
         val program: Program,
         val nameResolution: ReferenceMap<Any, NamedNode>,
         val defaultParameterMapping: ReferenceMap<Function.Parameter, Variable> = referenceHashMapOf(),
+        val functionReturnedValueVariables: ReferenceMap<Function, Variable> = referenceHashMapOf(),
         val accessedDefaultValues: ReferenceMap<Expression.FunctionCall, ReferenceSet<Function.Parameter>> = referenceHashMapOf(),
     )
 
@@ -39,6 +40,7 @@ class VariablePropertiesAnalyzerTest {
             input.program,
             input.nameResolution,
             input.defaultParameterMapping,
+            input.functionReturnedValueVariables,
             input.accessedDefaultValues,
             CompilerDiagnostics(),
         )
@@ -56,6 +58,7 @@ class VariablePropertiesAnalyzerTest {
                 input.program,
                 input.nameResolution,
                 input.defaultParameterMapping,
+                input.functionReturnedValueVariables,
                 input.accessedDefaultValues,
                 actualDiagnostics,
             )
@@ -495,8 +498,9 @@ class VariablePropertiesAnalyzerTest {
         )
         val nameResolution: ReferenceMap<Any, NamedNode> = referenceHashMapOf(innerFunctionCall to innerFunction)
         val defaultParameterMapping = referenceHashMapOf(parameterX to dummyVariableX)
+        val functionReturnedValueVariables = referenceHashMapOf<Function, Variable>()
         val accessedDefaultValues: ReferenceMap<Expression.FunctionCall, ReferenceSet<Function.Parameter>> = referenceHashMapOf(innerFunctionCall to referenceHashSetOf<Function.Parameter>())
-        val input = VariablePropertyInput(Program(listOf(FunctionDefinition(function))), nameResolution, defaultParameterMapping, accessedDefaultValues)
+        val input = VariablePropertyInput(Program(listOf(FunctionDefinition(function))), nameResolution, defaultParameterMapping, functionReturnedValueVariables, accessedDefaultValues)
 
         val expectedResults: ReferenceMap<Any, VariableProperties> = referenceHashMapOf(
             parameterX to VariableProperties(innerFunction, referenceHashSetOf(), referenceHashSetOf()),
@@ -540,8 +544,9 @@ class VariablePropertiesAnalyzerTest {
             gInnerFunctionCall to innerFunction,
         )
         val defaultParameterMapping = referenceHashMapOf(parameterX to dummyVariableX)
+        val functionReturnedValueVariables = referenceHashMapOf<Function, Variable>()
         val accessedDefaultValues: ReferenceMap<Expression.FunctionCall, ReferenceSet<Function.Parameter>> = referenceHashMapOf(fInnerFunctionCall to referenceHashSetOf(parameterX), gInnerFunctionCall to referenceHashSetOf())
-        val input = VariablePropertyInput(Program(listOf(FunctionDefinition(function))), nameResolution, defaultParameterMapping, accessedDefaultValues)
+        val input = VariablePropertyInput(Program(listOf(FunctionDefinition(function))), nameResolution, defaultParameterMapping, functionReturnedValueVariables, accessedDefaultValues)
 
         val expectedResults: ReferenceMap<Any, VariableProperties> = referenceHashMapOf(
             parameterX to VariableProperties(innerFunction, referenceHashSetOf(), referenceHashSetOf()),

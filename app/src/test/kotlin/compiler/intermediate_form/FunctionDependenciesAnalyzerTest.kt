@@ -11,6 +11,7 @@ import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.referenceHashMapOf
 import compiler.common.reference_collections.referenceHashSetOf
+import compiler.intermediate_form.UniqueIdentifierFactory.Companion.forbiddenLabels
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -105,15 +106,17 @@ class FunctionDependenciesAnalyzerTest {
         assertEquals(expectedIdentifiers, actualIdentifiers)
     }
 
-    @Test fun `test function named globals is not assigned identifier globals`() {
+    @Test fun `test function with name in forbidden memory label list is not assigned forbidden identifier`() {
         /*
          czynność globals() {}
+         czynność display() {}
          */
         val identifierFactory = UniqueIdentifierFactory()
-        val globals = Function("globals", listOf(), Type.Unit, listOf())
-        val globalsIdentifier = identifierFactory.build(null, globals.name)
-
-        assertNotEquals("globals", globalsIdentifier.value)
+        for (forbidden in forbiddenLabels) {
+            val function = Function(forbidden, listOf(), Type.Unit, listOf())
+            val functionIdentifier = identifierFactory.build(null, function.name)
+            assertNotEquals(forbidden, functionIdentifier.value)
+        }
     }
 
     @Test fun `test function details generator creation`() {

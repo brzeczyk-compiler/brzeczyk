@@ -6,6 +6,7 @@ import compiler.ast.NamedNode
 import compiler.ast.Program
 import compiler.ast.Statement
 import compiler.ast.StatementBlock
+import compiler.ast.Variable
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.ReferenceSet
@@ -16,6 +17,8 @@ import compiler.common.reference_collections.referenceKeys
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
 
 object FunctionDependenciesAnalyzer {
+    const val DISPLAY_LABEL_IN_MEMORY = "display"
+
     fun createUniqueIdentifiers(program: Program): ReferenceMap<Function, UniqueIdentifier> {
         val uniqueIdentifiers = referenceHashMapOf<Function, UniqueIdentifier>()
         val identifierFactory = UniqueIdentifierFactory()
@@ -41,20 +44,31 @@ object FunctionDependenciesAnalyzer {
 
     fun createFunctionDetailsGenerators(
         program: Program,
-        variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>
+        variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>,
+        functionReturnedValueVariables: ReferenceMap<Function, Variable>
     ): ReferenceMap<Function, DefaultFunctionDetailsGenerator> {
-
         val result = referenceHashMapOf<Function, DefaultFunctionDetailsGenerator>()
+        val functionIdentifiers = createUniqueIdentifiers(program)
 
         fun createDetailsGenerator(function: Function, depth: ULong) {
-            val variables = referenceHashMapOf<NamedNode, Boolean>()
+            val variablesLocationTypes = referenceHashMapOf<NamedNode, VariableLocationType>()
             variableProperties
                 .filter { (_, properties) -> properties.owner === function }
                 .forEach { (variable, properties) ->
-                    variables[variable as NamedNode] = (properties.accessedIn.any { it != function } || properties.writtenIn.any { it != function })
+                    variablesLocationTypes[variable as NamedNode] =
+                        if (properties.accessedIn.any { it != function } || properties.writtenIn.any { it != function })
+                            VariableLocationType.MEMORY
+                        else VariableLocationType.REGISTER
                 }
 
-            result[function] = TODO() // FunctionDetailsGenerator(depth, variables, function.parameters)
+            result[function] = DefaultFunctionDetailsGenerator(
+                function.parameters,
+                functionReturnedValueVariables[function],
+                IntermediateFormTreeNode.MemoryLabel(functionIdentifiers[function]!!.value),
+                depth,
+                variablesLocationTypes,
+                IntermediateFormTreeNode.MemoryLabel(DISPLAY_LABEL_IN_MEMORY)
+            )
         }
 
         fun processFunction(function: Function, depth: ULong) {

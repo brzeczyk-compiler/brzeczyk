@@ -54,7 +54,12 @@ object NameResolver {
         fun reportIfNameConflict(namedNode: NamedNode, scope: MutableMap<String, NamedNode>) {
             // conflict can only appear in the same scope
             if (scope.containsKey(namedNode.name)) {
-                diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.NameConflict(scope[namedNode.name]!!, namedNode))
+                diagnostics.report(
+                    Diagnostic.ResolutionDiagnostic.NameResolutionError.NameConflict(
+                        scope[namedNode.name]!!, namedNode,
+                        withBuiltinFunction = builtinFunctionsByName.containsKey(namedNode.name)
+                    )
+                )
             }
         }
 

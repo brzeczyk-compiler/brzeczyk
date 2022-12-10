@@ -1,7 +1,8 @@
 package compiler.intermediate_form
 
-import java.util.LinkedList
 import kotlin.collections.HashMap
+
+// The implementation below uses HashSets/HashMaps in various places to ensure that some operations run in O(1)
 
 object Allocation {
     data class AllocationResult(
@@ -32,7 +33,7 @@ object Allocation {
     ) {
         private val allocationMap = HashMap<Register, Register>().apply { putAll(accessibleRegisters.associateWith { it }) }
         private val availableColorsMap = HashMap<Register, HashSet<Register>>()
-        private val spilledRegisters = LinkedList<Register>()
+        private val spilledRegisters = mutableListOf<Register>()
         fun Register.isColored() = allocationMap.contains(this)
         fun Register.color() = allocationMap[this]
         fun Register.availableColors() = availableColorsMap.getOrPut(this) { accessibleRegisters.toHashSet() }
@@ -89,9 +90,9 @@ object Allocation {
         register: Register,
         copyGraphWithoutInterferences: Map<Register, Set<Register>>
     ): Register? {
-        val colorsOfCopyGraphNeighbours =
+        val availableColorsOfCopyGraphNeighbours =
             copyGraphWithoutInterferences[register]!!.filter { it.color() in register.availableColors() }.map { it.color()!! }
-        return colorsOfCopyGraphNeighbours.groupingBy { it }.eachCount().maxByOrNull { it.value }?.key
+        return availableColorsOfCopyGraphNeighbours.groupingBy { it }.eachCount().maxByOrNull { it.value }?.key
     }
 
     private fun GraphColoring.findBestFitForUncoloredCopyGraphNeighbours(

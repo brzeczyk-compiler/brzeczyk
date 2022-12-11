@@ -18,12 +18,12 @@ object InstructionSet {
         val createInstructions: (List<Register>, Register, Context, Map<String, Any>) -> List<Instruction>
     ) : Pattern {
         private fun match(node: IntermediateFormTreeNode, context: Context, targetLabel: String = "", invert: Boolean = false): Pattern.Result? {
-            val (nodes, arguments) = pattern.match(node) ?: return null
+            val treeMatch = pattern.match(node) ?: return null
             val cost = 1 // TODO better cost calculation
             val contextMap = if (context == Context.CONDITIONAL)
                 mapOf("invert" to invert, "target" to targetLabel) else emptyMap()
-            return Pattern.Result(nodes, cost) { inRegisters, outRegister ->
-                createInstructions(inRegisters, outRegister, context, arguments + contextMap)
+            return Pattern.Result(treeMatch.subtrees, cost) { inRegisters, outRegister ->
+                createInstructions(inRegisters, outRegister, context, treeMatch.args + contextMap)
             }
         }
 
@@ -139,8 +139,8 @@ object InstructionSet {
             InstructionPattern(IFTPattern.BinaryOperator(IntermediateFormTreeNode.Divide::class)) {
                 inRegisters, outRegister, _, _ ->
                 listOf(
-                    Instruction.InPlaceInstruction.XorRR(Register.RDX, Register.RDX), //     XOR  rdx,  rdx   ; reset rdx to 0
                     Instruction.InPlaceInstruction.MoveRR(Register.RAX, inRegisters[0]), //  MOV  rax,  reg0
+                    Instruction.InPlaceInstruction.Cqo(), //                                 CQO              ; sign extend rax into rdx
                     Instruction.InPlaceInstruction.DivR(inRegisters[1]), //                  IDIV reg1
                     Instruction.InPlaceInstruction.MoveRR(outRegister, Register.RAX), //     MOV  out,  rax
                 )
@@ -149,6 +149,7 @@ object InstructionSet {
                 inRegisters, outRegister, _, _ ->
                 listOf(
                     Instruction.InPlaceInstruction.MoveRR(Register.RAX, inRegisters[0]), //  MOV  rax,  reg0
+                    Instruction.InPlaceInstruction.Cqo(), //                                 CQO              ; sign extend rax into rdx
                     Instruction.InPlaceInstruction.DivR(inRegisters[1]), //                  IDIV reg1
                     Instruction.InPlaceInstruction.MoveRR(outRegister, Register.RDX), //     MOV  out,  rdx
                 )

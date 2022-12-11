@@ -119,40 +119,40 @@ internal class IFTPatternTest {
         val nodeGreaterThan = IntermediateFormTreeNode.GreaterThan(left, right)
         val nodeGreaterThanOrEquals = IntermediateFormTreeNode.GreaterThanOrEquals(left, right)
 
-        assertEquals(Pair(listOf(node), emptyMap()), patternMemRead.match(nodeMemRead))
-        assertEquals(Pair(emptyList(), mapOf("label" to "address")), patternMemAddress.match(nodeMemAddress))
-        assertEquals(Pair(emptyList(), mapOf("reg" to reg)), patternRegRead.match(nodeRegRead))
-        assertEquals(Pair(emptyList(), mapOf("val" to 0L)), patternConst.match(nodeConst))
-        assertEquals(Pair(listOf(left, right), emptyMap()), patternMemWrite.match(nodeMemWrite))
-        assertEquals(Pair(listOf(node), mapOf("reg" to reg)), patternRegWrite.match(nodeRegWrite))
-        assertEquals(Pair(listOf(node), emptyMap()), patternStackPush.match(nodeStackPush))
-        assertEquals(Pair(emptyList(), emptyMap()), patternStackPop.match(nodeStackPop))
-        assertEquals(Pair(listOf(node), emptyMap()), patternCall.match(nodeCall))
+        assertEquals(IFTPattern.MatchResult(listOf(node), emptyMap()), patternMemRead.match(nodeMemRead))
+        assertEquals(IFTPattern.MatchResult(emptyList(), mapOf("label" to "address")), patternMemAddress.match(nodeMemAddress))
+        assertEquals(IFTPattern.MatchResult(emptyList(), mapOf("reg" to reg)), patternRegRead.match(nodeRegRead))
+        assertEquals(IFTPattern.MatchResult(emptyList(), mapOf("val" to 0L)), patternConst.match(nodeConst))
+        assertEquals(IFTPattern.MatchResult(listOf(left, right), emptyMap()), patternMemWrite.match(nodeMemWrite))
+        assertEquals(IFTPattern.MatchResult(listOf(node), mapOf("reg" to reg)), patternRegWrite.match(nodeRegWrite))
+        assertEquals(IFTPattern.MatchResult(listOf(node), emptyMap()), patternStackPush.match(nodeStackPush))
+        assertEquals(IFTPattern.MatchResult(emptyList(), emptyMap()), patternStackPop.match(nodeStackPop))
+        assertEquals(IFTPattern.MatchResult(listOf(node), emptyMap()), patternCall.match(nodeCall))
 
-        assertEquals(Pair(listOf(node), emptyMap()), patternLogNeg.match(nodeLogNeg))
-        assertEquals(Pair(listOf(left, right), emptyMap()), patternLogIff.match(nodeLogIff))
-        assertEquals(Pair(listOf(left, right), emptyMap()), patternLogXor.match(nodeLogXor))
+        assertEquals(IFTPattern.MatchResult(listOf(node), emptyMap()), patternLogNeg.match(nodeLogNeg))
+        assertEquals(IFTPattern.MatchResult(listOf(left, right), emptyMap()), patternLogIff.match(nodeLogIff))
+        assertEquals(IFTPattern.MatchResult(listOf(left, right), emptyMap()), patternLogXor.match(nodeLogXor))
 
-        assertEquals(Pair(listOf(node), emptyMap()), patternNeg.match(nodeNeg))
-        assertEquals(Pair(listOf(left, right), emptyMap()), patternAdd.match(nodeAdd))
-        assertEquals(Pair(listOf(left, right), emptyMap()), patternSub.match(nodeSub))
-        assertEquals(Pair(listOf(left, right), emptyMap()), patternMul.match(nodeMul))
-        assertEquals(Pair(listOf(left, right), emptyMap()), patternDiv.match(nodeDiv))
-        assertEquals(Pair(listOf(left, right), emptyMap()), patternMod.match(nodeMod))
+        assertEquals(IFTPattern.MatchResult(listOf(node), emptyMap()), patternNeg.match(nodeNeg))
+        assertEquals(IFTPattern.MatchResult(listOf(left, right), emptyMap()), patternAdd.match(nodeAdd))
+        assertEquals(IFTPattern.MatchResult(listOf(left, right), emptyMap()), patternSub.match(nodeSub))
+        assertEquals(IFTPattern.MatchResult(listOf(left, right), emptyMap()), patternMul.match(nodeMul))
+        assertEquals(IFTPattern.MatchResult(listOf(left, right), emptyMap()), patternDiv.match(nodeDiv))
+        assertEquals(IFTPattern.MatchResult(listOf(left, right), emptyMap()), patternMod.match(nodeMod))
 
-        assertEquals(Pair(listOf(node), emptyMap()), patternBitNeg.match(nodeBitNeg))
-        assertEquals(Pair(listOf(left, right), emptyMap()), patternBitAnd.match(nodeBitAnd))
-        assertEquals(Pair(listOf(left, right), emptyMap()), patternBitOr.match(nodeBitOr))
-        assertEquals(Pair(listOf(left, right), emptyMap()), patternBitXor.match(nodeBitXor))
-        assertEquals(Pair(listOf(left, right), emptyMap()), patternBitShiftLeft.match(nodeBitShiftLeft))
-        assertEquals(Pair(listOf(left, right), emptyMap()), patternBitShiftRight.match(nodeBitShiftRight))
+        assertEquals(IFTPattern.MatchResult(listOf(node), emptyMap()), patternBitNeg.match(nodeBitNeg))
+        assertEquals(IFTPattern.MatchResult(listOf(left, right), emptyMap()), patternBitAnd.match(nodeBitAnd))
+        assertEquals(IFTPattern.MatchResult(listOf(left, right), emptyMap()), patternBitOr.match(nodeBitOr))
+        assertEquals(IFTPattern.MatchResult(listOf(left, right), emptyMap()), patternBitXor.match(nodeBitXor))
+        assertEquals(IFTPattern.MatchResult(listOf(left, right), emptyMap()), patternBitShiftLeft.match(nodeBitShiftLeft))
+        assertEquals(IFTPattern.MatchResult(listOf(left, right), emptyMap()), patternBitShiftRight.match(nodeBitShiftRight))
 
-        assertEquals(Pair(listOf(left, right), emptyMap()), patternEquals.match(nodeEquals))
-        assertEquals(Pair(listOf(left, right), emptyMap()), patternNotEquals.match(nodeNotEquals))
-        assertEquals(Pair(listOf(left, right), emptyMap()), patternLessThan.match(nodeLessThan))
-        assertEquals(Pair(listOf(left, right), emptyMap()), patternLessThanOrEquals.match(nodeLessThanOrEquals))
-        assertEquals(Pair(listOf(left, right), emptyMap()), patternGreaterThan.match(nodeGreaterThan))
-        assertEquals(Pair(listOf(left, right), emptyMap()), patternGreaterThanOrEquals.match(nodeGreaterThanOrEquals))
+        assertEquals(IFTPattern.MatchResult(listOf(left, right), emptyMap()), patternEquals.match(nodeEquals))
+        assertEquals(IFTPattern.MatchResult(listOf(left, right), emptyMap()), patternNotEquals.match(nodeNotEquals))
+        assertEquals(IFTPattern.MatchResult(listOf(left, right), emptyMap()), patternLessThan.match(nodeLessThan))
+        assertEquals(IFTPattern.MatchResult(listOf(left, right), emptyMap()), patternLessThanOrEquals.match(nodeLessThanOrEquals))
+        assertEquals(IFTPattern.MatchResult(listOf(left, right), emptyMap()), patternGreaterThan.match(nodeGreaterThan))
+        assertEquals(IFTPattern.MatchResult(listOf(left, right), emptyMap()), patternGreaterThanOrEquals.match(nodeGreaterThanOrEquals))
     }
 
     @Test
@@ -190,7 +190,60 @@ internal class IFTPatternTest {
             IntermediateFormTreeNode.Const(2L)
         )
 
-        assertEquals(Pair(listOf(leaf1, leaf2), mapOf("size" to 4L)), pattern.match(node1))
+        assertEquals(IFTPattern.MatchResult(listOf(leaf1, leaf2), mapOf("size" to 4L)), pattern.match(node1))
         assertEquals(null, pattern.match(node2))
+    }
+
+    @Test
+    fun `test multi pattern patterns`() {
+        val pattern1 = IFTPattern.FirstOf(
+            listOf(
+                IFTPattern.BinaryOperator(IntermediateFormTreeNode.Add::class),
+                IFTPattern.BinaryOperator(IntermediateFormTreeNode.Subtract::class),
+            )
+        )
+        val pattern2 = IFTPattern.FirstOfNamed(
+            "operation",
+            listOf(
+                "add" to IFTPattern.BinaryOperator(IntermediateFormTreeNode.Add::class),
+                "subtract" to IFTPattern.BinaryOperator(IntermediateFormTreeNode.Subtract::class),
+            )
+        )
+        val pattern3 = IFTPattern.FirstOfNamed(
+            "operation",
+            listOf(
+                "add" to IFTPattern.BinaryOperator(
+                    IntermediateFormTreeNode.Add::class,
+                    IFTPattern.Const(IFTPattern.AnyArgument("a")),
+                    IFTPattern.Const(IFTPattern.AnyArgument("b")),
+                ),
+                "subtract" to IFTPattern.BinaryOperator(
+                    IntermediateFormTreeNode.Subtract::class,
+                    IFTPattern.Const(IFTPattern.AnyArgument("a")),
+                    IFTPattern.Const(IFTPattern.AnyArgument("c")),
+                )
+            )
+        )
+        val left = IntermediateFormTreeNode.Const(1L)
+        val right = IntermediateFormTreeNode.Const(2L)
+        val node1 = IntermediateFormTreeNode.Add(left, right)
+        val node2 = IntermediateFormTreeNode.Subtract(left, right)
+        val node3 = IntermediateFormTreeNode.Multiply(left, right)
+
+        assertEquals(IFTPattern.MatchResult(listOf(left, right), emptyMap()), pattern1.match(node1))
+        assertEquals(IFTPattern.MatchResult(listOf(left, right), emptyMap()), pattern1.match(node2))
+        assertEquals(null, pattern1.match(node3))
+        assertEquals(IFTPattern.MatchResult(listOf(left, right), mapOf("operation" to "add")), pattern2.match(node1))
+        assertEquals(IFTPattern.MatchResult(listOf(left, right), mapOf("operation" to "subtract")), pattern2.match(node2))
+        assertEquals(null, pattern2.match(node3))
+        assertEquals(
+            IFTPattern.MatchResult(emptyList(), mapOf("operation" to "add", "a" to 1L, "b" to 2L)),
+            pattern3.match(node1)
+        )
+        assertEquals(
+            IFTPattern.MatchResult(emptyList(), mapOf("operation" to "subtract", "a" to 1L, "c" to 2L)),
+            pattern3.match(node2)
+        )
+        assertEquals(null, pattern2.match(node3))
     }
 }

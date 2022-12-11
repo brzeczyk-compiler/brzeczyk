@@ -139,6 +139,7 @@ object InstructionSet {
             InstructionPattern(IFTPattern.BinaryOperator(IntermediateFormTreeNode.Divide::class)) {
                 inRegisters, outRegister, _, _ ->
                 listOf(
+                    Instruction.InPlaceInstruction.XorRR(Register.RDX, Register.RDX), //     XOR  rdx,  rdx   ; reset rdx to 0
                     Instruction.InPlaceInstruction.MoveRR(Register.RAX, inRegisters[0]), //  MOV  rax,  reg0
                     Instruction.InPlaceInstruction.DivR(inRegisters[1]), //                  IDIV reg1
                     Instruction.InPlaceInstruction.MoveRR(outRegister, Register.RAX), //     MOV  out,  rax

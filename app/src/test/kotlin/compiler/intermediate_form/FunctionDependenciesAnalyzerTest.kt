@@ -127,13 +127,13 @@ class FunctionDependenciesAnalyzerTest {
                  czynność funkcja2() {}
              }
              {
-                 czynność funkcja() {}
+                 czynność funkcja3() {}
              }
          }
          */
-        val function = Function("function", listOf(), Type.Unit, listOf())
-        val function2 = Function("function2", listOf(), Type.Unit, listOf())
-        val function3 = Function("function3", listOf(), Type.Unit, listOf())
+        val function = Function("funkcja1", listOf(), Type.Unit, listOf())
+        val function2 = Function("funkcja2", listOf(), Type.Unit, listOf())
+        val function3 = Function("funkcja3", listOf(), Type.Unit, listOf())
         val outerFunction = Function(
             "some_prefix",
             listOf(), Type.Unit,
@@ -164,38 +164,38 @@ class FunctionDependenciesAnalyzerTest {
         /*
          czynność some_prefix() {
              jeżeli (prawda) {
-                 czynność no_polish_signs() {}
+                 czynność funkcja() {}
              } wpp {
-                 czynność no_polish_signs() {}
+                 czynność funkcja() {}
              }
              dopóki (prawda) {
-                 czynność no_polish_signs() {}
+                 czynność funkcja() {}
              }
              {
-                 czynność no_polish_signs() {}
+                 czynność funkcja() {}
              }
          }
          */
         val identifierFactory = UniqueIdentifierFactory()
-        val noPolishSigns = Function("no_polish_signs", listOf(), Type.Unit, listOf())
-        val noPolishSignsCopy1 = Function("no_polish_signs", listOf(), Type.Unit, listOf())
-        val noPolishSignsCopy2 = Function("no_polish_signs", listOf(), Type.Unit, listOf())
-        val noPolishSignsCopy3 = Function("no_polish_signs", listOf(), Type.Unit, listOf())
+        val function = Function("funkcja", listOf(), Type.Unit, listOf())
+        val functionCopy1 = Function("funkcja", listOf(), Type.Unit, listOf())
+        val functionCopy2 = Function("funkcja", listOf(), Type.Unit, listOf())
+        val functionCopy3 = Function("funkcja", listOf(), Type.Unit, listOf())
         val outerFunction = Function(
             "some_prefix",
             listOf(), Type.Unit,
             listOf(
                 Statement.Conditional(
                     Expression.BooleanLiteral(true),
-                    listOf(Statement.FunctionDefinition(noPolishSigns)),
-                    listOf(Statement.FunctionDefinition(noPolishSignsCopy1))
+                    listOf(Statement.FunctionDefinition(function)),
+                    listOf(Statement.FunctionDefinition(functionCopy1))
                 ),
                 Statement.Loop(
                     Expression.BooleanLiteral(true),
-                    listOf(Statement.FunctionDefinition(noPolishSignsCopy2)), null
+                    listOf(Statement.FunctionDefinition(functionCopy2)), null
                 ),
                 Statement.Block(
-                    listOf(Statement.FunctionDefinition(noPolishSignsCopy3)), null
+                    listOf(Statement.FunctionDefinition(functionCopy3)), null
                 )
             )
         )
@@ -203,16 +203,16 @@ class FunctionDependenciesAnalyzerTest {
         val program = Program(listOf(Program.Global.FunctionDefinition(outerFunction)))
         val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program)
         val outerFunctionIdentifier = identifierFactory.build(null, outerFunction.name)
-        val noPolishSignsIdentifier = identifierFactory.build(outerFunctionIdentifier.value + "@block0", noPolishSigns.name)
-        val noPolishSignsCopy1Identifier = identifierFactory.build(outerFunctionIdentifier.value + "@block1", noPolishSignsCopy1.name)
-        val noPolishSignsCopy2Identifier = identifierFactory.build(outerFunctionIdentifier.value + "@block2", noPolishSignsCopy2.name)
-        val noPolishSignsCopy3Identifier = identifierFactory.build(outerFunctionIdentifier.value + "@block3", noPolishSignsCopy3.name)
+        val functionIdentifier = identifierFactory.build(outerFunctionIdentifier.value + "@block0", function.name)
+        val functionCopy1Identifier = identifierFactory.build(outerFunctionIdentifier.value + "@block1", functionCopy1.name)
+        val functionCopy2Identifier = identifierFactory.build(outerFunctionIdentifier.value + "@block2", functionCopy2.name)
+        val functionCopy3Identifier = identifierFactory.build(outerFunctionIdentifier.value + "@block3", functionCopy3.name)
         val expectedIdentifiers = referenceHashMapOf(
             outerFunction to outerFunctionIdentifier,
-            noPolishSigns to noPolishSignsIdentifier,
-            noPolishSignsCopy1 to noPolishSignsCopy1Identifier,
-            noPolishSignsCopy2 to noPolishSignsCopy2Identifier,
-            noPolishSignsCopy3 to noPolishSignsCopy3Identifier,
+            function to functionIdentifier,
+            functionCopy1 to functionCopy1Identifier,
+            functionCopy2 to functionCopy2Identifier,
+            functionCopy3 to functionCopy3Identifier,
         )
         assertEquals(expectedIdentifiers, actualIdentifiers)
     }

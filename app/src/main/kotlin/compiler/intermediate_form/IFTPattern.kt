@@ -3,6 +3,8 @@ package compiler.intermediate_form
 import kotlin.reflect.KClass
 import kotlin.reflect.safeCast
 
+// Class that represents a pattern of an intermediate form tree
+// Not to be confused with the Pattern interface
 sealed class IFTPattern {
 
     // Returns null if the pattern doesn't match provided intermediate form tree

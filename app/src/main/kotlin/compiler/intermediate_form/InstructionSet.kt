@@ -348,9 +348,21 @@ object InstructionSet {
                 listOf(
                     Instruction.InPlaceInstruction.CmpRR(inRegisters[0], inRegisters[1]), //        CMP  reg0, reg1
                     if (args["invert"] as Boolean)
-                        Instruction.ConditionalJumpInstruction.JmpLt(args["target"] as String) //   JL  target         ; inverted
+                        Instruction.ConditionalJumpInstruction.JmpLt(args["target"] as String) //   JL   target        ; inverted
                     else
-                        Instruction.ConditionalJumpInstruction.JmpGtEq(args["target"] as String) // JGE target
+                        Instruction.ConditionalJumpInstruction.JmpGtEq(args["target"] as String) // JGE  target
+                )
+            },
+            // Instruction for any other node that is used to determine a conditional jump
+            // in practice this should only be register/memory write
+            InstructionPattern(IFTPattern.AnyNode(), setOf(Context.CONDITIONAL)) {
+                inRegisters, _, _, args ->
+                listOf(
+                    Instruction.InPlaceInstruction.TestRR(inRegisters[0], inRegisters[0]), //       TEST reg0, reg0
+                    if (args["invert"] as Boolean)
+                        Instruction.ConditionalJumpInstruction.JmpZ(args["target"] as String) //    JZ   target        ; inverted
+                    else
+                        Instruction.ConditionalJumpInstruction.JmpNZ(args["target"] as String) //   JNZ  target
                 )
             },
         )

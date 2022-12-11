@@ -27,7 +27,7 @@ object Linearization {
             instructions.add(Label(label))
         }
 
-        fun dfs(node: IFTNode, nextLabel: String? = null) {
+        fun dfs(node: IFTNode, nextLabel: String) {
             addLabel(labels[node] ?: assignLabel(node))
 
             fun addUncoditional() {
@@ -44,11 +44,6 @@ object Linearization {
                     instructions.add(Jmp(targetLabel))
                     usedLabels.add(targetLabel)
                 }
-            }
-
-            fun end() {
-                if (nextLabel != null)
-                    addJump(endLabel)
             }
 
             if (node in cfg.unconditionalLinks) {
@@ -87,7 +82,7 @@ object Linearization {
 
                 if (target in labels) {
                     addConditional(true, labels[target]!!)
-                    end()
+                    addJump(endLabel)
                 } else {
                     addConditional(false, endLabel)
                     dfs(target, nextLabel)
@@ -97,18 +92,18 @@ object Linearization {
 
                 if (target in labels) {
                     addConditional(false, labels[target]!!)
-                    end()
+                    addJump(endLabel)
                 } else {
                     addConditional(true, endLabel)
                     dfs(target, nextLabel)
                 }
             } else {
                 addUncoditional()
-                end()
+                addJump(endLabel)
             }
         }
 
-        dfs(cfg.entryTreeRoot)
+        dfs(cfg.entryTreeRoot, endLabel)
         addLabel(endLabel)
 
         return instructions.filter { it !is Label || it.label in usedLabels }

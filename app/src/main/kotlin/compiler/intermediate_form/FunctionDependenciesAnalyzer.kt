@@ -24,18 +24,34 @@ object FunctionDependenciesAnalyzer {
             return uniqueIdentifiers[function]!!.value
         }
 
-        fun analyze(node: Any, pathSoFar: String?) {
+        fun analyze(node: Any, pathSoFar: String? = null) {
             when (node) {
                 is Program.Global.FunctionDefinition -> { analyze(node.function, pathSoFar) }
                 is Statement.FunctionDefinition -> { analyze(node.function, pathSoFar) }
                 is Function -> {
                     val newPrefix = nameFunction(node, pathSoFar)
-                    node.body.forEach { analyze(it, newPrefix) }
+                    var blockNumber = 0
+                    fun handleNestedBlock(statements: List<Statement>) = statements.forEach { analyze(it, newPrefix + "@block" + blockNumber++) }
+                    for (statement in node.body) {
+                        when (statement) {
+                            is Statement.Block -> {
+                                handleNestedBlock(statement.block)
+                            }
+                            is Statement.Conditional -> {
+                                handleNestedBlock(statement.actionWhenTrue)
+                                handleNestedBlock(statement.actionWhenFalse ?: listOf())
+                            }
+                            is Statement.Loop -> {
+                                handleNestedBlock(statement.action)
+                            }
+                            else -> analyze(statement, newPrefix)
+                        }
+                    }
                 }
                 else -> {}
             }
         }
-        program.globals.forEach { analyze(it, null) }
+        program.globals.forEach { analyze(it) }
         return uniqueIdentifiers
     }
 

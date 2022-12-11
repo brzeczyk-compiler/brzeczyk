@@ -6,7 +6,7 @@ import compiler.common.reference_collections.referenceHashMapOf
 import compiler.common.reference_collections.referenceHashSetOf
 import compiler.common.reference_collections.referenceMapOf
 
-abstract class DataFlowAnalyser<SL> {
+abstract class DataFlowAnalyzer<SL> {
     abstract val backward: Boolean
 
     abstract val entryPointValue: SL
@@ -68,7 +68,7 @@ abstract class DataFlowAnalyser<SL> {
 
     data class DataFlowResult<SL>(val inValues: ReferenceMap<Instruction, SL>, val outValues: ReferenceMap<Instruction, SL>)
 
-    fun analyse(linearProgram: List<Asmable>): DataFlowResult<SL> {
+    fun analyze(linearProgram: List<Asmable>): DataFlowResult<SL> {
         val predecessors = getPredecessors(linearProgram)
         val instructionList = linearProgram.filterIsInstance<Instruction>()
         val entryPoints = getEntryPoints(instructionList)

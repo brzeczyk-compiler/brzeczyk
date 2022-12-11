@@ -11,7 +11,7 @@ object Liveness {
         val copyGraph: Map<Register, Set<Register>>
     )
 
-    object LivenessDataFlowAnalyser : DataFlowAnalyser<ReferenceSet<Register>>() {
+    object LivenessDataFlowAnalyzer : DataFlowAnalyzer<ReferenceSet<Register>>() {
         override val backward = true
 
         override val entryPointValue: ReferenceSet<Register> = referenceHashSetOf()
@@ -43,21 +43,21 @@ object Liveness {
         val copyGraph = referenceHashMapOf(allRegisters.map { it to referenceHashSetOf<Register>() })
 
         // run analysis and fill the graphs
-        val dataFlowResult = LivenessDataFlowAnalyser.analyse(linearProgram)
+        val dataFlowResult = LivenessDataFlowAnalyzer.analyze(linearProgram)
         val outLiveRegisters = dataFlowResult.outValues.mapValues { (instr, regs) -> combineReferenceSets(regs, referenceHashSetOf(instr.regsDefined.toList())) }
 
         instructionList.forEach {
             for (definedReg in it.regsDefined)
                 for (regLiveOnOutput in outLiveRegisters[it]!!)
-                    if (definedReg !== regLiveOnOutput) {
-                        if (it is Instruction.InPlaceInstruction.MoveRR && it.reg_dest == definedReg && it.reg_src == regLiveOnOutput) {
-                            copyGraph[it.reg_dest]!!.add(it.reg_src)
-                            copyGraph[it.reg_src]!!.add(it.reg_dest)
-                        } else {
-                            interferenceGraph[definedReg]!!.add(regLiveOnOutput)
-                            interferenceGraph[regLiveOnOutput]!!.add(definedReg)
-                        }
+                    if (definedReg !== regLiveOnOutput && !(it is Instruction.InPlaceInstruction.MoveRR && it.reg_dest === definedReg && it.reg_src === regLiveOnOutput)) {
+                        interferenceGraph[definedReg]!!.add(regLiveOnOutput)
+                        interferenceGraph[regLiveOnOutput]!!.add(definedReg)
                     }
+
+            if (it is Instruction.InPlaceInstruction.MoveRR) {
+                copyGraph[it.reg_dest]!!.add(it.reg_src)
+                copyGraph[it.reg_src]!!.add(it.reg_dest)
+            }
         }
 
         return LivenessGraphs(interferenceGraph, copyGraph)

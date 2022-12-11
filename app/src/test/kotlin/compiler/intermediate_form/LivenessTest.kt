@@ -237,6 +237,23 @@ class LivenessTest {
     }
 
     @Test
+    fun `copying x to y without following usage of x`() {
+        val linearProgram = listOf(
+            Instruction.InPlaceInstruction.Dummy(regsDefined = listOf(reg1, reg3)),
+            Instruction.InPlaceInstruction.MoveRR(reg2, reg1),
+            Instruction.InPlaceInstruction.Dummy(regsUsed = listOf(reg2, reg3)),
+            Instruction.RetInstruction.Dummy()
+        )
+        val expectedLivenessGraphs = Liveness.LivenessGraphs(
+            mapOf(reg1 to setOf(reg3), reg2 to setOf(reg3), reg3 to setOf(reg1, reg2)),
+            mapOf(reg1 to setOf(reg2), reg2 to setOf(reg1), reg3 to setOf())
+        )
+
+        val livenessGraphs = Liveness.computeLiveness(linearProgram)
+        assertEquals(expectedLivenessGraphs, livenessGraphs)
+    }
+
+    @Test
     fun `copying and interference`() {
         val linearProgram = listOf(
             Instruction.InPlaceInstruction.Dummy(regsDefined = listOf(reg1, reg2, reg3)),

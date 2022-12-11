@@ -7,6 +7,7 @@ import compiler.ast.Program
 import compiler.ast.Statement
 import compiler.ast.Type
 import compiler.ast.Variable
+import compiler.common.intermediate_form.FunctionDetailsGenerator
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.referenceHashMapOf
@@ -177,7 +178,7 @@ class FunctionDependenciesAnalyzerTest {
                 0u,
                 referenceHashMapOf(varA to VariableLocationType.MEMORY, varB to VariableLocationType.MEMORY, varC to VariableLocationType.REGISTER),
                 IntermediateFormTreeNode.MemoryLabel(DISPLAY_LABEL_IN_MEMORY)
-            ),
+            ) as FunctionDetailsGenerator,
             functionG to DefaultFunctionDetailsGenerator(
                 listOf(parameter),
                 null,
@@ -232,7 +233,7 @@ class FunctionDependenciesAnalyzerTest {
                 0u,
                 referenceHashMapOf(varA to VariableLocationType.REGISTER, returnVariable to VariableLocationType.REGISTER),
                 IntermediateFormTreeNode.MemoryLabel(DISPLAY_LABEL_IN_MEMORY)
-            )
+            ) as FunctionDetailsGenerator
         )
         val actualResult = FunctionDependenciesAnalyzer.createFunctionDetailsGenerators(program, variableProperties, referenceHashMapOf(functionF to returnVariable))
         assertEquals(expectedResult, actualResult)

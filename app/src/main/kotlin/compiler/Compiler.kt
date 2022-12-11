@@ -1,7 +1,7 @@
 package compiler
 
 import compiler.ast.AstFactory
-import compiler.common.diagnostics.CompilerDiagnostics
+import compiler.common.diagnostics.Diagnostics
 import compiler.intermediate_form.ControlFlow.createGraphForProgram
 import compiler.lexer.Lexer
 import compiler.lexer.input.InputImpl
@@ -15,7 +15,7 @@ import compiler.semantic_analysis.Resolver
 import java.io.Reader
 
 // The main class used to compile a source code into an executable machine code.
-class Compiler(val diagnostics: CompilerDiagnostics) {
+class Compiler(val diagnostics: Diagnostics) {
     // The type of exceptions thrown when, given a correct input (satisfying the invariants but not necessarily semantically correct),
     // a compilation phase is unable to produce a correct output, and so the entire compilation pipeline must be stopped.
     abstract class CompilationFailed : Throwable()
@@ -36,7 +36,7 @@ class Compiler(val diagnostics: CompilerDiagnostics) {
 
             val programProperties = Resolver.resolveProgram(ast, diagnostics)
 
-            val cfg = createGraphForProgram(ast, programProperties, diagnostics, diagnostics.hasErrors())
+            val cfg = createGraphForProgram(ast, programProperties, diagnostics, diagnostics.hasAnyError())
             // TODO: generate the code
         } catch (_: CompilationFailed) { }
 

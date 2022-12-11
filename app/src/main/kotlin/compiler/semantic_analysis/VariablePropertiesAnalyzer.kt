@@ -88,9 +88,7 @@ object VariablePropertiesAnalyzer {
                     ).forEach { analyzeVariables(it, currentFunction) }
                 is Statement.Loop -> (sequenceOf(node.condition) + node.action.asSequence())
                     .forEach { analyzeVariables(it, currentFunction) }
-                is Statement.FunctionReturn -> {
-                    analyzeVariables(node.value, currentFunction)
-                }
+                is Statement.FunctionReturn -> analyzeVariables(node.value, currentFunction)
                 is Expression.Variable -> {
                     val resolvedVariable: NamedNode = nameResolution[node]!!
                     mutableVariableProperties[resolvedVariable]!!.accessedIn.add(currentFunction!!)
@@ -115,16 +113,18 @@ object VariablePropertiesAnalyzer {
                         }
                     }
                     node.body.forEach { analyzeVariables(it, node) }
-                    if (node.returnType != Type.Unit)
+                    if (node.returnType != Type.Unit) {
+                        // Accessed set consists of only the owner function, cause the variable's value is moved to
+                        // appropriate Register in the ControlFlowGraph of epilogue of this function, and the Variable
+                        // is never accessed anymore (including both outer & inner functions).
                         mutableVariableProperties[functionReturnedValueVariables[node]!!] = MutableVariableProperties(
                             node,
                             referenceHashSetOf(node),
                             referenceHashSetOf(node)
                         )
+                    }
                 }
-                is Variable -> {
-                    node.value?.let { analyzeVariables(it, currentFunction) }
-                }
+                is Variable -> node.value?.let { analyzeVariables(it, currentFunction) }
             }
         }
 

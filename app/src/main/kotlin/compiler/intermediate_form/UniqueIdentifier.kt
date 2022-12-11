@@ -1,6 +1,6 @@
 package compiler.intermediate_form
 
-import compiler.semantic_analysis.builtinFunctionsByName
+import compiler.semantic_analysis.BuiltinFunctions
 
 class IllegalCharacter(message: String) : RuntimeException(message)
 class InconsistentFunctionNamingConvention(message: String) : RuntimeException(message)
@@ -33,7 +33,7 @@ class UniqueIdentifierFactory() {
             'Ź' to 'X',
             'Ż' to 'Z'
         )
-        val forbiddenLabels = listOf(GlobalVariablesAccessGenerator.GLOBALS_MEMORY_LABEL, DISPLAY_LABEL_IN_MEMORY) + builtinFunctionsByName.keys.toList()
+        val forbiddenLabels = listOf(GlobalVariablesAccessGenerator.GLOBALS_MEMORY_LABEL, DISPLAY_LABEL_IN_MEMORY) + BuiltinFunctions.builtinFunctionsByName.keys.toList()
     }
 
     private val knownIdentifiers: MutableSet<String> = mutableSetOf()

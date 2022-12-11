@@ -9,9 +9,11 @@ import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic
 import compiler.common.diagnostics.Diagnostic.ResolutionDiagnostic.ControlFlowDiagnostic
+import compiler.common.diagnostics.Diagnostics
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.referenceHashMapOf
 import compiler.semantic_analysis.assertResolutionDiagnosticEquals
+import java.lang.RuntimeException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -41,7 +43,10 @@ class FunctionControlFlowTest {
         nameResolution,
         defaultParameterValues,
         functionReturnedValueVariables,
-        diagnostics::add
+        object : Diagnostics {
+            override fun report(diagnostic: Diagnostic) { diagnostics.add(diagnostic) }
+            override fun hasAnyError(): Boolean { throw RuntimeException("This method shouldn't be called") }
+        }
     )
 
     // czynność f() { }

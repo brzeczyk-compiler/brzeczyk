@@ -57,7 +57,7 @@ object NameResolver {
                 diagnostics.report(
                     Diagnostic.ResolutionDiagnostic.NameResolutionError.NameConflict(
                         scope[namedNode.name]!!, namedNode,
-                        withBuiltinFunction = builtinFunctionsByName.containsKey(namedNode.name)
+                        withBuiltinFunction = BuiltinFunctions.builtinFunctionsByName.containsKey(namedNode.name)
                     )
                 )
             }
@@ -135,8 +135,7 @@ object NameResolver {
                 is Program -> {
                     val newScope = makeScope()
 
-                    for ((name, function) in builtinFunctionsByName.entries)
-                        addName(name, function, newScope)
+                    BuiltinFunctions.builtinFunctionsByName.forEach { (name, function) -> addName(name, function, newScope) }
 
                     node.globals.forEach { analyzeNode(it, newScope) }
                     destroyScope(newScope)

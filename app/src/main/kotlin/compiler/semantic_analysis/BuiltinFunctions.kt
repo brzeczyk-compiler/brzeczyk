@@ -8,68 +8,89 @@ import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.referenceHashSetOf
+object BuiltinFunctions {
+    val functionNapisz = Function(
+        "napisz",
+        listOf(Function.Parameter("wartość", Type.Number, null)),
+        Type.Unit,
+        listOf()
+    )
 
-val functionNapisz = Function(
-    "napisz",
-    listOf(Function.Parameter("wartość", Type.Number, null)),
-    Type.Unit,
-    listOf()
-)
+    val builtinFunctionsByName = mapOf(functionNapisz.name to functionNapisz)
 
-val builtinFunctionsByName = mapOf(functionNapisz.name to functionNapisz)
+    fun getUsedBuiltinFunctions(program: Program): ReferenceSet<Function> {
+        val result = referenceHashSetOf<Function>()
 
-fun getUsedBuiltinFunctions(program: Program): ReferenceSet<Function> {
-    val result = referenceHashSetOf<Function>()
+        fun analyzeGlobal(global: Program.Global) {
+            fun analyzeExpression(expression: Expression?) {
+                fun analyzeCallArgument(node: Expression.FunctionCall.Argument) = analyzeExpression(node.value)
+                when (expression) {
+                    is Expression.FunctionCall -> {
+                        if (builtinFunctionsByName.containsKey(expression.name))
+                            result.add(builtinFunctionsByName[expression.name]!!)
+                        expression.arguments.forEach { analyzeCallArgument(it) }
+                    }
 
-    fun analyzeNode(node: Any) {
-        when (node) {
-            is Program -> { node.globals.forEach { analyzeNode(it) } }
-            is Program.Global.VariableDefinition -> { analyzeNode(node.variable) }
-            is Program.Global.FunctionDefinition -> { analyzeNode(node.function) }
-            is Variable -> { node.value?.let { analyzeNode(it) } }
-            is Function -> {
-                node.parameters.forEach { analyzeNode(it) }
-                node.body.forEach { analyzeNode(it) }
-            }
-            is Function.Parameter -> { node.defaultValue?.let { analyzeNode(it) } }
+                    is Expression.UnaryOperation -> { analyzeExpression(expression.operand) }
 
-            // Expressions
-            is Expression.Variable -> {}
-            is Expression.FunctionCall -> {
-                if (builtinFunctionsByName.containsKey(node.name))
-                    result.add(builtinFunctionsByName[node.name]!!)
-                node.arguments.forEach { analyzeNode(it) }
-            }
-            is Expression.FunctionCall.Argument -> { analyzeNode(node.value) }
-            is Expression.UnaryOperation -> { analyzeNode(node.operand) }
-            is Expression.BinaryOperation -> {
-                analyzeNode(node.leftOperand)
-                analyzeNode(node.rightOperand)
-            }
-            is Expression.Conditional -> {
-                analyzeNode(node.condition)
-                analyzeNode(node.resultWhenTrue)
-                analyzeNode(node.resultWhenFalse)
+                    is Expression.BinaryOperation -> {
+                        analyzeExpression(expression.leftOperand)
+                        analyzeExpression(expression.rightOperand)
+                    }
+
+                    is Expression.Conditional -> {
+                        analyzeExpression(expression.condition)
+                        analyzeExpression(expression.resultWhenTrue)
+                        analyzeExpression(expression.resultWhenFalse)
+                    }
+
+                    is Expression.Variable -> {}
+                    is Expression.BooleanLiteral -> {}
+                    is Expression.NumberLiteral -> {}
+                    is Expression.UnitLiteral -> {}
+                    null -> {}
+                }
             }
 
-            // Statements
-            is Statement.Evaluation -> { analyzeNode(node.expression) }
-            is Statement.VariableDefinition -> { analyzeNode(node.variable) }
-            is Statement.FunctionDefinition -> { analyzeNode(node.function) }
-            is Statement.Assignment -> { analyzeNode(node.value) }
-            is Statement.Block -> { node.block.forEach { analyzeNode(it) } }
-            is Statement.Conditional -> {
-                analyzeNode(node.condition)
-                node.actionWhenTrue.forEach { analyzeNode(it) }
-                node.actionWhenFalse?.forEach { analyzeNode(it) }
+            fun analyzeVariable(node: Variable) { node.value?.let { analyzeExpression(it) } }
+            fun analyzeParameter(node: Function.Parameter) { node.defaultValue?.let { analyzeExpression(it) } }
+            fun analyzeFunction(node: Function, analyzeStatement: (Statement) -> Unit) {
+                node.parameters.forEach { analyzeParameter(it) }
+                node.body.forEach { analyzeStatement(it) }
             }
-            is Statement.Loop -> {
-                analyzeNode(node.condition)
-                node.action.forEach { analyzeNode(it) }
+
+            fun analyzeStatement(statement: Statement) {
+                when (statement) {
+                    is Statement.Evaluation -> { analyzeExpression(statement.expression) }
+                    is Statement.Assignment -> { analyzeExpression(statement.value) }
+                    is Statement.Block -> { statement.block.forEach { analyzeStatement(it) } }
+
+                    is Statement.Conditional -> {
+                        analyzeExpression(statement.condition)
+                        statement.actionWhenTrue.forEach { analyzeStatement(it) }
+                        statement.actionWhenFalse?.forEach { analyzeStatement(it) }
+                    }
+
+                    is Statement.Loop -> {
+                        analyzeExpression(statement.condition)
+                        statement.action.forEach { analyzeStatement(it) }
+                    }
+
+                    is Statement.FunctionReturn -> { analyzeExpression(statement.value) }
+                    is Statement.VariableDefinition -> { analyzeVariable(statement.variable) }
+                    is Statement.FunctionDefinition -> { analyzeFunction(statement.function, ::analyzeStatement) }
+                    is Statement.LoopBreak -> {}
+                    is Statement.LoopContinuation -> {}
+                }
             }
-            is Statement.FunctionReturn -> { analyzeNode(node.value) }
+
+            when (global) {
+                is Program.Global.VariableDefinition -> { analyzeVariable(global.variable) }
+                is Program.Global.FunctionDefinition -> { analyzeFunction(global.function, ::analyzeStatement) }
+            }
         }
+
+        program.globals.forEach { analyzeGlobal(it) }
+        return result
     }
-    analyzeNode(program)
-    return result
 }

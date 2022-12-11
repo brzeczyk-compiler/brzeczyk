@@ -103,7 +103,7 @@ object ControlFlow {
         nameResolution: ReferenceMap<Any, NamedNode>,
         variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>,
         callGraph: ReferenceMap<Function, ReferenceSet<Function>>,
-        functionDetailsGenerators: ReferenceMap<Function, out FunctionDetailsGenerator>,
+        functionDetailsGenerators: ReferenceMap<Function, FunctionDetailsGenerator>,
         argumentResolution: ArgumentResolutionResult,
         defaultParameterMapping: ReferenceMap<Function.Parameter, Variable>,
         globalVariablesAccessGenerator: VariableAccessGenerator

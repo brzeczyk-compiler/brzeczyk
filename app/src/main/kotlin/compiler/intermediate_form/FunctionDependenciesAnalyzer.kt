@@ -7,6 +7,7 @@ import compiler.ast.Program
 import compiler.ast.Statement
 import compiler.ast.StatementBlock
 import compiler.ast.Variable
+import compiler.common.intermediate_form.FunctionDetailsGenerator
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.ReferenceSet
@@ -14,8 +15,8 @@ import compiler.common.reference_collections.combineReferenceSets
 import compiler.common.reference_collections.referenceHashMapOf
 import compiler.common.reference_collections.referenceHashSetOf
 import compiler.common.reference_collections.referenceKeys
+import compiler.semantic_analysis.BuiltinFunctions
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
-import compiler.semantic_analysis.getUsedBuiltinFunctions
 
 object FunctionDependenciesAnalyzer {
     fun createUniqueIdentifiers(program: Program, allowInconsistentNamingErrors: Boolean): ReferenceMap<Function, UniqueIdentifier> {
@@ -47,7 +48,7 @@ object FunctionDependenciesAnalyzer {
             }
         }
         program.globals.forEach { analyze(it, null) }
-        getUsedBuiltinFunctions(program).forEach { nameFunction(it, null) }
+        BuiltinFunctions.getUsedBuiltinFunctions(program).forEach { nameFunction(it, null) }
         return uniqueIdentifiers
     }
 
@@ -56,8 +57,8 @@ object FunctionDependenciesAnalyzer {
         variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>,
         functionReturnedValueVariables: ReferenceMap<Function, Variable>,
         allowInconsistentNamingErrors: Boolean = false
-    ): ReferenceMap<Function, DefaultFunctionDetailsGenerator> {
-        val result = referenceHashMapOf<Function, DefaultFunctionDetailsGenerator>()
+    ): ReferenceMap<Function, FunctionDetailsGenerator> {
+        val result = referenceHashMapOf<Function, FunctionDetailsGenerator>()
         val functionIdentifiers = createUniqueIdentifiers(program, allowInconsistentNamingErrors)
 
         fun createDetailsGenerator(function: Function, depth: ULong) {
@@ -103,7 +104,7 @@ object FunctionDependenciesAnalyzer {
         }
 
         program.globals.forEach { if (it is Program.Global.FunctionDefinition) processFunction(it.function, 0u) }
-        getUsedBuiltinFunctions(program).forEach { createDetailsGenerator(it, 0u) }
+        BuiltinFunctions.getUsedBuiltinFunctions(program).forEach { createDetailsGenerator(it, 0u) }
 
         return result
     }
@@ -120,12 +121,10 @@ object FunctionDependenciesAnalyzer {
                 is Expression.Variable -> referenceHashSetOf()
                 null -> referenceHashSetOf()
 
-                is Expression.FunctionCall -> {
-                    combineReferenceSets(
-                        referenceHashSetOf(nameResolution[expression] as Function),
-                        combineReferenceSets(expression.arguments.map { getCalledFunctions(it.value) }),
-                    )
-                }
+                is Expression.FunctionCall -> combineReferenceSets(
+                    referenceHashSetOf(nameResolution[expression] as Function),
+                    combineReferenceSets(expression.arguments.map { getCalledFunctions(it.value) }),
+                )
 
                 is Expression.UnaryOperation -> getCalledFunctions(expression.operand)
 
@@ -188,7 +187,7 @@ object FunctionDependenciesAnalyzer {
         }
 
         ast.globals.forEach { getCalledFunctions(it) }
-        getUsedBuiltinFunctions(ast).forEach { functionCalls[it] = referenceHashSetOf() }
+        BuiltinFunctions.getUsedBuiltinFunctions(ast).forEach { functionCalls[it] = referenceHashSetOf() }
 
         val allFunctions = functionCalls.referenceKeys
         var previousPartialTransitiveFunctionCalls: ReferenceHashMap<Function, ReferenceSet<Function>>

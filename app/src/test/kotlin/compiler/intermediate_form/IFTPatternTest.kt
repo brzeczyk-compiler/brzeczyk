@@ -3,14 +3,14 @@ package compiler.intermediate_form
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-internal class PatternTest {
+internal class IFTPatternTest {
     @Test
     fun `test argument patterns`() {
-        val pattern1 = Pattern.AnyArgument<Long>("arg")
-        val pattern2 = Pattern.ArgumentIn(setOf(1L, 2L, 4L, 8L), "arg")
-        val pattern3 = Pattern.AnyArgument<String>("arg")
-        val pattern4 = Pattern.ArgumentIn(setOf(Register.RAX, Register.RDI), "reg")
-        val pattern5 = Pattern.ArgumentWhere<Int>("val") { it < 0 }
+        val pattern1 = IFTPattern.AnyArgument<Long>("arg")
+        val pattern2 = IFTPattern.ArgumentIn(setOf(1L, 2L, 4L, 8L), "arg")
+        val pattern3 = IFTPattern.AnyArgument<String>("arg")
+        val pattern4 = IFTPattern.ArgumentIn(setOf(Register.RAX, Register.RDI), "reg")
+        val pattern5 = IFTPattern.ArgumentWhere<Int>("val") { it < 0 }
 
         assertEquals(mapOf("arg" to 13L), pattern1.match(13L))
         assertEquals(mapOf("arg" to -2L), pattern1.match(-2L))
@@ -44,40 +44,40 @@ internal class PatternTest {
 
     @Test
     fun `test simple patterns`() {
-        val patternMemRead = Pattern.MemoryRead()
-        val patternMemAddress = Pattern.MemoryLabel(Pattern.AnyArgument("label"))
-        val patternRegRead = Pattern.RegisterRead(Pattern.AnyArgument("reg"))
-        val patternConst = Pattern.Const(Pattern.AnyArgument("val"))
-        val patternMemWrite = Pattern.MemoryWrite()
-        val patternRegWrite = Pattern.RegisterWrite(Pattern.AnyArgument("reg"))
-        val patternStackPush = Pattern.StackPush()
-        val patternStackPop = Pattern.StackPop()
-        val patternCall = Pattern.Call()
+        val patternMemRead = IFTPattern.MemoryRead()
+        val patternMemAddress = IFTPattern.MemoryLabel(IFTPattern.AnyArgument("label"))
+        val patternRegRead = IFTPattern.RegisterRead(IFTPattern.AnyArgument("reg"))
+        val patternConst = IFTPattern.Const(IFTPattern.AnyArgument("val"))
+        val patternMemWrite = IFTPattern.MemoryWrite()
+        val patternRegWrite = IFTPattern.RegisterWrite(IFTPattern.AnyArgument("reg"))
+        val patternStackPush = IFTPattern.StackPush()
+        val patternStackPop = IFTPattern.StackPop()
+        val patternCall = IFTPattern.Call()
 
-        val patternLogNeg = Pattern.UnaryOperator(IntermediateFormTreeNode.LogicalNegation::class)
-        val patternLogIff = Pattern.BinaryOperator(IntermediateFormTreeNode.LogicalIff::class)
-        val patternLogXor = Pattern.BinaryOperator(IntermediateFormTreeNode.LogicalXor::class)
+        val patternLogNeg = IFTPattern.UnaryOperator(IntermediateFormTreeNode.LogicalNegation::class)
+        val patternLogIff = IFTPattern.BinaryOperator(IntermediateFormTreeNode.LogicalIff::class)
+        val patternLogXor = IFTPattern.BinaryOperator(IntermediateFormTreeNode.LogicalXor::class)
 
-        val patternNeg = Pattern.UnaryOperator(IntermediateFormTreeNode.Negation::class)
-        val patternAdd = Pattern.BinaryOperator(IntermediateFormTreeNode.Add::class)
-        val patternSub = Pattern.BinaryOperator(IntermediateFormTreeNode.Subtract::class)
-        val patternMul = Pattern.BinaryOperator(IntermediateFormTreeNode.Multiply::class)
-        val patternDiv = Pattern.BinaryOperator(IntermediateFormTreeNode.Divide::class)
-        val patternMod = Pattern.BinaryOperator(IntermediateFormTreeNode.Modulo::class)
+        val patternNeg = IFTPattern.UnaryOperator(IntermediateFormTreeNode.Negation::class)
+        val patternAdd = IFTPattern.BinaryOperator(IntermediateFormTreeNode.Add::class)
+        val patternSub = IFTPattern.BinaryOperator(IntermediateFormTreeNode.Subtract::class)
+        val patternMul = IFTPattern.BinaryOperator(IntermediateFormTreeNode.Multiply::class)
+        val patternDiv = IFTPattern.BinaryOperator(IntermediateFormTreeNode.Divide::class)
+        val patternMod = IFTPattern.BinaryOperator(IntermediateFormTreeNode.Modulo::class)
 
-        val patternBitNeg = Pattern.UnaryOperator(IntermediateFormTreeNode.BitNegation::class)
-        val patternBitAnd = Pattern.BinaryOperator(IntermediateFormTreeNode.BitAnd::class)
-        val patternBitOr = Pattern.BinaryOperator(IntermediateFormTreeNode.BitOr::class)
-        val patternBitXor = Pattern.BinaryOperator(IntermediateFormTreeNode.BitXor::class)
-        val patternBitShiftLeft = Pattern.BinaryOperator(IntermediateFormTreeNode.BitShiftLeft::class)
-        val patternBitShiftRight = Pattern.BinaryOperator(IntermediateFormTreeNode.BitShiftRight::class)
+        val patternBitNeg = IFTPattern.UnaryOperator(IntermediateFormTreeNode.BitNegation::class)
+        val patternBitAnd = IFTPattern.BinaryOperator(IntermediateFormTreeNode.BitAnd::class)
+        val patternBitOr = IFTPattern.BinaryOperator(IntermediateFormTreeNode.BitOr::class)
+        val patternBitXor = IFTPattern.BinaryOperator(IntermediateFormTreeNode.BitXor::class)
+        val patternBitShiftLeft = IFTPattern.BinaryOperator(IntermediateFormTreeNode.BitShiftLeft::class)
+        val patternBitShiftRight = IFTPattern.BinaryOperator(IntermediateFormTreeNode.BitShiftRight::class)
 
-        val patternEquals = Pattern.BinaryOperator(IntermediateFormTreeNode.Equals::class)
-        val patternNotEquals = Pattern.BinaryOperator(IntermediateFormTreeNode.NotEquals::class)
-        val patternLessThan = Pattern.BinaryOperator(IntermediateFormTreeNode.LessThan::class)
-        val patternLessThanOrEquals = Pattern.BinaryOperator(IntermediateFormTreeNode.LessThanOrEquals::class)
-        val patternGreaterThan = Pattern.BinaryOperator(IntermediateFormTreeNode.GreaterThan::class)
-        val patternGreaterThanOrEquals = Pattern.BinaryOperator(IntermediateFormTreeNode.GreaterThanOrEquals::class)
+        val patternEquals = IFTPattern.BinaryOperator(IntermediateFormTreeNode.Equals::class)
+        val patternNotEquals = IFTPattern.BinaryOperator(IntermediateFormTreeNode.NotEquals::class)
+        val patternLessThan = IFTPattern.BinaryOperator(IntermediateFormTreeNode.LessThan::class)
+        val patternLessThanOrEquals = IFTPattern.BinaryOperator(IntermediateFormTreeNode.LessThanOrEquals::class)
+        val patternGreaterThan = IFTPattern.BinaryOperator(IntermediateFormTreeNode.GreaterThan::class)
+        val patternGreaterThanOrEquals = IFTPattern.BinaryOperator(IntermediateFormTreeNode.GreaterThanOrEquals::class)
 
         val left = IntermediateFormTreeNode.Const(0L)
         val right = IntermediateFormTreeNode.Const(0L)
@@ -157,14 +157,14 @@ internal class PatternTest {
 
     @Test
     fun `test expression pattern`() {
-        val pattern = Pattern.BinaryOperator(
+        val pattern = IFTPattern.BinaryOperator(
             IntermediateFormTreeNode.Add::class,
-            Pattern.BinaryOperator(
+            IFTPattern.BinaryOperator(
                 IntermediateFormTreeNode.Multiply::class,
-                Pattern.Const(Pattern.ArgumentIn(setOf(1L, 2L, 4L, 8L), "size")),
-                Pattern.AnyNode()
+                IFTPattern.Const(IFTPattern.ArgumentIn(setOf(1L, 2L, 4L, 8L), "size")),
+                IFTPattern.AnyNode()
             ),
-            Pattern.AnyNode()
+            IFTPattern.AnyNode()
         )
 
         val leaf1 = IntermediateFormTreeNode.Subtract(

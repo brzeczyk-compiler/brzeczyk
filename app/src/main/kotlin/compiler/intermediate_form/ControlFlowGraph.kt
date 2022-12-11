@@ -11,8 +11,14 @@ data class ControlFlowGraph(
     val conditionalTrueLinks: ReferenceMap<IFTNode, IFTNode>,
     val conditionalFalseLinks: ReferenceMap<IFTNode, IFTNode>
 ) {
-    val finalTreeRoots: List<IFTNode> get() = treeRoots.filter {
-        it !in unconditionalLinks && it !in conditionalTrueLinks && it !in conditionalFalseLinks
+    val finalTreeRoots: List<Pair<IFTNode, CFGLinkType>> get() = treeRoots.filter {
+        it !in unconditionalLinks && (it !in conditionalTrueLinks || it !in conditionalFalseLinks)
+    }.map {
+        it to when (it) {
+            in conditionalTrueLinks -> CFGLinkType.CONDITIONAL_FALSE
+            in conditionalFalseLinks -> CFGLinkType.CONDITIONAL_TRUE
+            else -> CFGLinkType.UNCONDITIONAL
+        }
     }
 
     fun equalsByValue(other: ControlFlowGraph): Boolean {

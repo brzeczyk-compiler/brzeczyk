@@ -119,7 +119,7 @@ object ControlFlow {
         fun ControlFlowGraphBuilder.addNextCFG(nextCFG: ControlFlowGraph) {
             if (nextCFG.entryTreeRoot != null) {
                 last.forEach { addLink(it, nextCFG.entryTreeRoot) }
-                last = nextCFG.finalTreeRoots.map { Pair(it, CFGLinkType.UNCONDITIONAL) }
+                last = nextCFG.finalTreeRoots
             }
             addAllFrom(nextCFG)
         }
@@ -317,7 +317,7 @@ object ControlFlow {
                             cfgBuilder.addLink(node, entry)
                         }
 
-                        last = cfg.finalTreeRoots.map { Pair(it, CFGLinkType.UNCONDITIONAL) }
+                        last = cfg.finalTreeRoots
                     }
                     cfgBuilder.addAllFrom(cfg)
 

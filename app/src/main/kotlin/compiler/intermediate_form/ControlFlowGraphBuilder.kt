@@ -10,16 +10,6 @@ class ControlFlowGraphBuilder(@JvmField var entryTreeRoot: IFTNode? = null) {
     private var conditionalFalseLinks = referenceHashMapOf<IFTNode, IFTNode>()
     private var treeRoots = ArrayList<IFTNode>()
 
-    val finalTreeRoots: List<Pair<IFTNode, CFGLinkType>> get() = treeRoots.filter {
-        it !in unconditionalLinks && (it !in conditionalTrueLinks || it !in conditionalFalseLinks)
-    }.map {
-        it to when (it) {
-            in conditionalTrueLinks -> CFGLinkType.CONDITIONAL_FALSE
-            in conditionalFalseLinks -> CFGLinkType.CONDITIONAL_TRUE
-            else -> CFGLinkType.UNCONDITIONAL
-        }
-    }
-
     init {
         entryTreeRoot?.let { treeRoots.add(it) }
     }
@@ -50,9 +40,9 @@ class ControlFlowGraphBuilder(@JvmField var entryTreeRoot: IFTNode? = null) {
     }
 
     fun addLinksFromAllFinalRoots(linkType: CFGLinkType, to: IFTNode) {
-        finalTreeRoots.forEach {
+        build().finalTreeRoots.forEach {
             if (it.second == CFGLinkType.UNCONDITIONAL)
-                addLink(it.copy(second = linkType), to)
+                addLink(Pair(it.first, linkType), to)
             else if (linkType == CFGLinkType.UNCONDITIONAL || linkType == it.second)
                 addLink(it, to)
             else

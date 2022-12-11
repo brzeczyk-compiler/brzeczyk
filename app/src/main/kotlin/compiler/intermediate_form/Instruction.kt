@@ -7,15 +7,11 @@ sealed class Instruction : Asmable {
     }
 
     sealed class UnconditionalJumpInstruction : Instruction() {
-        abstract val targetLabel: String
+        data class Jmp(val targetLabel: String) : UnconditionalJumpInstruction() //                  JMP label
 
-        data class CallR(val reg: Register) : UnconditionalJumpInstruction() { //                      CALL reg
-            override val targetLabel: String = TODO()
-        }
+        data class CallR(val reg: Register) : UnconditionalJumpInstruction() //                      CALL reg
 
-        data class CallM(val address: Addressing) : UnconditionalJumpInstruction() { //                CALL mem
-            override val targetLabel: String = TODO()
-        }
+        data class CallM(val address: Addressing) : UnconditionalJumpInstruction() //                CALL mem
     }
 
     sealed class RetInstruction : Instruction() {
@@ -58,4 +54,6 @@ sealed class Instruction : Asmable {
         data class SetGtR(val reg: Register) : InPlaceInstruction() //                     SETG  reg
         data class SetGtEqR(val reg: Register) : InPlaceInstruction() //                   SETGE reg
     }
+
+    class NoOp : Instruction() // For testing
 }

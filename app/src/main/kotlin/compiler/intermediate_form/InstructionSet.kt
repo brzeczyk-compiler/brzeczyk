@@ -32,7 +32,7 @@ object InstructionSet {
         }
 
         override fun matchUnconditional(node: IntermediateFormTreeNode): Pattern.Result? {
-            return if (contexts.contains(Context.VALUE)) match(node, Context.UNCONDITIONAL) else null
+            return if (contexts.contains(Context.UNCONDITIONAL)) match(node, Context.UNCONDITIONAL) else null
         }
 
         override fun matchConditional(
@@ -40,7 +40,7 @@ object InstructionSet {
             targetLabel: String,
             invert: Boolean
         ): Pattern.Result? {
-            return if (contexts.contains(Context.VALUE)) match(node, Context.CONDITIONAL, targetLabel, invert) else null
+            return if (contexts.contains(Context.CONDITIONAL)) match(node, Context.CONDITIONAL, targetLabel, invert) else null
         }
     }
 

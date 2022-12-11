@@ -45,6 +45,7 @@ sealed class IFTPattern {
     }
 
     // Matches every intermediate form tree node
+    // Doesn't consume the nodes, returns it as a subtree
     class AnyNode : IFTPattern() {
         override fun match(node: IntermediateFormTreeNode): Pair<List<IntermediateFormTreeNode>, Map<String, Any>>? {
             return Pair(listOf(node), emptyMap())

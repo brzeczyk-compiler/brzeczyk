@@ -200,6 +200,41 @@ class LinearizationTest {
     }
 
     @Test
+    fun `nested conditional`() {
+        val node1 = newNode()
+        val node2 = newNode()
+        val node3 = newNode()
+        val node4 = newNode()
+        val node5 = newNode()
+
+        val cfg = ControlFlowGraph(
+            listOf(node1, node2, node3, node4, node5),
+            node1,
+            referenceHashMapOf(),
+            referenceHashMapOf(node1 to node2, node3 to node4),
+            referenceHashMapOf(node1 to node3, node3 to node5)
+        )
+
+        val result = Linearization.linearize(cfg, covering)
+
+        assertLinearizationMatches(
+            listOf(
+                Conditional(node1, false, 0),
+                Unconditional(node2),
+                Jump(2),
+                NextLabel,
+                Conditional(node3, false, 1),
+                Unconditional(node4),
+                Jump(2),
+                NextLabel,
+                Unconditional(node5),
+                NextLabel
+            ),
+            result
+        )
+    }
+
+    @Test
     fun `empty loop checking if true`() {
         val node1 = newNode()
         val node2 = newNode()
@@ -334,6 +369,38 @@ class LinearizationTest {
                 Jump(0),
                 NextLabel,
                 Unconditional(node3)
+            ),
+            result
+        )
+    }
+
+    @Test
+    fun `nested loop`() {
+        val node1 = newNode()
+        val node2 = newNode()
+        val node3 = newNode()
+        val node4 = newNode()
+
+        val cfg = ControlFlowGraph(
+            listOf(node1, node2, node3, node4),
+            node1,
+            referenceHashMapOf(node3 to node2),
+            referenceHashMapOf(node1 to node2, node2 to node3),
+            referenceHashMapOf(node1 to node4, node2 to node1)
+        )
+
+        val result = Linearization.linearize(cfg, covering)
+
+        assertLinearizationMatches(
+            listOf(
+                NextLabel,
+                Conditional(node1, false, 2),
+                NextLabel,
+                Conditional(node2, false, 0),
+                Unconditional(node3),
+                Jump(1),
+                NextLabel,
+                Unconditional(node4)
             ),
             result
         )

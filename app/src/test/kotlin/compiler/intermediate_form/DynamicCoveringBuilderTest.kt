@@ -1,6 +1,5 @@
 package compiler.intermediate_form
 
-import compiler.common.intermediate_form.DynamicCoveringBuilder
 import io.mockk.every
 import io.mockk.mockk
 import kotlin.test.Test

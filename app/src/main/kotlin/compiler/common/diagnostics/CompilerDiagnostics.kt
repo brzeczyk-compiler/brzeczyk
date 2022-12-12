@@ -11,4 +11,8 @@ class CompilerDiagnostics : Diagnostics {
     fun clear() {
         diagnosticsList.clear()
     }
+
+    override fun toString() =
+        if (diagnosticsList.size > 0) diagnostics.map { it.toString() }.joinToString(separator = "\n")
+        else "OK\n"
 }

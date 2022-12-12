@@ -1,6 +1,7 @@
 package compiler.semantic_analysis
 
 import compiler.Compiler.CompilationFailed
+import compiler.ast.AstNode
 import compiler.ast.Expression
 import compiler.ast.Function
 import compiler.ast.NamedNode
@@ -51,36 +52,38 @@ object NameResolver {
 
         // Auxiliary functions for reporting issues to diagnostics
 
-        fun reportIfNameConflict(name: String, scope: MutableMap<String, NamedNode>) {
+        fun reportIfNameConflict(namedNode: NamedNode, scope: MutableMap<String, NamedNode>) {
             // conflict can only appear in the same scope
-            if (scope.containsKey(name))
-                diagnostics.report(Diagnostic.NameResolutionError.NameConflict())
+            if (scope.containsKey(namedNode.name))
+                diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.NameConflict(scope[namedNode.name]!!, namedNode))
         }
 
-        fun reportIfVariableUndefined(variableName: String): Boolean {
-            // invariant: no node of a particular name exists <==> visibleNames[name] does not exist
-
-            if (!visibleNames.containsKey(variableName))
-                diagnostics.report(Diagnostic.NameResolutionError.UndefinedVariable())
-            else if (visibleNames[variableName]!!.onlyHasFunctions())
-                diagnostics.report(Diagnostic.NameResolutionError.FunctionIsNotVariable())
-            else
+        fun checkVariableUsage(name: String, astNode: AstNode): Boolean {
+            if (!visibleNames.containsKey(name)) {
+                if (astNode is Expression.Variable)
+                    diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.UndefinedVariable(astNode))
+                if (astNode is Statement.Assignment)
+                    diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.AssignmentToUndefinedVariable(astNode))
+            } else if (visibleNames[name]!!.onlyHasFunctions()) {
+                if (astNode is Expression.Variable)
+                    diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.FunctionIsNotVariable(visibleNames[name]!!.topFunction(), astNode))
+                if (astNode is Statement.Assignment)
+                    diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.AssignmentToFunction(visibleNames[name]!!.topFunction(), astNode))
+            } else {
                 return false
-
+            }
             failed = true
             return true
         }
 
-        fun reportIfFunctionUndefined(functionName: String): Boolean {
-            // invariant: no node of a particular name exists <==> visibleNames[name] does not exist
-
-            if (!visibleNames.containsKey(functionName))
-                diagnostics.report(Diagnostic.NameResolutionError.UndefinedFunction())
-            else if (visibleNames[functionName]!!.onlyHasVariables())
-                diagnostics.report(Diagnostic.NameResolutionError.VariableIsNotCallable())
-            else
+        fun checkFunctionUsage(functionCall: Expression.FunctionCall): Boolean {
+            if (!visibleNames.containsKey(functionCall.name)) {
+                diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.UndefinedFunction(functionCall))
+            } else if (visibleNames[functionCall.name]!!.onlyHasVariables()) {
+                diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.VariableIsNotCallable(visibleNames[functionCall.name]!!.topVariable(), functionCall))
+            } else {
                 return false
-
+            }
             failed = true
             return true
         }
@@ -150,7 +153,7 @@ object NameResolver {
                 }
 
                 is Variable -> {
-                    reportIfNameConflict(node.name, currentScope)
+                    reportIfNameConflict(node, currentScope)
 
                     // first analyze the value, then add name, because we can't have self-referencing definitions
                     node.value?.let { analyzeNode(it, currentScope) }
@@ -161,14 +164,14 @@ object NameResolver {
                     // first analyze each parameter, so they can't refer to each other and to the function
                     node.parameters.forEach { analyzeNode(it, currentScope) }
 
-                    reportIfNameConflict(node.name, currentScope)
+                    reportIfNameConflict(node, currentScope)
 
                     // first add name, then create scope and analyze body because we can have recursive calls
                     addName(node.name, node, currentScope)
                     val newScope = makeScope() // function introduces a new scope of names
 
                     for (param in node.parameters) { // and then add their names
-                        reportIfNameConflict(param.name, newScope) // verifies that the parameters have different names
+                        reportIfNameConflict(param, newScope) // verifies that the parameters have different names
                         addName(param.name, param, newScope)
                     }
 
@@ -183,12 +186,12 @@ object NameResolver {
                 // Expressions
 
                 is Expression.Variable -> {
-                    if (!reportIfVariableUndefined(node.name))
+                    if (!checkVariableUsage(node.name, node))
                         nameDefinitions[node] = visibleNames[node.name]!!.topVariable()
                 }
 
                 is Expression.FunctionCall -> {
-                    if (!reportIfFunctionUndefined(node.name)) {
+                    if (!checkFunctionUsage(node)) {
                         nameDefinitions[node] = visibleNames[node.name]!!.topFunction()
                         node.arguments.forEach { analyzeNode(it, currentScope) }
                     }
@@ -228,7 +231,7 @@ object NameResolver {
                 }
 
                 is Statement.Assignment -> {
-                    if (!reportIfVariableUndefined(node.variableName)) {
+                    if (!checkVariableUsage(node.variableName, node)) {
                         nameDefinitions[node] = visibleNames[node.variableName]!!.topVariable()
                         analyzeNode(node.value, currentScope)
                     }

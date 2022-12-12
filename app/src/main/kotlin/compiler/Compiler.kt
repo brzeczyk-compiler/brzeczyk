@@ -37,5 +37,7 @@ class Compiler(val diagnostics: Diagnostics) {
 
             // TODO: generate the code
         } catch (_: CompilationFailed) { }
+
+        println(diagnostics)
     }
 }

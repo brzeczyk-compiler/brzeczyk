@@ -9,7 +9,7 @@ sealed class Symbol : Comparable<Symbol> {
         }
 
         override fun toString(): String {
-            return "t" + tokenType.name
+            return tokenType.name
         }
     }
 

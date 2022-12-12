@@ -12,6 +12,12 @@ data class Variable(
     enum class Kind {
         CONSTANT,
         VALUE,
-        VARIABLE,
+        VARIABLE;
+
+        override fun toString(): String = when (this) {
+            CONSTANT -> "stała"
+            VALUE -> "wart"
+            VARIABLE -> "zm"
+        }
     }
 }

@@ -11,15 +11,14 @@ import compiler.ast.Statement.Assignment
 import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.common.diagnostics.CompilerDiagnostics
-import compiler.common.diagnostics.Diagnostic.VariablePropertiesError
-import compiler.common.diagnostics.Diagnostic.VariablePropertiesError.AssignmentToFunctionParameter
+import compiler.common.diagnostics.Diagnostic.ResolutionDiagnostic.VariablePropertiesError
+import compiler.common.diagnostics.Diagnostic.ResolutionDiagnostic.VariablePropertiesError.AssignmentToFunctionParameter
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.referenceHashMapOf
 import compiler.common.reference_collections.referenceHashSetOf
 import compiler.semantic_analysis.VariablePropertiesAnalyzer.VariableProperties
 import kotlin.test.Test
-import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
@@ -69,10 +68,7 @@ class VariablePropertiesAnalyzerTest {
         else
             calculate()
 
-        assertContentEquals(
-            expectedDiagnostics.asSequence(),
-            actualDiagnostics.diagnostics.filter { it is VariablePropertiesError }
-        )
+        assertResolutionDiagnosticEquals(expectedDiagnostics, actualDiagnostics.diagnostics.filter { it is VariablePropertiesError }.toList())
     }
 
     // zm x: Liczba = 123

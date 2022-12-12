@@ -34,7 +34,13 @@ object AstFactory {
     private fun extractIdentifier(parseTree: ParseTree.Branch<Symbol>, diagnostics: Diagnostics): String {
         val properNode = skipPassThroughExpressions(parseTree)
         if (properNode.production !in listOf(Productions.expr2048Identifier, Productions.eExpr2048Identifier)) {
-            diagnostics.report(Diagnostic.ParserError(properNode.symbol, properNode.location.start, properNode.location.end, listOf(Symbol.Terminal(TokenType.IDENTIFIER))))
+            diagnostics.report(
+                Diagnostic.ParserError.UnexpectedToken(
+                    properNode.symbol,
+                    properNode.location,
+                    listOf(Symbol.Terminal(TokenType.IDENTIFIER)),
+                )
+            )
             throw AstCreationFailed()
         }
         return (properNode.children.first() as ParseTree.Leaf).content
@@ -87,7 +93,7 @@ object AstFactory {
                     try {
                         it.toLong()
                     } catch (_: NumberFormatException) {
-                        diagnostics.report(Diagnostic.InvalidNumberLiteral(it))
+                        diagnostics.report(Diagnostic.ParserError.InvalidNumberLiteral(it, child.location))
                         0
                     }
                 },

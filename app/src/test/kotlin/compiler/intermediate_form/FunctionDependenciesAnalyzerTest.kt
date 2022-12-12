@@ -15,6 +15,7 @@ import compiler.common.reference_collections.referenceHashSetOf
 import compiler.intermediate_form.UniqueIdentifierFactory.Companion.forbiddenLabels
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
@@ -38,8 +39,8 @@ class FunctionDependenciesAnalyzerTest {
          czynność polskie_znaki_są_żeś_zaiście_świetneż() {}
          */
         val identifierFactory = UniqueIdentifierFactory()
-        var polishSigns = Function("polskie_znaki_są_żeś_zaiście_świetneż", listOf(), Type.Unit, listOf())
-        var polishSignsIdentifier = identifierFactory.build(null, polishSigns.name)
+        val polishSigns = Function("polskie_znaki_są_żeś_zaiście_świetneż", listOf(), Type.Unit, listOf())
+        val polishSignsIdentifier = identifierFactory.build(null, polishSigns.name)
 
         val program = Program(listOf(Program.Global.FunctionDefinition(polishSigns)))
         val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program, false)
@@ -54,8 +55,8 @@ class FunctionDependenciesAnalyzerTest {
          }
          */
         val identifierFactory = UniqueIdentifierFactory()
-        var noPolishSigns = Function("no_polish_signs", listOf(), Type.Unit, listOf())
-        var outerFunction = Function(
+        val noPolishSigns = Function("no_polish_signs", listOf(), Type.Unit, listOf())
+        val outerFunction = Function(
             "some_prefix",
             listOf(), Type.Unit, listOf(Statement.FunctionDefinition(noPolishSigns))
         )
@@ -83,7 +84,7 @@ class FunctionDependenciesAnalyzerTest {
         val inner1 = Function("żeś", listOf(), Type.Unit, listOf())
         val inner2 = Function("żes", listOf(), Type.Unit, listOf())
         val inner3 = Function("zes", listOf(), Type.Unit, listOf())
-        var outerFunction = Function(
+        val outerFunction = Function(
             "some_prefix",
             listOf(), Type.Unit,
             listOf(
@@ -118,6 +119,106 @@ class FunctionDependenciesAnalyzerTest {
             val functionIdentifier = identifierFactory.build(null, function.name)
             assertNotEquals(forbidden, functionIdentifier.value)
         }
+    }
+
+    @Test fun `test functions created in nested block receive identifiers`() {
+        /*
+         czynność some_prefix() {
+             jeżeli (prawda) {
+                 czynność funkcja1() {}
+             }
+             dopóki (prawda) {
+                 czynność funkcja2() {}
+             }
+             {
+                 czynność funkcja3() {}
+             }
+         }
+         */
+        val function = Function("funkcja1", listOf(), Type.Unit, listOf())
+        val function2 = Function("funkcja2", listOf(), Type.Unit, listOf())
+        val function3 = Function("funkcja3", listOf(), Type.Unit, listOf())
+        val outerFunction = Function(
+            "some_prefix",
+            listOf(), Type.Unit,
+            listOf(
+                Statement.Conditional(
+                    Expression.BooleanLiteral(true),
+                    listOf(Statement.FunctionDefinition(function)), null
+                ),
+                Statement.Loop(
+                    Expression.BooleanLiteral(true),
+                    listOf(Statement.FunctionDefinition(function2)), null
+                ),
+                Statement.Block(
+                    listOf(Statement.FunctionDefinition(function3)), null
+                )
+            )
+        )
+
+        val program = Program(listOf(Program.Global.FunctionDefinition(outerFunction)))
+        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program, false)
+        assertContains(actualIdentifiers, function)
+        assertContains(actualIdentifiers, function2)
+        assertContains(actualIdentifiers, function3)
+        assertContains(actualIdentifiers, outerFunction)
+    }
+
+    @Test fun `test functions at same level blocks with identical names do not cause conflicts`() {
+        /*
+         czynność some_prefix() {
+             jeżeli (prawda) {
+                 czynność funkcja() {}
+             } wpp {
+                 czynność funkcja() {}
+             }
+             dopóki (prawda) {
+                 czynność funkcja() {}
+             }
+             {
+                 czynność funkcja() {}
+             }
+         }
+         */
+        val identifierFactory = UniqueIdentifierFactory()
+        val function = Function("funkcja", listOf(), Type.Unit, listOf())
+        val functionCopy1 = Function("funkcja", listOf(), Type.Unit, listOf())
+        val functionCopy2 = Function("funkcja", listOf(), Type.Unit, listOf())
+        val functionCopy3 = Function("funkcja", listOf(), Type.Unit, listOf())
+        val outerFunction = Function(
+            "some_prefix",
+            listOf(), Type.Unit,
+            listOf(
+                Statement.Conditional(
+                    Expression.BooleanLiteral(true),
+                    listOf(Statement.FunctionDefinition(function)),
+                    listOf(Statement.FunctionDefinition(functionCopy1))
+                ),
+                Statement.Loop(
+                    Expression.BooleanLiteral(true),
+                    listOf(Statement.FunctionDefinition(functionCopy2)), null
+                ),
+                Statement.Block(
+                    listOf(Statement.FunctionDefinition(functionCopy3)), null
+                )
+            )
+        )
+
+        val program = Program(listOf(Program.Global.FunctionDefinition(outerFunction)))
+        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program, false)
+        val outerFunctionIdentifier = identifierFactory.build(null, outerFunction.name)
+        val functionIdentifier = identifierFactory.build(outerFunctionIdentifier.value + "@block0", function.name)
+        val functionCopy1Identifier = identifierFactory.build(outerFunctionIdentifier.value + "@block1", functionCopy1.name)
+        val functionCopy2Identifier = identifierFactory.build(outerFunctionIdentifier.value + "@block2", functionCopy2.name)
+        val functionCopy3Identifier = identifierFactory.build(outerFunctionIdentifier.value + "@block3", functionCopy3.name)
+        val expectedIdentifiers = referenceHashMapOf(
+            outerFunction to outerFunctionIdentifier,
+            function to functionIdentifier,
+            functionCopy1 to functionCopy1Identifier,
+            functionCopy2 to functionCopy2Identifier,
+            functionCopy3 to functionCopy3Identifier,
+        )
+        assertEquals(expectedIdentifiers, actualIdentifiers)
     }
 
     @Test fun `test function details generator creation`() {

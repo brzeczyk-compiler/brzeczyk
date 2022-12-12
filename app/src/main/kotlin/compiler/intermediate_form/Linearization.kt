@@ -30,7 +30,7 @@ object Linearization {
         fun dfs(node: IFTNode, nextLabel: String) {
             addLabel(labels[node] ?: assignLabel(node))
 
-            fun addUncoditional() {
+            fun addUnconditional() {
                 instructions.addAll(covering.coverUnconditional(node))
             }
 
@@ -49,7 +49,7 @@ object Linearization {
             if (node in cfg.unconditionalLinks) {
                 val target = cfg.unconditionalLinks[node]!!
 
-                addUncoditional()
+                addUnconditional()
 
                 if (target in labels)
                     addJump(labels[target]!!)
@@ -98,7 +98,7 @@ object Linearization {
                     dfs(target, nextLabel)
                 }
             } else {
-                addUncoditional()
+                addUnconditional()
                 addJump(endLabel)
             }
         }

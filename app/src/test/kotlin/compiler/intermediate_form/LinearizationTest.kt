@@ -29,7 +29,7 @@ class LinearizationTest {
 
     private sealed class AsmablePattern
 
-    private class Uncoditional(val node: IFTNode) : AsmablePattern()
+    private class Unconditional(val node: IFTNode) : AsmablePattern()
     private class Conditional(val node: IFTNode, val whenTrue: Boolean, val targetLabelNumber: Int) : AsmablePattern()
     private object NextLabel : AsmablePattern()
     private class Jump(val targetLabelNumber: Int) : AsmablePattern()
@@ -47,7 +47,7 @@ class LinearizationTest {
 
         for ((expectedItem, actualItem) in expected.zip(actual)) {
             when (expectedItem) {
-                is Uncoditional -> {
+                is Unconditional -> {
                     assertIs<Instruction>(actualItem)
                     assertContains(unconditional, actualItem)
                     assertSame(expectedItem.node, unconditional[actualItem]!!)
@@ -92,7 +92,7 @@ class LinearizationTest {
 
         val result = Linearization.linearize(cfg, covering)
 
-        assertLinearizationMatches(listOf(Uncoditional(node)), result)
+        assertLinearizationMatches(listOf(Unconditional(node)), result)
     }
 
     @Test
@@ -112,8 +112,8 @@ class LinearizationTest {
 
         assertLinearizationMatches(
             listOf(
-                Uncoditional(node1),
-                Uncoditional(node2)
+                Unconditional(node1),
+                Unconditional(node2)
             ),
             result
         )
@@ -136,7 +136,7 @@ class LinearizationTest {
         assertLinearizationMatches(
             listOf(
                 NextLabel,
-                Uncoditional(node),
+                Unconditional(node),
                 Jump(0)
             ),
             result
@@ -162,9 +162,9 @@ class LinearizationTest {
         assertLinearizationMatches(
             listOf(
                 Conditional(node1, false, 0),
-                Uncoditional(node2),
+                Unconditional(node2),
                 NextLabel,
-                Uncoditional(node3)
+                Unconditional(node3)
             ),
             result
         )
@@ -189,10 +189,10 @@ class LinearizationTest {
         assertLinearizationMatches(
             listOf(
                 Conditional(node1, false, 0),
-                Uncoditional(node2),
+                Unconditional(node2),
                 Jump(1),
                 NextLabel,
-                Uncoditional(node3),
+                Unconditional(node3),
                 NextLabel
             ),
             result
@@ -218,7 +218,7 @@ class LinearizationTest {
             listOf(
                 NextLabel,
                 Conditional(node1, true, 0),
-                Uncoditional(node2)
+                Unconditional(node2)
             ),
             result
         )
@@ -243,7 +243,7 @@ class LinearizationTest {
             listOf(
                 NextLabel,
                 Conditional(node1, false, 0),
-                Uncoditional(node2)
+                Unconditional(node2)
             ),
             result
         )
@@ -269,10 +269,10 @@ class LinearizationTest {
             listOf(
                 NextLabel,
                 Conditional(node1, false, 1),
-                Uncoditional(node2),
+                Unconditional(node2),
                 Jump(0),
                 NextLabel,
-                Uncoditional(node3)
+                Unconditional(node3)
             ),
             result
         )
@@ -298,10 +298,10 @@ class LinearizationTest {
             listOf(
                 NextLabel,
                 Conditional(node1, false, 1),
-                Uncoditional(node3),
+                Unconditional(node3),
                 Jump(2),
                 NextLabel,
-                Uncoditional(node2),
+                Unconditional(node2),
                 Jump(0),
                 NextLabel
             ),
@@ -333,7 +333,7 @@ class LinearizationTest {
                 Conditional(node2, true, 1),
                 Jump(0),
                 NextLabel,
-                Uncoditional(node3)
+                Unconditional(node3)
             ),
             result
         )
@@ -357,7 +357,7 @@ class LinearizationTest {
         assertLinearizationMatches(
             listOf(
                 Conditional(node1, true, 0),
-                Uncoditional(node2),
+                Unconditional(node2),
                 NextLabel
             ),
             result
@@ -382,7 +382,7 @@ class LinearizationTest {
         assertLinearizationMatches(
             listOf(
                 Conditional(node1, false, 0),
-                Uncoditional(node2),
+                Unconditional(node2),
                 NextLabel
             ),
             result

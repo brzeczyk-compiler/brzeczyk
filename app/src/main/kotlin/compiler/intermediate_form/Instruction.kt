@@ -24,15 +24,20 @@ sealed class Instruction : Asmable {
         data class JmpGtEq(override val targetLabel: String) : ConditionalJumpInstruction() // JGE  targetLabel
         data class JmpZ(override val targetLabel: String) : ConditionalJumpInstruction() //    JZ   targetLabel
         data class JmpNZ(override val targetLabel: String) : ConditionalJumpInstruction() //   JNZ  targetLabel
+        
+        class Dummy(override val targetLabel: String) : ConditionalJumpInstruction()
     }
 
     sealed class UnconditionalJumpInstruction : Instruction() {
         abstract val targetLabel: String
         data class Jmp(override val targetLabel: String) : UnconditionalJumpInstruction() //   JMP  targetLabel
+        class Dummy(override val targetLabel: String) : UnconditionalJumpInstruction()
     }
 
     sealed class RetInstruction : Instruction() {
         class Ret : RetInstruction() // RET
+        
+        class Dummy : RetInstruction()
     }
 
     sealed class InPlaceInstruction : Instruction() {
@@ -144,5 +149,7 @@ sealed class Instruction : Asmable {
         data class SetLtEqR(override val reg: Register) : SetInstruction() // SETLE reg8
         data class SetGtR(override val reg: Register) : SetInstruction() //   SETG  reg8
         data class SetGtEqR(override val reg: Register) : SetInstruction() // SETGE reg8
+        
+        class Dummy(override val regsUsed: List<Register> = listOf(), override val regsDefined: List<Register> = listOf()) : InPlaceInstruction()
     }
 }

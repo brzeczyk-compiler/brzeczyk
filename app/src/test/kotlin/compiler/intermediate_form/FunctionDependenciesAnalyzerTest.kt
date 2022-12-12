@@ -7,12 +7,15 @@ import compiler.ast.Program
 import compiler.ast.Statement
 import compiler.ast.Type
 import compiler.ast.Variable
+import compiler.common.intermediate_form.FunctionDetailsGenerator
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.ReferenceSet
 import compiler.common.reference_collections.referenceHashMapOf
 import compiler.common.reference_collections.referenceHashSetOf
+import compiler.intermediate_form.UniqueIdentifierFactory.Companion.forbiddenLabels
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
@@ -26,7 +29,7 @@ class FunctionDependenciesAnalyzerTest {
         val noPolishSignsIdentifier = identifierFactory.build(null, noPolishSigns.name)
 
         val program = Program(listOf(Program.Global.FunctionDefinition(noPolishSigns)))
-        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program)
+        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program, false)
         val expectedIdentifiers = referenceHashMapOf(noPolishSigns to noPolishSignsIdentifier)
         assertEquals(expectedIdentifiers, actualIdentifiers)
     }
@@ -36,11 +39,11 @@ class FunctionDependenciesAnalyzerTest {
          czynność polskie_znaki_są_żeś_zaiście_świetneż() {}
          */
         val identifierFactory = UniqueIdentifierFactory()
-        var polishSigns = Function("polskie_znaki_są_żeś_zaiście_świetneż", listOf(), Type.Unit, listOf())
-        var polishSignsIdentifier = identifierFactory.build(null, polishSigns.name)
+        val polishSigns = Function("polskie_znaki_są_żeś_zaiście_świetneż", listOf(), Type.Unit, listOf())
+        val polishSignsIdentifier = identifierFactory.build(null, polishSigns.name)
 
         val program = Program(listOf(Program.Global.FunctionDefinition(polishSigns)))
-        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program)
+        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program, false)
         val expectedIdentifiers = referenceHashMapOf(polishSigns to polishSignsIdentifier)
         assertEquals(expectedIdentifiers, actualIdentifiers)
     }
@@ -52,8 +55,8 @@ class FunctionDependenciesAnalyzerTest {
          }
          */
         val identifierFactory = UniqueIdentifierFactory()
-        var noPolishSigns = Function("no_polish_signs", listOf(), Type.Unit, listOf())
-        var outerFunction = Function(
+        val noPolishSigns = Function("no_polish_signs", listOf(), Type.Unit, listOf())
+        val outerFunction = Function(
             "some_prefix",
             listOf(), Type.Unit, listOf(Statement.FunctionDefinition(noPolishSigns))
         )
@@ -61,7 +64,7 @@ class FunctionDependenciesAnalyzerTest {
         val noPolishSignsIdentifier = identifierFactory.build(outerFunctionIdentifier.value, noPolishSigns.name)
 
         val program = Program(listOf(Program.Global.FunctionDefinition(outerFunction)))
-        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program)
+        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program, false)
         val expectedIdentifiers = referenceHashMapOf(
             noPolishSigns to noPolishSignsIdentifier,
             outerFunction to outerFunctionIdentifier
@@ -81,7 +84,7 @@ class FunctionDependenciesAnalyzerTest {
         val inner1 = Function("żeś", listOf(), Type.Unit, listOf())
         val inner2 = Function("żes", listOf(), Type.Unit, listOf())
         val inner3 = Function("zes", listOf(), Type.Unit, listOf())
-        var outerFunction = Function(
+        val outerFunction = Function(
             "some_prefix",
             listOf(), Type.Unit,
             listOf(
@@ -95,7 +98,7 @@ class FunctionDependenciesAnalyzerTest {
         val inner3Identifier = identifierFactory.build(outerFunctionIdentifier.value, inner3.name)
 
         val program = Program(listOf(Program.Global.FunctionDefinition(outerFunction)))
-        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program)
+        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program, false)
         val expectedIdentifiers = referenceHashMapOf(
             inner1 to inner1Identifier,
             inner2 to inner2Identifier,
@@ -105,15 +108,117 @@ class FunctionDependenciesAnalyzerTest {
         assertEquals(expectedIdentifiers, actualIdentifiers)
     }
 
-    @Test fun `test function named globals is not assigned identifier globals`() {
+    @Test fun `test function with name in forbidden memory label list is not assigned forbidden identifier`() {
         /*
          czynność globals() {}
+         czynność display() {}
          */
         val identifierFactory = UniqueIdentifierFactory()
-        val globals = Function("globals", listOf(), Type.Unit, listOf())
-        val globalsIdentifier = identifierFactory.build(null, globals.name)
+        for (forbidden in forbiddenLabels) {
+            val function = Function(forbidden, listOf(), Type.Unit, listOf())
+            val functionIdentifier = identifierFactory.build(null, function.name)
+            assertNotEquals(forbidden, functionIdentifier.value)
+        }
+    }
 
-        assertNotEquals("globals", globalsIdentifier.value)
+    @Test fun `test functions created in nested block receive identifiers`() {
+        /*
+         czynność some_prefix() {
+             jeżeli (prawda) {
+                 czynność funkcja1() {}
+             }
+             dopóki (prawda) {
+                 czynność funkcja2() {}
+             }
+             {
+                 czynność funkcja3() {}
+             }
+         }
+         */
+        val function = Function("funkcja1", listOf(), Type.Unit, listOf())
+        val function2 = Function("funkcja2", listOf(), Type.Unit, listOf())
+        val function3 = Function("funkcja3", listOf(), Type.Unit, listOf())
+        val outerFunction = Function(
+            "some_prefix",
+            listOf(), Type.Unit,
+            listOf(
+                Statement.Conditional(
+                    Expression.BooleanLiteral(true),
+                    listOf(Statement.FunctionDefinition(function)), null
+                ),
+                Statement.Loop(
+                    Expression.BooleanLiteral(true),
+                    listOf(Statement.FunctionDefinition(function2)), null
+                ),
+                Statement.Block(
+                    listOf(Statement.FunctionDefinition(function3)), null
+                )
+            )
+        )
+
+        val program = Program(listOf(Program.Global.FunctionDefinition(outerFunction)))
+        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program, false)
+        assertContains(actualIdentifiers, function)
+        assertContains(actualIdentifiers, function2)
+        assertContains(actualIdentifiers, function3)
+        assertContains(actualIdentifiers, outerFunction)
+    }
+
+    @Test fun `test functions at same level blocks with identical names do not cause conflicts`() {
+        /*
+         czynność some_prefix() {
+             jeżeli (prawda) {
+                 czynność funkcja() {}
+             } wpp {
+                 czynność funkcja() {}
+             }
+             dopóki (prawda) {
+                 czynność funkcja() {}
+             }
+             {
+                 czynność funkcja() {}
+             }
+         }
+         */
+        val identifierFactory = UniqueIdentifierFactory()
+        val function = Function("funkcja", listOf(), Type.Unit, listOf())
+        val functionCopy1 = Function("funkcja", listOf(), Type.Unit, listOf())
+        val functionCopy2 = Function("funkcja", listOf(), Type.Unit, listOf())
+        val functionCopy3 = Function("funkcja", listOf(), Type.Unit, listOf())
+        val outerFunction = Function(
+            "some_prefix",
+            listOf(), Type.Unit,
+            listOf(
+                Statement.Conditional(
+                    Expression.BooleanLiteral(true),
+                    listOf(Statement.FunctionDefinition(function)),
+                    listOf(Statement.FunctionDefinition(functionCopy1))
+                ),
+                Statement.Loop(
+                    Expression.BooleanLiteral(true),
+                    listOf(Statement.FunctionDefinition(functionCopy2)), null
+                ),
+                Statement.Block(
+                    listOf(Statement.FunctionDefinition(functionCopy3)), null
+                )
+            )
+        )
+
+        val program = Program(listOf(Program.Global.FunctionDefinition(outerFunction)))
+        val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program, false)
+        val outerFunctionIdentifier = identifierFactory.build(null, outerFunction.name)
+        val functionIdentifier = identifierFactory.build(outerFunctionIdentifier.value + "@block0", function.name)
+        val functionCopy1Identifier = identifierFactory.build(outerFunctionIdentifier.value + "@block1", functionCopy1.name)
+        val functionCopy2Identifier = identifierFactory.build(outerFunctionIdentifier.value + "@block2", functionCopy2.name)
+        val functionCopy3Identifier = identifierFactory.build(outerFunctionIdentifier.value + "@block3", functionCopy3.name)
+        val expectedIdentifiers = referenceHashMapOf(
+            outerFunction to outerFunctionIdentifier,
+            function to functionIdentifier,
+            functionCopy1 to functionCopy1Identifier,
+            functionCopy2 to functionCopy2Identifier,
+            functionCopy3 to functionCopy3Identifier,
+        )
+        assertEquals(expectedIdentifiers, actualIdentifiers)
     }
 
     @Test fun `test function details generator creation`() {
@@ -131,10 +236,10 @@ class FunctionDependenciesAnalyzerTest {
         val varA = Variable(Variable.Kind.VARIABLE, "a", Type.Number, Expression.NumberLiteral(4))
         val varB = Variable(Variable.Kind.VARIABLE, "b", Type.Boolean, Expression.BooleanLiteral(false))
         val varC = Variable(Variable.Kind.VARIABLE, "c", Type.Number, Expression.NumberLiteral(10))
-        val par = Function.Parameter("x", Type.Number, null)
+        val parameter = Function.Parameter("x", Type.Number, null)
         val functionG = Function(
             "g",
-            listOf(par),
+            listOf(parameter),
             Type.Unit,
             listOf(
                 Statement.Assignment(
@@ -160,23 +265,79 @@ class FunctionDependenciesAnalyzerTest {
         )
         val program = Program(listOf(Program.Global.FunctionDefinition(functionF)))
         val variableProperties = referenceHashMapOf<Any, VariablePropertiesAnalyzer.VariableProperties>(
-            par to VariablePropertiesAnalyzer.VariableProperties(functionG, referenceHashSetOf(), referenceHashSetOf()),
+            parameter to VariablePropertiesAnalyzer.VariableProperties(functionG, referenceHashSetOf(), referenceHashSetOf()),
             varA to VariablePropertiesAnalyzer.VariableProperties(functionF, referenceHashSetOf(), referenceHashSetOf(functionG)),
             varB to VariablePropertiesAnalyzer.VariableProperties(functionF, referenceHashSetOf(functionG), referenceHashSetOf()),
             varC to VariablePropertiesAnalyzer.VariableProperties(functionF, referenceHashSetOf(), referenceHashSetOf())
         )
 
-// TODO: update FunctionDetailsGeneratorSignature and uncomment
-//        val expectedResult = referenceHashMapOf(
-//            functionF to FunctionDetailsGenerator(
-//                0u,
-//                referenceHashMapOf(varA to true, varB to true, varC to false),
-//                emptyList()
-//            ),
-//            functionG to FunctionDetailsGenerator(1u, referenceHashMapOf(par to false), listOf(par))
-//        )
-//        val actualResult = FunctionDependenciesAnalyzer.createFunctionDetailsGenerators(program, variableProperties)
-//        assertEquals(expectedResult, actualResult)
+        val expectedResult = referenceHashMapOf(
+            functionF to DefaultFunctionDetailsGenerator(
+                emptyList(),
+                null,
+                IntermediateFormTreeNode.MemoryLabel("fun\$f"),
+                0u,
+                referenceHashMapOf(varA to VariableLocationType.MEMORY, varB to VariableLocationType.MEMORY, varC to VariableLocationType.REGISTER),
+                IntermediateFormTreeNode.MemoryLabel(DISPLAY_LABEL_IN_MEMORY)
+            ) as FunctionDetailsGenerator,
+            functionG to DefaultFunctionDetailsGenerator(
+                listOf(parameter),
+                null,
+                IntermediateFormTreeNode.MemoryLabel("fun\$f\$g"),
+                1u,
+                referenceHashMapOf(parameter to VariableLocationType.REGISTER),
+                IntermediateFormTreeNode.MemoryLabel(DISPLAY_LABEL_IN_MEMORY)
+            )
+        )
+        val actualResult = FunctionDependenciesAnalyzer.createFunctionDetailsGenerators(program, variableProperties, referenceHashMapOf())
+        assertEquals(expectedResult, actualResult)
+    }
+
+    @Test fun `test function details generator creation for function that returns variable`() {
+        /*
+        czynność f(): Liczba {
+            zm a: Liczba = 4
+            zwróć a+1
+        }
+         */
+
+        val varA = Variable(Variable.Kind.VARIABLE, "a", Type.Number, Expression.NumberLiteral(4))
+        val functionF = Function(
+            "f",
+            listOf(),
+            Type.Number,
+            listOf(
+                Statement.VariableDefinition(varA),
+                Statement.FunctionReturn(
+                    Expression.BinaryOperation(
+                        Expression.BinaryOperation.Kind.ADD,
+                        Expression.Variable("a"),
+                        Expression.NumberLiteral(1)
+                    )
+                )
+            )
+        )
+
+        val returnVariable = Variable(Variable.Kind.VARIABLE, "_return_dummy_", Type.Number, null)
+
+        val program = Program(listOf(Program.Global.FunctionDefinition(functionF)))
+        val variableProperties = referenceHashMapOf<Any, VariablePropertiesAnalyzer.VariableProperties>(
+            varA to VariablePropertiesAnalyzer.VariableProperties(functionF, referenceHashSetOf(), referenceHashSetOf()),
+            returnVariable to VariablePropertiesAnalyzer.VariableProperties(functionF, referenceHashSetOf(), referenceHashSetOf()),
+        )
+
+        val expectedResult = referenceHashMapOf(
+            functionF to DefaultFunctionDetailsGenerator(
+                emptyList(),
+                returnVariable,
+                IntermediateFormTreeNode.MemoryLabel("fun\$f"),
+                0u,
+                referenceHashMapOf(varA to VariableLocationType.REGISTER, returnVariable to VariableLocationType.REGISTER),
+                IntermediateFormTreeNode.MemoryLabel(DISPLAY_LABEL_IN_MEMORY)
+            ) as FunctionDetailsGenerator
+        )
+        val actualResult = FunctionDependenciesAnalyzer.createFunctionDetailsGenerators(program, variableProperties, referenceHashMapOf(functionF to returnVariable))
+        assertEquals(expectedResult, actualResult)
     }
 
     @Test fun `test a function that does not call`() {

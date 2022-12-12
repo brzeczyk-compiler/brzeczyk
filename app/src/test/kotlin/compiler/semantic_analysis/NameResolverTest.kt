@@ -6,6 +6,7 @@ import compiler.ast.Program
 import compiler.ast.Statement
 import compiler.ast.Type
 import compiler.ast.Variable
+import io.mockk.mockk
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -79,7 +80,7 @@ internal class NameResolverTest {
 
         // Perform name resolution for such AST
 
-        val nameDefinitions = NameResolver.calculateNameResolution(program) {}
+        val nameDefinitions = NameResolver.calculateNameResolution(program, mockk())
 
         // Check the result mapping
 

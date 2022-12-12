@@ -15,6 +15,7 @@ object Resolver {
         val argumentResolution: ReferenceMap<Expression.FunctionCall.Argument, Function.Parameter>,
         val expressionTypes: ReferenceMap<Expression, Type>,
         val defaultParameterMapping: ReferenceMap<Function.Parameter, Variable>,
+        val functionReturnedValueVariables: ReferenceMap<Function, Variable>,
         val variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>,
     )
 
@@ -23,13 +24,15 @@ object Resolver {
         val argumentResolution = ArgumentResolver.calculateArgumentToParameterResolution(ast, nameResolution, diagnostics)
         val expressionTypes = TypeChecker.calculateTypes(ast, nameResolution, argumentResolution.argumentsToParametersMap, diagnostics)
         val defaultParameterMapping = DefaultParameterResolver.mapFunctionParametersToDummyVariables(ast)
-        val variableProperties = VariablePropertiesAnalyzer.calculateVariableProperties(ast, nameResolution, defaultParameterMapping, argumentResolution.accessedDefaultValues, diagnostics)
+        val functionReturnedValueVariables = ReturnValueVariableCreator.createDummyVariablesForFunctionReturnValue(ast)
+        val variableProperties = VariablePropertiesAnalyzer.calculateVariableProperties(ast, nameResolution, defaultParameterMapping, functionReturnedValueVariables, argumentResolution.accessedDefaultValues, diagnostics)
 
         return ProgramProperties(
             nameResolution,
             argumentResolution.argumentsToParametersMap,
             expressionTypes,
             defaultParameterMapping,
+            functionReturnedValueVariables,
             variableProperties,
         )
     }

@@ -6,6 +6,8 @@ import compiler.ast.NamedNode
 import compiler.ast.Program
 import compiler.ast.Statement
 import compiler.ast.StatementBlock
+import compiler.ast.Variable
+import compiler.common.intermediate_form.FunctionDetailsGenerator
 import compiler.common.reference_collections.ReferenceHashMap
 import compiler.common.reference_collections.ReferenceMap
 import compiler.common.reference_collections.ReferenceSet
@@ -13,14 +15,24 @@ import compiler.common.reference_collections.combineReferenceSets
 import compiler.common.reference_collections.referenceHashMapOf
 import compiler.common.reference_collections.referenceHashSetOf
 import compiler.common.reference_collections.referenceKeys
+import compiler.semantic_analysis.BuiltinFunctions
 import compiler.semantic_analysis.VariablePropertiesAnalyzer
 
 object FunctionDependenciesAnalyzer {
-    fun createUniqueIdentifiers(program: Program): ReferenceMap<Function, UniqueIdentifier> {
+    fun createUniqueIdentifiers(program: Program, allowInconsistentNamingErrors: Boolean): ReferenceMap<Function, UniqueIdentifier> {
         val uniqueIdentifiers = referenceHashMapOf<Function, UniqueIdentifier>()
         val identifierFactory = UniqueIdentifierFactory()
         fun nameFunction(function: Function, pathSoFar: String?): String {
-            uniqueIdentifiers[function] = identifierFactory.build(pathSoFar, function.name)
+            try {
+                uniqueIdentifiers[function] = identifierFactory.build(pathSoFar, function.name)
+            } catch (error: InconsistentFunctionNamingConvention) {
+                // Such errors should occur only as a consequence of skipped NameConflict error in name resolution.
+                // Hence, if `allowInconsistentNamingErrors`, which is only set when there were already some errors
+                // in diagnostics, we can safely ignore such errors, cause the compilation would be failed later anyway.
+                if (!allowInconsistentNamingErrors)
+                    throw error
+                uniqueIdentifiers[function] = UniqueIdentifier("\$INVALID")
+            }
             return uniqueIdentifiers[function]!!.value
         }
 
@@ -52,25 +64,38 @@ object FunctionDependenciesAnalyzer {
             }
         }
         program.globals.forEach { analyze(it) }
+        BuiltinFunctions.getUsedBuiltinFunctions(program).forEach { nameFunction(it, null) }
         return uniqueIdentifiers
     }
 
     fun createFunctionDetailsGenerators(
         program: Program,
-        variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>
-    ): ReferenceMap<Function, DefaultFunctionDetailsGenerator> {
-
-        val result = referenceHashMapOf<Function, DefaultFunctionDetailsGenerator>()
+        variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>,
+        functionReturnedValueVariables: ReferenceMap<Function, Variable>,
+        allowInconsistentNamingErrors: Boolean = false
+    ): ReferenceMap<Function, FunctionDetailsGenerator> {
+        val result = referenceHashMapOf<Function, FunctionDetailsGenerator>()
+        val functionIdentifiers = createUniqueIdentifiers(program, allowInconsistentNamingErrors)
 
         fun createDetailsGenerator(function: Function, depth: ULong) {
-            val variables = referenceHashMapOf<NamedNode, Boolean>()
+            val variablesLocationTypes = referenceHashMapOf<NamedNode, VariableLocationType>()
             variableProperties
                 .filter { (_, properties) -> properties.owner === function }
                 .forEach { (variable, properties) ->
-                    variables[variable as NamedNode] = (properties.accessedIn.any { it != function } || properties.writtenIn.any { it != function })
+                    variablesLocationTypes[variable as NamedNode] =
+                        if (properties.accessedIn.any { it != function } || properties.writtenIn.any { it != function })
+                            VariableLocationType.MEMORY
+                        else VariableLocationType.REGISTER
                 }
 
-            result[function] = TODO() // FunctionDetailsGenerator(depth, variables, function.parameters)
+            result[function] = DefaultFunctionDetailsGenerator(
+                function.parameters,
+                functionReturnedValueVariables[function],
+                IntermediateFormTreeNode.MemoryLabel(functionIdentifiers[function]!!.value),
+                depth,
+                variablesLocationTypes,
+                IntermediateFormTreeNode.MemoryLabel(DISPLAY_LABEL_IN_MEMORY)
+            )
         }
 
         fun processFunction(function: Function, depth: ULong) {
@@ -95,6 +120,7 @@ object FunctionDependenciesAnalyzer {
         }
 
         program.globals.forEach { if (it is Program.Global.FunctionDefinition) processFunction(it.function, 0u) }
+        BuiltinFunctions.getUsedBuiltinFunctions(program).forEach { createDetailsGenerator(it, 0u) }
 
         return result
     }
@@ -177,6 +203,7 @@ object FunctionDependenciesAnalyzer {
         }
 
         ast.globals.forEach { getCalledFunctions(it) }
+        BuiltinFunctions.getUsedBuiltinFunctions(ast).forEach { functionCalls[it] = referenceHashSetOf() }
 
         val allFunctions = functionCalls.referenceKeys
         var previousPartialTransitiveFunctionCalls: ReferenceHashMap<Function, ReferenceSet<Function>>

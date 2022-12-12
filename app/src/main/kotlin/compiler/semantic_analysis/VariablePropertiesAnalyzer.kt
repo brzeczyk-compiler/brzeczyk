@@ -7,6 +7,7 @@ import compiler.ast.NamedNode
 import compiler.ast.Program
 import compiler.ast.Program.Global
 import compiler.ast.Statement
+import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.common.diagnostics.Diagnostic.ResolutionDiagnostic.VariablePropertiesError.AssignmentToFunctionParameter
 import compiler.common.diagnostics.Diagnostics
@@ -43,6 +44,7 @@ object VariablePropertiesAnalyzer {
         ast: Program,
         nameResolution: ReferenceMap<Any, NamedNode>,
         defaultParameterMapping: ReferenceMap<Function.Parameter, Variable>,
+        functionReturnedValueVariables: ReferenceMap<Function, Variable>,
         accessedDefaultValues: ReferenceMap<Expression.FunctionCall, ReferenceSet<Function.Parameter>>,
         diagnostics: Diagnostics,
     ): ReferenceMap<Any, VariableProperties> {
@@ -111,10 +113,18 @@ object VariablePropertiesAnalyzer {
                         }
                     }
                     node.body.forEach { analyzeVariables(it, node) }
+                    if (node.returnType != Type.Unit) {
+                        // Accessed set consists of only the owner function, cause the variable's value is moved to
+                        // appropriate Register in the ControlFlowGraph of epilogue of this function, and the Variable
+                        // is never accessed anymore (including both outer & inner functions).
+                        mutableVariableProperties[functionReturnedValueVariables[node]!!] = MutableVariableProperties(
+                            node,
+                            referenceHashSetOf(node),
+                            referenceHashSetOf(node)
+                        )
+                    }
                 }
-                is Variable -> {
-                    node.value?.let { analyzeVariables(it, currentFunction) }
-                }
+                is Variable -> node.value?.let { analyzeVariables(it, currentFunction) }
             }
         }
 

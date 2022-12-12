@@ -2,6 +2,7 @@ package compiler
 
 import compiler.ast.AstFactory
 import compiler.common.diagnostics.Diagnostics
+import compiler.intermediate_form.ControlFlow.createGraphForProgram
 import compiler.lexer.Lexer
 import compiler.lexer.input.InputImpl
 import compiler.lexer.lexer_grammar.TokenType
@@ -35,6 +36,7 @@ class Compiler(val diagnostics: Diagnostics) {
 
             val programProperties = Resolver.resolveProgram(ast, diagnostics)
 
+            val cfg = createGraphForProgram(ast, programProperties, diagnostics, diagnostics.hasAnyError())
             // TODO: generate the code
         } catch (_: CompilationFailed) { }
 

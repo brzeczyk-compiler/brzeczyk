@@ -22,8 +22,8 @@ object InstructionSet {
             val cost = 1 // TODO better cost calculation
             val contextMap = if (context == Context.CONDITIONAL)
                 mapOf("invert" to invert, "target" to targetLabel) else emptyMap()
-            return Pattern.Result(treeMatch.subtrees, cost) { inRegisters, outRegister ->
-                createInstructions(inRegisters, outRegister, context, treeMatch.args + contextMap)
+            return Pattern.Result(treeMatch.matchedSubtrees, cost) { inRegisters, outRegister ->
+                createInstructions(inRegisters, outRegister, context, treeMatch.matchedValues + contextMap)
             }
         }
 

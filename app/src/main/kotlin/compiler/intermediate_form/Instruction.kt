@@ -1,25 +1,42 @@
 package compiler.intermediate_form
 
 sealed class Instruction : Asmable {
+    open val regsUsed: Collection<Register> = listOf()
+    open val regsDefined: Collection<Register> = listOf()
 
     sealed class ConditionalJumpInstruction : Instruction() {
         abstract val targetLabel: String
+
+        class Dummy(override val targetLabel: String) : ConditionalJumpInstruction()
     }
 
     sealed class UnconditionalJumpInstruction : Instruction() {
-        data class Jmp(val targetLabel: String) : UnconditionalJumpInstruction() //                  JMP label
+        abstract val targetLabel: String
 
-        data class CallR(val reg: Register) : UnconditionalJumpInstruction() //                      CALL reg
+        data class Jmp(override val targetLabel: String) : UnconditionalJumpInstruction() // JMP label
 
-        data class CallM(val address: Addressing) : UnconditionalJumpInstruction() //                CALL mem
+        data class CallR(val reg: Register) : UnconditionalJumpInstruction() { //                      CALL reg
+            override val targetLabel: String = TODO()
+        }
+
+        data class CallM(val address: Addressing) : UnconditionalJumpInstruction() { //                CALL mem
+            override val targetLabel: String = TODO()
+        }
+
+        class Dummy(override val targetLabel: String) : UnconditionalJumpInstruction()
     }
 
     sealed class RetInstruction : Instruction() {
         class Ret : RetInstruction() //                                                RET
+
+        class Dummy : RetInstruction()
     }
 
     sealed class InPlaceInstruction : Instruction() {
-        data class MoveRR(val reg_dest: Register, val reg_src: Register) : InPlaceInstruction() //   MOV  reg_dest, reg_src
+        data class MoveRR(val reg_dest: Register, val reg_src: Register) : InPlaceInstruction() { //   MOV  reg_dest, reg_src
+            override val regsDefined = listOf(reg_dest)
+            override val regsUsed = listOf(reg_src)
+        }
         data class MoveRM(val reg_dest: Register, val mem_src: Addressing) : InPlaceInstruction() // MOV  reg_dest, mem_src
         data class MoveMR(val mem_dest: Addressing, val reg_src: Register) : InPlaceInstruction() // MOV  mem_dest, reg_src
         data class MoveRI(val reg_dest: Register, val constant: Long) : InPlaceInstruction() //      MOV  reg_dest, constant
@@ -53,7 +70,7 @@ sealed class Instruction : Asmable {
         data class SetLtEqR(val reg: Register) : InPlaceInstruction() //                   SETLE reg
         data class SetGtR(val reg: Register) : InPlaceInstruction() //                     SETG  reg
         data class SetGtEqR(val reg: Register) : InPlaceInstruction() //                   SETGE reg
-    }
 
-    class NoOp : Instruction() // For testing
+        class Dummy(override val regsUsed: List<Register> = listOf(), override val regsDefined: List<Register> = listOf()) : InPlaceInstruction()
+    }
 }

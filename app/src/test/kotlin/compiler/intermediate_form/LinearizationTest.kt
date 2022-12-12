@@ -15,13 +15,13 @@ class LinearizationTest {
 
     private val covering = object : Covering {
         override fun coverUnconditional(iftNode: IntermediateFormTreeNode): List<Instruction> {
-            val instruction = Instruction.NoOp()
+            val instruction = Instruction.InPlaceInstruction.Dummy()
             unconditional[instruction] = iftNode
             return listOf(instruction)
         }
 
         override fun coverConditional(iftNode: IntermediateFormTreeNode, targetLabel: String, invert: Boolean): List<Instruction> {
-            val instruction = Instruction.NoOp()
+            val instruction = Instruction.InPlaceInstruction.Dummy()
             conditional[instruction] = Triple(iftNode, !invert, targetLabel)
             return listOf(instruction)
         }

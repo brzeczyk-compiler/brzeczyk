@@ -1,5 +1,6 @@
 package compiler.common.diagnostics
 
-fun interface Diagnostics {
+interface Diagnostics {
     fun report(diagnostic: Diagnostic)
+    fun hasAnyError(): Boolean
 }

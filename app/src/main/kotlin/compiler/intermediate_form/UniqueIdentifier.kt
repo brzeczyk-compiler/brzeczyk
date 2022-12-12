@@ -1,21 +1,24 @@
 package compiler.intermediate_form
 
+import compiler.semantic_analysis.BuiltinFunctions
+
 class IllegalCharacter(message: String) : RuntimeException(message)
 class InconsistentFunctionNamingConvention(message: String) : RuntimeException(message)
 
 class UniqueIdentifierFactory() {
     companion object {
         // it might be handy to change these values with ease
-        public val functionPrefix = "fun"
-        public val levelSeparator = '$'
-        public val polishSignSymbol = '#' // added after polish signs are converted to allowed characters
-        public val charactersAllowedByNasm = listOf('a'..'z', 'A'..'Z', '0'..'9').flatten() +
+        val functionPrefix = "fun"
+        val levelSeparator = '$'
+        val polishSignSymbol = '#' // added after polish signs are converted to allowed characters
+        val charactersAllowedByNasm = listOf('a'..'z', 'A'..'Z', '0'..'9').flatten() +
             listOf('_', '$', '#', '@', '~', '.', '?')
-        public val knownConversionsToAllowedCharacters = mapOf(
+        val knownConversionsToAllowedCharacters = mapOf(
             'ą' to 'a',
             'ć' to 'c',
             'ę' to 'e',
             'ł' to 'l',
+            'ń' to 'n',
             'ó' to 'o',
             'ś' to 's',
             'ź' to 'x',
@@ -24,12 +27,13 @@ class UniqueIdentifierFactory() {
             'Ć' to 'C',
             'Ę' to 'E',
             'Ł' to 'L',
+            'Ń' to 'N',
             'Ó' to 'O',
             'Ś' to 'S',
             'Ź' to 'X',
             'Ż' to 'Z'
         )
-        public val forbiddenLabels = listOf("globals")
+        val forbiddenLabels = listOf(GlobalVariablesAccessGenerator.GLOBALS_MEMORY_LABEL, DISPLAY_LABEL_IN_MEMORY) + BuiltinFunctions.builtinFunctionsByName.keys.toList()
     }
 
     private val knownIdentifiers: MutableSet<String> = mutableSetOf()

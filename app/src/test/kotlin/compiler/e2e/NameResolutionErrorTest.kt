@@ -194,6 +194,16 @@ class NameResolutionErrorTest {
     }
 
     @Test
+    fun `test conflict with builtin function `() {
+        assertErrorOfType(
+            """
+                    czynność napisz() {}
+                """,
+            Diagnostic.ResolutionDiagnostic.NameResolutionError.NameConflict::class
+        )
+    }
+
+    @Test
     fun `test conflicts (functions with different return types)`() {
         assertErrorOfType(
             """
@@ -225,6 +235,19 @@ class NameResolutionErrorTest {
         )
     }
 
+    @Test
+    fun `test conflicts (functions with signatures being a proper prefix of another)`() {
+        assertErrorOfType(
+            """
+                    czynność f() {
+                        czynność g(a: Liczba) { }
+                        czynność g(a: Liczba, b: Czy) { }
+                    }
+                    
+                """,
+            Diagnostic.ResolutionDiagnostic.NameResolutionError.NameConflict::class
+        )
+    }
     // ----------- Parameters tests ---------------------------------------------
 
     @Test

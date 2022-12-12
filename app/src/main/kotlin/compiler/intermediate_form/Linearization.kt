@@ -59,21 +59,18 @@ object Linearization {
                 val targetWhenTrue = cfg.conditionalTrueLinks[node]!!
                 val targetWhenFalse = cfg.conditionalFalseLinks[node]!!
 
-                if (targetWhenTrue in labels) {
+                if (targetWhenTrue in labels && targetWhenFalse in labels) {
                     addConditional(true, labels[targetWhenTrue]!!)
-
-                    if (targetWhenFalse in labels)
-                        addJump(labels[targetWhenFalse]!!)
-                    else
-                        dfs(targetWhenFalse, nextLabel)
+                    addJump(labels[targetWhenFalse]!!)
+                } else if (targetWhenTrue in labels) {
+                    addConditional(true, labels[targetWhenTrue]!!)
+                    dfs(targetWhenFalse, nextLabel)
                 } else if (targetWhenFalse in labels) {
                     addConditional(false, labels[targetWhenFalse]!!)
                     dfs(targetWhenTrue, nextLabel)
                 } else {
                     val label = assignLabel(targetWhenFalse)
-
                     addConditional(false, label)
-
                     dfs(targetWhenTrue, label)
                     dfs(targetWhenFalse, nextLabel)
                 }

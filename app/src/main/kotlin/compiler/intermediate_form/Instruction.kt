@@ -13,6 +13,8 @@ sealed class Instruction : Asmable {
     sealed class UnconditionalJumpInstruction : Instruction() {
         abstract val targetLabel: String
 
+        data class Jmp(override val targetLabel: String) : UnconditionalJumpInstruction() // JMP label
+
         data class CallR(val reg: Register) : UnconditionalJumpInstruction() { //                      CALL reg
             override val targetLabel: String = TODO()
         }

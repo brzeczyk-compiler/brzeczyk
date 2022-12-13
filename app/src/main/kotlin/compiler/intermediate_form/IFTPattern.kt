@@ -7,7 +7,7 @@ import kotlin.reflect.safeCast
 // Not to be confused with the Pattern interface
 sealed class IFTPattern {
 
-    data class MatchResult(val subtrees: List<IntermediateFormTreeNode>, val args: Map<String, Any>)
+    data class MatchResult(val matchedSubtrees: List<IntermediateFormTreeNode>, val matchedValues: Map<String, Any>)
 
     // Returns null if the pattern doesn't match provided intermediate form tree
     // If the tree matches, it returns the list of unmatched subtrees and
@@ -67,7 +67,7 @@ sealed class IFTPattern {
     data class FirstOfNamed(val name: String, val possiblePatterns: List<Pair<Any, IFTPattern>>) : IFTPattern() {
         override fun match(node: IntermediateFormTreeNode): MatchResult? {
             possiblePatterns.forEach { (patternName, pattern) ->
-                pattern.match(node)?.let { return MatchResult(it.subtrees, it.args + mapOf(name to patternName)) }
+                pattern.match(node)?.let { return MatchResult(it.matchedSubtrees, it.matchedValues + mapOf(name to patternName)) }
             }
             return null
         }
@@ -82,7 +82,7 @@ sealed class IFTPattern {
             val castedNode = type.safeCast(node) ?: return null
             val leftMatch = leftPattern.match(castedNode.left) ?: return null
             val rightMatch = rightPattern.match(castedNode.right) ?: return null
-            return MatchResult(leftMatch.subtrees + rightMatch.subtrees, leftMatch.args + rightMatch.args)
+            return MatchResult(leftMatch.matchedSubtrees + rightMatch.matchedSubtrees, leftMatch.matchedValues + rightMatch.matchedValues)
         }
     }
 
@@ -104,7 +104,7 @@ sealed class IFTPattern {
             if (node !is IntermediateFormTreeNode.MemoryWrite) return null
             val addressMatch = addressPattern.match(node.address) ?: return null
             val valueMatch = valuePattern.match(node.value) ?: return null
-            return MatchResult(addressMatch.subtrees + valueMatch.subtrees, addressMatch.args + valueMatch.args)
+            return MatchResult(addressMatch.matchedSubtrees + valueMatch.matchedSubtrees, addressMatch.matchedValues + valueMatch.matchedValues)
         }
     }
 
@@ -116,7 +116,7 @@ sealed class IFTPattern {
             if (node !is IntermediateFormTreeNode.RegisterWrite) return null
             val registerMatch = registerPattern.match(node.register) ?: return null
             val nodeMatch = nodePattern.match(node.node) ?: return null
-            return MatchResult(nodeMatch.subtrees, registerMatch + nodeMatch.args)
+            return MatchResult(nodeMatch.matchedSubtrees, registerMatch + nodeMatch.matchedValues)
         }
     }
 

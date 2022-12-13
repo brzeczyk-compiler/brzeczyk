@@ -24,15 +24,18 @@ sealed class Instruction : Asmable {
         data class JmpGtEq(override val targetLabel: String) : ConditionalJumpInstruction() // JGE  targetLabel
         data class JmpZ(override val targetLabel: String) : ConditionalJumpInstruction() //    JZ   targetLabel
         data class JmpNZ(override val targetLabel: String) : ConditionalJumpInstruction() //   JNZ  targetLabel
+        class Dummy(override val targetLabel: String) : ConditionalJumpInstruction()
     }
 
     sealed class UnconditionalJumpInstruction : Instruction() {
         abstract val targetLabel: String
         data class Jmp(override val targetLabel: String) : UnconditionalJumpInstruction() //   JMP  targetLabel
+        class Dummy(override val targetLabel: String) : UnconditionalJumpInstruction()
     }
 
     sealed class RetInstruction : Instruction() {
         class Ret : RetInstruction() // RET
+        class Dummy : RetInstruction()
     }
 
     sealed class InPlaceInstruction : Instruction() {
@@ -132,25 +135,18 @@ sealed class Instruction : Asmable {
         }
 
         // SETcc instructions
+        // They take 8-bit registers as operands, so reg8 in SETcc reg8 refers to low 8-bit register corresponding to reg
         sealed class SetInstruction : InPlaceInstruction() {
             abstract val reg: Register
             override val regsDefined: Collection<Register> get() = setOf(reg)
-            // I'm unsure if this is needed
-            // The SETcc instructions set the lower 8 bits of a register
-            // so the value after SETcc is dependent on the value of reg before instruction.
-            // Specifically, if this wasn't included in when doing
-            // 1: XOR    reg,   reg   ; reset to zero
-            // 2: CMP    rega,  regb
-            // 3: SETcc  reg          ; set lower 8 bits depending on comparison
-            // reg wouldn't be alive between 1 and 3
-            // Is this correct?
             override val regsUsed: Collection<Register> get() = setOf(reg)
         }
-        data class SetEqR(override val reg: Register) : SetInstruction() //   SETE  reg
-        data class SetNeqR(override val reg: Register) : SetInstruction() //  SETNE reg
-        data class SetLtR(override val reg: Register) : SetInstruction() //   SETL  reg
-        data class SetLtEqR(override val reg: Register) : SetInstruction() // SETLE reg
-        data class SetGtR(override val reg: Register) : SetInstruction() //   SETG  reg
-        data class SetGtEqR(override val reg: Register) : SetInstruction() // SETGE reg
+        data class SetEqR(override val reg: Register) : SetInstruction() //   SETE  reg8
+        data class SetNeqR(override val reg: Register) : SetInstruction() //  SETNE reg8
+        data class SetLtR(override val reg: Register) : SetInstruction() //   SETL  reg8
+        data class SetLtEqR(override val reg: Register) : SetInstruction() // SETLE reg8
+        data class SetGtR(override val reg: Register) : SetInstruction() //   SETG  reg8
+        data class SetGtEqR(override val reg: Register) : SetInstruction() // SETGE reg8
+        class Dummy(override val regsUsed: List<Register> = listOf(), override val regsDefined: List<Register> = listOf()) : InPlaceInstruction()
     }
 }

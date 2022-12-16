@@ -35,6 +35,10 @@ class ExpressionControlFlowTest {
             throw NotImplementedError()
         }
 
+        override fun setAdditionalOffsetForSpilledRegisters(numRegisters: ULong) {
+            throw NotImplementedError()
+        }
+
         override fun genRead(namedNode: NamedNode, isDirect: Boolean): IntermediateFormTreeNode {
             return IntermediateFormTreeNode.DummyRead(namedNode, isDirect)
         }

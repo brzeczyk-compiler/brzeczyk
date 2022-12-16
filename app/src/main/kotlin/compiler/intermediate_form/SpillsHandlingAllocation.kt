@@ -1,15 +1,20 @@
 package compiler.intermediate_form
 
-import compiler.common.intermediate_form.FunctionDetailsGenerator
-
 object SpillsHandlingAllocation {
 
+    data class AllocationResultWithSpilledOffset(
+        val allocatedRegisters: Map<Register, Register>,
+        val linearProgram: List<Asmable>,
+        val spilledOffset: ULong
+    )
+
     fun allocateRegistersWithSpillsHandling(
+        linearProgram: List<Asmable>,
         livenessGraphs: Liveness.LivenessGraphs,
-        fdg: FunctionDetailsGenerator
     ): Allocation.AllocationResult {
         // Try allocating registers from H - R, and then handle spills with R (for |R| = 0, 1, 2, ...)
-        // + communicate with fdg to set additional offset for spilled registers.
+        // + compute offset needed to allocate on stack for spilled registers
+        // + create linear program with definitions and usages inserted in appropriate places
         return TODO()
     }
 }

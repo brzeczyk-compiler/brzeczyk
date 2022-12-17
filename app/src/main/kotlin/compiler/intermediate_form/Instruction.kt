@@ -1,5 +1,8 @@
 package compiler.intermediate_form
 
+import compiler.common.Constant
+import compiler.common.FixedConstant
+
 sealed class Instruction : Asmable {
     open val regsUsed: Collection<Register> = emptyList()
     open val regsDefined: Collection<Register> = emptyList()
@@ -52,7 +55,8 @@ sealed class Instruction : Asmable {
         data class MoveMR(val mem_dest: Addressing, val reg_src: Register) : InPlaceInstruction() { // MOV  mem_dest, reg_src
             override val regsUsed: Collection<Register> = setOf(reg_src) union regsUsedInAddress(mem_dest)
         }
-        data class MoveRI(val reg_dest: Register, val constant: Long) : InPlaceInstruction() { //      MOV  reg_dest, constant
+        data class MoveRI(val reg_dest: Register, val constant: Constant) : InPlaceInstruction() { //      MOV  reg_dest, constant
+            constructor(reg_dest: Register, constant: Long) : this(reg_dest, FixedConstant(constant))
             override val regsDefined: Collection<Register> = setOf(reg_dest)
         }
 
@@ -75,7 +79,9 @@ sealed class Instruction : Asmable {
         data class PushM(val address: Addressing) : InPlaceInstruction() { //         PUSH mem
             override val regsUsed: Collection<Register> = regsUsedInAddress(address)
         }
-        data class PushI(val constant: Long) : InPlaceInstruction() //                PUSH imm
+        data class PushI(val constant: Constant) : InPlaceInstruction() { //                PUSH imm
+            constructor(constant: Long) : this(FixedConstant(constant))
+        }
         data class PopR(val reg: Register) : InPlaceInstruction() { //                POP  reg
             override val regsDefined: Collection<Register> = setOf(reg)
         }

@@ -1,5 +1,6 @@
 package compiler.intermediate_form
 
+import compiler.common.FixedConstant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -122,7 +123,7 @@ internal class IFTPatternTest {
         assertEquals(IFTPattern.MatchResult(listOf(node), emptyMap()), patternMemRead.match(nodeMemRead))
         assertEquals(IFTPattern.MatchResult(emptyList(), mapOf("label" to "address")), patternMemAddress.match(nodeMemAddress))
         assertEquals(IFTPattern.MatchResult(emptyList(), mapOf("reg" to reg)), patternRegRead.match(nodeRegRead))
-        assertEquals(IFTPattern.MatchResult(emptyList(), mapOf("val" to 0L)), patternConst.match(nodeConst))
+        assertEquals(IFTPattern.MatchResult(emptyList(), mapOf("val" to FixedConstant(0L))), patternConst.match(nodeConst))
         assertEquals(IFTPattern.MatchResult(listOf(left, right), emptyMap()), patternMemWrite.match(nodeMemWrite))
         assertEquals(IFTPattern.MatchResult(listOf(node), mapOf("reg" to reg)), patternRegWrite.match(nodeRegWrite))
         assertEquals(IFTPattern.MatchResult(listOf(node), emptyMap()), patternStackPush.match(nodeStackPush))
@@ -161,7 +162,7 @@ internal class IFTPatternTest {
             IntermediateFormTreeNode.Add::class,
             IFTPattern.BinaryOperator(
                 IntermediateFormTreeNode.Multiply::class,
-                IFTPattern.Const(IFTPattern.ArgumentIn(setOf(1L, 2L, 4L, 8L), "size")),
+                IFTPattern.Const(IFTPattern.ArgumentIn(setOf(FixedConstant(1L), FixedConstant(2L), FixedConstant(4L), FixedConstant(8L)), "size")),
                 IFTPattern.AnyNode()
             ),
             IFTPattern.AnyNode()
@@ -190,7 +191,7 @@ internal class IFTPatternTest {
             IntermediateFormTreeNode.Const(2L)
         )
 
-        assertEquals(IFTPattern.MatchResult(listOf(leaf1, leaf2), mapOf("size" to 4L)), pattern.match(node1))
+        assertEquals(IFTPattern.MatchResult(listOf(leaf1, leaf2), mapOf("size" to FixedConstant(4L))), pattern.match(node1))
         assertEquals(null, pattern.match(node2))
     }
 
@@ -237,11 +238,11 @@ internal class IFTPatternTest {
         assertEquals(IFTPattern.MatchResult(listOf(left, right), mapOf("operation" to "subtract")), pattern2.match(node2))
         assertEquals(null, pattern2.match(node3))
         assertEquals(
-            IFTPattern.MatchResult(emptyList(), mapOf("operation" to "add", "a" to 1L, "b" to 2L)),
+            IFTPattern.MatchResult(emptyList(), mapOf("operation" to "add", "a" to FixedConstant(1L), "b" to FixedConstant(2L))),
             pattern3.match(node1)
         )
         assertEquals(
-            IFTPattern.MatchResult(emptyList(), mapOf("operation" to "subtract", "a" to 1L, "c" to 2L)),
+            IFTPattern.MatchResult(emptyList(), mapOf("operation" to "subtract", "a" to FixedConstant(1L), "c" to FixedConstant(2L))),
             pattern3.match(node2)
         )
         assertEquals(null, pattern2.match(node3))

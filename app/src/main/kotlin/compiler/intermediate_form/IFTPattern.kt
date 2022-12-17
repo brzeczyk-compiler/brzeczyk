@@ -1,5 +1,6 @@
 package compiler.intermediate_form
 
+import compiler.common.Constant
 import kotlin.reflect.KClass
 import kotlin.reflect.safeCast
 
@@ -143,7 +144,7 @@ sealed class IFTPattern {
         }
     }
 
-    data class Const(val valuePattern: ArgumentPattern<Long> = AnyArgument()) : IFTPattern() {
+    data class Const(val valuePattern: ArgumentPattern<Constant> = AnyArgument()) : IFTPattern() {
         override fun match(node: IntermediateFormTreeNode): MatchResult? {
             if (node !is IntermediateFormTreeNode.Const) return null
             val valueMatch = valuePattern.match(node.value) ?: return null

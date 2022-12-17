@@ -4,6 +4,7 @@ import compiler.ast.Function
 import compiler.ast.NamedNode
 import compiler.ast.Type
 import compiler.ast.Variable
+import compiler.common.FixedConstant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -167,7 +168,7 @@ class DefaultFunctionDetailsGeneratorTest {
         assertEquals(Register.RBP, (left as IntermediateFormTreeNode.RegisterRead).register)
 
         assertTrue { right is IntermediateFormTreeNode.Const }
-        assertEquals(memoryUnitSize.toLong(), (right as IntermediateFormTreeNode.Const).value)
+        assertEquals(FixedConstant(memoryUnitSize.toLong()), (right as IntermediateFormTreeNode.Const).value)
     }
 
     @Test
@@ -202,7 +203,7 @@ class DefaultFunctionDetailsGeneratorTest {
         assertEquals(IntermediateFormTreeNode.MemoryRead(displayElementAddress), left)
 
         assertTrue { right is IntermediateFormTreeNode.Const }
-        assertEquals(memoryUnitSize.toLong(), (right as IntermediateFormTreeNode.Const).value)
+        assertEquals(FixedConstant(memoryUnitSize.toLong()), (right as IntermediateFormTreeNode.Const).value)
     }
 
     @Test
@@ -268,7 +269,7 @@ class DefaultFunctionDetailsGeneratorTest {
         assertEquals(Register.RBP, (left as IntermediateFormTreeNode.RegisterRead).register)
 
         assertTrue { right is IntermediateFormTreeNode.Const }
-        assertEquals(memoryUnitSize.toLong(), (right as IntermediateFormTreeNode.Const).value)
+        assertEquals(FixedConstant(memoryUnitSize.toLong()), (right as IntermediateFormTreeNode.Const).value)
     }
 
     @Test
@@ -305,7 +306,7 @@ class DefaultFunctionDetailsGeneratorTest {
         assertEquals(IntermediateFormTreeNode.MemoryRead(displayElementAddress), left)
 
         assertTrue { right is IntermediateFormTreeNode.Const }
-        assertEquals(memoryUnitSize.toLong(), (right as IntermediateFormTreeNode.Const).value)
+        assertEquals(FixedConstant(memoryUnitSize.toLong()), (right as IntermediateFormTreeNode.Const).value)
     }
 
     @Test

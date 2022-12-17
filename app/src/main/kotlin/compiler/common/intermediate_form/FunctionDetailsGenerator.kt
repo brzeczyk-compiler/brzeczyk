@@ -14,6 +14,4 @@ interface FunctionDetailsGenerator : VariableAccessGenerator {
     fun genPrologue(): ControlFlowGraph
 
     fun genEpilogue(): ControlFlowGraph
-
-    fun setAdditionalOffsetForSpilledRegisters(numRegisters: ULong)
 }

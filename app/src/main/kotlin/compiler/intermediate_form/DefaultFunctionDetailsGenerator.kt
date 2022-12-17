@@ -200,12 +200,6 @@ data class DefaultFunctionDetailsGenerator(
         return cfgBuilder.build()
     }
 
-    override fun setAdditionalOffsetForSpilledRegisters(numRegisters: ULong) {
-        // write a value to some private, previously empty IFTNode
-        // update genPrologue + genEpilogue to take this into account
-        TODO()
-    }
-
     private fun genAccess(namedNode: NamedNode, isDirect: Boolean, regAccessGenerator: (Register) -> IFTNode, memAccessGenerator: (IFTNode) -> IFTNode): IFTNode {
         // requires correct value for RBP register
         return if (isDirect) {

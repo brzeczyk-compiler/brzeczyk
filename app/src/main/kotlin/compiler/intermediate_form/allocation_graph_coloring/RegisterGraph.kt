@@ -17,10 +17,34 @@ class RegisterGraph private constructor(
 ) {
 
     private val K = accessibleRegisters.size
-    data class Node(val registers: HashSet<Register>, val containsHardwareRegister: Boolean = false)
+
+    // ------------ graph nodes -----------------
+
+    private data class NodeData(val registers: HashSet<Register>, val containsHardwareRegister: Boolean)
+
+    private val regToNodeData = HashMap<Register, NodeData>()
+
+    inner class Node(private val founder: Register) {
+
+        init {
+            regToNodeData.putIfAbsent(founder, NodeData(hashSetOf(founder), founder in accessibleRegisters))
+        }
+
+        val registers: HashSet<Register> by regToNodeData[founder]!!::registers
+        val containsHardwareRegister: Boolean by regToNodeData[founder]!!::containsHardwareRegister
+
+        override fun equals(other: Any?): Boolean {
+            if (other !is Node) return false
+            return founder === other.founder
+        }
+
+        override fun hashCode(): Int = founder.hashCode()
+    }
+
+    // -------------- main algorithm ------------------
 
     companion object {
-        fun process( // main algorithm
+        fun process(
             livenessGraphs: Liveness.LivenessGraphs,
             accessibleRegisters: List<Register>
         ): Stack<Node> {
@@ -167,7 +191,7 @@ class RegisterGraph private constructor(
     // --------------- simple helper functions --------------------
 
     private fun Node.deg() = interferenceGraph[this]!!.size
-    private fun Register.toNode() = Node(hashSetOf(this), this in accessibleRegisters)
+    private fun Register.toNode() = Node(this)
 
     private fun Map<Register, Set<Register>>.asMutableNodeGraph() =
         this.mapValues { it.value.map { it.toNode() }.toHashSet() }.mapKeys { it.key.toNode() }.run { HashMap(this) }

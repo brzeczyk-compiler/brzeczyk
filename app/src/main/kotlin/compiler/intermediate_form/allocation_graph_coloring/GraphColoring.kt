@@ -9,8 +9,8 @@ import compiler.intermediate_form.Register
 // HashSets/HashMaps are used in various places to ensure that some operations run in O(1)
 
 class GraphColoring private constructor(
-    val graph: Map<RegisterGraph.Node, Set<RegisterGraph.Node>>,
-    val accessibleRegisters: HashSet<Register>
+    private val graph: Map<RegisterGraph.Node, Set<RegisterGraph.Node>>,
+    private val accessibleRegisters: HashSet<Register>
 ) {
 
     companion object {
@@ -69,10 +69,12 @@ class GraphColoring private constructor(
                     this[left]!!.add(right)
                 }
 
-                fun build(initialMap: Map<Register, Set<Register>>, targetMap: HashMap<RegisterGraph.Node, HashSet<RegisterGraph.Node>>) =
-                    initialMap.flatMap { (reg, neigh) -> neigh.associateBy { reg }.toList() }
+                fun build(initialMap: Map<Register, Set<Register>>, targetMap: HashMap<RegisterGraph.Node, HashSet<RegisterGraph.Node>>) {
+                    initialMap.flatMap { (reg, neigh) -> neigh.map { reg to it }.toList() }
                         .map { it.first.toNode() to it.second.toNode() }
                         .forEach { targetMap.addEdge(it.first, it.second) }
+                    regToNode.values.forEach { targetMap.putIfAbsent(it, hashSetOf()) }
+                }
 
                 build(interferenceGraph, interferenceNodeGraph)
                 build(copyGraph, copyNodeGraph)
@@ -80,18 +82,23 @@ class GraphColoring private constructor(
                 copyNodeGraph.forEach { (node, set) ->
                     set.removeAll(interferenceNodeGraph[node]!!)
                 }
+                nodes.forEach {
+                    interferenceNodeGraph.putIfAbsent(it, hashSetOf())
+                }
             }.let { Pair(it.first, it.second.withDefault { hashSetOf() }) }
     }
 
     // ------------- coloring data --------------------
 
-    private val allocationMap = HashMap<RegisterGraph.Node, Register>().apply {
-        graph.keys.forEach { node ->
-            (node.registers intersect accessibleRegisters).firstOrNull()?.let { this[node] = it }
-        }
-    }
+    private val allocationMap = HashMap<RegisterGraph.Node, Register>()
     private val availableColorsMap = HashMap<RegisterGraph.Node, HashSet<Register>>()
     private val spilledRegisters = mutableListOf<RegisterGraph.Node>()
+
+    init {
+        graph.keys.forEach { node ->
+            (node.registers intersect accessibleRegisters).firstOrNull()?.let { node.assignColor(it) }
+        }
+    }
 
     // ------------ main functionalities -------------
 

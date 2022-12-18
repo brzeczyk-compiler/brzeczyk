@@ -47,7 +47,6 @@ object Allocation {
     }
 
     fun allocateRegisters(
-        linearProgram: List<Asmable>,
         livenessGraphs: Liveness.LivenessGraphs,
         accessibleRegisters: List<Register>,
     ): AllocationResult = GraphColoring(livenessGraphs.interferenceGraph, accessibleRegisters).run {

@@ -4,7 +4,7 @@ import compiler.common.Indexed
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
-class AllocationTest {
+class ColoringAllocationTest {
 
     class AllocationTestWithData(
         val accessibleRegisters: List<Register>,
@@ -20,8 +20,7 @@ class AllocationTest {
 
             Liveness.LivenessGraphs(interferenceGraph, copyGraph)
         }
-        val result = Allocation.allocateRegisters(
-            emptyList(),
+        val result = ColoringAllocation.allocateRegisters(
             liveness,
             accessibleRegisters
         )

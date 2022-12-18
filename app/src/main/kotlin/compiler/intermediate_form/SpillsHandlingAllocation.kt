@@ -1,5 +1,6 @@
 package compiler.intermediate_form
 
+import compiler.common.intermediate_form.Allocation
 
 
 object SpillsHandlingAllocation {
@@ -15,11 +16,12 @@ object SpillsHandlingAllocation {
         linearProgram: List<Asmable>,
         livenessGraphs: Liveness.LivenessGraphs,
         orderedPhysicalRegisters: List<Register>,
+        allocator: Allocation
     ): Result {
         var reservedRegistersNumber = 0
         while (true) {
             val availableRegisters = orderedPhysicalRegisters.drop(reservedRegistersNumber)
-            val allocationResult = Allocation.allocateRegisters(livenessGraphs, availableRegisters)
+            val allocationResult = allocator.allocateRegisters(livenessGraphs, availableRegisters)
             val spilledRegisters = allocationResult.spilledRegisters.toSet()
 
             val instructionsToSpilled: Map<Int, SpilledInstruction> = linearProgram
@@ -32,6 +34,7 @@ object SpillsHandlingAllocation {
                 val spilledRegistersColoring: Map<Register, ULong> = colorSpilledRegisters(
                     spilledRegisters,
                     livenessGraphs,
+                    allocator,
                 )
 
                 val registerAllocation: Map<Register, Register> = allocateSpilledRegisters(
@@ -50,7 +53,7 @@ object SpillsHandlingAllocation {
                 return Result(
                     registerAllocation,
                     newLinearProgram,
-                    (spilledRegistersColoring.values.maxOrNull() ?: 0) as ULong,
+                    spilledRegistersColoring.values.maxOrNull() ?: 0u,
                 )
             }
 
@@ -78,9 +81,10 @@ object SpillsHandlingAllocation {
     private fun colorSpilledRegisters(
         spilledRegisters: Set<Register>,
         livenessGraphs: Liveness.LivenessGraphs,
+        allocator: Allocation,
     ): Map<Register, ULong> {
         val spillsPossibleColors = spilledRegisters.map { Register() }
-        val spillsColoring: Map<Register, Register> = Allocation.allocateRegisters(
+        val spillsColoring: Map<Register, Register> = allocator.allocateRegisters(
             Liveness.LivenessGraphs(
                 Liveness.inducedSubgraph(livenessGraphs.interferenceGraph, spilledRegisters),
                 mapOf(),
@@ -110,7 +114,7 @@ object SpillsHandlingAllocation {
         allocatedRegisters: Map<Register, Register>,
         spillsColoring: Map<Register, ULong>,
     ): List<Asmable> {
-        val newLinearProgram = linearProgram.toMutableList()
+        val newLinearProgram = mutableListOf<Asmable>()
 
         fun handleSpilledInstruction(spilledInstruction: SpilledInstruction) {
             spilledInstruction.spilledUsedRegisters.forEach {

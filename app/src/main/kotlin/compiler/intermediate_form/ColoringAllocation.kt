@@ -1,14 +1,11 @@
 package compiler.intermediate_form
 
+import compiler.common.intermediate_form.Allocation
 import kotlin.collections.HashMap
 
 // The implementation below uses HashSets/HashMaps in various places to ensure that some operations run in O(1)
 
-object Allocation {
-    data class AllocationResult(
-        val allocatedRegisters: Map<Register, Register>,
-        val spilledRegisters: List<Register>,
-    )
+object ColoringAllocation: Allocation {
 
     private fun Map<Register, Set<Register>>.sortedByRemovingNodesWithSmallestDeg(): List<Register> = mutableListOf<Register>().apply {
         val graph = this@sortedByRemovingNodesWithSmallestDeg.mapValues { it.value.toHashSet() }.toMutableMap()
@@ -43,13 +40,13 @@ object Allocation {
         }
 
         fun Register.spill() = spilledRegisters.add(this)
-        fun createAllocationResult() = AllocationResult(allocationMap, spilledRegisters)
+        fun createAllocationResult() = Allocation.AllocationResult(allocationMap, spilledRegisters)
     }
 
-    fun allocateRegisters(
+    override fun allocateRegisters(
         livenessGraphs: Liveness.LivenessGraphs,
         accessibleRegisters: List<Register>,
-    ): AllocationResult = GraphColoring(livenessGraphs.interferenceGraph, accessibleRegisters).run {
+    ): Allocation.AllocationResult = GraphColoring(livenessGraphs.interferenceGraph, accessibleRegisters).run {
         val copyGraphWithoutInterferences = livenessGraphs.copyGraph.mapValues { it.value - livenessGraphs.interferenceGraph[it.key]!! }
 
         for (register in livenessGraphs.interferenceGraph.sortedByRemovingNodesWithSmallestDeg().reversed()) {

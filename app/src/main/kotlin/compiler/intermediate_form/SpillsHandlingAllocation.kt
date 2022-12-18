@@ -16,18 +16,18 @@ object SpillsHandlingAllocation {
         livenessGraphs: Liveness.LivenessGraphs,
         orderedPhysicalRegisters: List<Register>,
     ): Result {
-        var reservedRegsNumber = 0
+        var reservedRegistersNumber = 0
         while (true) {
-            val availableRegisters = orderedPhysicalRegisters.drop(reservedRegsNumber)
+            val availableRegisters = orderedPhysicalRegisters.drop(reservedRegistersNumber)
             val allocationResult = Allocation.allocateRegisters(livenessGraphs, availableRegisters)
             val spilledRegisters = allocationResult.spilledRegisters.toSet()
 
             val instructionsToSpilled: Map<Int, SpilledInstruction> = linearProgram
                 .filterIsInstance<Instruction>()
                 .associate { linearProgram.indexOf(it) to toSpilledInstruction(it, spilledRegisters) }
-            val maxInstructionSpill = instructionsToSpilled.values.maxOfOrNull { it.numberOfSpilledRegs } ?: 0
+            val maxInstructionSpill = instructionsToSpilled.values.maxOfOrNull { it.numberOfSpilledRegisters } ?: 0
 
-            if (maxInstructionSpill <= reservedRegsNumber) {
+            if (maxInstructionSpill <= reservedRegistersNumber) {
 
                 val spilledRegistersColoring: Map<Register, ULong> = colorSpilledRegisters(
                     spilledRegisters,
@@ -35,7 +35,7 @@ object SpillsHandlingAllocation {
                 )
 
                 val registerAllocation: Map<Register, Register> = allocateSpilledRegisters(
-                    orderedPhysicalRegisters.take(reservedRegsNumber),
+                    orderedPhysicalRegisters.take(reservedRegistersNumber),
                     allocationResult.allocatedRegisters,
                     instructionsToSpilled.values.toList(),
                 )
@@ -54,16 +54,16 @@ object SpillsHandlingAllocation {
                 )
             }
 
-            reservedRegsNumber ++
+            reservedRegistersNumber ++
         }
     }
 
     data class SpilledInstruction(
         val instruction: Instruction,
-        val spilledUsedRegs: Set<Register>,
-        val spilledDefinedRegs: Set<Register>,
-        val numberOfSpilledRegs: Int = (spilledUsedRegs + spilledDefinedRegs).size,
-        val isSpilled: Boolean = (numberOfSpilledRegs > 0),
+        val spilledUsedRegisters: Set<Register>,
+        val spilledDefinedRegisters: Set<Register>,
+        val numberOfSpilledRegisters: Int = (spilledUsedRegisters + spilledDefinedRegisters).size,
+        val isSpilled: Boolean = (numberOfSpilledRegisters > 0),
     )
 
     private fun toSpilledInstruction(
@@ -99,8 +99,8 @@ object SpillsHandlingAllocation {
         val newAllocation = partialAllocation.toMutableMap()
         spilledInstructions
             .filter { it.isSpilled }
-            .map { it.spilledDefinedRegs + it.spilledUsedRegs }
-            .forEach { spilledRegs -> spilledRegs.withIndex().forEach { newAllocation[it.value] = reservedRegisters[it.index] } }
+            .map { it.spilledDefinedRegisters + it.spilledUsedRegisters }
+            .forEach { spilledRegisters -> spilledRegisters.withIndex().forEach { newAllocation[it.value] = reservedRegisters[it.index] } }
         return newAllocation
     }
 
@@ -113,7 +113,7 @@ object SpillsHandlingAllocation {
         val newLinearProgram = linearProgram.toMutableList()
 
         fun handleSpilledInstruction(spilledInstruction: SpilledInstruction) {
-            spilledInstruction.spilledUsedRegs.forEach {
+            spilledInstruction.spilledUsedRegisters.forEach {
                 newLinearProgram.add(Instruction.InPlaceInstruction.MoveRM(
                     allocatedRegisters[it]!!,
                     Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(spillsColoring[it]!! * memoryUnitSize)),
@@ -122,7 +122,7 @@ object SpillsHandlingAllocation {
 
             newLinearProgram.add(spilledInstruction.instruction)
 
-            spilledInstruction.spilledDefinedRegs.forEach {
+            spilledInstruction.spilledDefinedRegisters.forEach {
                 newLinearProgram.add(Instruction.InPlaceInstruction.MoveMR(
                     Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(spillsColoring[it]!! * memoryUnitSize)),
                     allocatedRegisters[it]!!,

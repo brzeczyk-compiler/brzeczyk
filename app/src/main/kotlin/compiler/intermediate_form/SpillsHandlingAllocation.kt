@@ -53,7 +53,7 @@ object SpillsHandlingAllocation {
                 return Result(
                     registerAllocation,
                     newLinearProgram,
-                    spilledRegistersColoring.values.maxOrNull() ?: 0u,
+                    (spilledRegistersColoring.values.maxOrNull() ?: 0u) * memoryUnitSize,
                 )
             }
 
@@ -87,7 +87,7 @@ object SpillsHandlingAllocation {
         val spillsColoring: Map<Register, Register> = allocator.allocateRegisters(
             Liveness.LivenessGraphs(
                 Liveness.inducedSubgraph(livenessGraphs.interferenceGraph, spilledRegisters),
-                mapOf(),
+                Liveness.inducedSubgraph(livenessGraphs.copyGraph, spilledRegisters),
             ),
             spillsPossibleColors,
         ).allocatedRegisters
@@ -103,7 +103,7 @@ object SpillsHandlingAllocation {
         val newAllocation = partialAllocation.toMutableMap()
         spilledInstructions
             .filter { it.isSpilled }
-            .map { it.spilledDefinedRegisters + it.spilledUsedRegisters }
+            .map { it.spilledUsedRegisters + it.spilledDefinedRegisters }
             .forEach { spilledRegisters -> spilledRegisters.withIndex().forEach { newAllocation[it.value] = reservedRegisters[it.index] } }
         return newAllocation
     }

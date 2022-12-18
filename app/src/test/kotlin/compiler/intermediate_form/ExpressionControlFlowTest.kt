@@ -35,6 +35,8 @@ class ExpressionControlFlowTest {
             throw NotImplementedError()
         }
 
+        override val spilledRegistersOffset get() = throw NotImplementedError()
+
         override fun genRead(namedNode: NamedNode, isDirect: Boolean): IntermediateFormTreeNode {
             return IntermediateFormTreeNode.DummyRead(namedNode, isDirect)
         }

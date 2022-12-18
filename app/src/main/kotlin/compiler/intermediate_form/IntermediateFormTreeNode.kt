@@ -2,6 +2,8 @@ package compiler.intermediate_form
 
 import compiler.ast.Function
 import compiler.ast.NamedNode
+import compiler.common.Constant
+import compiler.common.FixedConstant
 
 sealed class IntermediateFormTreeNode {
     companion object {
@@ -11,7 +13,10 @@ sealed class IntermediateFormTreeNode {
     data class MemoryRead(val address: IntermediateFormTreeNode) : IntermediateFormTreeNode()
     data class MemoryLabel(val label: String) : IntermediateFormTreeNode()
     data class RegisterRead(val register: Register) : IntermediateFormTreeNode()
-    data class Const(val value: Long) : IntermediateFormTreeNode()
+
+    data class Const(val value: Constant) : IntermediateFormTreeNode() {
+        constructor(value: Long) : this(FixedConstant(value))
+    }
 
     data class MemoryWrite(val address: IntermediateFormTreeNode, val value: IntermediateFormTreeNode) : IntermediateFormTreeNode()
     data class RegisterWrite(val register: Register, val node: IntermediateFormTreeNode) : IntermediateFormTreeNode()

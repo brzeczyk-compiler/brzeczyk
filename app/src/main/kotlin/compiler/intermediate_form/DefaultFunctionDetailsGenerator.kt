@@ -2,6 +2,8 @@ package compiler.intermediate_form
 
 import compiler.ast.NamedNode
 import compiler.ast.Variable
+import compiler.common.ConstantPlaceholder
+import compiler.common.SummedConstant
 import compiler.common.intermediate_form.FunctionDetailsGenerator
 import compiler.common.reference_collections.referenceHashMapOf
 
@@ -30,6 +32,8 @@ data class DefaultFunctionDetailsGenerator(
     private val variablesRegisters: MutableMap<NamedNode, Register> = referenceHashMapOf()
     private var variablesTotalOffset: ULong = 0u
     private val previousDisplayEntryRegister = Register()
+
+    override val spilledRegistersOffset: ConstantPlaceholder = ConstantPlaceholder()
 
     init {
         for ((variable, locationType) in variablesLocationTypes.entries) {
@@ -108,7 +112,7 @@ data class DefaultFunctionDetailsGenerator(
             Register.RSP,
             IntermediateFormTreeNode.Subtract(
                 IntermediateFormTreeNode.RegisterRead(Register.RSP),
-                IntermediateFormTreeNode.Const(variablesTotalOffset.toLong())
+                IntermediateFormTreeNode.Const(SummedConstant(variablesTotalOffset.toLong(), spilledRegistersOffset))
             )
         )
         cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, subRsp)

@@ -5,7 +5,7 @@ import kotlin.collections.HashMap
 
 // The implementation below uses HashSets/HashMaps in various places to ensure that some operations run in O(1)
 
-object ColoringAllocation: Allocation {
+object ColoringAllocation : Allocation {
 
     private fun Map<Register, Set<Register>>.sortedByRemovingNodesWithSmallestDeg(): List<Register> = mutableListOf<Register>().apply {
         val graph = this@sortedByRemovingNodesWithSmallestDeg.mapValues { it.value.toHashSet() }.toMutableMap()

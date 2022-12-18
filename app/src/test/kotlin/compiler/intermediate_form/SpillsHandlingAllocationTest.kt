@@ -94,37 +94,42 @@ class SpillsHandlingAllocationTest {
             allocator,
         )
 
-        assertEquals(mapOf(
-            phReg4 to phReg4,
-            reg1 to phReg1,
-            reg2 to phReg2,
-            reg3 to phReg3,
-        ), result.allocatedRegisters)
-        assertEquals(listOf(
-            linearProgram[0],
-            Instruction.InPlaceInstruction.MoveRM(
-                phReg1,
-                Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(1u * memoryUnitSize)),
+        assertEquals(
+            mapOf(
+                phReg4 to phReg4,
+                reg1 to phReg1,
+                reg2 to phReg2,
+                reg3 to phReg3,
             ),
-            Instruction.InPlaceInstruction.MoveRM(
-                phReg2,
-                Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(2u * memoryUnitSize)),
+            result.allocatedRegisters
+        )
+        assertEquals(
+            listOf(
+                linearProgram[0],
+                Instruction.InPlaceInstruction.MoveRM(
+                    phReg1,
+                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(1u * memoryUnitSize)),
+                ),
+                Instruction.InPlaceInstruction.MoveRM(
+                    phReg2,
+                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(2u * memoryUnitSize)),
+                ),
+                linearProgram[1],
+                Instruction.InPlaceInstruction.MoveMR(
+                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(1u * memoryUnitSize)),
+                    phReg1,
+                ),
+                Instruction.InPlaceInstruction.MoveMR(
+                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(3u * memoryUnitSize)),
+                    phReg3,
+                ),
+                linearProgram[2],
+                linearProgram[3],
             ),
-            linearProgram[1],
-            Instruction.InPlaceInstruction.MoveMR(
-                Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(1u * memoryUnitSize)),
-                phReg1,
-            ),
-            Instruction.InPlaceInstruction.MoveMR(
-                Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(3u * memoryUnitSize)),
-                phReg3,
-            ),
-            linearProgram[2],
-            linearProgram[3],
-        ), result.linearProgram)
+            result.linearProgram
+        )
         assertEquals(3u * memoryUnitSize, result.spilledOffset)
     }
-
 
     @Test
     fun `test program where physical registers are reused a lot`() {
@@ -174,31 +179,37 @@ class SpillsHandlingAllocationTest {
             allocator,
         )
 
-        assertEquals(mapOf(
-            phReg4 to phReg4,
-            reg1 to phReg1,
-            reg2 to phReg1,
-            reg3 to phReg1,
-        ), result.allocatedRegisters)
-        assertEquals(listOf(
-            linearProgram[0],
-            Instruction.InPlaceInstruction.MoveRM(
-                phReg1,
-                Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(1u * memoryUnitSize)),
+        assertEquals(
+            mapOf(
+                phReg4 to phReg4,
+                reg1 to phReg1,
+                reg2 to phReg1,
+                reg3 to phReg1,
             ),
-            linearProgram[1],
-            Instruction.InPlaceInstruction.MoveRM(
-                phReg1,
-                Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(2u * memoryUnitSize)),
+            result.allocatedRegisters
+        )
+        assertEquals(
+            listOf(
+                linearProgram[0],
+                Instruction.InPlaceInstruction.MoveRM(
+                    phReg1,
+                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(1u * memoryUnitSize)),
+                ),
+                linearProgram[1],
+                Instruction.InPlaceInstruction.MoveRM(
+                    phReg1,
+                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(2u * memoryUnitSize)),
+                ),
+                linearProgram[2],
+                Instruction.InPlaceInstruction.MoveRM(
+                    phReg1,
+                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(3u * memoryUnitSize)),
+                ),
+                linearProgram[3],
+                linearProgram[4],
             ),
-            linearProgram[2],
-            Instruction.InPlaceInstruction.MoveRM(
-                phReg1,
-                Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(3u * memoryUnitSize)),
-            ),
-            linearProgram[3],
-            linearProgram[4],
-        ), result.linearProgram)
+            result.linearProgram
+        )
         assertEquals(3u * memoryUnitSize, result.spilledOffset)
     }
 
@@ -248,36 +259,41 @@ class SpillsHandlingAllocationTest {
             allocator,
         )
 
-        assertEquals(mapOf(
-            phReg4 to phReg4,
-            reg1 to phReg1,
-            reg2 to phReg2,
-            reg3 to phReg1,
-            reg4 to phReg2,
-        ), result.allocatedRegisters)
-        assertEquals(listOf(
-            linearProgram[0],
-            linearProgram[1],
-            Instruction.InPlaceInstruction.MoveMR(
-                Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(1u * memoryUnitSize)),
-                phReg1,
+        assertEquals(
+            mapOf(
+                phReg4 to phReg4,
+                reg1 to phReg1,
+                reg2 to phReg2,
+                reg3 to phReg1,
+                reg4 to phReg2,
             ),
-            Instruction.InPlaceInstruction.MoveMR(
-                Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(2u * memoryUnitSize)),
-                phReg2,
+            result.allocatedRegisters
+        )
+        assertEquals(
+            listOf(
+                linearProgram[0],
+                linearProgram[1],
+                Instruction.InPlaceInstruction.MoveMR(
+                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(1u * memoryUnitSize)),
+                    phReg1,
+                ),
+                Instruction.InPlaceInstruction.MoveMR(
+                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(2u * memoryUnitSize)),
+                    phReg2,
+                ),
+                linearProgram[2],
+                Instruction.InPlaceInstruction.MoveMR(
+                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(1u * memoryUnitSize)),
+                    phReg1,
+                ),
+                Instruction.InPlaceInstruction.MoveMR(
+                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(2u * memoryUnitSize)),
+                    phReg2,
+                ),
+                linearProgram[3],
             ),
-            linearProgram[2],
-            Instruction.InPlaceInstruction.MoveMR(
-                Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(1u * memoryUnitSize)),
-                phReg1,
-            ),
-            Instruction.InPlaceInstruction.MoveMR(
-                Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(2u * memoryUnitSize)),
-                phReg2,
-            ),
-            linearProgram[3],
-        ), result.linearProgram)
+            result.linearProgram
+        )
         assertEquals(2u * memoryUnitSize, result.spilledOffset)
     }
-
 }

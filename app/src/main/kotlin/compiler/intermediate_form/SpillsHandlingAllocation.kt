@@ -2,7 +2,6 @@ package compiler.intermediate_form
 
 import compiler.common.intermediate_form.Allocation
 
-
 object SpillsHandlingAllocation {
 
     data class Result(
@@ -118,19 +117,23 @@ object SpillsHandlingAllocation {
 
         fun handleSpilledInstruction(spilledInstruction: SpilledInstruction) {
             spilledInstruction.spilledUsedRegisters.forEach {
-                newLinearProgram.add(Instruction.InPlaceInstruction.MoveRM(
-                    allocatedRegisters[it]!!,
-                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(spillsColoring[it]!! * memoryUnitSize)),
-                ))
+                newLinearProgram.add(
+                    Instruction.InPlaceInstruction.MoveRM(
+                        allocatedRegisters[it]!!,
+                        Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(spillsColoring[it]!! * memoryUnitSize)),
+                    )
+                )
             }
 
             newLinearProgram.add(spilledInstruction.instruction)
 
             spilledInstruction.spilledDefinedRegisters.forEach {
-                newLinearProgram.add(Instruction.InPlaceInstruction.MoveMR(
-                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(spillsColoring[it]!! * memoryUnitSize)),
-                    allocatedRegisters[it]!!,
-                ))
+                newLinearProgram.add(
+                    Instruction.InPlaceInstruction.MoveMR(
+                        Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(spillsColoring[it]!! * memoryUnitSize)),
+                        allocatedRegisters[it]!!,
+                    )
+                )
             }
         }
 
@@ -144,5 +147,4 @@ object SpillsHandlingAllocation {
 
         return newLinearProgram
     }
-
 }

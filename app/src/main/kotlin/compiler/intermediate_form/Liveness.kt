@@ -8,8 +8,13 @@ import compiler.common.reference_collections.referenceHashSetOf
 object Liveness {
     data class LivenessGraphs(
         val interferenceGraph: Map<Register, Set<Register>>,
-        val copyGraph: Map<Register, Set<Register>>
+        val copyGraph: Map<Register, Set<Register>>,
     )
+
+    fun inducedSubgraph(graph: Map<Register, Set<Register>>, subset: Set<Register>): Map<Register, Set<Register>> =
+        graph.entries
+            .filter { it.key in subset }
+            .associate { it.key to it.value.filter { vertex -> vertex in subset }.toSet() }.toMap()
 
     object LivenessDataFlowAnalyzer : DataFlowAnalyzer<ReferenceSet<Register>>() {
         override val backward = true

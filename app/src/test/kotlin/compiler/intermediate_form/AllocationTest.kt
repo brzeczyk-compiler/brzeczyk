@@ -8,7 +8,7 @@ import kotlin.test.assertTrue
 class AllocationTest {
 
     class AllocationTestWithData(
-        val accessibleRegisters: List<Register>,
+        accessibleRegisters: List<Register>,
         interferenceList: List<Pair<Any, Any>> = emptyList(),
         copyList: List<Pair<Any, Any>> = emptyList(),
         zeroDegreeNodes: List<Any> = emptyList()
@@ -28,7 +28,6 @@ class AllocationTest {
             Liveness.LivenessGraphs(interferenceGraph, copyGraph)
         }
         val result = Allocation.allocateRegisters(
-            emptyList(),
             liveness,
             accessibleRegisters
         )

@@ -78,7 +78,7 @@ class RegisterGraph private constructor(
 
     private val simplifyCandidates: HashSet<Node> = // deg < K, no copy edges
         interferenceGraph.filter { it.value.size < K && copyGraph.getValue(it.key).size == 0 }.map { it.key }.toHashSet()
-    private val freezeCandidates: HashSet<Node> = // def < K, some copy edges
+    private val freezeCandidates: HashSet<Node> = // deg < K, some copy edges
         interferenceGraph.filter { it.value.size < K && it.key !in simplifyCandidates }.map { it.key }.toHashSet()
     private val spillCandidates: HashSet<Node> = // deg >=K
         (interferenceGraph.keys - simplifyCandidates - freezeCandidates).toHashSet()

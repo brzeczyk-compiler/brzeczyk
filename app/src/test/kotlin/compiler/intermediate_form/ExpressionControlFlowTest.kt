@@ -35,6 +35,8 @@ class ExpressionControlFlowTest {
             throw NotImplementedError()
         }
 
+        override val spilledRegistersOffset get() = throw NotImplementedError()
+
         override fun genRead(namedNode: NamedNode, isDirect: Boolean): IntermediateFormTreeNode {
             return IntermediateFormTreeNode.DummyRead(namedNode, isDirect)
         }
@@ -54,6 +56,7 @@ class ExpressionControlFlowTest {
     ) {
         val nameResolution: ReferenceHashMap<Any, NamedNode> = referenceHashMapOf()
         var nameToVarMap: Map<String, Variable>
+        var nameToParamMap: Map<String, Function.Parameter>
         var nameToFunMap: Map<String, Function>
 
         val functionDetailsGenerators = referenceHashMapOf<Function, FunctionDetailsGenerator>()
@@ -71,6 +74,9 @@ class ExpressionControlFlowTest {
                         if (name in globals) VariablePropertiesAnalyzer.GlobalContext else currentFunction
                     )
             }
+            nameToParamMap = currentFunction.parameters.map { it.name to it }.toMap()
+            for (param in currentFunction.parameters)
+                mutableVariableProperties[param] = VariablePropertiesAnalyzer.MutableVariableProperties(currentFunction)
             nameToFunMap = functions.keys.associateWith {
                 Function(
                     it,
@@ -91,8 +97,8 @@ class ExpressionControlFlowTest {
                 }
             }
 
-            for ((variable, mutableVP) in mutableVariableProperties.entries)
-                variableProperties[variable] = VariablePropertiesAnalyzer.fixVariableProperties(mutableVP)
+            for ((namedNode, mutableVP) in mutableVariableProperties.entries)
+                variableProperties[namedNode] = VariablePropertiesAnalyzer.fixVariableProperties(mutableVP)
         }
 
         fun createCfg(expr: Expression, targetVariable: Variable? = null): ControlFlowGraph {
@@ -121,6 +127,10 @@ class ExpressionControlFlowTest {
         return exprContext.nameToVarMap[this]!!
     }
 
+    private infix fun String.asParamIn(exprContext: ExpressionContext): Function.Parameter {
+        return exprContext.nameToParamMap[this]!!
+    }
+
     private infix fun String.asFunIn(exprContext: ExpressionContext): Function {
         return exprContext.nameToFunMap[this]!!
     }
@@ -145,6 +155,12 @@ class ExpressionControlFlowTest {
     private infix fun String.asVarExprIn(exprContext: ExpressionContext): Expression.Variable {
         val result = Expression.Variable(this)
         exprContext.nameResolution[result] = this asVarIn exprContext
+        return result
+    }
+
+    private infix fun String.asParamExprIn(exprContext: ExpressionContext): Expression.Variable {
+        val result = Expression.Variable(this)
+        exprContext.nameResolution[result] = this asParamIn exprContext
         return result
     }
 
@@ -280,15 +296,19 @@ class ExpressionControlFlowTest {
     @Test
     fun `basic expressions`() {
         val context = ExpressionContext(
-            setOf("x", "y")
+            setOf("x", "y"),
+            currentFunction = Function("dummy", listOf(Function.Parameter("p", Type.Number, null)), Type.Unit, listOf())
         )
 
         val xExpr = "x" asVarExprIn context
         val yExpr = "y" asVarExprIn context
+        val pExpr = "p" asParamExprIn context
         val xVarRead = IntermediateFormTreeNode.DummyRead("x" asVarIn context, true)
         val yVarRead = IntermediateFormTreeNode.DummyRead("y" asVarIn context, true)
+        val pParamRead = IntermediateFormTreeNode.DummyRead("p" asParamIn context, true)
 
         val basic = context.createCfg(xExpr)
+        val basicParam = context.createCfg(pExpr)
         val operatorTests = mapOf(
 
             Expression.BooleanLiteral(true) to IntermediateFormTreeNode.Const(1),
@@ -321,7 +341,8 @@ class ExpressionControlFlowTest {
             Expression.BinaryOperation(Expression.BinaryOperation.Kind.GREATER_THAN, xExpr, yExpr) to IntermediateFormTreeNode.GreaterThan(xVarRead, yVarRead),
             Expression.BinaryOperation(Expression.BinaryOperation.Kind.GREATER_THAN_OR_EQUALS, xExpr, yExpr) to IntermediateFormTreeNode.GreaterThanOrEquals(xVarRead, yVarRead),
         )
-        assertTrue(basic hasSameStructureAs IntermediateFormTreeNode.DummyRead("x" asVarIn context, true).toCfg())
+        assertTrue(basic hasSameStructureAs xVarRead.toCfg())
+        assertTrue(basicParam hasSameStructureAs pParamRead.toCfg())
 
         for ((expr, iftNode) in operatorTests) {
             assertTrue(context.createCfg(expr) hasSameStructureAs iftNode.toCfg(), expr.toString())

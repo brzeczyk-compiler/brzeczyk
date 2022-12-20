@@ -1,6 +1,6 @@
 package compiler.intermediate_form.allocation_graph_coloring
 
-import compiler.intermediate_form.Allocation
+import compiler.common.intermediate_form.Allocation
 import compiler.intermediate_form.Liveness
 import compiler.intermediate_form.Register
 

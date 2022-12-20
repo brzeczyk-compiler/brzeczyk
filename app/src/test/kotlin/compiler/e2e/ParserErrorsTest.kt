@@ -7,7 +7,7 @@ import kotlin.test.Test
 class ParserErrorsTest {
 
     private fun assertParseError(programs: List<String>) {
-        programs.forEach { assertErrorOfType(it, Diagnostic.ParserError::class) }
+        programs.forEach { assertErrorOfType(it, Diagnostic.ParserError.UnexpectedToken::class) }
     }
 
     @Test

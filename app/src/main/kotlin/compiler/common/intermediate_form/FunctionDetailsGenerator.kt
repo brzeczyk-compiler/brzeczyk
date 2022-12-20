@@ -1,5 +1,6 @@
 package compiler.common.intermediate_form
 
+import compiler.common.ConstantPlaceholder
 import compiler.intermediate_form.ControlFlowGraph
 import compiler.intermediate_form.IntermediateFormTreeNode
 
@@ -14,4 +15,6 @@ interface FunctionDetailsGenerator : VariableAccessGenerator {
     fun genPrologue(): ControlFlowGraph
 
     fun genEpilogue(): ControlFlowGraph
+
+    val spilledRegistersOffset: ConstantPlaceholder
 }

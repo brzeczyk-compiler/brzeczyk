@@ -2,6 +2,8 @@ package compiler.intermediate_form
 
 import compiler.ast.NamedNode
 import compiler.ast.Variable
+import compiler.common.ConstantPlaceholder
+import compiler.common.SummedConstant
 import compiler.common.intermediate_form.FunctionDetailsGenerator
 import compiler.common.reference_collections.referenceHashMapOf
 
@@ -13,6 +15,7 @@ enum class VariableLocationType {
 const val memoryUnitSize: ULong = 8u
 val argPositionToRegister = listOf(Register.RDI, Register.RSI, Register.RDX, Register.RCX, Register.R8, Register.R9)
 val calleeSavedRegistersWithoutRSPAndRBP = listOf(Register.RBX, Register.R12, Register.R13, Register.R14, Register.R15)
+const val DISPLAY_LABEL_IN_MEMORY = "display"
 
 // Function Details Generator consistent with SystemV AMD64 calling convention
 data class DefaultFunctionDetailsGenerator(
@@ -29,6 +32,8 @@ data class DefaultFunctionDetailsGenerator(
     private val variablesRegisters: MutableMap<NamedNode, Register> = referenceHashMapOf()
     private var variablesTotalOffset: ULong = 0u
     private val previousDisplayEntryRegister = Register()
+
+    override val spilledRegistersOffset: ConstantPlaceholder = ConstantPlaceholder()
 
     init {
         for ((variable, locationType) in variablesLocationTypes.entries) {
@@ -107,7 +112,7 @@ data class DefaultFunctionDetailsGenerator(
             Register.RSP,
             IntermediateFormTreeNode.Subtract(
                 IntermediateFormTreeNode.RegisterRead(Register.RSP),
-                IntermediateFormTreeNode.Const(variablesTotalOffset.toLong())
+                IntermediateFormTreeNode.Const(SummedConstant(variablesTotalOffset.toLong(), spilledRegistersOffset))
             )
         )
         cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, subRsp)

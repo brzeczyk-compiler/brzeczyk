@@ -1,8 +1,9 @@
-package compiler.intermediate_form
+package compiler.common.intermediate_form
 
-import compiler.intermediate_form.allocation_graph_coloring.GraphColoring
+import compiler.intermediate_form.Liveness
+import compiler.intermediate_form.Register
 
-object Allocation {
+interface Allocation {
     data class AllocationResult(
         val allocatedRegisters: Map<Register, Register>,
         val spilledRegisters: List<Register>,
@@ -11,5 +12,5 @@ object Allocation {
     fun allocateRegisters(
         livenessGraphs: Liveness.LivenessGraphs,
         accessibleRegisters: List<Register>,
-    ): AllocationResult = GraphColoring.color(livenessGraphs, accessibleRegisters)
+    ): AllocationResult
 }

@@ -7,19 +7,19 @@ import kotlin.test.Test
 
 class ArgumentResolutionErrorsTest {
     private fun assertMissingArgumentError(program: String) {
-        assertErrorOfType(program, Diagnostic.ArgumentResolutionError.MissingArgument::class)
+        assertErrorOfType(program, Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.MissingArgument::class)
     }
 
     private fun assertRepeatedArgumentError(program: String) {
-        assertErrorOfType(program, Diagnostic.ArgumentResolutionError.RepeatedArgument::class)
+        assertErrorOfType(program, Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.RepeatedArgument::class)
     }
 
     private fun assertUnknownArgumentError(program: String) {
-        assertErrorOfType(program, Diagnostic.ArgumentResolutionError.UnknownArgument::class)
+        assertErrorOfType(program, Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.UnknownArgument::class)
     }
 
     private fun assertTooManyArgumentsError(program: String) {
-        assertErrorOfType(program, Diagnostic.ArgumentResolutionError.TooManyArguments::class)
+        assertErrorOfType(program, Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.TooManyArguments::class)
     }
 
     @Test

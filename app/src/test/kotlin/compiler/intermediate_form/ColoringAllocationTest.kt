@@ -5,7 +5,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class AllocationTest {
+class ColoringAllocationTest {
 
     class AllocationTestWithData(
         accessibleRegisters: List<Register>,
@@ -27,7 +27,7 @@ class AllocationTest {
 
             Liveness.LivenessGraphs(interferenceGraph, copyGraph)
         }
-        val result = Allocation.allocateRegisters(
+        val result = ColoringAllocation.allocateRegisters(
             liveness,
             accessibleRegisters
         )

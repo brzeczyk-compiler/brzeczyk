@@ -10,16 +10,17 @@ import compiler.parser.grammar.NonTerminalType
 import compiler.parser.grammar.ParserGrammar.Productions
 import compiler.parser.grammar.Production
 import compiler.parser.grammar.Symbol
+import io.mockk.mockk
+import io.mockk.verify
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
-import kotlin.test.assertTrue
 
 class AstFactoryTest {
     // helper procedures
     private val dummyLocation = Location(0, 0)
     private val dummyLocationRange = LocationRange(dummyLocation, dummyLocation)
-    private val dummyDiagnostics = Diagnostics { }
+    private val dummyDiagnostics = mockk<Diagnostics>()
 
     private fun makeNTNode(nonTerminalType: NonTerminalType, production: Production<Symbol>, vararg children: ParseTree<Symbol>): ParseTree<Symbol> =
         ParseTree.Branch(dummyLocationRange, Symbol.NonTerminal(nonTerminalType), children.asList(), production)
@@ -350,10 +351,9 @@ class AstFactoryTest {
             )
         )
 
-        val reportedDiagnostics = ArrayList<Diagnostic>()
-        assertFails { AstFactory.createFromParseTree(parseTree) { reportedDiagnostics.add(it) } }
-        assertEquals(1, reportedDiagnostics.size)
-        assertTrue(reportedDiagnostics.first() is Diagnostic.ParserError)
+        val diagnostics = mockk<Diagnostics>()
+        assertFails { AstFactory.createFromParseTree(parseTree, diagnostics) }
+        verify(exactly = 1) { diagnostics.report(ofType(Diagnostic.ParserError.UnexpectedToken::class)) }
     }
 
     @Test fun `test correctly translates function call`() {
@@ -423,10 +423,9 @@ class AstFactoryTest {
             ) wrapUpTo NonTerminalType.EXPR
         )
 
-        val reportedDiagnostics = ArrayList<Diagnostic>()
-        assertFails { AstFactory.createFromParseTree(parseTree) { reportedDiagnostics.add(it) } }
-        assertEquals(1, reportedDiagnostics.size)
-        assertTrue(reportedDiagnostics.first() is Diagnostic.ParserError)
+        val diagnostics = mockk<Diagnostics>()
+        assertFails { AstFactory.createFromParseTree(parseTree, diagnostics) }
+        verify(exactly = 1) { diagnostics.report(ofType(Diagnostic.ParserError.UnexpectedToken::class)) }
     }
 
     @Test fun `test correctly translates if without else`() {

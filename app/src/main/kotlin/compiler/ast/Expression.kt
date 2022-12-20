@@ -43,7 +43,14 @@ sealed class Expression : AstNode {
             NOT,
             PLUS,
             MINUS,
-            BIT_NOT
+            BIT_NOT;
+
+            override fun toString(): String = when (this) {
+                NOT -> "nie"
+                PLUS -> "+"
+                MINUS -> "-"
+                BIT_NOT -> "~"
+            }
         }
     }
 
@@ -73,7 +80,30 @@ sealed class Expression : AstNode {
             LESS_THAN,
             LESS_THAN_OR_EQUALS,
             GREATER_THAN,
-            GREATER_THAN_OR_EQUALS,
+            GREATER_THAN_OR_EQUALS;
+
+            override fun toString(): String = when (this) {
+                AND -> "oraz"
+                OR -> "lub"
+                IFF -> "wtw"
+                XOR -> "albo"
+                ADD -> "+"
+                SUBTRACT -> "-"
+                MULTIPLY -> "*"
+                DIVIDE -> "/"
+                MODULO -> "%"
+                BIT_AND -> "&"
+                BIT_OR -> "|"
+                BIT_XOR -> "^"
+                BIT_SHIFT_LEFT -> "<<"
+                BIT_SHIFT_RIGHT -> ">>"
+                EQUALS -> "=="
+                NOT_EQUALS -> "!="
+                LESS_THAN -> "<"
+                LESS_THAN_OR_EQUALS -> "<="
+                GREATER_THAN -> ">"
+                GREATER_THAN_OR_EQUALS -> ">="
+            }
         }
     }
 

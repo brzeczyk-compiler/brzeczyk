@@ -1,6 +1,6 @@
 package compiler.ast
 
-import compiler.lexer.LocationRange
+import compiler.input.LocationRange
 
 data class Program(val globals: List<Global>) {
     sealed class Global : AstNode {

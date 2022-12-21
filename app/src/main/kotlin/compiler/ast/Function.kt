@@ -1,7 +1,6 @@
 package compiler.ast
 
-import compiler.common.semantic_analysis.VariablesOwner
-import compiler.lexer.LocationRange
+import compiler.input.LocationRange
 
 data class Function(
     override val name: String,
@@ -9,7 +8,7 @@ data class Function(
     val returnType: Type,
     val body: StatementBlock,
     override val location: LocationRange? = null,
-) : NamedNode, AstNode, VariablesOwner {
+) : NamedNode, AstNode, VariableOwner {
     data class Parameter(
         override val name: String,
         val type: Type,

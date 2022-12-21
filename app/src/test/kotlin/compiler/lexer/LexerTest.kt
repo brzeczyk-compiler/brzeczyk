@@ -1,10 +1,12 @@
 package compiler.lexer
 
-import compiler.common.dfa.AbstractDfa
-import compiler.common.dfa.DfaWalk
-import compiler.common.diagnostics.Diagnostic
-import compiler.common.diagnostics.Diagnostics
-import compiler.lexer.input.Input
+import compiler.dfa.AbstractDfa
+import compiler.dfa.DfaWalk
+import compiler.diagnostics.Diagnostic
+import compiler.diagnostics.Diagnostics
+import compiler.input.Input
+import compiler.input.Location
+import compiler.input.LocationRange
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertContentEquals

@@ -1,6 +1,6 @@
 package compiler.ast
 
-import compiler.lexer.LocationRange
+import compiler.input.LocationRange
 
 sealed class Expression : AstNode {
     data class UnitLiteral(

@@ -1,7 +1,7 @@
 package compiler.parser
 
-import compiler.lexer.LocationRange
-import compiler.parser.grammar.Production
+import compiler.grammar.Production
+import compiler.input.LocationRange
 
 interface ParseTree<S : Comparable<S>> {
     val location: LocationRange

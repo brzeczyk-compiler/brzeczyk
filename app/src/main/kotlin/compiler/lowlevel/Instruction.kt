@@ -3,6 +3,7 @@ package compiler.lowlevel
 import compiler.intermediate.Constant
 import compiler.intermediate.FixedConstant
 import compiler.intermediate.Register
+import java.io.PrintWriter
 
 sealed class Instruction : Asmable {
     open val regsUsed: Collection<Register> = emptyList()
@@ -16,6 +17,10 @@ sealed class Instruction : Asmable {
             is Addressing.BaseAndIndex -> setOf(address.base, address.index)
             else -> emptySet()
         }
+    }
+
+    override fun writeAsm(output: PrintWriter, registers: Map<Register, Register>) {
+        TODO() // Remove this and implement toAsm in each Instruction instance separately
     }
 
     sealed class ConditionalJumpInstruction : Instruction() {

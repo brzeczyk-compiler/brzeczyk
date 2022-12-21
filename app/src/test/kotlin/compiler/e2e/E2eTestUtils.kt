@@ -3,6 +3,7 @@ package compiler.e2e
 import compiler.Compiler
 import compiler.diagnostics.CompilerDiagnostics
 import compiler.diagnostics.Diagnostic
+import java.io.StringWriter
 import kotlin.reflect.KClass
 import kotlin.test.assertContentEquals
 import kotlin.test.assertNotEquals
@@ -14,7 +15,7 @@ object E2eTestUtils {
 
     private fun runProgram(program: String): Sequence<Diagnostic> {
         diagnostics.clear()
-        compiler.process(program.trimIndent().reader())
+        compiler.process(program.trimIndent().reader(), StringWriter())
         return diagnostics.diagnostics
     }
 

@@ -81,6 +81,8 @@ object FunctionDependenciesAnalyzer {
         val functionIdentifiers = createUniqueIdentifiers(program, allowInconsistentNamingErrors)
 
         fun createDetailsGenerator(function: Function, depth: ULong) {
+            // TODO: check if the function is local or foreign
+
             val variablesLocationTypes = referenceHashMapOf<NamedNode, VariableLocationType>()
             variableProperties
                 .filter { (_, properties) -> properties.owner === function }

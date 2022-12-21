@@ -6,7 +6,7 @@ data class Function(
     override val name: String,
     val parameters: List<Parameter>,
     val returnType: Type,
-    val body: StatementBlock,
+    val implementation: Implementation,
     override val location: LocationRange? = null,
 ) : NamedNode, AstNode, VariableOwner {
     data class Parameter(
@@ -15,4 +15,19 @@ data class Function(
         val defaultValue: Expression?,
         override val location: LocationRange? = null,
     ) : NamedNode, AstNode
+
+    sealed class Implementation {
+        data class Local(val body: StatementBlock) : Implementation()
+        data class Foreign(val foreignName: String) : Implementation()
+    }
+
+    val body: StatementBlock get() = if (implementation is Implementation.Local) implementation.body else emptyList()
+
+    constructor(
+        name: String,
+        parameters: List<Parameter>,
+        returnType: Type,
+        body: StatementBlock,
+        location: LocationRange? = null
+    ) : this(name, parameters, returnType, Implementation.Local(body), location)
 }

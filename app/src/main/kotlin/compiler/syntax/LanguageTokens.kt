@@ -2,7 +2,7 @@ package compiler.syntax
 
 import compiler.dfa.AbstractDfa
 import compiler.regex.RegexDfa
-import compiler.syntax.utils.LexerRegexParser
+import compiler.syntax.utils.TokenRegexParser
 
 object LanguageTokens {
     fun getTokens(): List<Pair<AbstractDfa<Char, Unit>, TokenType>> {
@@ -103,7 +103,7 @@ object LanguageTokens {
         )
 
         return list.map {
-            Pair(RegexDfa(LexerRegexParser.parseStringToRegex(it.second)), it.first)
+            Pair(RegexDfa(TokenRegexParser.parseStringToRegex(it.second)), it.first)
         }
     }
 }

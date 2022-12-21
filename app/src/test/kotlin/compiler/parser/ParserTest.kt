@@ -3,7 +3,7 @@ package compiler.parser
 import compiler.grammar.Grammar
 import compiler.grammar.Production
 import compiler.regex.RegexFactory
-import compiler.syntax.utils.LexerRegexParser
+import compiler.syntax.utils.TokenRegexParser
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -12,9 +12,9 @@ class ParserTest : ParserTestBase() {
     private val addExpr = 'B'
     private val numExpr = 'C'
 
-    private val addToMul = Production(addExpr, LexerRegexParser.parseStringToRegex("$mulExpr(\\+$mulExpr)*"))
-    private val mulToNum = Production(mulExpr, LexerRegexParser.parseStringToRegex("$numExpr(\\*$numExpr)*"))
-    private val numParentheses = Production(numExpr, LexerRegexParser.parseStringToRegex("\\(${addExpr}\\)"))
+    private val addToMul = Production(addExpr, TokenRegexParser.parseStringToRegex("$mulExpr(\\+$mulExpr)*"))
+    private val mulToNum = Production(mulExpr, TokenRegexParser.parseStringToRegex("$numExpr(\\*$numExpr)*"))
+    private val numParentheses = Production(numExpr, TokenRegexParser.parseStringToRegex("\\(${addExpr}\\)"))
     private val numToZero = Production(numExpr, RegexFactory.createAtomic(setOf('0')))
     private val numToOne = Production(numExpr, RegexFactory.createAtomic(setOf('1')))
 

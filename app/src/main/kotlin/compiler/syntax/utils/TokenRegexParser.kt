@@ -3,7 +3,7 @@ package compiler.syntax.utils
 import compiler.regex.Regex
 import compiler.regex.RegexFactory
 
-object LexerRegexParser : AbstractRegexParser<Regex<Char>>() {
+object TokenRegexParser : AbstractRegexParser<Regex<Char>>() {
     val SPECIAL_SYMBOLS = mapOf(
         "l" to "aąbcćdeęfghijklłmnńoópqrsśtuvwxyzźż".toSet(),
         "u" to "AĄBCĆDEĘFGHIJKLŁMNŃOÓPQRSŚTUVWXYZŹŻ".toSet(),

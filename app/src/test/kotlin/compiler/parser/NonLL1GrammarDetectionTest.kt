@@ -2,15 +2,15 @@ package compiler.parser
 
 import compiler.grammar.Grammar
 import compiler.grammar.Production
-import compiler.syntax.utils.LexerRegexParser
+import compiler.syntax.utils.TokenRegexParser
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 
 class NonLL1GrammarDetectionTest : ParserTestBase() {
-    private val aToB = Production('A', LexerRegexParser.parseStringToRegex("B"))
-    private val aToC = Production('A', LexerRegexParser.parseStringToRegex("C"))
-    private val bToab = Production('B', LexerRegexParser.parseStringToRegex("ab"))
-    private val cToac = Production('C', LexerRegexParser.parseStringToRegex("ac"))
+    private val aToB = Production('A', TokenRegexParser.parseStringToRegex("B"))
+    private val aToC = Production('A', TokenRegexParser.parseStringToRegex("C"))
+    private val bToab = Production('B', TokenRegexParser.parseStringToRegex("ab"))
+    private val cToac = Production('C', TokenRegexParser.parseStringToRegex("ac"))
 
     override fun getExpressionGrammar(): Grammar<Char> {
         return Grammar(

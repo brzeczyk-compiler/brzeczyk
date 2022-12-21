@@ -17,7 +17,7 @@ class GraphColoring private constructor(
         fun color( // main algorithm
             livenessGraphs: Liveness.LivenessGraphs,
             accessibleRegisters: List<Register>
-        ): Allocation.AllocationResult {
+        ): PartialAllocation.AllocationResult {
             val stack = RegisterGraph.process(livenessGraphs, accessibleRegisters)
             val (coalescedInterferenceGraph, coalescedCopyGraph) = livenessGraphs.toCoalesced(stack)
 
@@ -133,7 +133,7 @@ class GraphColoring private constructor(
 
     // ----------- create result ------------------
 
-    private fun createAllocationResult(): Allocation.AllocationResult = Allocation.AllocationResult(
+    private fun createAllocationResult(): PartialAllocation.AllocationResult = PartialAllocation.AllocationResult(
         allocationMap.flatMap { (node, reg) -> node.registers.associateWith { reg }.toList() }.toMap(),
         spilledRegisters.flatMap { it.registers }
     )

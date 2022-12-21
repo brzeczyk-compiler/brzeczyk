@@ -32,7 +32,7 @@ internal class RegexParserTest {
             return when (string.length) {
                 1 -> {
                     if (string[0] in SPECIAL_SYMBOLS) "ERROR" // special symbols should be escaped regardless of getSpecialAtomic implementation
-                    else getAtomic(LexerRegexParser.SPECIAL_SYMBOLS.getOrDefault(string, setOf(string[0])))
+                    else getAtomic(TokenRegexParser.SPECIAL_SYMBOLS.getOrDefault(string, setOf(string[0])))
                 }
                 else -> "(!$string!)"
             }

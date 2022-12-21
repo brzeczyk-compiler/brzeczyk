@@ -9,7 +9,7 @@ import compiler.lowlevel.dataflow.Liveness
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class SpillsHandlingAllocationTest {
+class AllocationTest {
 
     private val reg1 = Register()
     private val reg2 = Register()
@@ -32,14 +32,14 @@ class SpillsHandlingAllocationTest {
         )
         val livenessGraphs = Liveness.LivenessGraphs(mapOf(), mapOf())
         val orderedPhysicalRegisters = listOf<Register>()
-        val allocator = object : Allocation {
+        val allocator = object : PartialAllocation {
             override fun allocateRegisters(
                 livenessGraphs: Liveness.LivenessGraphs,
                 accessibleRegisters: List<Register>
-            ): Allocation.AllocationResult = Allocation.AllocationResult(mapOf(), listOf())
+            ): PartialAllocation.AllocationResult = PartialAllocation.AllocationResult(mapOf(), listOf())
         }
 
-        val result = SpillsHandlingAllocation.allocateRegistersWithSpillsHandling(
+        val result = Allocation.allocateRegistersWithSpillsHandling(
             linearProgram,
             livenessGraphs,
             orderedPhysicalRegisters,
@@ -66,7 +66,7 @@ class SpillsHandlingAllocationTest {
         )
         val livenessGraphs = Liveness.LivenessGraphs(mapOf(), mapOf())
         val orderedPhysicalRegisters = listOf(phReg1, phReg2, phReg3)
-        val allocator = object : Allocation {
+        val allocator = object : PartialAllocation {
             // First time there are too few reserved registers (0)
             // Second time there are too few reserved registers (1)
             // Third time there are too few reserved registers (2)
@@ -76,15 +76,15 @@ class SpillsHandlingAllocationTest {
             override fun allocateRegisters(
                 livenessGraphs: Liveness.LivenessGraphs,
                 accessibleRegisters: List<Register>
-            ): Allocation.AllocationResult {
+            ): PartialAllocation.AllocationResult {
                 return if (usages >= 4) {
-                    Allocation.AllocationResult(
+                    PartialAllocation.AllocationResult(
                         mapOf(reg1 to accessibleRegisters[0], reg2 to accessibleRegisters[1], reg3 to accessibleRegisters[2]),
                         listOf(),
                     )
                 } else {
                     usages ++
-                    Allocation.AllocationResult(
+                    PartialAllocation.AllocationResult(
                         mapOf(phReg4 to phReg4),
                         listOf(reg1, reg2, reg3),
                     )
@@ -92,7 +92,7 @@ class SpillsHandlingAllocationTest {
             }
         }
 
-        val result = SpillsHandlingAllocation.allocateRegistersWithSpillsHandling(
+        val result = Allocation.allocateRegistersWithSpillsHandling(
             linearProgram,
             livenessGraphs,
             orderedPhysicalRegisters,
@@ -153,7 +153,7 @@ class SpillsHandlingAllocationTest {
         )
         val livenessGraphs = Liveness.LivenessGraphs(mapOf(), mapOf())
         val orderedPhysicalRegisters = listOf(phReg1)
-        val allocator = object : Allocation {
+        val allocator = object : PartialAllocation {
             // First time there are too few reserved registers (0)
             // Second time is ok
             // Third time is a call to color the spills
@@ -161,15 +161,15 @@ class SpillsHandlingAllocationTest {
             override fun allocateRegisters(
                 livenessGraphs: Liveness.LivenessGraphs,
                 accessibleRegisters: List<Register>
-            ): Allocation.AllocationResult {
+            ): PartialAllocation.AllocationResult {
                 return if (usages >= 2) {
-                    Allocation.AllocationResult(
+                    PartialAllocation.AllocationResult(
                         mapOf(reg1 to accessibleRegisters[0], reg2 to accessibleRegisters[1], reg3 to accessibleRegisters[2]),
                         listOf(),
                     )
                 } else {
                     usages ++
-                    Allocation.AllocationResult(
+                    PartialAllocation.AllocationResult(
                         mapOf(phReg4 to phReg4),
                         listOf(reg1, reg2, reg3),
                     )
@@ -177,7 +177,7 @@ class SpillsHandlingAllocationTest {
             }
         }
 
-        val result = SpillsHandlingAllocation.allocateRegistersWithSpillsHandling(
+        val result = Allocation.allocateRegistersWithSpillsHandling(
             linearProgram,
             livenessGraphs,
             orderedPhysicalRegisters,
@@ -232,7 +232,7 @@ class SpillsHandlingAllocationTest {
         )
         val livenessGraphs = Liveness.LivenessGraphs(mapOf(), mapOf())
         val orderedPhysicalRegisters = listOf(phReg1, phReg2)
-        val allocator = object : Allocation {
+        val allocator = object : PartialAllocation {
             // First time there are too few reserved registers (0)
             // Second time there are too few reserved registers (1)
             // Third time is ok
@@ -241,15 +241,15 @@ class SpillsHandlingAllocationTest {
             override fun allocateRegisters(
                 livenessGraphs: Liveness.LivenessGraphs,
                 accessibleRegisters: List<Register>
-            ): Allocation.AllocationResult {
+            ): PartialAllocation.AllocationResult {
                 return if (usages >= 3) {
-                    Allocation.AllocationResult(
+                    PartialAllocation.AllocationResult(
                         mapOf(reg1 to accessibleRegisters[0], reg2 to accessibleRegisters[1], reg3 to accessibleRegisters[0], reg4 to accessibleRegisters[1]),
                         listOf(),
                     )
                 } else {
                     usages ++
-                    Allocation.AllocationResult(
+                    PartialAllocation.AllocationResult(
                         mapOf(phReg4 to phReg4),
                         listOf(reg1, reg2, reg3, reg4),
                     )
@@ -257,7 +257,7 @@ class SpillsHandlingAllocationTest {
             }
         }
 
-        val result = SpillsHandlingAllocation.allocateRegistersWithSpillsHandling(
+        val result = Allocation.allocateRegistersWithSpillsHandling(
             linearProgram,
             livenessGraphs,
             orderedPhysicalRegisters,

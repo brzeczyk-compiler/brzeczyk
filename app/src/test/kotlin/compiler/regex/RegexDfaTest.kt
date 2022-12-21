@@ -1,6 +1,6 @@
 package compiler.regex
 import compiler.dfa.isAccepting
-import compiler.syntax.utils.LexerRegexParser
+import compiler.syntax.utils.TokenRegexParser
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -92,19 +92,19 @@ class RegexDfaTest {
     }
 
     // Example RegexDfa for ((abc)|(c(a|b)*c)
-    private val dfa1 = RegexDfa(LexerRegexParser.parseStringToRegex("(abc)|(c(a|b)*c)"))
+    private val dfa1 = RegexDfa(TokenRegexParser.parseStringToRegex("(abc)|(c(a|b)*c)"))
     private val dfa1StateStart = dfa1.startState
-    private val dfa1StateBC = RegexDfaState(LexerRegexParser.parseStringToRegex("bc"))
-    private val dfa1StateC = RegexDfaState(LexerRegexParser.parseStringToRegex("c"))
+    private val dfa1StateBC = RegexDfaState(TokenRegexParser.parseStringToRegex("bc"))
+    private val dfa1StateC = RegexDfaState(TokenRegexParser.parseStringToRegex("c"))
     private val dfa1StateEPS = RegexDfaState(RegexFactory.createEpsilon<Char>())
-    private val dfa1StateABStarC = RegexDfaState(LexerRegexParser.parseStringToRegex("(a|b)*c"))
+    private val dfa1StateABStarC = RegexDfaState(TokenRegexParser.parseStringToRegex("(a|b)*c"))
 
     // Example RegexDfa for ([ab][cd])*a*
-    private val dfa2 = RegexDfa(LexerRegexParser.parseStringToRegex("([ab][cd])*a*"))
+    private val dfa2 = RegexDfa(TokenRegexParser.parseStringToRegex("([ab][cd])*a*"))
     private val dfa2StateStart = dfa2.startState
-    private val dfa2State1 = RegexDfaState(LexerRegexParser.parseStringToRegex("([cd]([ab][cd])*a*)|a*"))
-    private val dfa2State2 = RegexDfaState(LexerRegexParser.parseStringToRegex("([cd]([ab][cd])*a*)"))
-    private val dfa2State3 = RegexDfaState(LexerRegexParser.parseStringToRegex("a*"))
+    private val dfa2State1 = RegexDfaState(TokenRegexParser.parseStringToRegex("([cd]([ab][cd])*a*)|a*"))
+    private val dfa2State2 = RegexDfaState(TokenRegexParser.parseStringToRegex("([cd]([ab][cd])*a*)"))
+    private val dfa2State3 = RegexDfaState(TokenRegexParser.parseStringToRegex("a*"))
 
     @Test fun `test possible steps for states of example automata`() {
         // dfa1

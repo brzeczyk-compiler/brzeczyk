@@ -1,6 +1,6 @@
 package compiler.ast
 
-import compiler.lexer.LocationRange
+import compiler.input.LocationRange
 
 typealias StatementBlock = List<Statement>
 

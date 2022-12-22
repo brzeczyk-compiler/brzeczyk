@@ -1,10 +1,12 @@
 package compiler.lexer
 
-import compiler.common.dfa.AbstractDfa
-import compiler.common.dfa.isAccepting
-import compiler.common.diagnostics.Diagnostic
-import compiler.common.diagnostics.Diagnostics
-import compiler.lexer.input.Input
+import compiler.dfa.AbstractDfa
+import compiler.dfa.isAccepting
+import compiler.diagnostics.Diagnostic
+import compiler.diagnostics.Diagnostics
+import compiler.input.Input
+import compiler.input.Location
+import compiler.input.LocationRange
 
 // Used to turn a sequence of characters into a sequence of tokens.
 // The DFAs given are used to recognize the corresponding token categories.

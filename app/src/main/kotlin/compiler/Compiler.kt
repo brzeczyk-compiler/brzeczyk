@@ -1,17 +1,17 @@
 package compiler
 
-import compiler.ast.AstFactory
-import compiler.common.diagnostics.Diagnostics
-import compiler.intermediate_form.ControlFlow.createGraphForProgram
+import compiler.analysis.ProgramAnalyzer
+import compiler.diagnostics.Diagnostics
+import compiler.input.ReaderInput
+import compiler.intermediate.ControlFlow.createGraphForProgram
 import compiler.lexer.Lexer
-import compiler.lexer.input.InputImpl
-import compiler.lexer.lexer_grammar.TokenType
-import compiler.lexer.lexer_grammar.Tokens
 import compiler.parser.ParseTree
 import compiler.parser.Parser
-import compiler.parser.grammar.ParserGrammar
-import compiler.parser.grammar.Symbol
-import compiler.semantic_analysis.Resolver
+import compiler.syntax.AstFactory
+import compiler.syntax.LanguageGrammar
+import compiler.syntax.LanguageTokens
+import compiler.syntax.Symbol
+import compiler.syntax.TokenType
 import java.io.Reader
 
 // The main class used to compile a source code into an executable machine code.
@@ -20,12 +20,12 @@ class Compiler(val diagnostics: Diagnostics) {
     // a compilation phase is unable to produce a correct output, and so the entire compilation pipeline must be stopped.
     abstract class CompilationFailed : Throwable()
 
-    private val lexer = Lexer(Tokens.getTokens(), diagnostics)
-    private val parser = Parser(ParserGrammar.getGrammar(), diagnostics)
+    private val lexer = Lexer(LanguageTokens.getTokens(), diagnostics)
+    private val parser = Parser(LanguageGrammar.getGrammar(), diagnostics)
 
     fun process(input: Reader) {
         try {
-            val tokenSequence = lexer.process(InputImpl(input))
+            val tokenSequence = lexer.process(ReaderInput(input))
 
             val leaves: Sequence<ParseTree<Symbol>> = tokenSequence.filter { it.category != TokenType.TO_IGNORE } // TODO: move this transformation somewhere else
                 .map { ParseTree.Leaf(it.location, Symbol.Terminal(it.category), it.content) }
@@ -34,7 +34,7 @@ class Compiler(val diagnostics: Diagnostics) {
 
             val ast = AstFactory.createFromParseTree(parseTree, diagnostics) // TODO: make AstFactory and Resolver a class for consistency with Lexer and Parser
 
-            val programProperties = Resolver.resolveProgram(ast, diagnostics)
+            val programProperties = ProgramAnalyzer.analyzeProgram(ast, diagnostics)
 
             val cfg = createGraphForProgram(ast, programProperties, diagnostics, diagnostics.hasAnyError())
             // TODO: generate the code

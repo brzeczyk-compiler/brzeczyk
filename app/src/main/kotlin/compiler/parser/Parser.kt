@@ -1,16 +1,16 @@
 package compiler.parser
 
 import compiler.Compiler.CompilationFailed
-import compiler.common.dfa.state_dfa.Dfa
-import compiler.common.dfa.state_dfa.DfaState
-import compiler.common.diagnostics.Diagnostic
-import compiler.common.diagnostics.Diagnostics
-import compiler.lexer.Location
-import compiler.lexer.LocationRange
-import compiler.parser.analysis.GrammarAnalysis
-import compiler.parser.grammar.AutomatonGrammar
-import compiler.parser.grammar.Grammar
-import compiler.parser.grammar.Production
+import compiler.dfa.Dfa
+import compiler.dfa.DfaState
+import compiler.diagnostics.Diagnostic
+import compiler.diagnostics.Diagnostics
+import compiler.grammar.AutomatonGrammar
+import compiler.grammar.Grammar
+import compiler.grammar.GrammarAnalysis
+import compiler.grammar.Production
+import compiler.input.Location
+import compiler.input.LocationRange
 import java.lang.Exception
 
 class Parser<S : Comparable<S>>(

@@ -1,6 +1,6 @@
 package compiler.parser
 
-import compiler.parser.grammar.Production
+import compiler.grammar.Production
 
 sealed class ParserAction<S : Comparable<S>> {
     class Shift<S : Comparable<S>> : ParserAction<S>()

@@ -54,6 +54,13 @@ sealed interface Diagnostic {
         ) : ParserError() {
             override val errorMessage = "The literal <<$number>> at location $location is an invalid number literal."
         }
+
+        class ForeignNameAsInvalidIdentifier(
+            foreignName: String,
+            location: LocationRange
+        ) : ParserError() {
+            override val errorMessage = "Foreign name <<$foreignName>> at location $location is not a valid identifier."
+        }
     }
 
     sealed class ResolutionDiagnostic(astNodes: List<AstNode>) : Diagnostic {

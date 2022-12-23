@@ -13,6 +13,7 @@ import compiler.input.Location
 import compiler.input.LocationRange
 import compiler.parser.ParseTree
 import compiler.syntax.LanguageGrammar.Productions
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlin.test.Test
@@ -167,6 +168,135 @@ class AstFactoryTest {
         assertEquals(expectedAst, resultAst)
     }
 
+    @Test fun `test correctly translates foreign function declarations`() {
+        val parseTree = makeNTNode(
+            NonTerminalType.PROGRAM, Productions.program,
+            makeNTNode(
+                NonTerminalType.FOREIGN_DECL, Productions.foreignDecl,
+                makeTNode(TokenType.FOREIGN, "obca"),
+                makeTNode(TokenType.FUNCTION, "czynność"),
+                makeTNode(TokenType.IDENTIFIER, "poboczna0"),
+                makeTNode(TokenType.LEFT_PAREN, "("),
+                makeNTNode(
+                    NonTerminalType.DEF_ARGS, Productions.defArgs1,
+                    makeNTNode(
+                        NonTerminalType.DEF_ARG, Productions.defArg,
+                        makeTNode(TokenType.IDENTIFIER, "x"),
+                        makeTNode(TokenType.COLON, ":"),
+                        makeNTNode(NonTerminalType.TYPE, Productions.type, makeTNode(TokenType.TYPE_INTEGER, "Liczba"))
+                    )
+                ),
+                makeTNode(TokenType.RIGHT_PAREN, ")"),
+            ),
+            makeTNode(TokenType.NEWLINE, "\n"),
+            makeNTNode(
+                NonTerminalType.FOREIGN_DECL, Productions.foreignDecl,
+                makeTNode(TokenType.FOREIGN, "obca"),
+                makeTNode(TokenType.FUNCTION, "czynność"),
+                makeTNode(TokenType.IDENTIFIER, "poboczna1"),
+                makeTNode(TokenType.LEFT_PAREN, "("),
+                makeNTNode(NonTerminalType.DEF_ARGS, Productions.defArgs1),
+                makeTNode(TokenType.RIGHT_PAREN, ")"),
+                makeTNode(TokenType.ARROW, "->"),
+                makeNTNode(NonTerminalType.TYPE, Productions.type, makeTNode(TokenType.TYPE_INTEGER, "Liczba")),
+            ),
+            makeTNode(TokenType.NEWLINE, "\n"),
+            makeNTNode(
+                NonTerminalType.FOREIGN_DECL, Productions.foreignDecl,
+                makeTNode(TokenType.FOREIGN, "obca"),
+                makeTNode(TokenType.FUNCTION, "czynność"),
+                makeTNode(TokenType.FOREIGN_NAME, "`_Poboczna2`"),
+                makeTNode(TokenType.LEFT_PAREN, "("),
+                makeNTNode(NonTerminalType.DEF_ARGS, Productions.defArgs1),
+                makeTNode(TokenType.RIGHT_PAREN, ")"),
+                makeTNode(TokenType.AS, "jako"),
+                makeTNode(TokenType.IDENTIFIER, "poboczna2")
+            ),
+            makeTNode(TokenType.SEMICOLON, ";"),
+            makeNTNode(
+                NonTerminalType.FOREIGN_DECL, Productions.foreignDecl,
+                makeTNode(TokenType.FOREIGN, "obca"),
+                makeTNode(TokenType.FUNCTION, "czynność"),
+                makeTNode(TokenType.FOREIGN_NAME, "`Poboczna3`"),
+                makeTNode(TokenType.LEFT_PAREN, "("),
+                makeNTNode(NonTerminalType.DEF_ARGS, Productions.defArgs1),
+                makeTNode(TokenType.RIGHT_PAREN, ")"),
+                makeTNode(TokenType.ARROW, "->"),
+                makeNTNode(NonTerminalType.TYPE, Productions.type, makeTNode(TokenType.TYPE_BOOLEAN, "Czy")),
+                makeTNode(TokenType.AS, "jako"),
+                makeTNode(TokenType.IDENTIFIER, "poboczna3")
+            ),
+            makeTNode(TokenType.NEWLINE, "\n"),
+        )
+        val expectedAst = Program(
+            listOf(
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "poboczna0",
+                        listOf(Function.Parameter("x", Type.Number, null, dummyLocationRange)),
+                        Type.Unit,
+                        Function.Implementation.Foreign("poboczna0"),
+                        dummyLocationRange
+                    ),
+                    dummyLocationRange
+                ),
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "poboczna1",
+                        listOf(),
+                        Type.Number,
+                        Function.Implementation.Foreign("poboczna1"),
+                        dummyLocationRange
+                    ),
+                    dummyLocationRange
+                ),
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "poboczna2",
+                        listOf(),
+                        Type.Unit,
+                        Function.Implementation.Foreign("_Poboczna2"),
+                        dummyLocationRange
+                    ),
+                    dummyLocationRange
+                ),
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "poboczna3",
+                        listOf(),
+                        Type.Boolean,
+                        Function.Implementation.Foreign("Poboczna3"),
+                        dummyLocationRange
+                    ),
+                    dummyLocationRange
+                )
+            )
+        )
+
+        val resultAst = AstFactory.createFromParseTree(parseTree, dummyDiagnostics)
+        assertEquals(expectedAst, resultAst)
+    }
+
+    @Test fun `test reports error on invalid foreign identifier`() {
+        val parseTree = makeNTNode(
+            NonTerminalType.PROGRAM, Productions.program,
+            makeNTNode(
+                NonTerminalType.FOREIGN_DECL, Productions.foreignDecl,
+                makeTNode(TokenType.FOREIGN, "obca"),
+                makeTNode(TokenType.FUNCTION, "czynność"),
+                makeTNode(TokenType.FOREIGN_NAME, "`Poboczna`"),
+                makeTNode(TokenType.LEFT_PAREN, "("),
+                makeNTNode(NonTerminalType.DEF_ARGS, Productions.defArgs1),
+                makeTNode(TokenType.RIGHT_PAREN, ")"),
+            ),
+            makeTNode(TokenType.NEWLINE, "\n")
+        )
+
+        val diagnostics = mockk<Diagnostics>()
+        assertFails { AstFactory.createFromParseTree(parseTree, diagnostics) }
+        verify(exactly = 1) { diagnostics.report(ofType(Diagnostic.ParserError.ForeignNameAsInvalidIdentifier::class)) }
+    }
+
     @Test fun `test correctly translates constants literals`() {
         val parseTree = makeProgramWithExpressionsEvaluation(
             makeNTNode(
@@ -199,6 +329,20 @@ class AstFactoryTest {
 
         val resultAst = AstFactory.createFromParseTree(parseTree, dummyDiagnostics)
         assertEquals(expectedAst, resultAst)
+    }
+
+    @Test fun `test reports error on integer overflow`() {
+        val parseTree = makeProgramWithExpressionsEvaluation(
+            makeNTNode(
+                NonTerminalType.EXPR2048, Productions.expr2048Const,
+                makeNTNode(NonTerminalType.CONST, Productions.const, makeTNode(TokenType.INTEGER, "9223372036854775808"))
+            ) wrapUpTo NonTerminalType.EXPR
+        )
+
+        val diagnostics = mockk<Diagnostics>()
+        every { diagnostics.report(any()) } returns Unit
+        AstFactory.createFromParseTree(parseTree, diagnostics)
+        verify(exactly = 1) { diagnostics.report(ofType(Diagnostic.ParserError.InvalidNumberLiteral::class)) }
     }
 
     @Test fun `test correctly translates unary expressions`() {

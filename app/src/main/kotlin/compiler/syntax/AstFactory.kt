@@ -12,7 +12,9 @@ import compiler.diagnostics.Diagnostic
 import compiler.diagnostics.Diagnostics
 import compiler.input.LocationRange
 import compiler.parser.ParseTree
+import compiler.regex.RegexDfa
 import compiler.syntax.LanguageGrammar.Productions
+import compiler.syntax.utils.TokenRegexParser
 
 object AstFactory {
     class AstCreationFailed : CompilationFailed()
@@ -50,6 +52,25 @@ object AstFactory {
         return (properNode.children.first() as ParseTree.Leaf).content
     }
 
+    private fun extractForeignName(parseTree: ParseTree.Leaf<Symbol>, diagnostics: Diagnostics, asIdentifier: Boolean): String {
+        return when (parseTree.token()) {
+            TokenType.IDENTIFIER -> parseTree.content
+            TokenType.FOREIGN_NAME -> {
+                val identifier = parseTree.content.substring(1, parseTree.content.lastIndex)
+                if (asIdentifier) {
+                    val walk = RegexDfa(TokenRegexParser.parseStringToRegex("""\l[\l\u\d_]*""")).newWalk()
+                    identifier.forEach { walk.step(it) }
+                    if (walk.getAcceptingStateTypeOrNull() === null) {
+                        diagnostics.report(Diagnostic.ParserError.ForeignNameAsInvalidIdentifier(identifier, parseTree.location))
+                        throw AstCreationFailed()
+                    }
+                }
+                identifier
+            }
+            else -> throw IllegalArgumentException()
+        }
+    }
+
     private fun rotateExpressionLeft(parseTree: ParseTree.Branch<Symbol>): ParseTree.Branch<Symbol> {
         val children = parseTree.getFilteredChildren()
         val leftChild = children[0]
@@ -73,6 +94,7 @@ object AstFactory {
             when (it.nonTerm()) {
                 NonTerminalType.VAR_DECL -> Program.Global.VariableDefinition(processVariableDeclaration(it, diagnostics), it.location)
                 NonTerminalType.FUNC_DEF -> Program.Global.FunctionDefinition(processFunctionDefinition(it, diagnostics), it.location)
+                NonTerminalType.FOREIGN_DECL -> Program.Global.FunctionDefinition(processForeignFunctionDeclaration(it, diagnostics), it.location)
                 else -> throw IllegalArgumentException()
             }
         }
@@ -136,6 +158,20 @@ object AstFactory {
         val body = processManyStatements(children[children.lastIndex - 1], diagnostics)
 
         return Function(name, parameters, returnType, body, combineLocations(children))
+    }
+
+    private fun processForeignFunctionDeclaration(parseTree: ParseTree<Symbol>, diagnostics: Diagnostics): Function {
+        val children = (parseTree as ParseTree.Branch).getFilteredChildren()
+
+        val foreignName = extractForeignName(children[2] as ParseTree.Leaf<Symbol>, diagnostics, false)
+        val parameters = processFunctionDefinitionParameters(children[4], diagnostics)
+        val returnType = if (children.size > 6 && children[6].token() == TokenType.ARROW) processType(children[7]) else Type.Unit
+        val localName = if (children.size > 6 && children[children.size - 2].token() == TokenType.AS)
+            (children[children.size - 1] as ParseTree.Leaf).content
+        else
+            extractForeignName(children[2] as ParseTree.Leaf<Symbol>, diagnostics, true)
+
+        return Function(localName, parameters, returnType, Function.Implementation.Foreign(foreignName), parseTree.location)
     }
 
     private fun processFunctionDefinitionParameters(parseTree: ParseTree<Symbol>, diagnostics: Diagnostics): List<Function.Parameter> {
@@ -350,6 +386,8 @@ object AstFactory {
                 Statement.FunctionReturn(processExpression(children[1], diagnostics), combineLocations(children))
             Productions.atomicVarDef ->
                 Statement.VariableDefinition(processVariableDeclaration(children[0], diagnostics), combineLocations(children))
+            Productions.atomicForeignDecl ->
+                Statement.FunctionDefinition(processForeignFunctionDeclaration(children[0], diagnostics), combineLocations(children))
             else -> throw IllegalArgumentException()
         }
     }

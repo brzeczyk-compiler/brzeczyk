@@ -32,6 +32,8 @@ class LanguageTokensTest {
         assertEquals(firstMatch(tokens, "przerwij"), TokenType.BREAK)
         assertEquals(firstMatch(tokens, "pomiń"), TokenType.CONTINUE)
         assertEquals(firstMatch(tokens, "czynność"), TokenType.FUNCTION)
+        assertEquals(firstMatch(tokens, "obca"), TokenType.FOREIGN)
+        assertEquals(firstMatch(tokens, "jako"), TokenType.AS)
         assertEquals(firstMatch(tokens, "zwróć"), TokenType.RETURN)
         assertEquals(firstMatch(tokens, "zakończ"), TokenType.RETURN_UNIT)
         assertEquals(firstMatch(tokens, "zm"), TokenType.VARIABLE)
@@ -122,6 +124,10 @@ class LanguageTokensTest {
         assertEquals(firstMatch(tokens, "pchnąć_w_tę_łódź_jeża_lub_ośm_skrzyń_fig"), TokenType.IDENTIFIER)
         assertEquals(firstMatch(tokens, "pójdźżeKińTęChmurnośćWGłąbFlaszy"), TokenType.IDENTIFIER)
 
+        assertEquals(firstMatch(tokens, "`x`"), TokenType.FOREIGN_NAME)
+        assertEquals(firstMatch(tokens, "`_exit`"), TokenType.FOREIGN_NAME)
+        assertEquals(firstMatch(tokens, "`Liczba`"), TokenType.FOREIGN_NAME)
+
         assertEquals(firstMatch(tokens, "Liczba"), TokenType.TYPE_INTEGER)
         assertEquals(firstMatch(tokens, "Czy"), TokenType.TYPE_BOOLEAN)
         assertEquals(firstMatch(tokens, "Nic"), TokenType.TYPE_UNIT)
@@ -136,6 +142,8 @@ class LanguageTokensTest {
         assertNull(firstMatch(tokens, "asdf+34"))
         assertNull(firstMatch(tokens, "do-re-mi"))
         assertNull(firstMatch(tokens, "hmm?"))
+        assertNull(firstMatch(tokens, "``"))
+        assertNull(firstMatch(tokens, "`3abcd`"))
     }
 
     @Test fun `test whitespace and comments`() {

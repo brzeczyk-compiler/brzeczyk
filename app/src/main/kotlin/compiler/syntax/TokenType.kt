@@ -10,7 +10,7 @@ enum class TokenType {
     IF, ELSE_IF, ELSE,
     WHILE, BREAK, CONTINUE,
     // Function related keywords
-    RETURN, RETURN_UNIT, FUNCTION,
+    RETURN, RETURN_UNIT, FUNCTION, FOREIGN, AS,
     // Special characters
     COLON, SEMICOLON, QUESTION_MARK, COMMA, ARROW, NEWLINE,
     // Arithmetic operators
@@ -28,7 +28,7 @@ enum class TokenType {
     // Integers
     INTEGER,
     // Identifiers
-    IDENTIFIER,
+    IDENTIFIER, FOREIGN_NAME,
     // Built in types
     TYPE_INTEGER, TYPE_BOOLEAN, TYPE_UNIT,
     // Currently, there are no user defined types

@@ -17,7 +17,6 @@ enum class VariableLocationType {
 }
 
 const val memoryUnitSize: ULong = 8u
-val argPositionToRegister = listOf(Register.RDI, Register.RSI, Register.RDX, Register.RCX, Register.R8, Register.R9)
 val calleeSavedRegistersWithoutRSPAndRBP = listOf(Register.RBX, Register.R12, Register.R13, Register.R14, Register.R15)
 const val DISPLAY_LABEL_IN_MEMORY = "display"
 
@@ -57,42 +56,7 @@ data class DefaultFunctionDetailsGenerator(
     override fun genCall(
         args: List<IFTNode>,
     ): FunctionDetailsGenerator.FunctionCallIntermediateForm {
-        val cfgBuilder = ControlFlowGraphBuilder()
-
-        // First, move arguments to appropriate registers (or push to stack) according to call convention.
-        for ((arg, register) in args zip argPositionToRegister) {
-            val node = IFTNode.RegisterWrite(register, arg)
-            cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, node)
-        }
-
-        var numberOfArgsPushedToStack = 0
-        for (arg in args.drop(argPositionToRegister.size).reversed()) {
-            val node = IFTNode.StackPush(arg)
-            cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, node)
-            numberOfArgsPushedToStack += 1
-        }
-
-        // Add call instruction to actually call a given function
-        cfgBuilder.addLinksFromAllFinalRoots(
-            CFGLinkType.UNCONDITIONAL,
-            IFTNode.Call(functionLocationInCode)
-        )
-
-        // Abandon arguments that were previously put on stack
-        if (numberOfArgsPushedToStack > 0)
-            cfgBuilder.addLinksFromAllFinalRoots(
-                CFGLinkType.UNCONDITIONAL,
-                IFTNode.Add(
-                    IFTNode.RegisterRead(Register.RSP),
-                    IFTNode.Const(numberOfArgsPushedToStack * memoryUnitSize.toLong())
-                )
-            )
-
-        // At the end create IFTNode to get function result
-        val readResultNode: IFTNode? =
-            if (variableToStoreFunctionResult != null) IFTNode.RegisterRead(Register.RAX)
-            else null
-        return FunctionDetailsGenerator.FunctionCallIntermediateForm(cfgBuilder.build(), readResultNode)
+        return SysV64CallingConvention.genCall(functionLocationInCode, args, variableToStoreFunctionResult !== null)
     }
 
     override fun genPrologue(): ControlFlowGraph {

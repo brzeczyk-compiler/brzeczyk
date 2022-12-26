@@ -100,10 +100,9 @@ sealed interface Diagnostic {
             }
 
             class NameConflict(
-                vararg nodesWithSameName: NamedNode,
-                withBuiltinFunction: Boolean = false
+                vararg nodesWithSameName: NamedNode
             ) : NameResolutionError(nodesWithSameName.asList()) {
-                override val errorMessage = "There is a naming conflict" + if (withBuiltinFunction) " with builtin function." else "."
+                override val errorMessage = "There is a naming conflict."
             }
 
             class VariableIsNotCallable(

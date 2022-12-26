@@ -487,7 +487,10 @@ object ControlFlow {
             controlFlowGraphs[function] = cfgBuilder.build()
         }
 
-        program.globals.filterIsInstance<Program.Global.FunctionDefinition>().forEach { processFunction(it.function) }
+        program.globals
+            .filterIsInstance<Program.Global.FunctionDefinition>()
+            .filter { it.function.implementation is Function.Implementation.Local }
+            .forEach { processFunction(it.function) }
 
         return controlFlowGraphs
     }

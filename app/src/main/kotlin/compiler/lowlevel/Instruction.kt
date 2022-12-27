@@ -19,12 +19,25 @@ sealed class Instruction : Asmable {
         }
     }
 
-    override fun writeAsm(output: PrintWriter, registers: Map<Register, Register>) {
-        TODO() // Remove this and implement toAsm in each Instruction instance separately
-    }
+    abstract fun toAsm(registers: Map<Register, Register>): String
+
+    override fun writeAsm(output: PrintWriter, registers: Map<Register, Register>) = output.write(toAsm(registers))
 
     sealed class ConditionalJumpInstruction : Instruction() {
         abstract val targetLabel: String
+
+        override fun toAsm(registers: Map<Register, Register>) = when(this) {
+            is JmpEq -> "je"
+            is JmpNEq -> "jne"
+            is JmpLt -> "jl"
+            is JmpLtEq -> "jle"
+            is JmpGt -> "jg"
+            is JmpGtEq -> "jge"
+            is JmpZ -> "jz"
+            is JmpNZ -> "jnz"
+            is Dummy -> "dummy-conditional-jump"
+        } + " $targetLabel"
+
         data class JmpEq(override val targetLabel: String) : ConditionalJumpInstruction() //   JE   targetLabel
         data class JmpNEq(override val targetLabel: String) : ConditionalJumpInstruction() //  JNE  targetLabel
         data class JmpLt(override val targetLabel: String) : ConditionalJumpInstruction() //   JL   targetLabel
@@ -38,12 +51,24 @@ sealed class Instruction : Asmable {
 
     sealed class UnconditionalJumpInstruction : Instruction() {
         abstract val targetLabel: String
+
+        override fun toAsm(registers: Map<Register, Register>) = when(this) {
+            is Jmp -> "jmp"
+            is Dummy -> "dummy-jump"
+        } + " $targetLabel"
+
         data class Jmp(override val targetLabel: String) : UnconditionalJumpInstruction() //   JMP  targetLabel
         class Dummy(override val targetLabel: String) : UnconditionalJumpInstruction()
     }
 
     sealed class RetInstruction : Instruction() {
-        class Ret(override val regsUsed: Collection<Register>) : RetInstruction() // RET
+
+        override fun toAsm(registers: Map<Register, Register>) = when(this) {
+            is Ret -> "ret"
+            is Dummy -> "dummy-ret"
+        }
+
+        class Ret : RetInstruction() // RET
         class Dummy : RetInstruction()
     }
 
@@ -53,52 +78,70 @@ sealed class Instruction : Asmable {
         data class MoveRR(val reg_dest: Register, val reg_src: Register) : InPlaceInstruction() { //   MOV  reg_dest, reg_src
             override val regsDefined: Collection<Register> = setOf(reg_dest)
             override val regsUsed: Collection<Register> = setOf(reg_src)
+
+            override fun toAsm(registers: Map<Register, Register>) = "mov ${registers[reg_dest]}, ${registers[reg_src]}"
         }
         data class MoveRM(val reg_dest: Register, val mem_src: Addressing) : InPlaceInstruction() { // MOV  reg_dest, mem_src
             override val regsDefined: Collection<Register> = setOf(reg_dest)
             override val regsUsed: Collection<Register> = regsUsedInAddress(mem_src)
+
+            override fun toAsm(registers: Map<Register, Register>) = "mov ${registers[reg_dest]}, ${mem_src.toAsm(registers)}"
         }
         data class MoveMR(val mem_dest: Addressing, val reg_src: Register) : InPlaceInstruction() { // MOV  mem_dest, reg_src
             override val regsUsed: Collection<Register> = setOf(reg_src) union regsUsedInAddress(mem_dest)
+
+            override fun toAsm(registers: Map<Register, Register>) = "mov ${mem_dest.toAsm(registers)}, ${registers[reg_src]}"
         }
         data class MoveRI(val reg_dest: Register, val constant: Constant) : InPlaceInstruction() { //      MOV  reg_dest, constant
             constructor(reg_dest: Register, constant: Long) : this(reg_dest, FixedConstant(constant))
             override val regsDefined: Collection<Register> = setOf(reg_dest)
+
+            override fun toAsm(registers: Map<Register, Register>) = "mov ${registers[reg_dest]}, ${constant.value}"
         }
 
         // The LEA instruction
         data class Lea(val reg: Register, val address: Addressing) : InPlaceInstruction() { // LEA  reg,  mem
             override val regsDefined: Collection<Register> = setOf(reg)
             override val regsUsed: Collection<Register> = regsUsedInAddress(address)
+
+            override fun toAsm(registers: Map<Register, Register>) = "lea ${registers[reg]}, ${address.toAsm(registers)}"
         }
 
         // CALL instructions
-        data class CallR(
-            val reg: Register,
-            override val regsUsed: Collection<Register>,
-            override val regsDefined: Collection<Register>
-        ) : InPlaceInstruction() //               CALL reg
-        data class CallL(
-            val targetLabel: String,
-            override val regsUsed: Collection<Register>,
-            override val regsDefined: Collection<Register>
-        ) : InPlaceInstruction() //           CALL targetLabel
+        data class CallR(val reg: Register) : InPlaceInstruction() { //               CALL reg
+            override val regsUsed: Collection<Register> = setOf(reg)
+
+            override fun toAsm(registers: Map<Register, Register>) = "call ${registers[reg]}"
+        }
+        data class CallL(val targetLabel: String) : InPlaceInstruction() { //           CALL targetLabel
+            override fun toAsm(registers: Map<Register, Register>) = "call $targetLabel"
+        }
 
         // Stack instructions
         data class PushR(val reg: Register) : InPlaceInstruction() { //               PUSH reg
             override val regsUsed: Collection<Register> = setOf(reg)
+
+            override fun toAsm(registers: Map<Register, Register>) = "push ${registers[reg]}"
         }
         data class PushM(val address: Addressing) : InPlaceInstruction() { //         PUSH mem
             override val regsUsed: Collection<Register> = regsUsedInAddress(address)
+
+            override fun toAsm(registers: Map<Register, Register>) = "push ${address.toAsm(registers)}"
         }
         data class PushI(val constant: Constant) : InPlaceInstruction() { //                PUSH imm
             constructor(constant: Long) : this(FixedConstant(constant))
+
+            override fun toAsm(registers: Map<Register, Register>) = "push ${constant.value}"
         }
         data class PopR(val reg: Register) : InPlaceInstruction() { //                POP  reg
             override val regsDefined: Collection<Register> = setOf(reg)
+
+            override fun toAsm(registers: Map<Register, Register>) = "pop ${registers[reg]}"
         }
         data class PopM(val address: Addressing) : InPlaceInstruction() { //          POP  mem
             override val regsUsed: Collection<Register> = regsUsedInAddress(address)
+
+            override fun toAsm(registers: Map<Register, Register>) = "pop ${address.toAsm(registers)}"
         }
 
         // Helper parent class for instructions that take a register, use it and store a value in it
@@ -106,6 +149,11 @@ sealed class Instruction : Asmable {
             abstract val reg: Register
             override val regsDefined: Collection<Register> get() = setOf(reg)
             override val regsUsed: Collection<Register> get() = setOf(reg)
+
+            override fun toAsm(registers: Map<Register, Register>) = when(this) {
+                is NegR -> "neg"
+                is NotR -> "not"
+            } + " ${registers[reg]}"
         }
 
         // Helper parent class for instructions that take two registers, use them and store a value in the first one
@@ -114,6 +162,15 @@ sealed class Instruction : Asmable {
             abstract val reg1: Register
             override val regsDefined: Collection<Register> get() = setOf(reg0)
             override val regsUsed: Collection<Register> get() = setOf(reg0, reg1)
+
+            override fun toAsm(registers: Map<Register, Register>) = when(this) {
+                is AddRR -> "add"
+                is AndRR -> "and"
+                is MulRR -> "imul"
+                is OrRR -> "or"
+                is SubRR -> "sub"
+                is XorRR -> "xor"
+            } + " ${registers[reg0]}, ${registers[reg1]}"
         }
 
         // Arithmetic instructions
@@ -124,11 +181,15 @@ sealed class Instruction : Asmable {
         data class DivR(val reg: Register) : InPlaceInstruction() { //                              IDIV reg          RAX  <- RDX:RAX / reg
             override val regsDefined: Collection<Register> = setOf(Register.RAX, Register.RDX) //                     RDX  <- RDX:RAX % reg
             override val regsUsed: Collection<Register> = setOf(Register.RAX, Register.RDX, reg)
+
+            override fun toAsm(registers: Map<Register, Register>) = "idiv ${registers[reg]}"
         }
         // CQO - copies the sign bit in RAX to all bits in RDX
         class Cqo() : InPlaceInstruction() {
             override val regsDefined: Collection<Register> = setOf(Register.RDX)
             override val regsUsed: Collection<Register> = setOf(Register.RAX)
+
+            override fun toAsm(registers: Map<Register, Register>) = "cqo"
         }
         // Bitwise instructions
         data class NotR(override val reg: Register) : OneRegIns() //                                NOT  reg          reg  <- ~reg
@@ -138,18 +199,26 @@ sealed class Instruction : Asmable {
         data class ShiftLeftR(val reg: Register) : InPlaceInstruction() { //                        SAL  reg,  CL     reg  <- reg << CL
             override val regsDefined: Collection<Register> = setOf(reg)
             override val regsUsed: Collection<Register> = setOf(reg, Register.RCX)
+
+            override fun toAsm(registers: Map<Register, Register>) = "sal ${registers[reg]}, cl"
         }
         data class ShiftRightR(val reg: Register) : InPlaceInstruction() { //                       SAR  reg,  CL     reg  <- reg >> CL
             override val regsDefined: Collection<Register> = setOf(reg)
             override val regsUsed: Collection<Register> = setOf(reg, Register.RCX)
+
+            override fun toAsm(registers: Map<Register, Register>) = "sar ${registers[reg]}, cl"
         }
 
         // Comparison instructions
         data class CmpRR(val reg0: Register, val reg1: Register) : InPlaceInstruction() { //  CMP   reg0, reg1
             override val regsUsed: Collection<Register> = setOf(reg0, reg1)
+
+            override fun toAsm(registers: Map<Register, Register>) = "cmp ${registers[reg0]}, ${registers[reg1]}"
         }
         data class TestRR(val reg0: Register, val reg1: Register) : InPlaceInstruction() { // TEST  reg0, reg1
             override val regsUsed: Collection<Register> = setOf(reg0, reg1)
+
+            override fun toAsm(registers: Map<Register, Register>) = "test ${registers[reg0]}, ${registers[reg1]}"
         }
 
         // SETcc instructions
@@ -158,6 +227,15 @@ sealed class Instruction : Asmable {
             abstract val reg: Register
             override val regsDefined: Collection<Register> get() = setOf(reg)
             override val regsUsed: Collection<Register> get() = setOf(reg)
+
+            override fun toAsm(registers: Map<Register, Register>) = when(this) {
+                is SetEqR -> "sete"
+                is SetNeqR -> "setne"
+                is SetLtR -> "setl"
+                is SetLtEqR -> "setle"
+                is SetGtR -> "setg"
+                is SetGtEqR -> "setge"
+            } + " ${registers[reg]}"
         }
         data class SetEqR(override val reg: Register) : SetInstruction() //   SETE  reg8
         data class SetNeqR(override val reg: Register) : SetInstruction() //  SETNE reg8
@@ -165,6 +243,9 @@ sealed class Instruction : Asmable {
         data class SetLtEqR(override val reg: Register) : SetInstruction() // SETLE reg8
         data class SetGtR(override val reg: Register) : SetInstruction() //   SETG  reg8
         data class SetGtEqR(override val reg: Register) : SetInstruction() // SETGE reg8
-        class Dummy(override val regsUsed: List<Register> = listOf(), override val regsDefined: List<Register> = listOf()) : InPlaceInstruction()
+
+        class Dummy(override val regsUsed: List<Register> = listOf(), override val regsDefined: List<Register> = listOf()) : InPlaceInstruction() {
+            override fun toAsm(registers: Map<Register, Register>) = "dummy"
+        }
     }
 }

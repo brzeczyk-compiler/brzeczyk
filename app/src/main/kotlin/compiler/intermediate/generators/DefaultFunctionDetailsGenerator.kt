@@ -35,6 +35,7 @@ data class DefaultFunctionDetailsGenerator(
     private val variablesRegisters: MutableMap<NamedNode, Register> = referenceHashMapOf()
     private var variablesTotalOffset: ULong = 0u
     private val previousDisplayEntryRegister = Register()
+    private val calleeSavedBackupRegisters = calleeSavedRegistersWithoutRSPAndRBP.map { Register() }
 
     override val spilledRegistersOffset: ConstantPlaceholder = ConstantPlaceholder()
 
@@ -75,7 +76,7 @@ data class DefaultFunctionDetailsGenerator(
         )
         cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, movRbpRsp)
 
-        // allocate memory for local variables
+        // allocate memory for local variables and spills
         val subRsp = IFTNode.RegisterWrite(
             Register.RSP,
             IFTNode.Subtract(
@@ -97,7 +98,7 @@ data class DefaultFunctionDetailsGenerator(
         cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, savePreviousRbp)
         cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, updateRbpAtDepth)
 
-        // move args from Registers and Stack
+        // move args from registers and stack
         for ((param, register) in parameters zip argPositionToRegister) {
             cfgBuilder.addLinksFromAllFinalRoots(
                 CFGLinkType.UNCONDITIONAL,
@@ -125,10 +126,10 @@ data class DefaultFunctionDetailsGenerator(
         }
 
         // backup callee-saved registers
-        for (register in calleeSavedRegistersWithoutRSPAndRBP.reversed())
+        for ((hardware_reg, backup_reg) in calleeSavedRegistersWithoutRSPAndRBP zip calleeSavedBackupRegisters)
             cfgBuilder.addLinksFromAllFinalRoots(
                 CFGLinkType.UNCONDITIONAL,
-                IFTNode.StackPush(IFTNode.RegisterRead(register))
+                IFTNode.RegisterWrite(backup_reg, IFTNode.RegisterRead(hardware_reg))
             )
 
         return cfgBuilder.build()
@@ -138,10 +139,10 @@ data class DefaultFunctionDetailsGenerator(
         val cfgBuilder = ControlFlowGraphBuilder()
 
         // restore callee-saved registers
-        for (register in calleeSavedRegistersWithoutRSPAndRBP)
+        for ((hardware_reg, backup_reg) in calleeSavedRegistersWithoutRSPAndRBP zip calleeSavedBackupRegisters)
             cfgBuilder.addLinksFromAllFinalRoots(
                 CFGLinkType.UNCONDITIONAL,
-                IFTNode.RegisterWrite(register, IFTNode.StackPop())
+                IFTNode.RegisterWrite(hardware_reg, IFTNode.RegisterRead(backup_reg))
             )
 
         // move result to RAX

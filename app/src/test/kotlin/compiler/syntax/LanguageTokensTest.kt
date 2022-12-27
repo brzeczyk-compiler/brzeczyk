@@ -32,7 +32,7 @@ class LanguageTokensTest {
         assertEquals(firstMatch(tokens, "przerwij"), TokenType.BREAK)
         assertEquals(firstMatch(tokens, "pomiń"), TokenType.CONTINUE)
         assertEquals(firstMatch(tokens, "czynność"), TokenType.FUNCTION)
-        assertEquals(firstMatch(tokens, "obca"), TokenType.FOREIGN)
+        assertEquals(firstMatch(tokens, "zewnętrzna"), TokenType.FOREIGN)
         assertEquals(firstMatch(tokens, "jako"), TokenType.AS)
         assertEquals(firstMatch(tokens, "zwróć"), TokenType.RETURN)
         assertEquals(firstMatch(tokens, "zakończ"), TokenType.RETURN_UNIT)

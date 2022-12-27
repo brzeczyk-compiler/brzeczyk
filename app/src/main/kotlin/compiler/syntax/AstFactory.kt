@@ -52,13 +52,15 @@ object AstFactory {
         return (properNode.children.first() as ParseTree.Leaf).content
     }
 
+    private val identifierRegexDfa = RegexDfa(TokenRegexParser.parseStringToRegex("""\l[\l\u\d_]*"""))
+
     private fun extractForeignName(parseTree: ParseTree.Leaf<Symbol>, diagnostics: Diagnostics, asIdentifier: Boolean): String {
         return when (parseTree.token()) {
             TokenType.IDENTIFIER -> parseTree.content
             TokenType.FOREIGN_NAME -> {
                 val identifier = parseTree.content.substring(1, parseTree.content.lastIndex)
                 if (asIdentifier) {
-                    val walk = RegexDfa(TokenRegexParser.parseStringToRegex("""\l[\l\u\d_]*""")).newWalk()
+                    val walk = identifierRegexDfa.newWalk()
                     identifier.forEach { walk.step(it) }
                     if (walk.getAcceptingStateTypeOrNull() === null) {
                         diagnostics.report(Diagnostic.ParserError.ForeignNameAsInvalidIdentifier(identifier, parseTree.location))

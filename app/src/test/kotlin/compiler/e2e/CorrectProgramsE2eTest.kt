@@ -120,7 +120,7 @@ class CorrectProgramsE2eTest {
     fun `test local functions`() {
         E2eTestUtils.assertProgramCorrect(
             """
-            czynność zewnętrzna() {
+            czynność wierzchnia() {
                 zm x: Liczba = 10
 
                 czynność wewnętrzna(y: Liczba) -> Liczba {
@@ -195,7 +195,7 @@ class CorrectProgramsE2eTest {
         E2eTestUtils.assertProgramCorrect(
             """
             czynność napisz(wartość: Liczba = 0) {
-                obca czynność print_int64(wartość: Liczba) jako napisz
+                zewnętrzna czynność print_int64(wartość: Liczba) jako napisz
                 napisz(-wartość)
             }
             

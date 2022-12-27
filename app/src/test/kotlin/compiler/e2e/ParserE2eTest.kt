@@ -108,25 +108,25 @@ class ParserE2eTest {
                             
                         """,
                 """
-                            obca czynność f() { }
+                            zewnętrzna czynność f() { }
                         """,
                 """
-                            czynność obca f()
+                            czynność zewnętrzna f()
                         """,
                 """
                             czynność `abcd`()
                         """,
                 """
-                            obca czynność F()
+                            zewnętrzna czynność F()
                         """,
                 """
-                            obca czynność `F`()
+                            zewnętrzna czynność `F`()
                         """,
                 """
-                            obca czynność `F`() jako G
+                            zewnętrzna czynność `F`() jako G
                         """,
                 """
-                            obca czynność f() jako `g`
+                            zewnętrzna czynność f() jako `g`
                         """,
             )
         )

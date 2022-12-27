@@ -30,7 +30,7 @@ object LanguageTokens {
             Pair(TokenType.RETURN, "zwróć"),
             Pair(TokenType.RETURN_UNIT, "zakończ"),
             Pair(TokenType.FUNCTION, "czynność"),
-            Pair(TokenType.FOREIGN, "obca"),
+            Pair(TokenType.FOREIGN, "zewnętrzna"),
             Pair(TokenType.AS, "jako"),
 
             // Special characters

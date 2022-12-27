@@ -13,6 +13,7 @@ import compiler.syntax.LanguageTokens
 import compiler.syntax.Symbol
 import compiler.syntax.TokenType
 import java.io.Reader
+import java.io.Writer
 
 // The main class used to compile a source code into an executable machine code.
 class Compiler(val diagnostics: Diagnostics) {
@@ -23,7 +24,7 @@ class Compiler(val diagnostics: Diagnostics) {
     private val lexer = Lexer(LanguageTokens.getTokens(), diagnostics)
     private val parser = Parser(LanguageGrammar.getGrammar(), diagnostics)
 
-    fun process(input: Reader) {
+    fun process(input: Reader, output: Writer): Boolean {
         try {
             val tokenSequence = lexer.process(ReaderInput(input))
 
@@ -36,10 +37,21 @@ class Compiler(val diagnostics: Diagnostics) {
 
             val programProperties = ProgramAnalyzer.analyzeProgram(ast, diagnostics)
 
-            val cfg = createGraphForProgram(ast, programProperties, diagnostics, diagnostics.hasAnyError())
-            // TODO: generate the code
+            val functionCFGs = createGraphForProgram(ast, programProperties, diagnostics, diagnostics.hasAnyError())
+
+            if (diagnostics.hasAnyError())
+                return false
+
+            // TODO:
+            // - make sure "główna" is present and generate a jump to it from "main",
+            // - linearize CFG for each function,
+            // - run liveness analysis on each linear function code,
+            // - run register allocation on each linear function code,
+            // - write ASM to output (display, global variables, functions)
+
+            return true
         } catch (_: CompilationFailed) { }
 
-        println(diagnostics)
+        return false
     }
 }

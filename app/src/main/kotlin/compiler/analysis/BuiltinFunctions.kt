@@ -13,7 +13,7 @@ object BuiltinFunctions {
         "napisz",
         listOf(Function.Parameter("wartość", Type.Number, null)),
         Type.Unit,
-        listOf()
+        Function.Implementation.Foreign("print")
     )
 
     val builtinFunctionsByName = mapOf(functionNapisz.name to functionNapisz)

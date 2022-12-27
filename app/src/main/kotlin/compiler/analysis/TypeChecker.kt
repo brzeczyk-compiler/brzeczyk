@@ -133,7 +133,8 @@ class TypeChecker(private val nameResolution: ReferenceMap<Any, NamedNode>, priv
         }
 
         checkBlock(function.body)
-        if (function.returnType != Type.Unit)
+
+        if (function.implementation is Function.Implementation.Local && function.returnType != Type.Unit)
             checkIfLastStatementIsReturn(function.body)
     }
 

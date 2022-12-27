@@ -26,7 +26,7 @@ sealed class Instruction : Asmable {
     sealed class ConditionalJumpInstruction : Instruction() {
         abstract val targetLabel: String
 
-        override fun toAsm(registers: Map<Register, Register>) = when(this) {
+        override fun toAsm(registers: Map<Register, Register>) = when (this) {
             is JmpEq -> "je"
             is JmpNEq -> "jne"
             is JmpLt -> "jl"
@@ -52,7 +52,7 @@ sealed class Instruction : Asmable {
     sealed class UnconditionalJumpInstruction : Instruction() {
         abstract val targetLabel: String
 
-        override fun toAsm(registers: Map<Register, Register>) = when(this) {
+        override fun toAsm(registers: Map<Register, Register>) = when (this) {
             is Jmp -> "jmp"
             is Dummy -> "dummy-jump"
         } + " $targetLabel"
@@ -63,7 +63,7 @@ sealed class Instruction : Asmable {
 
     sealed class RetInstruction : Instruction() {
 
-        override fun toAsm(registers: Map<Register, Register>) = when(this) {
+        override fun toAsm(registers: Map<Register, Register>) = when (this) {
             is Ret -> "ret"
             is Dummy -> "dummy-ret"
         }
@@ -150,7 +150,7 @@ sealed class Instruction : Asmable {
             override val regsDefined: Collection<Register> get() = setOf(reg)
             override val regsUsed: Collection<Register> get() = setOf(reg)
 
-            override fun toAsm(registers: Map<Register, Register>) = when(this) {
+            override fun toAsm(registers: Map<Register, Register>) = when (this) {
                 is NegR -> "neg"
                 is NotR -> "not"
             } + " ${registers[reg]}"
@@ -163,7 +163,7 @@ sealed class Instruction : Asmable {
             override val regsDefined: Collection<Register> get() = setOf(reg0)
             override val regsUsed: Collection<Register> get() = setOf(reg0, reg1)
 
-            override fun toAsm(registers: Map<Register, Register>) = when(this) {
+            override fun toAsm(registers: Map<Register, Register>) = when (this) {
                 is AddRR -> "add"
                 is AndRR -> "and"
                 is MulRR -> "imul"
@@ -228,7 +228,7 @@ sealed class Instruction : Asmable {
             override val regsDefined: Collection<Register> get() = setOf(reg)
             override val regsUsed: Collection<Register> get() = setOf(reg)
 
-            override fun toAsm(registers: Map<Register, Register>) = when(this) {
+            override fun toAsm(registers: Map<Register, Register>) = when (this) {
                 is SetEqR -> "sete"
                 is SetNeqR -> "setne"
                 is SetLtR -> "setl"

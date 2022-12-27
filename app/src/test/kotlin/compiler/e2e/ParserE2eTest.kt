@@ -107,6 +107,27 @@ class ParserE2eTest {
                             czynność f(ile: Liczba = 17, czy: Czy) -> Liczba { }
                             
                         """,
+                """
+                            obca czynność f() { }
+                        """,
+                """
+                            czynność obca f()
+                        """,
+                """
+                            czynność `abcd`()
+                        """,
+                """
+                            obca czynność F()
+                        """,
+                """
+                            obca czynność `F`()
+                        """,
+                """
+                            obca czynność `F`() jako G
+                        """,
+                """
+                            obca czynność f() jako `g`
+                        """,
             )
         )
     }

@@ -189,4 +189,21 @@ class CorrectProgramsE2eTest {
             """
         )
     }
+
+    @Test
+    fun `test redefining builtin function`() {
+        E2eTestUtils.assertProgramCorrect(
+            """
+            czynność napisz(wartość: Liczba = 0) {
+                obca czynność print_int64(wartość: Liczba) jako napisz
+                napisz(-wartość)
+            }
+            
+            czynność główna() {
+                napisz() // wypisze 0
+                napisz(4) // wypisze -4
+            }
+            """
+        )
+    }
 }

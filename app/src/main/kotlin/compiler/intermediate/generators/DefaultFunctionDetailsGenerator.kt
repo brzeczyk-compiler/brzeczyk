@@ -113,9 +113,11 @@ data class DefaultFunctionDetailsGenerator(
                 CFGLinkType.UNCONDITIONAL,
                 genWrite(
                     param.value,
-                    IFTNode.Add(
-                        IFTNode.RegisterRead(Register.RBP), // add 2 to account old RBP and return address
-                        IFTNode.Const((param.index + 2) * memoryUnitSize.toLong())
+                    IFTNode.MemoryRead(
+                        IFTNode.Add(
+                            IFTNode.RegisterRead(Register.RBP), // add 2 to account old RBP and return address
+                            IFTNode.Const((param.index + 2) * memoryUnitSize.toLong())
+                        )
                     ),
                     true
                 ),

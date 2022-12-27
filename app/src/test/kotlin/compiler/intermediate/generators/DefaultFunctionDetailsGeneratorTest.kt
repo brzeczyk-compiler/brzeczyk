@@ -132,9 +132,12 @@ class DefaultFunctionDetailsGeneratorTest {
         // remove arguments previously put on stack
         expectedCFGBuilder.addLinksFromAllFinalRoots(
             CFGLinkType.UNCONDITIONAL,
-            IFTNode.Add(
-                IFTNode.RegisterRead(Register.RSP),
-                IFTNode.Const(16)
+            IFTNode.RegisterWrite(
+                Register.RSP,
+                IFTNode.Add(
+                    IFTNode.RegisterRead(Register.RSP),
+                    IFTNode.Const(16)
+                )
             )
         )
 

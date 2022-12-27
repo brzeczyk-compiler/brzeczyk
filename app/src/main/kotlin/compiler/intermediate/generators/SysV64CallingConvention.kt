@@ -34,9 +34,12 @@ object SysV64CallingConvention {
         if (numberOfArgsPushedToStack > 0)
             cfgBuilder.addLinksFromAllFinalRoots(
                 CFGLinkType.UNCONDITIONAL,
-                IFTNode.Add(
-                    IFTNode.RegisterRead(Register.RSP),
-                    IFTNode.Const(numberOfArgsPushedToStack * memoryUnitSize.toLong())
+                IFTNode.RegisterWrite(
+                    Register.RSP,
+                    IFTNode.Add(
+                        IFTNode.RegisterRead(Register.RSP),
+                        IFTNode.Const(numberOfArgsPushedToStack * memoryUnitSize.toLong())
+                    )
                 )
             )
 

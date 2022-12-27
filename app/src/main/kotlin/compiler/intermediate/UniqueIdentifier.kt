@@ -1,6 +1,5 @@
 package compiler.intermediate
 
-import compiler.analysis.BuiltinFunctions
 import compiler.intermediate.generators.DISPLAY_LABEL_IN_MEMORY
 import compiler.intermediate.generators.GlobalVariableAccessGenerator
 
@@ -35,7 +34,7 @@ class UniqueIdentifierFactory() {
             'Ź' to 'X',
             'Ż' to 'Z'
         )
-        val forbiddenLabels = listOf(GlobalVariableAccessGenerator.GLOBALS_MEMORY_LABEL, DISPLAY_LABEL_IN_MEMORY) + BuiltinFunctions.builtinFunctionsByName.keys.toList()
+        val forbiddenLabels = listOf(GlobalVariableAccessGenerator.GLOBALS_MEMORY_LABEL, DISPLAY_LABEL_IN_MEMORY)
     }
 
     private val knownIdentifiers: MutableSet<String> = mutableSetOf()

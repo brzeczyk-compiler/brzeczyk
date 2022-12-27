@@ -55,10 +55,7 @@ object NameResolver {
             // conflict can only appear in the same scope
             if (scope.containsKey(namedNode.name)) {
                 diagnostics.report(
-                    Diagnostic.ResolutionDiagnostic.NameResolutionError.NameConflict(
-                        scope[namedNode.name]!!, namedNode,
-                        withBuiltinFunction = BuiltinFunctions.builtinFunctionsByName.containsKey(namedNode.name)
-                    )
+                    Diagnostic.ResolutionDiagnostic.NameResolutionError.NameConflict(scope[namedNode.name]!!, namedNode)
                 )
             }
         }
@@ -134,8 +131,6 @@ object NameResolver {
 
                 is Program -> {
                     val newScope = makeScope()
-
-                    BuiltinFunctions.builtinFunctionsByName.forEach { (name, function) -> addName(name, function, newScope) }
 
                     node.globals.forEach { analyzeNode(it, newScope) }
                     destroyScope(newScope)

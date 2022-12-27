@@ -194,16 +194,6 @@ class NameResolverE2eTest {
     }
 
     @Test
-    fun `test conflict with builtin function `() {
-        assertErrorOfType(
-            """
-                    czynność napisz() {}
-                """,
-            Diagnostic.ResolutionDiagnostic.NameResolutionError.NameConflict::class
-        )
-    }
-
-    @Test
     fun `test conflicts (functions with different return types)`() {
         assertErrorOfType(
             """

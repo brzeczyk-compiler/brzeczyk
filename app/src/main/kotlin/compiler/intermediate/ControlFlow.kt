@@ -410,7 +410,8 @@ object ControlFlow {
                                     addExpression(parameter.defaultValue, defaultParameterValues[parameter])
                             }
 
-                            processFunction(nestedFunction)
+                            if (nestedFunction.implementation is Function.Implementation.Local)
+                                processFunction(nestedFunction)
                         }
 
                         is Statement.Assignment -> addExpression(statement.value, nameResolution[statement] as Variable)
@@ -487,7 +488,10 @@ object ControlFlow {
             controlFlowGraphs[function] = cfgBuilder.build()
         }
 
-        program.globals.filterIsInstance<Program.Global.FunctionDefinition>().forEach { processFunction(it.function) }
+        program.globals
+            .filterIsInstance<Program.Global.FunctionDefinition>()
+            .filter { it.function.implementation is Function.Implementation.Local }
+            .forEach { processFunction(it.function) }
 
         return controlFlowGraphs
     }

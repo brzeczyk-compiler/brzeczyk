@@ -113,7 +113,7 @@ object VariablePropertiesAnalyzer {
                         }
                     }
                     node.body.forEach { analyzeVariables(it, node) }
-                    if (node.returnType != Type.Unit) {
+                    if (node.implementation is Function.Implementation.Local && node.returnType != Type.Unit) {
                         // Accessed set consists of only the owner function, cause the variable's value is moved to
                         // appropriate Register in the ControlFlowGraph of epilogue of this function, and the Variable
                         // is never accessed anymore (including both outer & inner functions).

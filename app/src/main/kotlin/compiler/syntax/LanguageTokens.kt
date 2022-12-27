@@ -30,6 +30,8 @@ object LanguageTokens {
             Pair(TokenType.RETURN, "zwróć"),
             Pair(TokenType.RETURN_UNIT, "zakończ"),
             Pair(TokenType.FUNCTION, "czynność"),
+            Pair(TokenType.FOREIGN, "zewnętrzna"),
+            Pair(TokenType.AS, "jako"),
 
             // Special characters
             Pair(TokenType.COLON, ":"),
@@ -85,6 +87,10 @@ object LanguageTokens {
             // Have to start with a lowercase letter
             // Can include alphanumeric characters and underscore
             Pair(TokenType.IDENTIFIER, """\l[\l\u\d_]*"""),
+
+            // Foreign names - external names of imported foreign functions
+            // Enclosed in backticks to avoid confusion with keywords and types
+            Pair(TokenType.FOREIGN_NAME, """`[\l\u_][\l\u\d_]*`"""),
 
             // Type identifiers - names of types
             // Includes built in types Liczba, Czy and Nic

@@ -1,6 +1,5 @@
 package compiler.intermediate
 
-import compiler.analysis.BuiltinFunctions
 import compiler.analysis.VariablePropertiesAnalyzer
 import compiler.ast.Expression
 import compiler.ast.Function
@@ -8,9 +7,11 @@ import compiler.ast.NamedNode
 import compiler.ast.Program
 import compiler.ast.Statement
 import compiler.ast.StatementBlock
+import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.intermediate.generators.DISPLAY_LABEL_IN_MEMORY
 import compiler.intermediate.generators.DefaultFunctionDetailsGenerator
+import compiler.intermediate.generators.ForeignFunctionDetailsGenerator
 import compiler.intermediate.generators.FunctionDetailsGenerator
 import compiler.intermediate.generators.VariableLocationType
 import compiler.utils.ReferenceHashMap
@@ -43,7 +44,7 @@ object FunctionDependenciesAnalyzer {
             when (node) {
                 is Program.Global.FunctionDefinition -> { analyze(node.function, pathSoFar) }
                 is Statement.FunctionDefinition -> { analyze(node.function, pathSoFar) }
-                is Function -> {
+                is Function -> if (node.implementation is Function.Implementation.Local) {
                     val newPrefix = nameFunction(node, pathSoFar)
                     var blockNumber = 0
                     fun handleNestedBlock(statements: List<Statement>) = statements.forEach { analyze(it, newPrefix + "@block" + blockNumber++) }
@@ -67,7 +68,6 @@ object FunctionDependenciesAnalyzer {
             }
         }
         program.globals.forEach { analyze(it) }
-        BuiltinFunctions.getUsedBuiltinFunctions(program).forEach { nameFunction(it, null) }
         return uniqueIdentifiers
     }
 
@@ -81,26 +81,36 @@ object FunctionDependenciesAnalyzer {
         val functionIdentifiers = createUniqueIdentifiers(program, allowInconsistentNamingErrors)
 
         fun createDetailsGenerator(function: Function, depth: ULong) {
-            // TODO: check if the function is local or foreign
+            result[function] = when (function.implementation) {
 
-            val variablesLocationTypes = referenceHashMapOf<NamedNode, VariableLocationType>()
-            variableProperties
-                .filter { (_, properties) -> properties.owner === function }
-                .forEach { (variable, properties) ->
-                    variablesLocationTypes[variable as NamedNode] =
-                        if (properties.accessedIn.any { it != function } || properties.writtenIn.any { it != function })
-                            VariableLocationType.MEMORY
-                        else VariableLocationType.REGISTER
+                is Function.Implementation.Foreign -> {
+                    ForeignFunctionDetailsGenerator(
+                        IFTNode.MemoryLabel(function.implementation.foreignName),
+                        function.returnType !is Type.Unit
+                    )
                 }
 
-            result[function] = DefaultFunctionDetailsGenerator(
-                function.parameters,
-                functionReturnedValueVariables[function],
-                IFTNode.MemoryLabel(functionIdentifiers[function]!!.value),
-                depth,
-                variablesLocationTypes,
-                IFTNode.MemoryLabel(DISPLAY_LABEL_IN_MEMORY)
-            )
+                is Function.Implementation.Local -> {
+                    val variablesLocationTypes = referenceHashMapOf<NamedNode, VariableLocationType>()
+                    variableProperties
+                        .filter { (_, properties) -> properties.owner === function }
+                        .forEach { (variable, properties) ->
+                            variablesLocationTypes[variable as NamedNode] =
+                                if (properties.accessedIn.any { it != function } || properties.writtenIn.any { it != function })
+                                    VariableLocationType.MEMORY
+                                else VariableLocationType.REGISTER
+                        }
+
+                    DefaultFunctionDetailsGenerator(
+                        function.parameters,
+                        functionReturnedValueVariables[function],
+                        IFTNode.MemoryLabel(functionIdentifiers[function]!!.value),
+                        depth,
+                        variablesLocationTypes,
+                        IFTNode.MemoryLabel(DISPLAY_LABEL_IN_MEMORY)
+                    )
+                }
+            }
         }
 
         fun processFunction(function: Function, depth: ULong) {
@@ -125,7 +135,6 @@ object FunctionDependenciesAnalyzer {
         }
 
         program.globals.forEach { if (it is Program.Global.FunctionDefinition) processFunction(it.function, 0u) }
-        BuiltinFunctions.getUsedBuiltinFunctions(program).forEach { createDetailsGenerator(it, 0u) }
 
         return result
     }
@@ -208,7 +217,6 @@ object FunctionDependenciesAnalyzer {
         }
 
         ast.globals.forEach { getCalledFunctions(it) }
-        BuiltinFunctions.getUsedBuiltinFunctions(ast).forEach { functionCalls[it] = referenceHashSetOf() }
 
         val allFunctions = functionCalls.referenceKeys
         var previousPartialTransitiveFunctionCalls: ReferenceHashMap<Function, ReferenceSet<Function>>

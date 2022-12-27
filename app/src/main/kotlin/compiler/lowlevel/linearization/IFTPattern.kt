@@ -168,10 +168,25 @@ sealed class IFTPattern {
         }
     }
 
-    data class Call(val addressPattern: IFTPattern = AnyNode()) : IFTPattern() {
+    data class Call(
+        val addressPattern: IFTPattern = AnyNode(),
+        val usedRegsPattern: ArgumentPattern<Collection<Register>> = AnyArgument(),
+        val definedRegsPattern: ArgumentPattern<Collection<Register>> = AnyArgument()
+    ) : IFTPattern() {
         override fun match(node: IFTNode): MatchResult? {
             if (node !is IFTNode.Call) return null
-            return addressPattern.match(node.address)
+            val addressMatch = addressPattern.match(node.address) ?: return null
+            val usedRegsMatch = usedRegsPattern.match(node.usedRegisters) ?: return null
+            val definedRegsMatch = definedRegsPattern.match(node.definedRegisters) ?: return null
+            return MatchResult(addressMatch.matchedSubtrees, addressMatch.matchedValues + usedRegsMatch + definedRegsMatch)
+        }
+    }
+
+    data class Return(val usedRegsPattern: ArgumentPattern<Collection<Register>> = AnyArgument()) : IFTPattern() {
+        override fun match(node: IFTNode): MatchResult? {
+            if (node !is IFTNode.Return) return null
+            val usedRegsMatch = usedRegsPattern.match(node.usedRegisters) ?: return null
+            return MatchResult(emptyList(), usedRegsMatch)
         }
     }
 }

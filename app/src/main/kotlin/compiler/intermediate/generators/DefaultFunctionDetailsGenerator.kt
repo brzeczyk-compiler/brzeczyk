@@ -172,6 +172,12 @@ data class DefaultFunctionDetailsGenerator(
             IFTNode.RegisterWrite(Register.RBP, IFTNode.StackPop())
         )
 
+        // return
+        cfgBuilder.addLinksFromAllFinalRoots(
+            CFGLinkType.UNCONDITIONAL,
+            IFTNode.Return(setOf(Register.RAX) + calleeSavedRegistersWithoutRSPAndRBP)
+        )
+
         return cfgBuilder.build()
     }
 

@@ -26,9 +26,9 @@ sealed class Addressing {
     ) : Addressing() { // [base + displacement] or [base]
         override fun toAsm(registers: Map<Register, Register>) =
             if (displacement == MemoryAddress.Const(0U)) {
-                "[${registers[base]}]"
+                "[${registers[base]!!.toAsm()}]"
             } else {
-                "[${registers[base]} + $displacement]"
+                "[${registers[base]!!.toAsm()} + $displacement]"
             }
     }
 
@@ -42,15 +42,15 @@ sealed class Addressing {
         override fun toAsm(registers: Map<Register, Register>) =
             if (displacement == MemoryAddress.Const(0U)) {
                 if (scale == oneUByte) {
-                    "[${registers[base]} + ${registers[index]}]"
+                    "[${registers[base]!!.toAsm()} + ${registers[index]!!.toAsm()}]"
                 } else {
-                    "[${registers[base]} + (${registers[index]} * $scale)]"
+                    "[${registers[base]!!.toAsm()} + (${registers[index]!!.toAsm()} * $scale)]"
                 }
             } else {
                 if (scale == oneUByte) {
-                    "[${registers[base]} + ${registers[index]} + $displacement]"
+                    "[${registers[base]!!.toAsm()} + ${registers[index]!!.toAsm()} + $displacement]"
                 } else {
-                    "[${registers[base]} + (${registers[index]} * $scale) + $displacement]"
+                    "[${registers[base]!!.toAsm()} + (${registers[index]!!.toAsm()} * $scale) + $displacement]"
                 }
             }
     }
@@ -62,9 +62,9 @@ sealed class Addressing {
     ) : Addressing() { // [(index*scale)] or [(index*scale) + displacement]
         override fun toAsm(registers: Map<Register, Register>) =
             if (displacement == MemoryAddress.Const(0U)) {
-                "[(${registers[index]} * $scale)]"
+                "[(${registers[index]!!.toAsm()} * $scale)]"
             } else {
-                "[(${registers[index]} * $scale) + $displacement]"
+                "[(${registers[index]!!.toAsm()} * $scale) + $displacement]"
             }
     }
 }

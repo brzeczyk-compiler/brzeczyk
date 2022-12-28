@@ -1,25 +1,65 @@
 package compiler.intermediate
 
 // A class representing virtual cpu register
-class Register(private val asmName: String = "VIRTUAL REGISTER") {
-    override fun toString() = asmName
-
+class Register() {
     companion object {
-        val RAX = Register("rax")
-        val RBX = Register("rbx")
-        val RCX = Register("rcx")
-        val RDX = Register("rdx")
-        val RSI = Register("rsi")
-        val RDI = Register("rdi")
-        val RBP = Register("rbp")
-        val RSP = Register("rsp")
-        val R8 = Register("r8")
-        val R9 = Register("r9")
-        val R10 = Register("r10")
-        val R11 = Register("r11")
-        val R12 = Register("r12")
-        val R13 = Register("r13")
-        val R14 = Register("r14")
-        val R15 = Register("r15")
+        val RAX = Register()
+        val RBX = Register()
+        val RCX = Register()
+        val RDX = Register()
+        val RSI = Register()
+        val RDI = Register()
+        val RBP = Register()
+        val RSP = Register()
+        val R8 = Register()
+        val R9 = Register()
+        val R10 = Register()
+        val R11 = Register()
+        val R12 = Register()
+        val R13 = Register()
+        val R14 = Register()
+        val R15 = Register()
+    }
+
+    class VirtualRegisterIsNotAsmable : Throwable()
+
+    fun toAsm(): String = when (this) {
+        RAX -> "rax"
+        RBX -> "rbx"
+        RCX -> "rcx"
+        RDX -> "rdx"
+        RSI -> "rsi"
+        RDI -> "rdi"
+        RBP -> "rbp"
+        RSP -> "rsp"
+        R8 -> "r8"
+        R9 -> "r9"
+        R10 -> "r10"
+        R11 -> "r11"
+        R12 -> "r12"
+        R13 -> "r13"
+        R14 -> "r14"
+        R15 -> "r15"
+        else -> throw VirtualRegisterIsNotAsmable()
+    }
+
+    fun to8bitLower(): String = when (this) {
+        RAX -> "al"
+        RBX -> "bl"
+        RCX -> "cl"
+        RDX -> "dl"
+        RSI -> "sil"
+        RDI -> "dil"
+        RBP -> "bpl"
+        RSP -> "spl"
+        R8 -> "r8b"
+        R9 -> "r9b"
+        R10 -> "r10b"
+        R11 -> "r11b"
+        R12 -> "r12b"
+        R13 -> "r13b"
+        R14 -> "r14b"
+        R15 -> "r15b"
+        else -> throw VirtualRegisterIsNotAsmable()
     }
 }

@@ -10,10 +10,13 @@ import kotlin.test.assertEquals
 class ForeignFunctionDetailsGeneratorTest {
     private val foreignLabel = IFTNode.MemoryLabel("FunctionName")
 
+    private val callerSavedRegisters = listOf(Register.RAX, Register.RCX, Register.RDX, Register.RSI, Register.RDI, Register.R8, Register.R9, Register.R10, Register.R11)
+    private val argumentPassingRegisters = listOf(Register.RDI, Register.RSI, Register.RDX, Register.RCX, Register.R8, Register.R9)
+
     @Test
     fun `test genCall for zero argument, Unit function`() {
         val fdg = ForeignFunctionDetailsGenerator(foreignLabel, false)
-        val expected = ControlFlowGraphBuilder(IFTNode.Call(foreignLabel)).build()
+        val expected = ControlFlowGraphBuilder(IFTNode.Call(foreignLabel, emptyList(), callerSavedRegisters)).build()
         val result = fdg.genCall(listOf())
 
         assert(expected.equalsByValue(result.callGraph))
@@ -37,7 +40,7 @@ class ForeignFunctionDetailsGeneratorTest {
             CFGLinkType.UNCONDITIONAL,
             IFTNode.RegisterWrite(Register.RSI, arg2)
         )
-        expectedCFGBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, IFTNode.Call(foreignLabel))
+        expectedCFGBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, IFTNode.Call(foreignLabel, argumentPassingRegisters.take(2), callerSavedRegisters))
         val expected = expectedCFGBuilder.build()
 
         assert(expected.equalsByValue(result.callGraph))
@@ -48,7 +51,7 @@ class ForeignFunctionDetailsGeneratorTest {
     fun `test genCall for zero argument, Number returning function`() {
         val fdg = ForeignFunctionDetailsGenerator(foreignLabel, true)
 
-        val expectedCFGBuilder = ControlFlowGraphBuilder(IFTNode.Call(foreignLabel))
+        val expectedCFGBuilder = ControlFlowGraphBuilder(IFTNode.Call(foreignLabel, emptyList(), callerSavedRegisters))
 
         val expectedResult = IFTNode.RegisterRead(Register.RAX)
         val expected = expectedCFGBuilder.build()
@@ -82,14 +85,18 @@ class ForeignFunctionDetailsGeneratorTest {
             IFTNode.StackPush(args[6])
         )
         // call
-        expectedCFGBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, IFTNode.Call(foreignLabel))
+        val callNode = IFTNode.Call(foreignLabel, argumentPassingRegisters, callerSavedRegisters)
+        expectedCFGBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, callNode)
 
         // remove arguments previously put on stack
         expectedCFGBuilder.addLinksFromAllFinalRoots(
             CFGLinkType.UNCONDITIONAL,
-            IFTNode.Add(
-                IFTNode.RegisterRead(Register.RSP),
-                IFTNode.Const(16)
+            IFTNode.RegisterWrite(
+                Register.RSP,
+                IFTNode.Add(
+                    IFTNode.RegisterRead(Register.RSP),
+                    IFTNode.Const(16)
+                )
             )
         )
 

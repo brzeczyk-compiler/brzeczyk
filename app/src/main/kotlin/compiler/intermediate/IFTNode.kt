@@ -51,8 +51,8 @@ sealed class IFTNode {
     data class StackPush(val node: IFTNode) : IFTNode()
     class StackPop : IFTNode()
 
-    data class Call(val address: IFTNode) : IFTNode()
-    // return node is implicit when there's no link from a tree root
+    data class Call(val address: IFTNode, val usedRegisters: Collection<Register>, val definedRegisters: Collection<Register>) : IFTNode()
+    data class Return(val usedRegisters: Collection<Register>) : IFTNode()
 
     // test nodes
     class NoOp : IFTNode()

@@ -194,10 +194,8 @@ class LinearizationTest {
             listOf(
                 Conditional(node1, false, 0),
                 Unconditional(node2),
-                Jump(1),
                 NextLabel,
                 Unconditional(node3),
-                NextLabel
             ),
             result
         )
@@ -225,14 +223,11 @@ class LinearizationTest {
             listOf(
                 Conditional(node1, false, 0),
                 Unconditional(node2),
-                Jump(2),
                 NextLabel,
                 Conditional(node3, false, 1),
                 Unconditional(node4),
-                Jump(2),
                 NextLabel,
                 Unconditional(node5),
-                NextLabel
             ),
             result
         )
@@ -338,11 +333,9 @@ class LinearizationTest {
                 NextLabel,
                 Conditional(node1, false, 1),
                 Unconditional(node3),
-                Jump(2),
                 NextLabel,
                 Unconditional(node2),
                 Jump(0),
-                NextLabel
             ),
             result
         )
@@ -405,102 +398,6 @@ class LinearizationTest {
                 Jump(1),
                 NextLabel,
                 Unconditional(node4)
-            ),
-            result
-        )
-    }
-
-    @Test
-    fun `end if true`() {
-        val node1 = newNode()
-        val node2 = newNode()
-
-        val cfg = ControlFlowGraph(
-            listOf(node1, node2),
-            node1,
-            referenceHashMapOf(),
-            referenceHashMapOf(),
-            referenceHashMapOf(node1 to node2)
-        )
-
-        val result = Linearization.linearize(cfg, covering)
-
-        assertLinearizationMatches(
-            listOf(
-                Conditional(node1, true, 0),
-                Unconditional(node2),
-                NextLabel
-            ),
-            result
-        )
-    }
-
-    @Test
-    fun `end if false`() {
-        val node1 = newNode()
-        val node2 = newNode()
-
-        val cfg = ControlFlowGraph(
-            listOf(node1, node2),
-            node1,
-            referenceHashMapOf(),
-            referenceHashMapOf(node1 to node2),
-            referenceHashMapOf()
-        )
-
-        val result = Linearization.linearize(cfg, covering)
-
-        assertLinearizationMatches(
-            listOf(
-                Conditional(node1, false, 0),
-                Unconditional(node2),
-                NextLabel
-            ),
-            result
-        )
-    }
-
-    @Test
-    fun `end after empty loop checking if true`() {
-        val node = newNode()
-
-        val cfg = ControlFlowGraph(
-            listOf(node),
-            node,
-            referenceHashMapOf(),
-            referenceHashMapOf(node to node),
-            referenceHashMapOf()
-        )
-
-        val result = Linearization.linearize(cfg, covering)
-
-        assertLinearizationMatches(
-            listOf(
-                NextLabel,
-                Conditional(node, true, 0)
-            ),
-            result
-        )
-    }
-
-    @Test
-    fun `end after empty loop checking if false`() {
-        val node = newNode()
-
-        val cfg = ControlFlowGraph(
-            listOf(node),
-            node,
-            referenceHashMapOf(),
-            referenceHashMapOf(),
-            referenceHashMapOf(node to node)
-        )
-
-        val result = Linearization.linearize(cfg, covering)
-
-        assertLinearizationMatches(
-            listOf(
-                NextLabel,
-                Conditional(node, false, 0)
             ),
             result
         )

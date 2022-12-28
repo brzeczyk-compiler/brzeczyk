@@ -95,7 +95,7 @@ internal class IFTPatternTest {
         val nodeRegWrite = IFTNode.RegisterWrite(reg, node)
         val nodeStackPush = IFTNode.StackPush(node)
         val nodeStackPop = IFTNode.StackPop()
-        val nodeCall = IFTNode.Call(node)
+        val nodeCall = IFTNode.Call(node, emptyList(), emptyList())
 
         val nodeLogNeg = IFTNode.LogicalNegation(node)
         val nodeLogIff = IFTNode.LogicalIff(left, right)

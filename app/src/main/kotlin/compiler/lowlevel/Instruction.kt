@@ -43,7 +43,7 @@ sealed class Instruction : Asmable {
     }
 
     sealed class RetInstruction : Instruction() {
-        class Ret : RetInstruction() // RET
+        class Ret(override val regsUsed: Collection<Register>) : RetInstruction() // RET
         class Dummy : RetInstruction()
     }
 
@@ -73,10 +73,16 @@ sealed class Instruction : Asmable {
         }
 
         // CALL instructions
-        data class CallR(val reg: Register) : InPlaceInstruction() { //               CALL reg
-            override val regsUsed: Collection<Register> = setOf(reg)
-        }
-        data class CallL(val targetLabel: String) : InPlaceInstruction() //           CALL targetLabel
+        data class CallR(
+            val reg: Register,
+            override val regsUsed: Collection<Register>,
+            override val regsDefined: Collection<Register>
+        ) : InPlaceInstruction() //               CALL reg
+        data class CallL(
+            val targetLabel: String,
+            override val regsUsed: Collection<Register>,
+            override val regsDefined: Collection<Register>
+        ) : InPlaceInstruction() //           CALL targetLabel
 
         // Stack instructions
         data class PushR(val reg: Register) : InPlaceInstruction() { //               PUSH reg

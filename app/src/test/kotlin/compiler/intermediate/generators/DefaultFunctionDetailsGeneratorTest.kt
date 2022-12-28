@@ -20,6 +20,9 @@ class DefaultFunctionDetailsGeneratorTest {
     private val resultDummyVariable = Variable(Variable.Kind.VALUE, "numberResult", Type.Number, null)
     private val resultVariableRegister = Register()
 
+    private val callerSavedRegisters = listOf(Register.RAX, Register.RCX, Register.RDX, Register.RSI, Register.RDI, Register.R8, Register.R9, Register.R10, Register.R11)
+    private val argumentPassingRegisters = listOf(Register.RDI, Register.RSI, Register.RDX, Register.RCX, Register.R8, Register.R9)
+
     @Test
     fun `test genCall for zero argument, Unit function`() {
         val fdg = DefaultFunctionDetailsGenerator(
@@ -30,7 +33,7 @@ class DefaultFunctionDetailsGeneratorTest {
             mapOf(),
             IFTNode.Const(0)
         )
-        val expected = ControlFlowGraphBuilder(IFTNode.Call(functionLocation)).build()
+        val expected = ControlFlowGraphBuilder(IFTNode.Call(functionLocation, emptyList(), callerSavedRegisters)).build()
         val result = fdg.genCall(listOf())
 
         assert(expected.equalsByValue(result.callGraph))
@@ -63,7 +66,7 @@ class DefaultFunctionDetailsGeneratorTest {
             CFGLinkType.UNCONDITIONAL,
             IFTNode.RegisterWrite(Register.RSI, arg2)
         )
-        expectedCFGBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, IFTNode.Call(functionLocation))
+        expectedCFGBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, IFTNode.Call(functionLocation, argumentPassingRegisters.take(2), callerSavedRegisters))
         val expected = expectedCFGBuilder.build()
 
         assert(expected.equalsByValue(result.callGraph))
@@ -82,7 +85,7 @@ class DefaultFunctionDetailsGeneratorTest {
             IFTNode.Const(0)
         ) { variableToRegisterMap[it]!! }
 
-        val expectedCFGBuilder = ControlFlowGraphBuilder(IFTNode.Call(functionLocation))
+        val expectedCFGBuilder = ControlFlowGraphBuilder(IFTNode.Call(functionLocation, emptyList(), callerSavedRegisters))
 
         val expectedResult = IFTNode.RegisterRead(Register.RAX)
         val expected = expectedCFGBuilder.build()
@@ -112,7 +115,7 @@ class DefaultFunctionDetailsGeneratorTest {
         val expectedCFGBuilder = ControlFlowGraphBuilder()
 
         // write args
-        for ((argRegister, arg) in argPositionToRegister zip args) {
+        for ((argRegister, arg) in argumentPassingRegisters zip args) {
             expectedCFGBuilder.addLinksFromAllFinalRoots(
                 CFGLinkType.UNCONDITIONAL,
                 IFTNode.RegisterWrite(argRegister, arg)
@@ -127,14 +130,18 @@ class DefaultFunctionDetailsGeneratorTest {
             IFTNode.StackPush(args[6])
         )
         // call
-        expectedCFGBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, IFTNode.Call(functionLocation))
+        val callNode = IFTNode.Call(functionLocation, argumentPassingRegisters, callerSavedRegisters)
+        expectedCFGBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, callNode)
 
         // remove arguments previously put on stack
         expectedCFGBuilder.addLinksFromAllFinalRoots(
             CFGLinkType.UNCONDITIONAL,
-            IFTNode.Add(
-                IFTNode.RegisterRead(Register.RSP),
-                IFTNode.Const(16)
+            IFTNode.RegisterWrite(
+                Register.RSP,
+                IFTNode.Add(
+                    IFTNode.RegisterRead(Register.RSP),
+                    IFTNode.Const(16)
+                )
             )
         )
 

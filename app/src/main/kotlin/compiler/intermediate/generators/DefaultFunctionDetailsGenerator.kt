@@ -126,10 +126,10 @@ data class DefaultFunctionDetailsGenerator(
         }
 
         // backup callee-saved registers
-        for ((hardware_reg, backup_reg) in calleeSavedRegistersWithoutRSPAndRBP zip calleeSavedBackupRegisters)
+        for ((hardwareReg, backupReg) in calleeSavedRegistersWithoutRSPAndRBP zip calleeSavedBackupRegisters)
             cfgBuilder.addLinksFromAllFinalRoots(
                 CFGLinkType.UNCONDITIONAL,
-                IFTNode.RegisterWrite(backup_reg, IFTNode.RegisterRead(hardware_reg))
+                IFTNode.RegisterWrite(backupReg, IFTNode.RegisterRead(hardwareReg))
             )
 
         return cfgBuilder.build()
@@ -139,10 +139,10 @@ data class DefaultFunctionDetailsGenerator(
         val cfgBuilder = ControlFlowGraphBuilder()
 
         // restore callee-saved registers
-        for ((hardware_reg, backup_reg) in calleeSavedRegistersWithoutRSPAndRBP zip calleeSavedBackupRegisters)
+        for ((hardwareReg, backupReg) in calleeSavedRegistersWithoutRSPAndRBP zip calleeSavedBackupRegisters)
             cfgBuilder.addLinksFromAllFinalRoots(
                 CFGLinkType.UNCONDITIONAL,
-                IFTNode.RegisterWrite(hardware_reg, IFTNode.RegisterRead(backup_reg))
+                IFTNode.RegisterWrite(hardwareReg, IFTNode.RegisterRead(backupReg))
             )
 
         // move result to RAX

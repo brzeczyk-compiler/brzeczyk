@@ -1,7 +1,7 @@
 package compiler.intermediate
 
 // A class representing virtual cpu register
-class Register() {
+class Register {
     companion object {
         val RAX = Register()
         val RBX = Register()

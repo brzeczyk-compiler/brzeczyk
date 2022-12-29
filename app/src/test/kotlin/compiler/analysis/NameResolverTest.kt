@@ -97,5 +97,7 @@ internal class NameResolverTest {
         assertEquals(nameDefinitions[xUseInF], xParam)
         assertEquals(nameDefinitions[xUseInG], xVar)
         assertEquals(nameDefinitions[yUseInG], yParam)
+
+        assertEquals(1, program.staticFunctionDepth)
     }
 }

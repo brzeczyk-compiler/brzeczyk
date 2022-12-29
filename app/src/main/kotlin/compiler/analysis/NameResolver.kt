@@ -14,6 +14,7 @@ import compiler.utils.MutableReferenceMap
 import compiler.utils.ReferenceMap
 import compiler.utils.referenceHashMapOf
 import java.util.Stack
+import kotlin.math.max
 
 object NameResolver {
     class ResolutionFailed : CompilationFailed()
@@ -120,6 +121,9 @@ object NameResolver {
             }
         }
 
+        // Additionally compute static function depth of the program
+        var staticDepth: Int = 0
+
         // Core function
 
         fun analyzeNode(
@@ -141,7 +145,12 @@ object NameResolver {
                 }
 
                 is Program.Global.FunctionDefinition -> {
+                    staticDepth++
+                    ast.staticFunctionDepth = max(ast.staticFunctionDepth, staticDepth)
+
                     analyzeNode(node.function, currentScope)
+
+                    staticDepth--
                 }
 
                 is Variable -> {

@@ -70,7 +70,7 @@ sealed class Instruction : Asmable {
             is Dummy -> throw DummyInstructionIsNotAsmable()
         }
 
-        class Ret : RetInstruction() // RET
+        class Ret(override val regsUsed: Collection<Register>) : RetInstruction() // RET
         class Dummy : RetInstruction()
     }
 
@@ -110,12 +110,18 @@ sealed class Instruction : Asmable {
         }
 
         // CALL instructions
-        data class CallR(val reg: Register) : InPlaceInstruction() { //               CALL reg
-            override val regsUsed: Collection<Register> = setOf(reg)
-
+        data class CallR(
+            val reg: Register,
+            override val regsUsed: Collection<Register>,
+            override val regsDefined: Collection<Register>,
+        ) : InPlaceInstruction() { //               CALL reg
             override fun toAsm(registers: Map<Register, Register>) = "call ${registers[reg]!!.toAsm()}"
         }
-        data class CallL(val targetLabel: String) : InPlaceInstruction() { //           CALL targetLabel
+        data class CallL(
+            val targetLabel: String,
+            override val regsUsed: Collection<Register>,
+            override val regsDefined: Collection<Register>,
+        ) : InPlaceInstruction() { //           CALL targetLabel
             override fun toAsm(registers: Map<Register, Register>) = "call $targetLabel"
         }
 

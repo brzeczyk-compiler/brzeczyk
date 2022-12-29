@@ -2,25 +2,24 @@ package compiler.lowlevel.storage
 
 import compiler.ast.Expression
 import compiler.ast.Program
+import compiler.ast.Variable
 import compiler.intermediate.generators.GlobalVariableAccessGenerator
 import java.io.PrintWriter
 import java.lang.IllegalArgumentException
 
 class GlobalVariableStorage(val program: Program) {
 
-    private fun getValueOfConstExpr(expr: Expression?): Long = when (expr) {
-        null -> 0
-        is Expression.UnitLiteral -> 0
-        is Expression.BooleanLiteral -> if (expr.value) 1 else 0
-        is Expression.NumberLiteral -> expr.value
-        else -> throw IllegalArgumentException()
-    }
+    private fun getValueOfConstExpr(expr: Expression?): Long =
+        expr?.let {
+            Expression.getValueOfLiteral(it) ?: throw IllegalArgumentException()
+        } ?: 0
 
     fun writeAsm(output: PrintWriter) {
         output.write("section .data\n")
         output.write(GlobalVariableAccessGenerator.GLOBALS_MEMORY_LABEL + ":\n")
         program.globals.filterIsInstance<Program.Global.VariableDefinition>()
             .map { it.variable }
+            .filter { it.kind != Variable.Kind.CONSTANT }
             .sortedBy { it.name }
             .forEach {
                 output.write("dq 0x%x ; %s\n".format(getValueOfConstExpr(it.value), it.name))

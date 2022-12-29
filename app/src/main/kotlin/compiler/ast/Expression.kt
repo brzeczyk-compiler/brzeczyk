@@ -113,4 +113,13 @@ sealed class Expression : AstNode {
         val resultWhenFalse: Expression,
         override val location: LocationRange? = null,
     ) : Expression()
+
+    companion object {
+        fun getValueOfLiteral(expr: Expression) = when (expr) {
+            is UnitLiteral -> 0L
+            is BooleanLiteral -> if (expr.value) 1L else 0L
+            is NumberLiteral -> expr.value
+            else -> null
+        }
+    }
 }

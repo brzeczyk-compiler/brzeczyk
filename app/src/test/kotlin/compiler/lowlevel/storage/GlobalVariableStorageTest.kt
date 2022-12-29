@@ -11,26 +11,35 @@ import kotlin.test.assertEquals
 
 class GlobalVariableStorageTest {
 
-    private fun List<Pair<String, Expression?>>.asProgram() = this.map {
+    private fun List<Pair<String, Expression?>>.asVarDefList() = this.map {
         Program.Global.VariableDefinition(
             Variable(
-                Variable.Kind.CONSTANT,
+                Variable.Kind.VARIABLE,
                 it.first,
                 Type.Number,
                 it.second
             )
         )
-    }.let { Program(it) }
+    }
 
     @Test
     fun `global variables asm test`() {
-        val program = listOf(
+        val definitions = listOf(
             "no expression" to null,
             "bool true" to Expression.BooleanLiteral(true),
             "bool false" to Expression.BooleanLiteral(false),
             "unit" to Expression.UnitLiteral(),
             "number" to Expression.NumberLiteral(12347),
-        ).asProgram()
+        ).asVarDefList() +
+            Program.Global.VariableDefinition(
+                Variable(
+                    Variable.Kind.CONSTANT,
+                    "constant",
+                    Type.Number,
+                    Expression.UnitLiteral()
+                )
+            )
+        val program = Program(definitions)
 
         val stringWriter = StringWriter()
 

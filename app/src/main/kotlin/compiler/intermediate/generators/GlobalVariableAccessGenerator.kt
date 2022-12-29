@@ -1,6 +1,7 @@
 package compiler.intermediate.generators
 
 import compiler.analysis.VariablePropertiesAnalyzer
+import compiler.ast.Expression
 import compiler.ast.NamedNode
 import compiler.ast.Variable
 import compiler.intermediate.IFTNode
@@ -16,8 +17,13 @@ class GlobalVariableAccessGenerator(variableProperties: ReferenceMap<Any, Variab
 
     private val offsets = referenceHashMapOf<NamedNode, Long>().apply {
         this.putAll(
-            variableProperties.filter { it.value.owner === VariablePropertiesAnalyzer.GlobalContext }
-                .asIterable().sortedBy { (it.key as Variable).name }.mapIndexed { index, value -> value.key as Variable to index.toLong() * VARIABLE_SIZE }
+            variableProperties
+                .filter { it.value.owner === VariablePropertiesAnalyzer.GlobalContext }
+                .filter { (it.key as Variable).kind != Variable.Kind.CONSTANT }
+                .asIterable().sortedBy { (it.key as Variable).name }
+                .mapIndexed { index, value ->
+                    value.key as Variable to index.toLong() * VARIABLE_SIZE
+                }
         )
     }
 
@@ -28,7 +34,11 @@ class GlobalVariableAccessGenerator(variableProperties: ReferenceMap<Any, Variab
         )
 
     override fun genRead(namedNode: NamedNode, isDirect: Boolean): IFTNode =
-        IFTNode.MemoryRead(getMemoryAddress(namedNode))
+        if (namedNode in offsets)
+            IFTNode.MemoryRead(getMemoryAddress(namedNode))
+        else IFTNode.Const(
+            (namedNode as Variable).value.let { Expression.getValueOfLiteral(it!!)!! }
+        )
 
     override fun genWrite(namedNode: NamedNode, value: IFTNode, isDirect: Boolean): IFTNode =
         IFTNode.MemoryWrite(getMemoryAddress(namedNode), value)

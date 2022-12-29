@@ -1,6 +1,7 @@
 package compiler.ast
 
 import compiler.input.LocationRange
+import compiler.intermediate.IFTNode
 
 sealed class Expression : AstNode {
     data class UnitLiteral(
@@ -116,7 +117,7 @@ sealed class Expression : AstNode {
 
     companion object {
         fun getValueOfLiteral(expr: Expression) = when (expr) {
-            is UnitLiteral -> 0L
+            is UnitLiteral -> IFTNode.UNIT_VALUE
             is BooleanLiteral -> if (expr.value) 1L else 0L
             is NumberLiteral -> expr.value
             else -> null

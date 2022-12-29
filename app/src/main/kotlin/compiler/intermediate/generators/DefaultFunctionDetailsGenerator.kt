@@ -18,6 +18,7 @@ enum class VariableLocationType {
 
 const val memoryUnitSize: ULong = 8u
 val calleeSavedRegistersWithoutRSPAndRBP = listOf(Register.RBX, Register.R12, Register.R13, Register.R14, Register.R15)
+const val DISPLAY_LABEL_IN_MEMORY = "display"
 
 // Function Details Generator consistent with SystemV AMD64 calling convention
 data class DefaultFunctionDetailsGenerator(

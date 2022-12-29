@@ -5,6 +5,9 @@ import java.io.PrintWriter
 
 class DisplayStorage(val program: Program) {
     fun writeAsm(output: PrintWriter) {
-        TODO() // Reserve memory for the display with appropriate maximum depth
+        output.write("extern malloc")
+        output.write("mov rdi, " + program.staticFunctionDepth)
+        output.write("call malloc")
+        // result address lies in rax
     }
 }

@@ -1,10 +1,11 @@
 package compiler.lowlevel.storage
 
-import compiler.ast.Program
+import compiler.intermediate.generators.DISPLAY_LABEL_IN_MEMORY
 import java.io.PrintWriter
 
-class DisplayStorage(val program: Program) {
+class DisplayStorage(private val programStaticDepth: Int) {
+
     fun writeAsm(output: PrintWriter) {
-        TODO() // Reserve memory for the display with appropriate maximum depth
+        output.write("$DISPLAY_LABEL_IN_MEMORY: resq $programStaticDepth")
     }
 }

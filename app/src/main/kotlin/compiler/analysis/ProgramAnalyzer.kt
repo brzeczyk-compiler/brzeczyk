@@ -17,10 +17,12 @@ object ProgramAnalyzer {
         val defaultParameterMapping: ReferenceMap<Function.Parameter, Variable>,
         val functionReturnedValueVariables: ReferenceMap<Function, Variable>,
         val variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>,
+        val staticDepth: Int,
     )
 
     fun analyzeProgram(ast: Program, diagnostics: Diagnostics): ProgramProperties {
-        val nameResolution = NameResolver.calculateNameResolution(ast, diagnostics)
+        val nameResolutionResult = NameResolver.calculateNameResolution(ast, diagnostics)
+        val nameResolution = nameResolutionResult.nameDefinitions
         val argumentResolution = ArgumentResolver.calculateArgumentToParameterResolution(ast, nameResolution, diagnostics)
         val expressionTypes = TypeChecker.calculateTypes(ast, nameResolution, argumentResolution.argumentsToParametersMap, diagnostics)
         val defaultParameterMapping = DefaultParameterResolver.mapFunctionParametersToDummyVariables(ast)
@@ -34,6 +36,7 @@ object ProgramAnalyzer {
             defaultParameterMapping,
             functionReturnedValueVariables,
             variableProperties,
+            nameResolutionResult.programStaticDepth,
         )
     }
 }

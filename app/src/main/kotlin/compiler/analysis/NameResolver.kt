@@ -42,7 +42,9 @@ object NameResolver {
         fun onlyHasFunctions(): Boolean = functions.isNotEmpty() && variables.isEmpty()
     }
 
-    fun calculateNameResolution(ast: Program, diagnostics: Diagnostics): ReferenceMap<Any, NamedNode> {
+    data class Result(val nameDefinitions: ReferenceMap<Any, NamedNode>, val programStaticDepth: Int)
+
+    fun calculateNameResolution(ast: Program, diagnostics: Diagnostics): Result {
 
         val nameDefinitions: MutableReferenceMap<Any, NamedNode> = referenceHashMapOf()
 
@@ -122,7 +124,8 @@ object NameResolver {
         }
 
         // Additionally compute static function depth of the program
-        var staticDepth: Int = 0
+        var currentStaticDepth: Int = 0
+        var maxStaticDepth: Int = 0
 
         // Core function
 
@@ -157,8 +160,8 @@ object NameResolver {
                 }
 
                 is Function -> {
-                    staticDepth++
-                    ast.staticFunctionDepth = max(ast.staticFunctionDepth, staticDepth)
+                    currentStaticDepth++
+                    maxStaticDepth = max(maxStaticDepth, currentStaticDepth)
 
                     // first analyze each parameter, so they can't refer to each other and to the function
                     node.parameters.forEach { analyzeNode(it, currentScope) }
@@ -177,7 +180,7 @@ object NameResolver {
                     node.body.forEach { analyzeNode(it, newScope) }
                     destroyScope(newScope) // forget about parameters and names introduced in the body
 
-                    staticDepth--
+                    currentStaticDepth--
                 }
 
                 is Function.Parameter -> {
@@ -275,6 +278,6 @@ object NameResolver {
         if (failed)
             throw ResolutionFailed()
 
-        return nameDefinitions
+        return Result(nameDefinitions, maxStaticDepth)
     }
 }

@@ -81,7 +81,8 @@ internal class NameResolverTest {
 
         // Perform name resolution for such AST
 
-        val nameDefinitions = NameResolver.calculateNameResolution(program, mockk())
+        val result = NameResolver.calculateNameResolution(program, mockk())
+        val nameDefinitions = result.nameDefinitions
 
         // Check the result mapping
 
@@ -99,7 +100,7 @@ internal class NameResolverTest {
         assertEquals(nameDefinitions[xUseInG], xVar)
         assertEquals(nameDefinitions[yUseInG], yParam)
 
-        assertEquals(1, program.staticFunctionDepth)
+        assertEquals(1, result.programStaticDepth)
     }
 
     @Test fun `test non-trivial static depth`() {
@@ -145,9 +146,9 @@ internal class NameResolverTest {
             )
         )
 
-        NameResolver.calculateNameResolution(program, mockk())
+        val result = NameResolver.calculateNameResolution(program, mockk())
 
-        assertEquals(3, program.staticFunctionDepth)
+        assertEquals(3, result.programStaticDepth)
     }
 
     private fun simpleGlobalFunction(name: String, body: StatementBlock = listOf()): Program.Global.FunctionDefinition {

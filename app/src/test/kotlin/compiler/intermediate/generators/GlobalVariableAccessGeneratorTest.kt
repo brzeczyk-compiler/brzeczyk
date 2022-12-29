@@ -1,6 +1,7 @@
 package compiler.intermediate.generators
 
 import compiler.analysis.VariablePropertiesAnalyzer
+import compiler.ast.Expression
 import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.intermediate.IFTNode
@@ -71,6 +72,18 @@ class GlobalVariableAccessGeneratorTest {
             (0 until 3).all { index ->
                 readNodes.filter { it == createProperMemoryRead(index * GlobalVariableAccessGenerator.VARIABLE_SIZE) }.size == 1
             }
+        )
+    }
+
+    @Test
+    fun `globals - read constant`() {
+        val variable = Variable(Variable.Kind.CONSTANT, "x", Type.Number, Expression.NumberLiteral(15))
+        val globalVariablesAccessGenerator =
+            createGlobalVariablesAccessGeneratorForVariables(listOf(variable))
+
+        assertEquals(
+            globalVariablesAccessGenerator.genRead(variable, false),
+            IFTNode.Const(15)
         )
     }
 }

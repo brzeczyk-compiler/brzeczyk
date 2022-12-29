@@ -269,6 +269,7 @@ class TypeChecker(private val nameResolution: ReferenceMap<Any, NamedNode>, priv
                 is Expression.BinaryOperation,
                 is Expression.Conditional -> {
                     // TODO: some of these could be considered as constant
+                    // in case of change, update GlobalVariableStorage as well
                     report(TypeCheckingError.NonConstantExpression(expression))
                 }
             }

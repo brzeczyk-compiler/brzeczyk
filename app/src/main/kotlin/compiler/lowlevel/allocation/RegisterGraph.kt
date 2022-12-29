@@ -51,20 +51,13 @@ class RegisterGraph private constructor(
             val stack = Stack<Node>()
 
             with(RegisterGraph(livenessGraphs, accessibleRegisters.toHashSet())) {
-                while (isNotEmpty()) run {
-                    simplify()?.let {
-                        stack.push(it)
-                        return@run
-                    }
-                    if (coalesce()) return@run
-                    freeze()?.let {
-                        stack.push(it)
-                        return@run
-                    }
-                    stack.push(spill())
+                while (isNotEmpty()) when {
+                    simplifyCandidates.isNotEmpty() -> stack.push(simplify()!!)
+                    coalesceCandidates.isNotEmpty() -> coalesce()
+                    freezeCandidates.isNotEmpty() -> stack.push(freeze()!!)
+                    else -> stack.push(spill())
                 }
             }
-
             return stack
         }
     }
@@ -97,7 +90,7 @@ class RegisterGraph private constructor(
 
     private fun simplify(): Node? = simplifyCandidates.firstOrNull()?.also { remove(it) }
 
-    private fun coalesce(): Boolean {
+    private fun coalesce() {
 
         // --- helper functions ---
 
@@ -132,9 +125,9 @@ class RegisterGraph private constructor(
 
         // --- main impl ---
 
-        val candidate = coalesceCandidates.ifEmpty { return false }.pop().potentialSystemRegisterFirst()
+        val candidate = coalesceCandidates.ifEmpty { return }.pop().potentialSystemRegisterFirst()
 
-        checkBasicMergeAbility(candidate.first, candidate.second).ifFalse { return false }
+        checkBasicMergeAbility(candidate.first, candidate.second).ifFalse { return }
 
         val ableToCoalesce: Boolean = candidate.let { (potentialSysReg, secondReg) ->
             potentialSysReg.containsHardwareRegister && georgeCondition(potentialSysReg, secondReg) || // system registers may have large degree, so we check the George condition in O(secondReg.deg())
@@ -143,6 +136,7 @@ class RegisterGraph private constructor(
 
         if (ableToCoalesce) {
             candidate.let { (mergedTo, toRemove) ->
+                copyGraph.removeEdge(mergedTo, toRemove)
                 mergedTo.registers.addAll(toRemove.registers)
                 interferenceGraph[toRemove]!!.forEach { interferenceGraph.addEdge(it, mergedTo) }
                 copyGraph.getValue(toRemove).forEach {
@@ -157,8 +151,6 @@ class RegisterGraph private constructor(
                 }
             }
         }
-
-        return ableToCoalesce
     }
 
     private fun freeze(): Node? = freezeCandidates.minByOrNull { it.deg() }?.also { remove(it) }

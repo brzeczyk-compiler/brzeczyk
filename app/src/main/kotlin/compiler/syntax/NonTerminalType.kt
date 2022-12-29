@@ -9,7 +9,7 @@ enum class NonTerminalType {
     DEF_ARGS, DEF_ARG,
     CALL_ARGS,
     // variable/function declaration
-    VAR_DECL, FUNC_DEF,
+    VAR_DECL, FUNC_DEF, FOREIGN_DECL,
     // normal expression categories
     EXPR, EXPR2, EXPR4, EXPR8, EXPR16, EXPR32, EXPR64, EXPR128, EXPR256, EXPR512, EXPR1024, EXPR2048,
     // enclosed expression categories

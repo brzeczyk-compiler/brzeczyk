@@ -102,16 +102,34 @@ object InstructionSet {
                     Instruction.InPlaceInstruction.PopR(outRegister) // POP  out
                 )
             },
-            InstructionPattern(IFTPattern.Call(IFTPattern.MemoryLabel(IFTPattern.AnyArgument("label")))) {
+            InstructionPattern(
+                IFTPattern.Call(
+                    IFTPattern.MemoryLabel(IFTPattern.AnyArgument("label")),
+                    IFTPattern.AnyArgument("usedRegs"),
+                    IFTPattern.AnyArgument("definedRegs")
+                )
+            ) {
                 _, _, _, args ->
                 listOf(
-                    Instruction.InPlaceInstruction.CallL(args["label"] as String) // CALL label
+                    Instruction.InPlaceInstruction.CallL(args["label"] as String, args["usedRegs"] as Collection<Register>, args["definedRegs"] as Collection<Register>) // CALL label
                 )
             },
-            InstructionPattern(IFTPattern.Call()) {
-                inRegisters, _, _, _ ->
+            InstructionPattern(
+                IFTPattern.Call(
+                    IFTPattern.AnyNode(),
+                    IFTPattern.AnyArgument("usedRegs"),
+                    IFTPattern.AnyArgument("definedRegs")
+                )
+            ) {
+                inRegisters, _, _, args ->
                 listOf(
-                    Instruction.InPlaceInstruction.CallR(inRegisters[0]) // CALL reg0
+                    Instruction.InPlaceInstruction.CallR(inRegisters[0], args["usedRegs"] as Collection<Register> + setOf(inRegisters[0]), args["definedRegs"] as Collection<Register>) // CALL reg0
+                )
+            },
+            InstructionPattern(IFTPattern.Return(IFTPattern.AnyArgument("usedRegs"))) {
+                _, _, _, args ->
+                listOf(
+                    Instruction.RetInstruction.Ret(args["usedRegs"] as Collection<Register>)
                 )
             },
             InstructionPattern(IFTPattern.UnaryOperator(IFTNode.Negation::class)) {

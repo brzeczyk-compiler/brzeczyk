@@ -14,6 +14,7 @@ import compiler.utils.MutableReferenceMap
 import compiler.utils.ReferenceMap
 import compiler.utils.referenceHashMapOf
 import java.util.Stack
+import kotlin.math.max
 
 object NameResolver {
     class ResolutionFailed : CompilationFailed()
@@ -41,7 +42,9 @@ object NameResolver {
         fun onlyHasFunctions(): Boolean = functions.isNotEmpty() && variables.isEmpty()
     }
 
-    fun calculateNameResolution(ast: Program, diagnostics: Diagnostics): ReferenceMap<Any, NamedNode> {
+    data class Result(val nameDefinitions: ReferenceMap<Any, NamedNode>, val programStaticDepth: Int)
+
+    fun calculateNameResolution(ast: Program, diagnostics: Diagnostics): Result {
 
         val nameDefinitions: MutableReferenceMap<Any, NamedNode> = referenceHashMapOf()
 
@@ -55,10 +58,7 @@ object NameResolver {
             // conflict can only appear in the same scope
             if (scope.containsKey(namedNode.name)) {
                 diagnostics.report(
-                    Diagnostic.ResolutionDiagnostic.NameResolutionError.NameConflict(
-                        scope[namedNode.name]!!, namedNode,
-                        withBuiltinFunction = BuiltinFunctions.builtinFunctionsByName.containsKey(namedNode.name)
-                    )
+                    Diagnostic.ResolutionDiagnostic.NameResolutionError.NameConflict(scope[namedNode.name]!!, namedNode)
                 )
             }
         }
@@ -123,6 +123,10 @@ object NameResolver {
             }
         }
 
+        // Additionally compute static function depth of the program
+        var currentStaticDepth: Int = 0
+        var maxStaticDepth: Int = 0
+
         // Core function
 
         fun analyzeNode(
@@ -134,8 +138,6 @@ object NameResolver {
 
                 is Program -> {
                     val newScope = makeScope()
-
-                    BuiltinFunctions.builtinFunctionsByName.forEach { (name, function) -> addName(name, function, newScope) }
 
                     node.globals.forEach { analyzeNode(it, newScope) }
                     destroyScope(newScope)
@@ -158,6 +160,9 @@ object NameResolver {
                 }
 
                 is Function -> {
+                    currentStaticDepth++
+                    maxStaticDepth = max(maxStaticDepth, currentStaticDepth)
+
                     // first analyze each parameter, so they can't refer to each other and to the function
                     node.parameters.forEach { analyzeNode(it, currentScope) }
 
@@ -174,6 +179,8 @@ object NameResolver {
 
                     node.body.forEach { analyzeNode(it, newScope) }
                     destroyScope(newScope) // forget about parameters and names introduced in the body
+
+                    currentStaticDepth--
                 }
 
                 is Function.Parameter -> {
@@ -271,6 +278,6 @@ object NameResolver {
         if (failed)
             throw ResolutionFailed()
 
-        return nameDefinitions
+        return Result(nameDefinitions, maxStaticDepth)
     }
 }

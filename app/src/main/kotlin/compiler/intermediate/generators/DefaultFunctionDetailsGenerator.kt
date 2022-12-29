@@ -17,7 +17,6 @@ enum class VariableLocationType {
 }
 
 const val memoryUnitSize: ULong = 8u
-val argPositionToRegister = listOf(Register.RDI, Register.RSI, Register.RDX, Register.RCX, Register.R8, Register.R9)
 val calleeSavedRegistersWithoutRSPAndRBP = listOf(Register.RBX, Register.R12, Register.R13, Register.R14, Register.R15)
 const val DISPLAY_LABEL_IN_MEMORY = "display"
 
@@ -36,6 +35,7 @@ data class DefaultFunctionDetailsGenerator(
     private val variablesRegisters: MutableMap<NamedNode, Register> = referenceHashMapOf()
     private var variablesTotalOffset: ULong = 0u
     private val previousDisplayEntryRegister = Register()
+    private val calleeSavedBackupRegisters = calleeSavedRegistersWithoutRSPAndRBP.map { Register() }
 
     override val spilledRegistersOffset: ConstantPlaceholder = ConstantPlaceholder()
 
@@ -57,42 +57,7 @@ data class DefaultFunctionDetailsGenerator(
     override fun genCall(
         args: List<IFTNode>,
     ): FunctionDetailsGenerator.FunctionCallIntermediateForm {
-        val cfgBuilder = ControlFlowGraphBuilder()
-
-        // First, move arguments to appropriate registers (or push to stack) according to call convention.
-        for ((arg, register) in args zip argPositionToRegister) {
-            val node = IFTNode.RegisterWrite(register, arg)
-            cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, node)
-        }
-
-        var numberOfArgsPushedToStack = 0
-        for (arg in args.drop(argPositionToRegister.size).reversed()) {
-            val node = IFTNode.StackPush(arg)
-            cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, node)
-            numberOfArgsPushedToStack += 1
-        }
-
-        // Add call instruction to actually call a given function
-        cfgBuilder.addLinksFromAllFinalRoots(
-            CFGLinkType.UNCONDITIONAL,
-            IFTNode.Call(functionLocationInCode)
-        )
-
-        // Abandon arguments that were previously put on stack
-        if (numberOfArgsPushedToStack > 0)
-            cfgBuilder.addLinksFromAllFinalRoots(
-                CFGLinkType.UNCONDITIONAL,
-                IFTNode.Add(
-                    IFTNode.RegisterRead(Register.RSP),
-                    IFTNode.Const(numberOfArgsPushedToStack * memoryUnitSize.toLong())
-                )
-            )
-
-        // At the end create IFTNode to get function result
-        val readResultNode: IFTNode? =
-            if (variableToStoreFunctionResult != null) IFTNode.RegisterRead(Register.RAX)
-            else null
-        return FunctionDetailsGenerator.FunctionCallIntermediateForm(cfgBuilder.build(), readResultNode)
+        return SysV64CallingConvention.genCall(functionLocationInCode, args, variableToStoreFunctionResult !== null)
     }
 
     override fun genPrologue(): ControlFlowGraph {
@@ -111,7 +76,7 @@ data class DefaultFunctionDetailsGenerator(
         )
         cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, movRbpRsp)
 
-        // allocate memory for local variables
+        // allocate memory for local variables and spills
         val subRsp = IFTNode.RegisterWrite(
             Register.RSP,
             IFTNode.Subtract(
@@ -133,7 +98,7 @@ data class DefaultFunctionDetailsGenerator(
         cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, savePreviousRbp)
         cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, updateRbpAtDepth)
 
-        // move args from Registers and Stack
+        // move args from registers and stack
         for ((param, register) in parameters zip argPositionToRegister) {
             cfgBuilder.addLinksFromAllFinalRoots(
                 CFGLinkType.UNCONDITIONAL,
@@ -149,9 +114,11 @@ data class DefaultFunctionDetailsGenerator(
                 CFGLinkType.UNCONDITIONAL,
                 genWrite(
                     param.value,
-                    IFTNode.Add(
-                        IFTNode.RegisterRead(Register.RBP), // add 2 to account old RBP and return address
-                        IFTNode.Const((param.index + 2) * memoryUnitSize.toLong())
+                    IFTNode.MemoryRead(
+                        IFTNode.Add(
+                            IFTNode.RegisterRead(Register.RBP), // add 2 to account old RBP and return address
+                            IFTNode.Const((param.index + 2) * memoryUnitSize.toLong())
+                        )
                     ),
                     true
                 ),
@@ -159,10 +126,10 @@ data class DefaultFunctionDetailsGenerator(
         }
 
         // backup callee-saved registers
-        for (register in calleeSavedRegistersWithoutRSPAndRBP.reversed())
+        for ((hardwareReg, backupReg) in calleeSavedRegistersWithoutRSPAndRBP zip calleeSavedBackupRegisters)
             cfgBuilder.addLinksFromAllFinalRoots(
                 CFGLinkType.UNCONDITIONAL,
-                IFTNode.StackPush(IFTNode.RegisterRead(register))
+                IFTNode.RegisterWrite(backupReg, IFTNode.RegisterRead(hardwareReg))
             )
 
         return cfgBuilder.build()
@@ -172,10 +139,10 @@ data class DefaultFunctionDetailsGenerator(
         val cfgBuilder = ControlFlowGraphBuilder()
 
         // restore callee-saved registers
-        for (register in calleeSavedRegistersWithoutRSPAndRBP)
+        for ((hardwareReg, backupReg) in calleeSavedRegistersWithoutRSPAndRBP zip calleeSavedBackupRegisters)
             cfgBuilder.addLinksFromAllFinalRoots(
                 CFGLinkType.UNCONDITIONAL,
-                IFTNode.RegisterWrite(register, IFTNode.StackPop())
+                IFTNode.RegisterWrite(hardwareReg, IFTNode.RegisterRead(backupReg))
             )
 
         // move result to RAX
@@ -203,6 +170,12 @@ data class DefaultFunctionDetailsGenerator(
         cfgBuilder.addLinksFromAllFinalRoots(
             CFGLinkType.UNCONDITIONAL,
             IFTNode.RegisterWrite(Register.RBP, IFTNode.StackPop())
+        )
+
+        // return
+        cfgBuilder.addLinksFromAllFinalRoots(
+            CFGLinkType.UNCONDITIONAL,
+            IFTNode.Return(setOf(Register.RAX) + calleeSavedRegistersWithoutRSPAndRBP)
         )
 
         return cfgBuilder.build()

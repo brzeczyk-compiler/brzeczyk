@@ -70,9 +70,9 @@ class DynamicCoveringBuilderTest {
 
     @Test fun `test instructions are ordered bottom-up`() {
         // not a data class, so equality will be done by reference - which is what we want
-        val retInstruction1 = Instruction.RetInstruction.Ret()
-        val retInstruction2 = Instruction.RetInstruction.Ret()
-        val retInstruction3 = Instruction.RetInstruction.Ret()
+        val retInstruction1 = Instruction.RetInstruction.Dummy()
+        val retInstruction2 = Instruction.RetInstruction.Dummy()
+        val retInstruction3 = Instruction.RetInstruction.Dummy()
         val ret1Covering = Pattern.Result(listOf(), 1, { _, _ -> listOf(retInstruction1) })
         val ret2Covering = Pattern.Result(listOf(), 1, { _, _ -> listOf(retInstruction2) })
         val ret3Covering = Pattern.Result(listOf(noOpNode1, noOpNode2), 1, { _, _ -> listOf(retInstruction3) })
@@ -92,10 +92,10 @@ class DynamicCoveringBuilderTest {
 
     @Test fun `test builder chooses the cheapest covering`() {
         // not a data class, so equality will be done by reference - which is what we want
-        val retInstruction1 = Instruction.RetInstruction.Ret()
-        val retInstruction2 = Instruction.RetInstruction.Ret()
-        val retInstruction3 = Instruction.RetInstruction.Ret()
-        val retInstruction4 = Instruction.RetInstruction.Ret()
+        val retInstruction1 = Instruction.RetInstruction.Dummy()
+        val retInstruction2 = Instruction.RetInstruction.Dummy()
+        val retInstruction3 = Instruction.RetInstruction.Dummy()
+        val retInstruction4 = Instruction.RetInstruction.Dummy()
         val ret1Covering = Pattern.Result(listOf(), 100, { _, _ -> listOf(retInstruction1) })
         val ret2Covering = Pattern.Result(listOf(), 100, { _, _ -> listOf(retInstruction2) })
         val ret3Covering = Pattern.Result(listOf(noOpNode1, noOpNode2), 10, { _, _ -> listOf(retInstruction3) })
@@ -117,10 +117,10 @@ class DynamicCoveringBuilderTest {
 
     @Test fun `test builder chooses the cheapest covering even when it is more granular`() {
         // not a data class, so equality will be done by reference - which is what we want
-        val retInstruction1 = Instruction.RetInstruction.Ret()
-        val retInstruction2 = Instruction.RetInstruction.Ret()
-        val retInstruction3 = Instruction.RetInstruction.Ret()
-        val retInstruction4 = Instruction.RetInstruction.Ret()
+        val retInstruction1 = Instruction.RetInstruction.Dummy()
+        val retInstruction2 = Instruction.RetInstruction.Dummy()
+        val retInstruction3 = Instruction.RetInstruction.Dummy()
+        val retInstruction4 = Instruction.RetInstruction.Dummy()
         val ret1Covering = Pattern.Result(listOf(), 1, { _, _ -> listOf(retInstruction1) })
         val ret2Covering = Pattern.Result(listOf(), 1, { _, _ -> listOf(retInstruction2) })
         val ret3Covering = Pattern.Result(listOf(noOpNode1, noOpNode2), 1, { _, _ -> listOf(retInstruction3) })

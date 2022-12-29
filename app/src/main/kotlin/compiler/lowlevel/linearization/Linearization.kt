@@ -17,7 +17,6 @@ object Linearization {
 
         val instructions = mutableListOf<Asmable>()
         val labels = referenceHashMapOf<IFTNode, String>()
-        val endLabel = "end"
         val usedLabels = mutableSetOf<String>()
 
         fun assignLabel(node: IFTNode): String {
@@ -77,34 +76,14 @@ object Linearization {
                     dfs(targetWhenTrue, label)
                     dfs(targetWhenFalse, nextLabel)
                 }
-            } else if (node in cfg.conditionalTrueLinks) {
-                val target = cfg.conditionalTrueLinks[node]!!
-
-                if (target in labels) {
-                    addConditional(true, labels[target]!!)
-                    addJump(endLabel)
-                } else {
-                    addConditional(false, endLabel)
-                    dfs(target, nextLabel)
-                }
-            } else if (node in cfg.conditionalFalseLinks) {
-                val target = cfg.conditionalFalseLinks[node]!!
-
-                if (target in labels) {
-                    addConditional(false, labels[target]!!)
-                    addJump(endLabel)
-                } else {
-                    addConditional(true, endLabel)
-                    dfs(target, nextLabel)
-                }
+            } else if (node in cfg.conditionalTrueLinks || node in cfg.conditionalFalseLinks) {
+                throw IllegalArgumentException() // unreachable state
             } else {
-                addUnconditional()
-                addJump(endLabel)
+                addUnconditional() // this must be RET, so no jump is needed
             }
         }
 
-        dfs(cfg.entryTreeRoot, endLabel)
-        addLabel(endLabel)
+        dfs(cfg.entryTreeRoot, "")
 
         return instructions.filter { it !is Label || it.label in usedLabels }
     }

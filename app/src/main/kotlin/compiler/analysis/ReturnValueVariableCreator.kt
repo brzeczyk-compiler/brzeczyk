@@ -15,7 +15,7 @@ object ReturnValueVariableCreator {
         val resultMapping: ReferenceHashMap<Function, Variable> = referenceHashMapOf()
 
         fun createReturnVariableFor(function: Function) {
-            if (function.returnType !is Type.Unit)
+            if (function.implementation is Function.Implementation.Local && function.returnType !is Type.Unit)
                 resultMapping[function] = Variable(
                     Variable.Kind.VALUE,
                     "_result_dummy_${function.name}",
@@ -52,8 +52,6 @@ object ReturnValueVariableCreator {
             createReturnVariableFor(globalFunction.function)
             globalFunction.function.body.forEach { process(it) }
         }
-
-        BuiltinFunctions.builtinFunctionsByName.values.forEach { createReturnVariableFor(it) }
 
         return resultMapping
     }

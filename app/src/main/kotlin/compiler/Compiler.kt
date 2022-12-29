@@ -1,5 +1,6 @@
 package compiler
 
+import compiler.analysis.BuiltinFunctions
 import compiler.analysis.ProgramAnalyzer
 import compiler.ast.Program
 import compiler.diagnostics.Diagnostic
@@ -46,9 +47,11 @@ class Compiler(val diagnostics: Diagnostics) {
 
             val ast = AstFactory.createFromParseTree(parseTree, diagnostics) // TODO: make AstFactory and Resolver a class for consistency with Lexer and Parser
 
-            val programProperties = ProgramAnalyzer.analyzeProgram(ast, diagnostics)
+            val astWithBuiltinFunctions = BuiltinFunctions.addBuiltinFunctions(ast)
 
-            val functionCFGs = createGraphForProgram(ast, programProperties, diagnostics, diagnostics.hasAnyError())
+            val programProperties = ProgramAnalyzer.analyzeProgram(astWithBuiltinFunctions, diagnostics)
+
+            val functionCFGs = createGraphForProgram(astWithBuiltinFunctions, programProperties, diagnostics, diagnostics.hasAnyError())
 
             if (!ast.globals.any { it is Program.Global.FunctionDefinition && it.function.name == "główna" }) {
                 diagnostics.report(Diagnostic.MainFunctionNotFound())

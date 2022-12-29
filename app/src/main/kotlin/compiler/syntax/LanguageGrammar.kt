@@ -16,13 +16,14 @@ object LanguageGrammar {
     private const val NLS: String = "({tNEWLINE})*" // NLS = NewLine Star
 
     object Productions {
-        val program = getProduction("PROGRAM", "({nFUNC_DEF}|({nVAR_DECL}({tNEWLINE}|{tSEMICOLON}))|{tNEWLINE})*")
+        val program = getProduction("PROGRAM", "({nFUNC_DEF}|(({nVAR_DECL}|{nFOREIGN_DECL})({tNEWLINE}|{tSEMICOLON}))|{tNEWLINE})*")
 
         val type = getProduction("TYPE", "{tTYPE_INTEGER}|{tTYPE_BOOLEAN}|{tTYPE_UNIT}")
         val const = getProduction("CONST", "{tINTEGER}|{tTRUE_CONSTANT}|{tFALSE_CONSTANT}|{tUNIT_CONSTANT}")
 
         val varDecl = getProduction("VAR_DECL", "({tVARIABLE}|{tVALUE}|{tCONSTANT})$NLS{tIDENTIFIER}$NLS{tCOLON}$NLS{nTYPE}({tASSIGNMENT}$NLS{nEXPR})?")
         val funcDef = getProduction("FUNC_DEF", "{tFUNCTION}$NLS{tIDENTIFIER}$NLS{tLEFT_PAREN}$NLS{nDEF_ARGS}{tRIGHT_PAREN}($NLS{tARROW}$NLS{nTYPE})?{tLEFT_BRACE}{nMANY_STATEMENTS}{tRIGHT_BRACE}")
+        val foreignDecl = getProduction("FOREIGN_DECL", "{tFOREIGN}$NLS{tFUNCTION}$NLS({tIDENTIFIER}|{tFOREIGN_NAME})$NLS{tLEFT_PAREN}$NLS{nDEF_ARGS}{tRIGHT_PAREN}({tARROW}$NLS{nTYPE})?({tAS}$NLS{tIDENTIFIER})?")
 
         val defArgs1 = getProduction("DEF_ARGS", "({nDEF_ARG}($NLS{tCOMMA}$NLS{nDEF_ARG})*$NLS({tCOMMA}$NLS{nDEF_ARG}$NLS{tASSIGNMENT}$NLS{nE_EXPR})*)?")
         val defArgs2 = getProduction("DEF_ARGS", "{nDEF_ARG}$NLS{tASSIGNMENT}$NLS{nE_EXPR}({tCOMMA}$NLS{nDEF_ARG}$NLS{tASSIGNMENT}$NLS{nE_EXPR})*")
@@ -164,12 +165,13 @@ object LanguageGrammar {
         val atomicReturnUnit = getProduction("ATOMIC_STATEMENT", "{tRETURN_UNIT}")
         val atomicReturn = getProduction("ATOMIC_STATEMENT", "{tRETURN}$NLS{nEXPR}")
         val atomicVarDef = getProduction("ATOMIC_STATEMENT", "{nVAR_DECL}")
+        val atomicForeignDecl = getProduction("ATOMIC_STATEMENT", "{nFOREIGN_DECL}")
 
         internal fun getList(): List<Production<Symbol>> {
             return listOf(
                 program,
                 type, const,
-                varDecl, funcDef,
+                varDecl, funcDef, foreignDecl,
                 defArgs1, defArgs2, defArg, callArgs1, callArgs2,
 
                 expr2048Parenthesis, expr2048Const, expr2048Identifier, expr2048Call,
@@ -206,7 +208,7 @@ object LanguageGrammar {
                 statementNonBrace, statementBraces,
                 nonBraceStatementAtomic, nonBraceStatementIf, nonBraceStatementWhile, nonBraceStatementFuncDef,
                 nonIfNonBraceStatementAtomic, nonIfNonBraceStatementWhile, nonIfNonBraceStatementFuncDef,
-                atomicExpr, atomicAssignment, atomicBreak, atomicContinue, atomicReturnUnit, atomicReturn, atomicVarDef
+                atomicExpr, atomicAssignment, atomicBreak, atomicContinue, atomicReturnUnit, atomicReturn, atomicVarDef, atomicForeignDecl
             )
         }
     }

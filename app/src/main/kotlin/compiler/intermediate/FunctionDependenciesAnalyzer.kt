@@ -9,11 +9,11 @@ import compiler.ast.Statement
 import compiler.ast.StatementBlock
 import compiler.ast.Type
 import compiler.ast.Variable
-import compiler.intermediate.generators.DISPLAY_LABEL_IN_MEMORY
 import compiler.intermediate.generators.DefaultFunctionDetailsGenerator
 import compiler.intermediate.generators.ForeignFunctionDetailsGenerator
 import compiler.intermediate.generators.FunctionDetailsGenerator
 import compiler.intermediate.generators.VariableLocationType
+import compiler.lowlevel.storage.DISPLAY_LABEL_IN_MEMORY
 import compiler.utils.ReferenceHashMap
 import compiler.utils.ReferenceMap
 import compiler.utils.ReferenceSet

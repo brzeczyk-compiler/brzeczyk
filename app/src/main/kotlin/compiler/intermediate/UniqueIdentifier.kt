@@ -1,7 +1,7 @@
 package compiler.intermediate
 
-import compiler.intermediate.generators.DISPLAY_LABEL_IN_MEMORY
 import compiler.intermediate.generators.GlobalVariableAccessGenerator
+import compiler.lowlevel.storage.DISPLAY_LABEL_IN_MEMORY
 
 class IllegalCharacter(message: String) : RuntimeException(message)
 class InconsistentFunctionNamingConvention(message: String) : RuntimeException(message)

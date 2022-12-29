@@ -2,11 +2,11 @@ package compiler.lowlevel.storage
 
 import java.io.PrintWriter
 
+const val DISPLAY_LABEL_IN_MEMORY = "display"
+
 class DisplayStorage(private val programStaticDepth: Int) {
 
-    val displayLabel: String = "display"
-
     fun writeAsm(output: PrintWriter) {
-        output.write("$displayLabel: resq $programStaticDepth")
+        output.write("$DISPLAY_LABEL_IN_MEMORY: resq $programStaticDepth")
     }
 }

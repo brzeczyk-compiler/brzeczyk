@@ -17,7 +17,7 @@ class GlobalVariableAccessGenerator(variableProperties: ReferenceMap<Any, Variab
     private val offsets = referenceHashMapOf<NamedNode, Long>().apply {
         this.putAll(
             variableProperties.filter { it.value.owner === VariablePropertiesAnalyzer.GlobalContext }
-                .asIterable().mapIndexed { index, value -> value.key as Variable to index.toLong() * VARIABLE_SIZE }
+                .asIterable().sortedBy { (it.key as Variable).name }.mapIndexed { index, value -> value.key as Variable to index.toLong() * VARIABLE_SIZE }
         )
     }
 

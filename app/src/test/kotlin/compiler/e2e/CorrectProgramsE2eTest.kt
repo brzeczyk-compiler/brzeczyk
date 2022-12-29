@@ -7,6 +7,7 @@ class CorrectProgramsE2eTest {
     fun `test identifiers`() {
         E2eTestUtils.assertProgramCorrect(
             """
+            czynność główna() {}
             zm n: Liczba = 10234
             zm camelCaseIdentifier: Liczba = 10234
             zm snake_case_identifier: Liczba = 10234
@@ -19,6 +20,7 @@ class CorrectProgramsE2eTest {
     fun `test types and literals`() {
         E2eTestUtils.assertProgramCorrect( // FIXME: the last number literal does not work
             """
+            czynność główna() {}
             czynność typy_i_literały() {
                 zm n: Liczba = 10234
                 n = 0
@@ -39,6 +41,7 @@ class CorrectProgramsE2eTest {
     fun `test if, elif and else`() {
         E2eTestUtils.assertProgramCorrect(
             """
+            czynność główna() {}
             czynność jeśli_zaś_gdy_wpp() {
                 zm x: Liczba
                 zm y: Liczba = 10
@@ -64,6 +67,7 @@ class CorrectProgramsE2eTest {
     fun `test while, break and continue`() {
         E2eTestUtils.assertProgramCorrect(
             """
+            czynność główna() {}
             czynność dopóKI_pomiń_przerwij() {
                 zm x: Liczba = 0
                 dopóki (prawda) { //dopóty
@@ -81,6 +85,7 @@ class CorrectProgramsE2eTest {
     fun `test return`() {
         E2eTestUtils.assertProgramCorrect(
             """
+            czynność główna() {}
             czynność przykład() -> Liczba {
                 zwróć 42
             }
@@ -101,6 +106,7 @@ class CorrectProgramsE2eTest {
     fun `test default arguments`() {
         E2eTestUtils.assertProgramCorrect(
             """
+            czynność główna() {}
             czynność suma(a: Liczba, b: Liczba = 2, c: Liczba = 4, d: Liczba = 8) -> Liczba {
                 zwróć a + b + c + d
             }
@@ -120,6 +126,7 @@ class CorrectProgramsE2eTest {
     fun `test local functions`() {
         E2eTestUtils.assertProgramCorrect(
             """
+            czynność główna() {}
             czynność zewnętrzna() {
                 zm x: Liczba = 10
 
@@ -140,6 +147,7 @@ class CorrectProgramsE2eTest {
     fun `test recurrence`() {
         E2eTestUtils.assertProgramCorrect(
             """
+            czynność główna() {}
             czynność silnia(n: Liczba) -> Liczba {
                 jeśli (n == 0)
                     zwróć 1
@@ -154,6 +162,7 @@ class CorrectProgramsE2eTest {
     fun `test variables, values and constants`() {
         E2eTestUtils.assertProgramCorrect(
             """
+            czynność główna() {}
             czynność zmienne_wartości_stałe() {
                 zm a: Liczba = 2
                 a = 4

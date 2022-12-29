@@ -109,6 +109,7 @@ class ArgumentResolverE2eTest {
         )
         assertProgramCorrect(
             """
+                czynność główna() {}
                 czynność f(a: Liczba, b: Liczba, c: Liczba) { }
                 czynność g() {
                     f(c=6, b=1, a=3)

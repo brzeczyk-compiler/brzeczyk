@@ -10,7 +10,7 @@ typealias PatternChoices = ReferenceHashMap<IFTNode, Pattern>
 val matchValue: (Pattern, IFTNode) -> Pattern.Result? = { pattern, iftnode -> pattern.matchValue(iftnode) }
 
 // Assumes that every possible IFTNode has at least one viable covering with the passed instruction set
-class DynamicCoveringBuilder(private val instructionSet: InstructionSet) : Covering {
+class DynamicCoveringBuilder(private val instructionSet: List<Pattern>) : Covering {
     private fun getBestPatterns(
         topPatternMatcher: (Pattern, IFTNode) -> Pattern.Result?,
         parent: IFTNode
@@ -33,7 +33,7 @@ class DynamicCoveringBuilder(private val instructionSet: InstructionSet) : Cover
                 if (matchedPattern == null) return null
                 return matchedPattern.subtrees.sumOf { calculateBestPatternAndCost(it) } + matchedPattern.cost
             }
-            val possiblePatternsToCosts = instructionSet.getInstructionSet().associateWith(::calculateCostForPattern)
+            val possiblePatternsToCosts = instructionSet.associateWith(::calculateCostForPattern)
                 .filter { it.value != null }
             minimalCosts[iftNode] = possiblePatternsToCosts.maxOf { it.value as Int }
             bestPatterns[iftNode] = possiblePatternsToCosts.minByOrNull { it.value!! }!!.key

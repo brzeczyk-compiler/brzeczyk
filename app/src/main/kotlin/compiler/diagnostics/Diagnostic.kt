@@ -56,6 +56,11 @@ sealed interface Diagnostic {
         }
     }
 
+    class MainFunctionNotFound() : Diagnostic {
+        override fun isError(): Boolean = true
+        override fun toString(): String = "Main function 'główna' not found"
+    }
+
     sealed class ResolutionDiagnostic(astNodes: List<AstNode>) : Diagnostic {
 
         data class ObjectAssociatedToError(val message: String, val location: LocationRange?)

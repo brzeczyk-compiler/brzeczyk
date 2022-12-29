@@ -145,12 +145,7 @@ object NameResolver {
                 }
 
                 is Program.Global.FunctionDefinition -> {
-                    staticDepth++
-                    ast.staticFunctionDepth = max(ast.staticFunctionDepth, staticDepth)
-
                     analyzeNode(node.function, currentScope)
-
-                    staticDepth--
                 }
 
                 is Variable -> {
@@ -162,6 +157,9 @@ object NameResolver {
                 }
 
                 is Function -> {
+                    staticDepth++
+                    ast.staticFunctionDepth = max(ast.staticFunctionDepth, staticDepth)
+
                     // first analyze each parameter, so they can't refer to each other and to the function
                     node.parameters.forEach { analyzeNode(it, currentScope) }
 
@@ -178,6 +176,8 @@ object NameResolver {
 
                     node.body.forEach { analyzeNode(it, newScope) }
                     destroyScope(newScope) // forget about parameters and names introduced in the body
+
+                    staticDepth--
                 }
 
                 is Function.Parameter -> {

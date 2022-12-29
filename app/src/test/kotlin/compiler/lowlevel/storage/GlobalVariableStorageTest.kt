@@ -46,8 +46,7 @@ class GlobalVariableStorageTest {
         GlobalVariableStorage(program).writeAsm(PrintWriter(stringWriter))
 
         val expected =
-            "section .data\n" +
-                "globals:\n" +
+            "globals:\n" +
                 "dq 0x0 ; bool false\n" +
                 "dq 0x1 ; bool true\n" +
                 "dq 0x0 ; no expression\n" +

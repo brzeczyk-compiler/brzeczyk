@@ -14,8 +14,7 @@ class GlobalVariableStorage(val program: Program) {
             Expression.getValueOfLiteral(it) ?: throw IllegalArgumentException()
         } ?: 0
 
-    fun writeAsm(output: PrintWriter) {
-        output.write("section .data\n")
+    fun writeAsm(output: PrintWriter) { // generated code should be in section .data
         output.write(GlobalVariableAccessGenerator.GLOBALS_MEMORY_LABEL + ":\n")
         program.globals.filterIsInstance<Program.Global.VariableDefinition>()
             .map { it.variable }

@@ -4,6 +4,7 @@ import compiler.ast.Expression
 import compiler.ast.Function
 import compiler.ast.Program
 import compiler.ast.Statement
+import compiler.ast.StatementBlock
 import compiler.ast.Type
 import compiler.ast.Variable
 import io.mockk.mockk
@@ -99,5 +100,61 @@ internal class NameResolverTest {
         assertEquals(nameDefinitions[yUseInG], yParam)
 
         assertEquals(1, program.staticFunctionDepth)
+    }
+
+    @Test fun `test non-trivial static depth`() {
+        /*
+        Create AST for program:
+        ---------------------------------
+
+        czynność f() -> Nic {}
+
+        czynność g() -> Nic {
+            czynność h() -> Nic {}
+            czynność g() -> Nic {
+                czynność f() -> Nic {}
+            }
+        }
+
+        czynność k() -> Nic {
+            czynność k() -> Nic {}
+        }
+        */
+
+        val program = Program(
+            listOf(
+                simpleGlobalFunction("f"),
+                simpleGlobalFunction(
+                    "g",
+                    listOf(
+                        simpleInnerFunction("h"),
+                        simpleInnerFunction(
+                            "g",
+                            listOf(
+                                simpleInnerFunction("f")
+                            )
+                        )
+                    )
+                ),
+                simpleGlobalFunction(
+                    "k",
+                    listOf(
+                        simpleInnerFunction("k")
+                    )
+                )
+            )
+        )
+
+        NameResolver.calculateNameResolution(program, mockk())
+
+        assertEquals(3, program.staticFunctionDepth)
+    }
+
+    private fun simpleGlobalFunction(name: String, body: StatementBlock = listOf()): Program.Global.FunctionDefinition {
+        return Program.Global.FunctionDefinition(Function(name, listOf(), Type.Unit, body))
+    }
+
+    private fun simpleInnerFunction(name: String, body: StatementBlock = listOf()): Statement.FunctionDefinition {
+        return Statement.FunctionDefinition(Function(name, listOf(), Type.Unit, body))
     }
 }

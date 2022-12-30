@@ -34,9 +34,12 @@ object SysV64CallingConvention {
             val toAdd = stackAlignmentInBytes - stackMovement % stackAlignmentInBytes
             cfgBuilder.addLinksFromAllFinalRoots(
                 CFGLinkType.UNCONDITIONAL,
-                IFTNode.Subtract(
-                    IFTNode.RegisterRead(Register.RSP),
-                    IFTNode.Const(toAdd)
+                IFTNode.RegisterWrite(
+                    Register.RSP,
+                    IFTNode.Subtract(
+                        IFTNode.RegisterRead(Register.RSP),
+                        IFTNode.Const(toAdd)
+                    )
                 )
             )
             stackMovement += toAdd

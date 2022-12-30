@@ -175,9 +175,12 @@ class DefaultFunctionDetailsGeneratorTest {
         // align stack
         expectedCFGBuilder.addLinksFromAllFinalRoots(
             CFGLinkType.UNCONDITIONAL,
-            IFTNode.Subtract(
-                IFTNode.RegisterRead(Register.RSP),
-                IFTNode.Const(8)
+            IFTNode.RegisterWrite(
+                Register.RSP,
+                IFTNode.Subtract(
+                    IFTNode.RegisterRead(Register.RSP),
+                    IFTNode.Const(8)
+                )
             )
         )
 

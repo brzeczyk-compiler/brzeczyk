@@ -2,8 +2,8 @@ package compiler.intermediate.generators
 
 import compiler.ast.NamedNode
 import compiler.ast.Variable
+import compiler.intermediate.AlignedConstant
 import compiler.intermediate.CFGLinkType
-import compiler.intermediate.ConstantAlignedToAGivenRestModulo
 import compiler.intermediate.ConstantPlaceholder
 import compiler.intermediate.ControlFlowGraph
 import compiler.intermediate.ControlFlowGraphBuilder
@@ -68,7 +68,7 @@ data class DefaultFunctionDetailsGenerator(
         cfgBuilder.addLinksFromAllFinalRoots(
             CFGLinkType.UNCONDITIONAL,
             IFTNode.StackPush(IFTNode.RegisterRead(Register.RBP))
-        ) // disaligns stack
+        )
 
         // update rbp
         val movRbpRsp = IFTNode.RegisterWrite(
@@ -84,10 +84,10 @@ data class DefaultFunctionDetailsGenerator(
                 IFTNode.RegisterRead(Register.RSP),
                 // make stack aligned back
                 IFTNode.Const(
-                    ConstantAlignedToAGivenRestModulo(
+                    AlignedConstant(
                         SummedConstant(variablesTotalOffset.toLong(), spilledRegistersOffset),
                         stackAlignmentInBytes.toLong(),
-                        stackAlignmentInBytes - memoryUnitSize.toLong()
+                        stackAlignmentInBytes - 2 * memoryUnitSize.toLong() // -2 to account return address and backed up rbp
                     )
                 )
             )

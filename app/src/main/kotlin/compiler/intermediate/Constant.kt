@@ -15,3 +15,11 @@ class SummedConstant(private val first: Constant, private val second: Constant) 
 
     override val value get() = first.value + second.value
 }
+
+class ConstantAlignedToAGivenRestModulo(private val rawValue: Constant, private val modulo: Long, private val rest: Long = 0L) : Constant {
+    override val value: Long get() {
+        val toAdd = rest - rawValue.value % modulo
+        return if (toAdd < 0) rawValue.value + toAdd + modulo
+        else rawValue.value + toAdd
+    }
+}

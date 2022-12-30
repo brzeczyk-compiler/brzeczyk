@@ -101,7 +101,8 @@ class Compiler(val diagnostics: Diagnostics) {
                     global main
                     main:
                         call ${functionDetailsGenerators[mainFunction]!!.identifier}
-                        
+                        ret
+                    
                 """.trimIndent()
             )
 

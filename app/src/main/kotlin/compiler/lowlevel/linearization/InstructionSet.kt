@@ -165,7 +165,7 @@ object InstructionSet {
                     Instruction.InPlaceInstruction.CallR(
                         inRegisters[0],
                         args["usedRegs"] as Collection<Register> + setOf(inRegisters[0]),
-                        args["definedRegs"] as Collection<Register> + setOf(Register.RSP)
+                        args["definedRegs"] as Collection<Register>
                     ) // CALL reg0
                 )
             },

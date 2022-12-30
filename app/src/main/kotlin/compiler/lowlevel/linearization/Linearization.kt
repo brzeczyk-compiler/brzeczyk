@@ -27,30 +27,37 @@ object Linearization {
 
         fun addLabel(label: String) {
             instructions.add(Label(label))
+
+//            println("    ${Label(label)}")
         }
 
         fun dfs(node: IFTNode, nextLabel: String) {
+//            println("visit $node")
             addLabel(labels[node] ?: assignLabel(node))
-            println("visit $node $nextLabel")
 
             fun addUnconditional() {
                 instructions.addAll(covering.coverUnconditional(node))
+
+//                covering.coverUnconditional(node).forEach { println("    $it") }
             }
 
             fun addConditional(whenTrue: Boolean, targetLabel: String) {
                 instructions.addAll(covering.coverConditional(node, targetLabel, !whenTrue))
                 usedLabels.add(targetLabel)
+
+//                covering.coverConditional(node, targetLabel, !whenTrue).forEach { println("    $it") }
             }
 
             fun addJump(targetLabel: String) {
                 if (targetLabel != nextLabel) {
                     instructions.add(Jmp(targetLabel))
                     usedLabels.add(targetLabel)
+
+//                    println("    ${Jmp(targetLabel)}")
                 }
             }
 
             if (node in cfg.unconditionalLinks) {
-//                println("unconditional")
                 val target = cfg.unconditionalLinks[node]!!
 
                 addUnconditional()
@@ -60,7 +67,6 @@ object Linearization {
                 else
                     dfs(target, nextLabel)
             } else if (node in cfg.conditionalTrueLinks && node in cfg.conditionalFalseLinks) {
-//                println("conditional")
                 val targetWhenTrue = cfg.conditionalTrueLinks[node]!!
                 val targetWhenFalse = cfg.conditionalFalseLinks[node]!!
 
@@ -82,18 +88,11 @@ object Linearization {
             } else if (node in cfg.conditionalTrueLinks || node in cfg.conditionalFalseLinks) {
                 throw IllegalArgumentException() // unreachable state
             } else {
-//                println("ret")
                 addUnconditional() // this must be RET, so no jump is needed
             }
         }
 
         dfs(cfg.entryTreeRoot, "")
-
-//        cfg.unconditionalLinks.entries.forEach { println(it) }
-//        cfg.treeRoots.forEach { println(it) }
-//        instructions.forEach { println(it) }
-//        println(usedLabels)
-//        println()
 
         return instructions.filter { it !is Label || it.label in usedLabels }
     }

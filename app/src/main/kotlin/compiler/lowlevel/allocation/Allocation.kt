@@ -17,6 +17,8 @@ object Allocation {
         Register.R12,
         Register.R11,
         Register.R10,
+        Register.RBP,
+        Register.RSP,
         Register.R9,
         Register.R8,
         Register.RDI,
@@ -25,8 +27,6 @@ object Allocation {
         Register.RCX,
         Register.RBX,
         Register.RAX,
-        Register.RBP,
-        Register.RSP,
     )
 
     data class Result(
@@ -42,7 +42,6 @@ object Allocation {
         orderedPhysicalRegisters: List<Register>,
         allocator: PartialAllocation
     ): Result {
-        linearProgram.forEach { println(it) }
         var reservedRegistersNumber = 0
         while (true) {
             val availableRegisters = orderedPhysicalRegisters.drop(reservedRegistersNumber)

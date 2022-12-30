@@ -2,12 +2,15 @@ package compiler
 
 import compiler.analysis.BuiltinFunctions
 import compiler.analysis.ProgramAnalyzer
+import compiler.ast.Function
 import compiler.ast.Program
 import compiler.diagnostics.Diagnostic
 import compiler.diagnostics.Diagnostics
 import compiler.input.ReaderInput
 import compiler.intermediate.ControlFlow.createGraphForProgram
+import compiler.intermediate.FunctionDependenciesAnalyzer
 import compiler.lexer.Lexer
+import compiler.lowlevel.Instruction
 import compiler.lowlevel.allocation.Allocation
 import compiler.lowlevel.allocation.ColoringAllocation
 import compiler.lowlevel.dataflow.Liveness
@@ -51,22 +54,26 @@ class Compiler(val diagnostics: Diagnostics) {
 
             val programProperties = ProgramAnalyzer.analyzeProgram(astWithBuiltinFunctions, diagnostics)
 
-            val functionCFGs = createGraphForProgram(astWithBuiltinFunctions, programProperties, diagnostics, diagnostics.hasAnyError())
+            val functionDetailsGenerators = FunctionDependenciesAnalyzer.createFunctionDetailsGenerators(
+                astWithBuiltinFunctions,
+                programProperties.variableProperties,
+                programProperties.functionReturnedValueVariables,
+                diagnostics.hasAnyError()
+            )
 
-            if (!ast.globals.any { it is Program.Global.FunctionDefinition && it.function.name == "główna" }) {
+            val functionCFGs = createGraphForProgram(astWithBuiltinFunctions, programProperties, functionDetailsGenerators, diagnostics)
+
+            val mainFunction = (
+                ast.globals.find { it is Program.Global.FunctionDefinition && it.function.name == "główna" } as Program.Global.FunctionDefinition?
+                )?.function
+            if (mainFunction == null) {
                 diagnostics.report(Diagnostic.MainFunctionNotFound())
             }
 
             if (diagnostics.hasAnyError())
                 return false
 
-            val linearFunctions = functionCFGs.mapValues { Linearization.linearize(it.value.cfg, covering) }
-
-//            for ((function, instructions) in linearFunctions.entries) {
-//                println(function)
-//                for (instruction in instructions) println(instruction)
-//                println()
-//            }
+            val linearFunctions = functionCFGs.mapValues { Linearization.linearize(it.value, covering) }
 
             val finalCode = linearFunctions.mapValues {
                 Allocation.allocateRegistersWithSpillsHandling(
@@ -77,18 +84,39 @@ class Compiler(val diagnostics: Diagnostics) {
                 )
             }
 
-            finalCode.entries.forEach { functionCFGs[it.key]!!.offset.settledValue = it.value.spilledOffset.toLong() }
+            finalCode.entries.forEach { functionDetailsGenerators[it.key]!!.spilledRegistersOffset.settledValue = it.value.spilledOffset.toLong() }
 
-            output.println("section .bss")
+            output.println("SECTION .bss")
             DisplayStorage(programProperties.staticDepth).writeAsm(output)
-            output.println("\nsection .data")
+
+            output.println("\nSECTION .data")
             GlobalVariableStorage(ast).writeAsm(output)
 
-            output.println("\nsection .text")
-            finalCode.forEach { function ->
-                function.value.linearProgram.forEach {
-                    it.writeAsm(output, function.value.allocatedRegisters)
-                }
+            output.println("\nSECTION .text")
+            functionDetailsGenerators
+                .filter { it.key.implementation is Function.Implementation.Foreign }
+                .forEach { output.println("extern ${it.value.identifier}") }
+            output.println(
+                """
+                    global main
+                    main:
+                        call ${functionDetailsGenerators[mainFunction]!!.identifier}
+                        
+                """.trimIndent()
+            )
+
+            finalCode.forEach { functionCode ->
+                output.println("${functionDetailsGenerators[functionCode.key]!!.identifier}:")
+                functionCode.value.linearProgram
+                    .filterNot {
+                        it is Instruction.InPlaceInstruction.MoveRR &&
+                            functionCode.value.allocatedRegisters[it.reg_dest] == functionCode.value.allocatedRegisters[it.reg_src]
+                    }
+                    .forEach {
+                        output.print("    ")
+                        it.writeAsm(output, functionCode.value.allocatedRegisters)
+                        output.println()
+                    }
                 output.println()
             }
 

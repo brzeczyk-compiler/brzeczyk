@@ -942,6 +942,7 @@ class TypeCheckerE2eTest {
         )
         assertProgramCorrect(
             """
+                czynność główna() {}
                 czynność f() -> Czy {
                     jeśli (prawda) {
                         jeśli (prawda) {
@@ -970,6 +971,11 @@ class TypeCheckerE2eTest {
                 }
             """
         )
-        assertProgramCorrect("czynność f() -> Czy { { { zwróć prawda;} } }")
+        assertProgramCorrect(
+            """
+                czynność f() -> Czy { { { zwróć prawda;} } } 
+                czynność główna() {}
+            """
+        )
     }
 }

@@ -1,5 +1,6 @@
 package compiler.intermediate
 import compiler.utils.referenceHashMapOf
+import compiler.utils.referenceHashSetOf
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -17,7 +18,7 @@ class ControlFlowGraphBuilderTest {
     private val afterConditionalNode = IFTNode.NoOp()
 
     private val simpleCFG = ControlFlowGraph(
-        treeRoots = listOf(entryNode, secondNode, conditionalTrueNode, conditionalFalseNode),
+        treeRoots = referenceHashSetOf(entryNode, secondNode, conditionalTrueNode, conditionalFalseNode),
         entryTreeRoot = entryNode,
         unconditionalLinks = referenceHashMapOf(entryNode to secondNode),
         conditionalTrueLinks = referenceHashMapOf(secondNode to conditionalTrueNode),
@@ -25,7 +26,7 @@ class ControlFlowGraphBuilderTest {
     )
 
     private val simpleCFGWithExtraFinalNode = ControlFlowGraph(
-        treeRoots = listOf(entryNode, secondNode, conditionalTrueNode, conditionalFalseNode, afterConditionalNode),
+        treeRoots = referenceHashSetOf(entryNode, secondNode, conditionalTrueNode, conditionalFalseNode, afterConditionalNode),
         entryTreeRoot = entryNode,
         unconditionalLinks = referenceHashMapOf(
             entryNode to secondNode,
@@ -41,7 +42,7 @@ class ControlFlowGraphBuilderTest {
         val cfg = ControlFlowGraphBuilder(entryNode).build()
 
         assertEquals(cfg.entryTreeRoot, entryNode)
-        assertEquals(cfg.treeRoots, listOf(entryNode))
+        assertEquals(cfg.treeRoots, referenceHashSetOf<IFTNode>(entryNode))
         assertEquals(cfg.unconditionalLinks, referenceHashMapOf())
         assertEquals(cfg.conditionalFalseLinks, referenceHashMapOf())
         assertEquals(cfg.conditionalTrueLinks, referenceHashMapOf())

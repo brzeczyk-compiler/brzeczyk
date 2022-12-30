@@ -14,7 +14,6 @@ import compiler.ast.VariableOwner
 import compiler.diagnostics.Diagnostic.ResolutionDiagnostic.ControlFlowDiagnostic
 import compiler.diagnostics.Diagnostics
 import compiler.intermediate.FunctionDependenciesAnalyzer.createCallGraph
-import compiler.intermediate.FunctionDependenciesAnalyzer.createFunctionDetailsGenerators
 import compiler.intermediate.generators.FunctionDetailsGenerator
 import compiler.intermediate.generators.GlobalVariableAccessGenerator
 import compiler.intermediate.generators.VariableAccessGenerator
@@ -28,16 +27,13 @@ import compiler.utils.referenceHashSetOf
 object ControlFlow {
     private fun mapLinkType(list: List<Pair<IFTNode, CFGLinkType>?>, type: CFGLinkType) = list.map { it?.copy(second = type) }
 
-    data class FunctionDetails(val cfg: ControlFlowGraph, val offset: ConstantPlaceholder)
-
     fun createGraphForProgram(
         program: Program,
         programProperties: ProgramAnalyzer.ProgramProperties,
+        functionDetailsGenerators: ReferenceMap<Function, FunctionDetailsGenerator>,
         diagnostics: Diagnostics,
-        allowInconsistentNamingErrors: Boolean = false
-    ): ReferenceMap<Function, FunctionDetails> {
+    ): ReferenceMap<Function, ControlFlowGraph> {
         val globalVariableAccessGenerator = GlobalVariableAccessGenerator(programProperties.variableProperties)
-        val functionDetailsGenerators = createFunctionDetailsGenerators(program, programProperties.variableProperties, programProperties.functionReturnedValueVariables, allowInconsistentNamingErrors)
         val callGraph = createCallGraph(program, programProperties.nameResolution)
 
         fun partiallyAppliedCreateGraphForExpression(expression: Expression, targetVariable: Variable?, currentFunction: Function): ControlFlowGraph {
@@ -69,13 +65,10 @@ object ControlFlow {
                 (function, bodyCFG) ->
                 Pair(
                     function,
-                    FunctionDetails(
-                        attachPrologueAndEpilogue(
-                            bodyCFG,
-                            functionDetailsGenerators[function]!!.genPrologue(),
-                            functionDetailsGenerators[function]!!.genEpilogue()
-                        ),
-                        functionDetailsGenerators[function]!!.spilledRegistersOffset
+                    attachPrologueAndEpilogue(
+                        bodyCFG,
+                        functionDetailsGenerators[function]!!.genPrologue(),
+                        functionDetailsGenerators[function]!!.genEpilogue()
                     )
                 )
             }

@@ -36,6 +36,7 @@ class ExpressionControlFlowTest {
         }
 
         override val spilledRegistersOffset get() = throw NotImplementedError()
+        override val identifier: String get() = throw NotImplementedError()
 
         override fun genRead(namedNode: NamedNode, isDirect: Boolean): IFTNode {
             return IFTNode.DummyRead(namedNode, isDirect)

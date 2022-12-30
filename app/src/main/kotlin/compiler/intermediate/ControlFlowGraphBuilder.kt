@@ -1,6 +1,7 @@
 package compiler.intermediate
 
 import compiler.utils.referenceHashMapOf
+import compiler.utils.referenceHashSetOf
 
 class IncorrectControlFlowGraphError(message: String) : Exception(message)
 
@@ -8,7 +9,7 @@ class ControlFlowGraphBuilder(@JvmField var entryTreeRoot: IFTNode? = null) {
     private var unconditionalLinks = referenceHashMapOf<IFTNode, IFTNode>()
     private var conditionalTrueLinks = referenceHashMapOf<IFTNode, IFTNode>()
     private var conditionalFalseLinks = referenceHashMapOf<IFTNode, IFTNode>()
-    private var treeRoots = ArrayList<IFTNode>()
+    private var treeRoots = referenceHashSetOf<IFTNode>()
 
     init {
         entryTreeRoot?.let { treeRoots.add(it) }
@@ -89,7 +90,7 @@ class ControlFlowGraphBuilder(@JvmField var entryTreeRoot: IFTNode? = null) {
     fun addSingleTree(iftNode: IFTNode): ControlFlowGraphBuilder {
         mergeUnconditionally(
             ControlFlowGraph(
-                listOf(iftNode),
+                referenceHashSetOf(iftNode),
                 iftNode, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf()
             )
         )

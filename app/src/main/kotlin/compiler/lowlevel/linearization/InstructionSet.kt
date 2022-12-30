@@ -73,6 +73,22 @@ object InstructionSet {
                 _, outRegister, _, args ->
                 listOf(Instruction.InPlaceInstruction.MoveRI(outRegister, args["const"] as Constant)) // MOV  out,  const
             },
+            InstructionPattern(
+                IFTPattern.MemoryWrite(
+                    IFTPattern.BinaryOperator(
+                        IFTNode.Add::class,
+                        IFTPattern.MemoryLabel(IFTPattern.AnyArgument("label"))
+                    ),
+                )
+            ) {
+                inRegisters, _, _, args ->
+                listOf(
+                    Instruction.InPlaceInstruction.MoveMR(
+                        Addressing.Base(inRegisters[0], Addressing.MemoryAddress.Label(args["label"] as String)),
+                        inRegisters[1]
+                    )
+                ) // MOV  [label + reg0], reg1
+            },
             InstructionPattern(IFTPattern.MemoryWrite()) {
                 inRegisters, _, _, _ ->
                 listOf(Instruction.InPlaceInstruction.MoveMR(Addressing.Base(inRegisters[0]), inRegisters[1])) // MOV  [reg0], reg1
@@ -130,7 +146,11 @@ object InstructionSet {
             ) {
                 _, _, _, args ->
                 listOf(
-                    Instruction.InPlaceInstruction.CallL(args["label"] as String, args["usedRegs"] as Collection<Register>, args["definedRegs"] as Collection<Register>) // CALL label
+                    Instruction.InPlaceInstruction.CallL(
+                        args["label"] as String,
+                        args["usedRegs"] as Collection<Register>,
+                        args["definedRegs"] as Collection<Register>
+                    ) // CALL label
                 )
             },
             InstructionPattern(
@@ -142,7 +162,11 @@ object InstructionSet {
             ) {
                 inRegisters, _, _, args ->
                 listOf(
-                    Instruction.InPlaceInstruction.CallR(inRegisters[0], args["usedRegs"] as Collection<Register> + setOf(inRegisters[0]), args["definedRegs"] as Collection<Register>) // CALL reg0
+                    Instruction.InPlaceInstruction.CallR(
+                        inRegisters[0],
+                        args["usedRegs"] as Collection<Register> + setOf(inRegisters[0]),
+                        args["definedRegs"] as Collection<Register> + setOf(Register.RSP)
+                    ) // CALL reg0
                 )
             },
             InstructionPattern(IFTPattern.Return(IFTPattern.AnyArgument("usedRegs"))) {

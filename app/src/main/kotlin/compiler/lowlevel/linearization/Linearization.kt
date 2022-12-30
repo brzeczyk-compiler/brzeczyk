@@ -20,7 +20,7 @@ object Linearization {
         val usedLabels = mutableSetOf<String>()
 
         fun assignLabel(node: IFTNode): String {
-            val label = "_" + labels.size
+            val label = "._" + labels.size
             labels[node] = label
             return label
         }

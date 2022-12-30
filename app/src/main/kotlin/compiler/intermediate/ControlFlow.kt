@@ -28,12 +28,14 @@ import compiler.utils.referenceHashSetOf
 object ControlFlow {
     private fun mapLinkType(list: List<Pair<IFTNode, CFGLinkType>?>, type: CFGLinkType) = list.map { it?.copy(second = type) }
 
+    data class FunctionDetails(val cfg: ControlFlowGraph, val offset: ConstantPlaceholder)
+
     fun createGraphForProgram(
         program: Program,
         programProperties: ProgramAnalyzer.ProgramProperties,
         diagnostics: Diagnostics,
         allowInconsistentNamingErrors: Boolean = false
-    ): ReferenceMap<Function, ControlFlowGraph> {
+    ): ReferenceMap<Function, FunctionDetails> {
         val globalVariableAccessGenerator = GlobalVariableAccessGenerator(programProperties.variableProperties)
         val functionDetailsGenerators = createFunctionDetailsGenerators(program, programProperties.variableProperties, programProperties.functionReturnedValueVariables, allowInconsistentNamingErrors)
         val callGraph = createCallGraph(program, programProperties.nameResolution)
@@ -67,10 +69,13 @@ object ControlFlow {
                 (function, bodyCFG) ->
                 Pair(
                     function,
-                    attachPrologueAndEpilogue(
-                        bodyCFG,
-                        functionDetailsGenerators[function]!!.genPrologue(),
-                        functionDetailsGenerators[function]!!.genEpilogue()
+                    FunctionDetails(
+                        attachPrologueAndEpilogue(
+                            bodyCFG,
+                            functionDetailsGenerators[function]!!.genPrologue(),
+                            functionDetailsGenerators[function]!!.genEpilogue()
+                        ),
+                        functionDetailsGenerators[function]!!.spilledRegistersOffset
                     )
                 )
             }

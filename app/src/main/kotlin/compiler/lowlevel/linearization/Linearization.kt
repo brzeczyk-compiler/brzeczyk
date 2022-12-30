@@ -31,6 +31,7 @@ object Linearization {
 
         fun dfs(node: IFTNode, nextLabel: String) {
             addLabel(labels[node] ?: assignLabel(node))
+            println("visit $node $nextLabel")
 
             fun addUnconditional() {
                 instructions.addAll(covering.coverUnconditional(node))
@@ -49,6 +50,7 @@ object Linearization {
             }
 
             if (node in cfg.unconditionalLinks) {
+//                println("unconditional")
                 val target = cfg.unconditionalLinks[node]!!
 
                 addUnconditional()
@@ -58,6 +60,7 @@ object Linearization {
                 else
                     dfs(target, nextLabel)
             } else if (node in cfg.conditionalTrueLinks && node in cfg.conditionalFalseLinks) {
+//                println("conditional")
                 val targetWhenTrue = cfg.conditionalTrueLinks[node]!!
                 val targetWhenFalse = cfg.conditionalFalseLinks[node]!!
 
@@ -79,11 +82,18 @@ object Linearization {
             } else if (node in cfg.conditionalTrueLinks || node in cfg.conditionalFalseLinks) {
                 throw IllegalArgumentException() // unreachable state
             } else {
+//                println("ret")
                 addUnconditional() // this must be RET, so no jump is needed
             }
         }
 
         dfs(cfg.entryTreeRoot, "")
+
+//        cfg.unconditionalLinks.entries.forEach { println(it) }
+//        cfg.treeRoots.forEach { println(it) }
+//        instructions.forEach { println(it) }
+//        println(usedLabels)
+//        println()
 
         return instructions.filter { it !is Label || it.label in usedLabels }
     }

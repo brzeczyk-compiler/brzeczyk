@@ -5,6 +5,6 @@ import java.io.PrintWriter
 
 class GlobalVariableStorage(val program: Program) {
     fun writeAsm(output: PrintWriter) {
-        TODO() // Reserve memory for global variables with appropriate initial values
+        output.println("globals:")
     }
 }

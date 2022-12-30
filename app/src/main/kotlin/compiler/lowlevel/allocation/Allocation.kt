@@ -42,6 +42,7 @@ object Allocation {
         orderedPhysicalRegisters: List<Register>,
         allocator: PartialAllocation
     ): Result {
+        linearProgram.forEach { println(it) }
         var reservedRegistersNumber = 0
         while (true) {
             val availableRegisters = orderedPhysicalRegisters.drop(reservedRegistersNumber)

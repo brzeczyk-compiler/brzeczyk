@@ -161,7 +161,7 @@ class TypeCheckerE2eTest {
         assertProgramCorrect("stała a: Czy = fałsz; czynność główna() {}")
 //        assertProgramCorrect("stała a: Czy = 134 > 43;")
 //        assertProgramCorrect("stała a: Czy = 34 > 7 ? fałsz : 23 == 10;")
-        assertProgramCorrect("stała a: Liczba = 0; czynność główna() {}czynność główna() {}")
+        assertProgramCorrect("stała a: Liczba = 0; czynność główna() {}")
         assertProgramCorrect("stała a: Liczba = 123; czynność główna() {}")
 //        assertProgramCorrect("stała a: Liczba = -17;")
 //        assertProgramCorrect("stała a: Liczba = 10 + 4;")

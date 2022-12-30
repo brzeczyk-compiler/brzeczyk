@@ -86,9 +86,28 @@ object InstructionSet {
                 _, _, _, args ->
                 listOf(Instruction.InPlaceInstruction.MoveRI(args["reg"] as Register, args["const"] as Constant)) // MOV  reg,  const
             },
+            InstructionPattern(
+                IFTPattern.RegisterWrite(
+                    IFTPattern.AnyArgument("reg_dest"),
+                    IFTPattern.RegisterRead(IFTPattern.AnyArgument("reg_src"))
+                )
+            ) {
+                _, _, _, args ->
+                listOf(Instruction.InPlaceInstruction.MoveRR(args["reg_dest"] as Register, args["reg_src"] as Register)) // MOV  reg_dest,  reg_src
+            },
+            InstructionPattern(IFTPattern.RegisterWrite(IFTPattern.AnyArgument("reg"), IFTPattern.StackPop())) {
+                _, _, _, args ->
+                listOf(Instruction.InPlaceInstruction.PopR(args["reg"] as Register)) // POP  reg
+            },
             InstructionPattern(IFTPattern.RegisterWrite(IFTPattern.AnyArgument("reg"))) {
                 inRegisters, _, _, args ->
                 listOf(Instruction.InPlaceInstruction.MoveRR(args["reg"] as Register, inRegisters[0])) // MOV  reg,  reg0
+            },
+            InstructionPattern(IFTPattern.StackPush(IFTPattern.RegisterRead(IFTPattern.AnyArgument("reg")))) {
+                _, _, _, args ->
+                listOf(
+                    Instruction.InPlaceInstruction.PushR(args["reg"] as Register) // PUSH reg
+                )
             },
             InstructionPattern(IFTPattern.StackPush()) {
                 inRegisters, _, _, _ ->

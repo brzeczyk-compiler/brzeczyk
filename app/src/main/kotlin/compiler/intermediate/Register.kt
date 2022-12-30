@@ -62,4 +62,12 @@ class Register {
         R15 -> "r15b"
         else -> throw VirtualRegisterIsNotAsmable()
     }
+
+    override fun toString(): String {
+        return try {
+            toAsm()
+        } catch (err: VirtualRegisterIsNotAsmable) {
+            super.toString()
+        }
+    }
 }

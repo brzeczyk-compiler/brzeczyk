@@ -31,6 +31,7 @@ abstract class DataFlowAnalyzer<SL> {
                     when (it) {
                         is Label -> labelToInstruction[it.label]!!
                         is Instruction -> it
+//                        else -> Instruction.InPlaceInstruction.Dummy()
                     }
                 }
 
@@ -41,6 +42,8 @@ abstract class DataFlowAnalyzer<SL> {
             if (backward) predecessors[from]!!.add(to)
             else predecessors[to]!!.add(from)
         }
+
+//        linearProgram.forEach { println(it) }
 
         instructionList.forEachIndexed { index, it ->
             when (it) {

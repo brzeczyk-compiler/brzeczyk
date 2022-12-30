@@ -60,14 +60,15 @@ class Compiler(val diagnostics: Diagnostics) {
             if (diagnostics.hasAnyError())
                 return false
 
-            val linearFunctions = functionCFGs.mapValues { Linearization.linearize(it.value, covering) }
+            val linearFunctions = functionCFGs.mapValues { Linearization.linearize(it.value.cfg, covering) }
 
 //            for ((function, instructions) in linearFunctions.entries) {
 //                println(function)
 //                for (instruction in instructions) println(instruction)
+//                println()
 //            }
 
-            val registerAllocation = linearFunctions.mapValues {
+            val finalCode = linearFunctions.mapValues {
                 Allocation.allocateRegistersWithSpillsHandling(
                     it.value,
                     Liveness.computeLiveness(it.value),
@@ -76,13 +77,19 @@ class Compiler(val diagnostics: Diagnostics) {
                 )
             }
 
-            DisplayStorage(ast).writeAsm(output)
+            finalCode.entries.forEach { functionCFGs[it.key]!!.offset.settledValue = it.value.spilledOffset.toLong() }
+
+            output.println("section .bss")
+            DisplayStorage(programProperties.staticDepth).writeAsm(output)
+            output.println("\nsection .data")
             GlobalVariableStorage(ast).writeAsm(output)
 
-            registerAllocation.forEach { function ->
+            output.println("\nsection .text")
+            finalCode.forEach { function ->
                 function.value.linearProgram.forEach {
                     it.writeAsm(output, function.value.allocatedRegisters)
                 }
+                output.println()
             }
 
             // TODO:

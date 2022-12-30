@@ -120,13 +120,6 @@ class Compiler(val diagnostics: Diagnostics) {
                 output.println()
             }
 
-            // TODO:
-            // - make sure "główna" is present and generate a jump to it from "main",
-            // - linearize CFG for each function,
-            // - run liveness analysis on each linear function code,
-            // - run register allocation on each linear function code,
-            // - write ASM to output (display, global variables, functions)
-
             return true
         } catch (_: CompilationFailed) { }
 

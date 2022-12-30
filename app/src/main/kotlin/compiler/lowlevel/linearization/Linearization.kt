@@ -27,33 +27,24 @@ object Linearization {
 
         fun addLabel(label: String) {
             instructions.add(Label(label))
-
-//            println("    ${Label(label)}")
         }
 
         fun dfs(node: IFTNode, nextLabel: String) {
-//            println("visit $node")
             addLabel(labels[node] ?: assignLabel(node))
 
             fun addUnconditional() {
                 instructions.addAll(covering.coverUnconditional(node))
-
-//                covering.coverUnconditional(node).forEach { println("    $it") }
             }
 
             fun addConditional(whenTrue: Boolean, targetLabel: String) {
                 instructions.addAll(covering.coverConditional(node, targetLabel, !whenTrue))
                 usedLabels.add(targetLabel)
-
-//                covering.coverConditional(node, targetLabel, !whenTrue).forEach { println("    $it") }
             }
 
             fun addJump(targetLabel: String) {
                 if (targetLabel != nextLabel) {
                     instructions.add(Jmp(targetLabel))
                     usedLabels.add(targetLabel)
-
-//                    println("    ${Jmp(targetLabel)}")
                 }
             }
 

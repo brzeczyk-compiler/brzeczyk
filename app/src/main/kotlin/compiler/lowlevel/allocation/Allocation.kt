@@ -10,7 +10,7 @@ import compiler.lowlevel.dataflow.Liveness
 
 object Allocation {
 
-    val REGISTER_ORDER = listOf(
+    val HARDWARE_REGISTERS = listOf(
         Register.R15,
         Register.R14,
         Register.R13,
@@ -29,23 +29,52 @@ object Allocation {
         Register.RAX,
     )
 
+    val AVAILABLE_REGISTERS = listOf(
+        Register.R15,
+        Register.R14,
+        Register.R13,
+        Register.R12,
+        Register.R11,
+        Register.R10,
+        Register.R9,
+        Register.R8,
+        Register.RDI,
+        Register.RSI,
+        Register.RDX,
+        Register.RCX,
+        Register.RBX,
+        Register.RAX,
+    )
+
+    val POTENTIAL_SPILL_HANDLING_REGISTERS = listOf(
+        Register.R11,
+        Register.R10,
+        Register.R15,
+        Register.R14,
+        Register.R13,
+        Register.R12,
+        Register.RBX,
+    )
+
     data class Result(
         val allocatedRegisters: Map<Register, Register>,
         val linearProgram: List<Asmable>,
         val spilledOffset: ULong,
     )
 
-    // Registers should be sorted by likeliness to be reserved for spilled
     fun allocateRegistersWithSpillsHandling(
         linearProgram: List<Asmable>,
         livenessGraphs: Liveness.LivenessGraphs,
-        orderedPhysicalRegisters: List<Register>,
+        hardwareRegisters: List<Register>,
+        availableRegisters: List<Register>,
+        potentialSpillHandlingRegisters: List<Register>,
         allocator: PartialAllocation
     ): Result {
         var reservedRegistersNumber = 0
         while (true) {
-            val availableRegisters = orderedPhysicalRegisters.drop(reservedRegistersNumber)
-            val allocationResult = allocator.allocateRegisters(livenessGraphs, availableRegisters)
+            val spillHandlingRegisters = potentialSpillHandlingRegisters.take(reservedRegistersNumber)
+            val actuallyAvailableRegisters = availableRegisters - spillHandlingRegisters.toSet()
+            val allocationResult = allocator.allocateRegisters(livenessGraphs, hardwareRegisters, actuallyAvailableRegisters)
             val spilledRegisters = allocationResult.spilledRegisters.toSet()
 
             val instructionsToSpilled: Map<Int, SpilledInstruction> = linearProgram
@@ -62,7 +91,7 @@ object Allocation {
                 )
 
                 val registerAllocation: Map<Register, Register> = allocateSpilledRegisters(
-                    orderedPhysicalRegisters.take(reservedRegistersNumber),
+                    spillHandlingRegisters,
                     allocationResult.allocatedRegisters,
                     instructionsToSpilled.values.toList(),
                 )
@@ -114,6 +143,7 @@ object Allocation {
                 Liveness.inducedSubgraph(livenessGraphs.copyGraph, spilledRegisters),
             ),
             spillsPossibleColors,
+            spillsPossibleColors,
         ).allocatedRegisters
         val spillsColors = spillsPossibleColors.filter { it in spillsColoring.values }
         return spillsColoring.entries.associate { it.key to (spillsColors.indexOf(it.value) + 1).toULong() }
@@ -125,6 +155,7 @@ object Allocation {
         spilledInstructions: List<SpilledInstruction>,
     ): Map<Register, Register> {
         val newAllocation = partialAllocation.toMutableMap()
+        newAllocation.putAll(reservedRegisters.associateWith { it })
         spilledInstructions
             .filter { it.isSpilled }
             .map { it.spilledUsedRegisters + it.spilledDefinedRegisters }

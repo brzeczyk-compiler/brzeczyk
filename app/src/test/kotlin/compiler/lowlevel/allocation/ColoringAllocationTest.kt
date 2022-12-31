@@ -30,7 +30,8 @@ class ColoringAllocationTest {
         }
         val result = ColoringAllocation.allocateRegisters(
             liveness,
-            accessibleRegisters
+            accessibleRegisters,
+            accessibleRegisters,
         )
 
         interface Indexed<T, K> {

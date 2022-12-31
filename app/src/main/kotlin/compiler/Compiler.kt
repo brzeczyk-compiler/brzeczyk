@@ -79,7 +79,9 @@ class Compiler(val diagnostics: Diagnostics) {
                 Allocation.allocateRegistersWithSpillsHandling(
                     it.value,
                     Liveness.computeLiveness(it.value),
-                    Allocation.REGISTER_ORDER,
+                    Allocation.HARDWARE_REGISTERS,
+                    Allocation.AVAILABLE_REGISTERS,
+                    Allocation.POTENTIAL_SPILL_HANDLING_REGISTERS,
                     ColoringAllocation
                 )
             }

@@ -7,6 +7,7 @@ object ColoringAllocation : PartialAllocation {
 
     override fun allocateRegisters(
         livenessGraphs: Liveness.LivenessGraphs,
-        accessibleRegisters: List<Register>,
-    ): PartialAllocation.AllocationResult = GraphColoring.color(livenessGraphs, accessibleRegisters)
+        selfAllocatedRegisters: List<Register>,
+        availableRegisters: List<Register>,
+    ): PartialAllocation.AllocationResult = GraphColoring.color(livenessGraphs, selfAllocatedRegisters, availableRegisters)
 }

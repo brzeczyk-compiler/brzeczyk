@@ -9,19 +9,21 @@ import compiler.lowlevel.dataflow.Liveness
 
 class GraphColoring private constructor(
     private val graph: Map<RegisterGraph.Node, Set<RegisterGraph.Node>>,
-    private val accessibleRegisters: HashSet<Register>
+    private val preColoredRegisters: HashSet<Register>,
+    private val allAvailableColors: HashSet<Register>
 ) {
 
     companion object {
 
         fun color( // main algorithm
             livenessGraphs: Liveness.LivenessGraphs,
-            accessibleRegisters: List<Register>
+            selfColoredRegisters: List<Register>,
+            availableColors: List<Register>
         ): PartialAllocation.AllocationResult {
-            val stack = RegisterGraph.process(livenessGraphs, accessibleRegisters)
+            val stack = RegisterGraph.process(livenessGraphs, selfColoredRegisters, availableColors)
             val (coalescedInterferenceGraph, coalescedCopyGraph) = livenessGraphs.toCoalesced(stack)
 
-            with(GraphColoring(coalescedInterferenceGraph, accessibleRegisters.toHashSet())) {
+            with(GraphColoring(coalescedInterferenceGraph, selfColoredRegisters.toHashSet(), availableColors.toHashSet())) {
                 for (register in stack.reversed()) {
 
                     val bestForColored: Register? by lazy(LazyThreadSafetyMode.NONE) {
@@ -95,7 +97,7 @@ class GraphColoring private constructor(
 
     init {
         graph.keys.forEach { node ->
-            (node.registers intersect accessibleRegisters).firstOrNull()?.let { node.assignColor(it) }
+            (node.registers intersect preColoredRegisters).firstOrNull()?.let { node.assignColor(it) }
         }
     }
 
@@ -103,10 +105,10 @@ class GraphColoring private constructor(
 
     private fun RegisterGraph.Node.isColored() = allocationMap.contains(this)
     private fun RegisterGraph.Node.color() = allocationMap[this]
-    private fun RegisterGraph.Node.availableColors() = availableColorsMap.getOrPut(this) { accessibleRegisters.toHashSet() }
+    private fun RegisterGraph.Node.availableColors() = availableColorsMap.getOrPut(this) { allAvailableColors.toHashSet() }
     private fun RegisterGraph.Node.assignColor(color: Register) {
         allocationMap[this] = color
-        graph[this]!!.forEach { availableColorsMap.getOrPut(it) { accessibleRegisters.toHashSet() }.remove(color) }
+        graph[this]!!.forEach { availableColorsMap.getOrPut(it) { allAvailableColors.toHashSet() }.remove(color) }
     }
 
     private fun RegisterGraph.Node.spill() = spilledRegisters.add(this)

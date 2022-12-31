@@ -1,0 +1,7 @@
+czynność główna() {
+    napisz(2 + 2)
+    napisz(1 + 3)
+    napisz(-1000 + 68)
+    napisz(23 + 68)
+    napisz(-100 + -135)
+}

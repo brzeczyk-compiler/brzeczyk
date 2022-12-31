@@ -1,0 +1,35 @@
+Input:
+1
+Exit code:
+0
+Output:
+1
+----------
+Input:
+2
+Exit code:
+0
+Output:
+2
+----------
+Input:
+23
+Exit code:
+0
+Output:
+23
+----------
+Input:
+-23892390
+Exit code:
+0
+Output:
+-23892390
+----------
+Input:
+-2323
+Exit code:
+0
+Output:
+-2323
+----------

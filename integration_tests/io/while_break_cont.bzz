@@ -1,0 +1,10 @@
+czynność główna() {
+    zm a: Liczba = wczytaj()
+    zm b: Liczba = wczytaj()
+    zm c: Liczba = wczytaj()
+    dopóki (a < b) {
+        a = a + 1
+        jeśli (a == b) pomiń
+        napisz(a)
+    }
+}

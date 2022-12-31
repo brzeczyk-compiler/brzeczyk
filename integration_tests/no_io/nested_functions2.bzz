@@ -1,0 +1,18 @@
+czynność podstępna() {
+    czynność podstępna() {
+        czynność podstępna() {
+            czynność podstępna() {
+                napisz(4)
+            }
+            napisz(3)
+        }
+        napisz(2)
+        podstępna()
+    }
+    napisz(1)
+    podstępna()
+}
+
+czynność główna() {
+    podstępna()
+}

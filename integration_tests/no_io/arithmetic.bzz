@@ -1,0 +1,7 @@
+czynność główna() {
+    napisz(1 + 2)
+    napisz(3 - 4)
+    napisz(5 * 6)
+    napisz(8 / 2)
+    napisz(13 % 5)
+}

@@ -1,0 +1,4 @@
+czynność główna() {
+    zm a: Liczba = wczytaj()
+    napisz(a)
+}

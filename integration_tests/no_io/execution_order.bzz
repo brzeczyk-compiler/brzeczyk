@@ -1,0 +1,16 @@
+zm a: Liczba = 10
+czynność podstępna() -> Liczba {
+    a = 12
+    zwróć a
+}
+
+zm b: Liczba = 10
+czynność podstępna2() -> Liczba {
+    b = 12
+    zwróć b
+}
+
+czynność główna() {
+    napisz(a + podstępna())
+    napisz(podstępna2() + b)
+}

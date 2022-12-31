@@ -1,0 +1,24 @@
+zm x: Liczba = 1
+
+czynność podstępna() {
+    czynność podstępna() {
+        zm x: Liczba = 10
+        czynność podstępna() {
+            napisz(x)
+            x = 15
+            czynność podstępna() {
+                x = 20
+            }
+            podstępna()
+        }
+        podstępna()
+        napisz(x)
+    }
+    x = 5
+    podstępna()
+}
+
+czynność główna() {
+    podstępna()
+    napisz(x)
+}

@@ -1,0 +1,22 @@
+zm x: Liczba = 7
+zm y: Liczba = 11
+zm a: Liczba = 51
+zm b: Liczba = 13
+
+czynność f() -> Liczba {
+    x = 50
+    zwróć 47
+}
+
+czynność h() -> Czy {
+    b = 100
+    zwróć fałsz
+}
+
+czynność g(a: Liczba, b: Liczba) -> Liczba {
+    zwróć a * b
+}
+
+czynność główna() {
+    napisz(x + (g(a + f(), b) + ((b + x) + (h() ? x : y))))
+}

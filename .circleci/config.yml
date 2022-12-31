@@ -29,7 +29,7 @@ jobs:
       - run:
           name: Test project
           command: |
-            ./gradlew --no-daemon test
+            ./test_all.sh --no-daemon
       - save_cache:
           name: Save Gradle to cache
           key: gradle-dotfiles-{{ checksum "gradle.properties" }}-{{ checksum "app/build.gradle" }}-{{ checksum "settings.gradle" }}

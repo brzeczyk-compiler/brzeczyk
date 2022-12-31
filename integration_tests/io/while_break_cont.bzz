@@ -1,3 +1,4 @@
+// INTEGRATION TESTS IGNORE
 czynność główna() {
     zm a: Liczba = wczytaj()
     zm b: Liczba = wczytaj()

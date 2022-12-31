@@ -1,3 +1,4 @@
+// INTEGRATION TESTS IGNORE
 czynność policz_liczbę_fibonacciego(którą: Liczba) -> Liczba {
     zm pomocnicza1: Liczba = 1
     zm pomocnicza2: Liczba = 1

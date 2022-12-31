@@ -1,3 +1,4 @@
+// INTEGRATION TESTS IGNORE
 zm x: Liczba = 1
 
 czynność podstępna() {

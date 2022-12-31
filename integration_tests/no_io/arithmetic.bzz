@@ -1,3 +1,4 @@
+// INTEGRATION TESTS IGNORE
 czynność główna() {
     napisz(1 + 2)
     napisz(3 - 4)

@@ -15,3 +15,12 @@ class SummedConstant(private val first: Constant, private val second: Constant) 
 
     override val value get() = first.value + second.value
 }
+
+class AlignedConstant(private val rawValue: Constant, private val modulo: Long, private val remainder: Long = 0L) : Constant {
+    // smallest number greater or equal to rawValue having a given remainder modulo
+    override val value: Long get() {
+        val toAdd = remainder.mod(modulo) - rawValue.value % modulo
+        return if (toAdd < 0) rawValue.value + toAdd + modulo
+        else rawValue.value + toAdd
+    }
+}

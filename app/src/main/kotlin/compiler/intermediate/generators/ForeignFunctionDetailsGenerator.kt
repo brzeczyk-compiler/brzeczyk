@@ -15,7 +15,9 @@ class ForeignFunctionDetailsGenerator(
 
     override fun genEpilogue() = throw NotImplementedError()
 
-    override val spilledRegistersOffset get() = throw NotImplementedError()
+    override val spilledRegistersRegionOffset get() = throw NotImplementedError()
+
+    override val spilledRegistersRegionSize get() = throw NotImplementedError()
 
     override val identifier: String = memoryLabel.label
 

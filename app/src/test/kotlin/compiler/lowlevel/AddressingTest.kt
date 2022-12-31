@@ -12,7 +12,7 @@ class AddressingTest {
 
     @Test
     fun `test displacement`() {
-        val displacementConst = Addressing.Displacement(Addressing.MemoryAddress.Const(17u))
+        val displacementConst = Addressing.Displacement(Addressing.MemoryAddress.Const(17))
         val displacementLabel = Addressing.Displacement(Addressing.MemoryAddress.Label("label"))
 
         assertEquals("[17]", displacementConst.toAsm(mapOf()))
@@ -24,7 +24,7 @@ class AddressingTest {
         val registersMap = mapOf(virtualReg1 to RAX)
 
         val baseNoDisplacement = Addressing.Base(virtualReg1)
-        val baseDisplacementConst = Addressing.Base(virtualReg1, Addressing.MemoryAddress.Const(17u))
+        val baseDisplacementConst = Addressing.Base(virtualReg1, Addressing.MemoryAddress.Const(17))
         val baseDisplacementLabel = Addressing.Base(virtualReg1, Addressing.MemoryAddress.Label("label"))
 
         assertEquals("[rax]", baseNoDisplacement.toAsm(registersMap))
@@ -37,10 +37,10 @@ class AddressingTest {
         val registersMap = mapOf(virtualReg1 to RAX, virtualReg2 to RBX)
 
         val baseAndIndexNoDisplacementNoScale = Addressing.BaseAndIndex(virtualReg1, virtualReg2, 1u)
-        val baseAndIndexDisplacementConstNoScale = Addressing.BaseAndIndex(virtualReg1, virtualReg2, 1u, Addressing.MemoryAddress.Const(17u))
+        val baseAndIndexDisplacementConstNoScale = Addressing.BaseAndIndex(virtualReg1, virtualReg2, 1u, Addressing.MemoryAddress.Const(17))
         val baseAndIndexDisplacementLabelNoScale = Addressing.BaseAndIndex(virtualReg1, virtualReg2, 1u, Addressing.MemoryAddress.Label("label"))
         val baseAndIndexNoDisplacementScale = Addressing.BaseAndIndex(virtualReg1, virtualReg2, 4u)
-        val baseAndIndexDisplacementConstScale = Addressing.BaseAndIndex(virtualReg1, virtualReg2, 4u, Addressing.MemoryAddress.Const(17u))
+        val baseAndIndexDisplacementConstScale = Addressing.BaseAndIndex(virtualReg1, virtualReg2, 4u, Addressing.MemoryAddress.Const(17))
         val baseAndIndexDisplacementLabelScale = Addressing.BaseAndIndex(virtualReg1, virtualReg2, 4u, Addressing.MemoryAddress.Label("label"))
 
         assertEquals("[rax + rbx]", baseAndIndexNoDisplacementNoScale.toAsm(registersMap))
@@ -56,7 +56,7 @@ class AddressingTest {
         val registersMap = mapOf(virtualReg1 to RAX)
 
         val indexNoDisplacement = Addressing.IndexAndDisplacement(virtualReg1, 4u)
-        val indexDisplacementConst = Addressing.IndexAndDisplacement(virtualReg1, 4u, Addressing.MemoryAddress.Const(17u))
+        val indexDisplacementConst = Addressing.IndexAndDisplacement(virtualReg1, 4u, Addressing.MemoryAddress.Const(17))
         val indexDisplacementLabel = Addressing.IndexAndDisplacement(virtualReg1, 4u, Addressing.MemoryAddress.Label("label"))
 
         assertEquals("[(rax * 4)]", indexNoDisplacement.toAsm(registersMap))

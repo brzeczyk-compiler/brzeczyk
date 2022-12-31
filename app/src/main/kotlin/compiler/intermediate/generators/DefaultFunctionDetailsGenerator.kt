@@ -33,18 +33,19 @@ data class DefaultFunctionDetailsGenerator(
 
     private val variablesStackOffsets: MutableMap<NamedNode, ULong> = referenceHashMapOf()
     private val variablesRegisters: MutableMap<NamedNode, Register> = referenceHashMapOf()
-    private var variablesTotalOffset: ULong = 0u
+    private var variablesRegionSize: ULong = 0u
     private val previousDisplayEntryRegister = Register()
     private val calleeSavedBackupRegisters = calleeSavedRegistersWithoutRSPAndRBP.map { Register() }
 
-    override val spilledRegistersOffset: ConstantPlaceholder = ConstantPlaceholder()
+    override val spilledRegistersRegionOffset: ULong get() = variablesRegionSize
+    override val spilledRegistersRegionSize: ConstantPlaceholder = ConstantPlaceholder()
     override val identifier: String = functionLocationInCode.label
     init {
         for ((variable, locationType) in variablesLocationTypes.entries) {
             when (locationType) {
                 VariableLocationType.MEMORY -> {
-                    variablesTotalOffset += memoryUnitSize
-                    variablesStackOffsets[variable] = variablesTotalOffset
+                    variablesRegionSize += memoryUnitSize
+                    variablesStackOffsets[variable] = variablesRegionSize
                 }
 
                 VariableLocationType.REGISTER -> {
@@ -81,7 +82,7 @@ data class DefaultFunctionDetailsGenerator(
             Register.RSP,
             IFTNode.Subtract(
                 IFTNode.RegisterRead(Register.RSP),
-                IFTNode.Const(SummedConstant(variablesTotalOffset.toLong(), spilledRegistersOffset))
+                IFTNode.Const(SummedConstant(variablesRegionSize.toLong(), spilledRegistersRegionSize))
             )
         )
         cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, subRsp)

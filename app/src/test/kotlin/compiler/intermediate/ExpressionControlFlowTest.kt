@@ -35,7 +35,8 @@ class ExpressionControlFlowTest {
             throw NotImplementedError()
         }
 
-        override val spilledRegistersOffset get() = throw NotImplementedError()
+        override val spilledRegistersRegionOffset get() = throw NotImplementedError()
+        override val spilledRegistersRegionSize get() = throw NotImplementedError()
         override val identifier: String get() = throw NotImplementedError()
 
         override fun genRead(namedNode: NamedNode, isDirect: Boolean): IFTNode {

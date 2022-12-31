@@ -68,7 +68,8 @@ object Allocation {
         hardwareRegisters: List<Register>,
         availableRegisters: List<Register>,
         potentialSpillHandlingRegisters: List<Register>,
-        allocator: PartialAllocation
+        allocator: PartialAllocation,
+        spilledRegistersRegionOffset: ULong
     ): Result {
         var reservedRegistersNumber = 0
         while (true) {
@@ -101,6 +102,7 @@ object Allocation {
                     instructionsToSpilled,
                     registerAllocation,
                     spilledRegistersColoring,
+                    spilledRegistersRegionOffset
                 )
 
                 return Result(
@@ -168,16 +170,17 @@ object Allocation {
         instructionsToSpilled: Map<Int, SpilledInstruction>,
         allocatedRegisters: Map<Register, Register>,
         spillsColoring: Map<Register, ULong>,
+        spillMemoryRegionOffset: ULong
     ): List<Asmable> {
         val newLinearProgram = mutableListOf<Asmable>()
+
+        fun spilledRegisterAddress(register: Register): Addressing =
+            Addressing.Base(Register.RBP, Addressing.MemoryAddress.Const(-(spillMemoryRegionOffset + spillsColoring[register]!! * memoryUnitSize).toInt()))
 
         fun handleSpilledInstruction(spilledInstruction: SpilledInstruction) {
             spilledInstruction.spilledUsedRegisters.forEach {
                 newLinearProgram.add(
-                    Instruction.InPlaceInstruction.MoveRM(
-                        allocatedRegisters[it]!!,
-                        Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(spillsColoring[it]!! * memoryUnitSize)),
-                    )
+                    Instruction.InPlaceInstruction.MoveRM(allocatedRegisters[it]!!, spilledRegisterAddress(it))
                 )
             }
 
@@ -185,10 +188,7 @@ object Allocation {
 
             spilledInstruction.spilledDefinedRegisters.forEach {
                 newLinearProgram.add(
-                    Instruction.InPlaceInstruction.MoveMR(
-                        Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(spillsColoring[it]!! * memoryUnitSize)),
-                        allocatedRegisters[it]!!,
-                    )
+                    Instruction.InPlaceInstruction.MoveMR(spilledRegisterAddress(it), allocatedRegisters[it]!!)
                 )
             }
         }

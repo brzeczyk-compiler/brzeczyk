@@ -82,11 +82,12 @@ class Compiler(val diagnostics: Diagnostics) {
                     Allocation.HARDWARE_REGISTERS,
                     Allocation.AVAILABLE_REGISTERS,
                     Allocation.POTENTIAL_SPILL_HANDLING_REGISTERS,
-                    ColoringAllocation
+                    ColoringAllocation,
+                    functionDetailsGenerators[it.key]!!.spilledRegistersRegionOffset
                 )
             }
 
-            finalCode.entries.forEach { functionDetailsGenerators[it.key]!!.spilledRegistersOffset.settledValue = it.value.spilledOffset.toLong() }
+            finalCode.entries.forEach { functionDetailsGenerators[it.key]!!.spilledRegistersRegionSize.settledValue = it.value.spilledOffset.toLong() }
 
             output.println("SECTION .bss")
             DisplayStorage(programProperties.staticDepth).writeAsm(output)

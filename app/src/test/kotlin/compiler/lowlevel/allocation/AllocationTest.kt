@@ -23,6 +23,9 @@ class AllocationTest {
 
     private val phRegs = listOf(phReg1, phReg2, phReg3, phReg4)
 
+    private val variableBlockSize: ULong = 24U
+    private fun getSpillOffset(index: UInt) = -(variableBlockSize + index * memoryUnitSize).toInt()
+
     @Test
     fun `test program which uses no registers`() {
         val linearProgram = listOf(
@@ -49,6 +52,7 @@ class AllocationTest {
             orderedPhysicalRegisters,
             orderedPhysicalRegisters,
             allocator,
+            variableBlockSize
         )
 
         assertEquals(mapOf(), result.allocatedRegisters)
@@ -105,6 +109,7 @@ class AllocationTest {
             orderedPhysicalRegisters,
             orderedPhysicalRegisters,
             allocator,
+            variableBlockSize
         )
 
         assertEquals(
@@ -124,19 +129,19 @@ class AllocationTest {
                 linearProgram[0],
                 Instruction.InPlaceInstruction.MoveRM(
                     phReg1,
-                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(1u * memoryUnitSize)),
+                    Addressing.Base(Register.RBP, Addressing.MemoryAddress.Const(getSpillOffset(1u))),
                 ),
                 Instruction.InPlaceInstruction.MoveRM(
                     phReg2,
-                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(2u * memoryUnitSize)),
+                    Addressing.Base(Register.RBP, Addressing.MemoryAddress.Const(getSpillOffset(2u))),
                 ),
                 linearProgram[1],
                 Instruction.InPlaceInstruction.MoveMR(
-                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(1u * memoryUnitSize)),
+                    Addressing.Base(Register.RBP, Addressing.MemoryAddress.Const(getSpillOffset(1u))),
                     phReg1,
                 ),
                 Instruction.InPlaceInstruction.MoveMR(
-                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(3u * memoryUnitSize)),
+                    Addressing.Base(Register.RBP, Addressing.MemoryAddress.Const(getSpillOffset(3u))),
                     phReg3,
                 ),
                 linearProgram[2],
@@ -196,6 +201,7 @@ class AllocationTest {
             orderedPhysicalRegisters,
             orderedPhysicalRegisters,
             allocator,
+            variableBlockSize
         )
 
         assertEquals(
@@ -213,17 +219,17 @@ class AllocationTest {
                 linearProgram[0],
                 Instruction.InPlaceInstruction.MoveRM(
                     phReg1,
-                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(1u * memoryUnitSize)),
+                    Addressing.Base(Register.RBP, Addressing.MemoryAddress.Const(getSpillOffset(1u))),
                 ),
                 linearProgram[1],
                 Instruction.InPlaceInstruction.MoveRM(
                     phReg1,
-                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(2u * memoryUnitSize)),
+                    Addressing.Base(Register.RBP, Addressing.MemoryAddress.Const(getSpillOffset(2u))),
                 ),
                 linearProgram[2],
                 Instruction.InPlaceInstruction.MoveRM(
                     phReg1,
-                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(3u * memoryUnitSize)),
+                    Addressing.Base(Register.RBP, Addressing.MemoryAddress.Const(getSpillOffset(3u))),
                 ),
                 linearProgram[3],
                 linearProgram[4],
@@ -280,6 +286,7 @@ class AllocationTest {
             allocatablePhysicalRegisters,
             allocatablePhysicalRegisters,
             allocator,
+            variableBlockSize
         )
 
         assertEquals(
@@ -299,20 +306,20 @@ class AllocationTest {
                 linearProgram[0],
                 linearProgram[1],
                 Instruction.InPlaceInstruction.MoveMR(
-                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(1u * memoryUnitSize)),
+                    Addressing.Base(Register.RBP, Addressing.MemoryAddress.Const(getSpillOffset(1u))),
                     phReg1,
                 ),
                 Instruction.InPlaceInstruction.MoveMR(
-                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(2u * memoryUnitSize)),
+                    Addressing.Base(Register.RBP, Addressing.MemoryAddress.Const(getSpillOffset(2u))),
                     phReg2,
                 ),
                 linearProgram[2],
                 Instruction.InPlaceInstruction.MoveMR(
-                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(1u * memoryUnitSize)),
+                    Addressing.Base(Register.RBP, Addressing.MemoryAddress.Const(getSpillOffset(1u))),
                     phReg1,
                 ),
                 Instruction.InPlaceInstruction.MoveMR(
-                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(2u * memoryUnitSize)),
+                    Addressing.Base(Register.RBP, Addressing.MemoryAddress.Const(getSpillOffset(2u))),
                     phReg2,
                 ),
                 linearProgram[3],

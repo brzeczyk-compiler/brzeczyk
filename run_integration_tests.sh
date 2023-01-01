@@ -60,6 +60,11 @@ if [[ ! -f $COMPILER_PATH ]]; then
 fi
 
 for tested_program in $(find . -path "./tests/*.bzz"); do
+    if [[ $(head -1 $tested_program) == $IGNORE_HEADER ]]; then
+        echo "Skipping $tested_program..."
+        continue
+    fi
+
     $COMPILER_PATH $tested_program -o a.out -e stdlib/stdlib.c 1>/dev/null
     if [[ ! -f a.out ]]; then
         echo "Cannot compile $tested_program! Skipping, but you should fix this..."

@@ -8,7 +8,6 @@ import java.io.PrintWriter
 import java.lang.IllegalArgumentException
 
 class GlobalVariableStorage(val program: Program) {
-
     private fun getValueOfConstExpr(expr: Expression?): Long =
         expr?.let {
             Expression.getValueOfLiteral(it) ?: throw IllegalArgumentException()

@@ -1,5 +1,6 @@
 package compiler.lowlevel.linearization
 
+import compiler.intermediate.Constant
 import compiler.intermediate.IFTNode
 import compiler.intermediate.Register
 import compiler.lowlevel.Addressing
@@ -70,7 +71,23 @@ object InstructionSet {
             },
             InstructionPattern(IFTPattern.Const(IFTPattern.AnyArgument("const"))) {
                 _, outRegister, _, args ->
-                listOf(Instruction.InPlaceInstruction.MoveRI(outRegister, args["const"] as Long)) // MOV  out,  const
+                listOf(Instruction.InPlaceInstruction.MoveRI(outRegister, args["const"] as Constant)) // MOV  out,  const
+            },
+            InstructionPattern(
+                IFTPattern.MemoryWrite(
+                    IFTPattern.BinaryOperator(
+                        IFTNode.Add::class,
+                        IFTPattern.MemoryLabel(IFTPattern.AnyArgument("label"))
+                    ),
+                )
+            ) {
+                inRegisters, _, _, args ->
+                listOf(
+                    Instruction.InPlaceInstruction.MoveMR(
+                        Addressing.Base(inRegisters[0], Addressing.MemoryAddress.Label(args["label"] as String)),
+                        inRegisters[1]
+                    )
+                ) // MOV  [label + reg0], reg1
             },
             InstructionPattern(IFTPattern.MemoryWrite()) {
                 inRegisters, _, _, _ ->
@@ -83,11 +100,30 @@ object InstructionSet {
                 )
             ) {
                 _, _, _, args ->
-                listOf(Instruction.InPlaceInstruction.MoveRI(args["reg"] as Register, args["const"] as Long)) // MOV  reg,  const
+                listOf(Instruction.InPlaceInstruction.MoveRI(args["reg"] as Register, args["const"] as Constant)) // MOV  reg,  const
+            },
+            InstructionPattern(
+                IFTPattern.RegisterWrite(
+                    IFTPattern.AnyArgument("reg_dest"),
+                    IFTPattern.RegisterRead(IFTPattern.AnyArgument("reg_src"))
+                )
+            ) {
+                _, _, _, args ->
+                listOf(Instruction.InPlaceInstruction.MoveRR(args["reg_dest"] as Register, args["reg_src"] as Register)) // MOV  reg_dest,  reg_src
+            },
+            InstructionPattern(IFTPattern.RegisterWrite(IFTPattern.AnyArgument("reg"), IFTPattern.StackPop())) {
+                _, _, _, args ->
+                listOf(Instruction.InPlaceInstruction.PopR(args["reg"] as Register)) // POP  reg
             },
             InstructionPattern(IFTPattern.RegisterWrite(IFTPattern.AnyArgument("reg"))) {
                 inRegisters, _, _, args ->
                 listOf(Instruction.InPlaceInstruction.MoveRR(args["reg"] as Register, inRegisters[0])) // MOV  reg,  reg0
+            },
+            InstructionPattern(IFTPattern.StackPush(IFTPattern.RegisterRead(IFTPattern.AnyArgument("reg")))) {
+                _, _, _, args ->
+                listOf(
+                    Instruction.InPlaceInstruction.PushR(args["reg"] as Register) // PUSH reg
+                )
             },
             InstructionPattern(IFTPattern.StackPush()) {
                 inRegisters, _, _, _ ->
@@ -110,7 +146,11 @@ object InstructionSet {
             ) {
                 _, _, _, args ->
                 listOf(
-                    Instruction.InPlaceInstruction.CallL(args["label"] as String, args["usedRegs"] as Collection<Register>, args["definedRegs"] as Collection<Register>) // CALL label
+                    Instruction.InPlaceInstruction.CallL(
+                        args["label"] as String,
+                        args["usedRegs"] as Collection<Register>,
+                        args["definedRegs"] as Collection<Register>
+                    ) // CALL label
                 )
             },
             InstructionPattern(
@@ -122,7 +162,11 @@ object InstructionSet {
             ) {
                 inRegisters, _, _, args ->
                 listOf(
-                    Instruction.InPlaceInstruction.CallR(inRegisters[0], args["usedRegs"] as Collection<Register> + setOf(inRegisters[0]), args["definedRegs"] as Collection<Register>) // CALL reg0
+                    Instruction.InPlaceInstruction.CallR(
+                        inRegisters[0],
+                        args["usedRegs"] as Collection<Register> + setOf(inRegisters[0]),
+                        args["definedRegs"] as Collection<Register>
+                    ) // CALL reg0
                 )
             },
             InstructionPattern(IFTPattern.Return(IFTPattern.AnyArgument("usedRegs"))) {
@@ -378,12 +422,35 @@ object InstructionSet {
                         Instruction.ConditionalJumpInstruction.JmpGtEq(args["target"] as String) // JGE  target
                 )
             },
-            // Instruction for any other node that is used to determine a conditional jump
-            // in practice this should only be register/memory write
-            InstructionPattern(IFTPattern.AnyNode(), setOf(Context.CONDITIONAL)) {
+            InstructionPattern(IFTPattern.MemoryRead(), setOf(Context.CONDITIONAL)) {
                 inRegisters, _, _, args ->
+                val reg = Register() // temporary register
                 listOf(
-                    Instruction.InPlaceInstruction.TestRR(inRegisters[0], inRegisters[0]), //       TEST reg0, reg0
+                    Instruction.InPlaceInstruction.MoveRM(reg, Addressing.Base(inRegisters[0])), // MOV  reg,  [reg0]
+                    Instruction.InPlaceInstruction.TestRR(reg, reg), //                             TEST reg0, reg0
+                    if (args["invert"] as Boolean)
+                        Instruction.ConditionalJumpInstruction.JmpZ(args["target"] as String) //    JZ   target        ; inverted
+                    else
+                        Instruction.ConditionalJumpInstruction.JmpNZ(args["target"] as String) //   JNZ  target
+                )
+            },
+            InstructionPattern(IFTPattern.RegisterRead(IFTPattern.AnyArgument("reg")), setOf(Context.CONDITIONAL)) {
+                _, _, _, args ->
+                val reg = args["reg"] as Register
+                listOf(
+                    Instruction.InPlaceInstruction.TestRR(reg, reg), //                             TEST  reg, reg
+                    if (args["invert"] as Boolean)
+                        Instruction.ConditionalJumpInstruction.JmpZ(args["target"] as String) //    JZ   target        ; inverted
+                    else
+                        Instruction.ConditionalJumpInstruction.JmpNZ(args["target"] as String) //   JNZ  target
+                )
+            },
+            InstructionPattern(IFTPattern.Const(IFTPattern.AnyArgument("const")), setOf(Context.CONDITIONAL)) {
+                _, _, _, args ->
+                val reg = Register() // temporary register
+                listOf(
+                    Instruction.InPlaceInstruction.MoveRI(reg, args["const"] as Constant), //       MOV  reg, const
+                    Instruction.InPlaceInstruction.TestRR(reg, reg), //                             TEST reg, reg
                     if (args["invert"] as Boolean)
                         Instruction.ConditionalJumpInstruction.JmpZ(args["target"] as String) //    JZ   target        ; inverted
                     else

@@ -14,10 +14,8 @@ class DynamicCoveringBuilderTest {
     private val noOpNode2 = IFTNode.NoOp()
     private val xorNode1 = IFTNode.BitXor(noOpNode1, noOpNode2)
 
-    private fun instructionSetOf(vararg patterns: Pattern): InstructionSet {
-        val instructionSet = mockk<InstructionSet>()
-        every { instructionSet.getInstructionSet() } returns patterns.asList()
-        return instructionSet
+    private fun instructionSetOf(vararg patterns: Pattern): List<Pattern> {
+        return patterns.asList()
     }
 
     private fun matchNodesToPattern(

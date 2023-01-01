@@ -7,6 +7,7 @@ import compiler.lowlevel.Instruction
 import compiler.lowlevel.Instruction.UnconditionalJumpInstruction.Jmp
 import compiler.lowlevel.Label
 import compiler.utils.referenceHashMapOf
+import compiler.utils.referenceHashSetOf
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -82,7 +83,7 @@ class LinearizationTest {
 
     @Test
     fun `empty graph`() {
-        val cfg = ControlFlowGraph(emptyList(), null, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
+        val cfg = ControlFlowGraph(referenceHashSetOf(), null, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
 
         val result = Linearization.linearize(cfg, covering)
 
@@ -92,7 +93,7 @@ class LinearizationTest {
     @Test
     fun `single node`() {
         val node = newNode()
-        val cfg = ControlFlowGraph(listOf(node), node, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
+        val cfg = ControlFlowGraph(referenceHashSetOf(node), node, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
 
         val result = Linearization.linearize(cfg, covering)
 
@@ -105,7 +106,7 @@ class LinearizationTest {
         val node2 = newNode()
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2),
+            referenceHashSetOf(node1, node2),
             node1,
             referenceHashMapOf(node1 to node2),
             referenceHashMapOf(),
@@ -128,7 +129,7 @@ class LinearizationTest {
         val node = newNode()
 
         val cfg = ControlFlowGraph(
-            listOf(node),
+            referenceHashSetOf(node),
             node,
             referenceHashMapOf(node to node),
             referenceHashMapOf(),
@@ -154,7 +155,7 @@ class LinearizationTest {
         val node3 = newNode()
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2, node3),
+            referenceHashSetOf(node1, node2, node3),
             node1,
             referenceHashMapOf(node2 to node3),
             referenceHashMapOf(node1 to node2),
@@ -181,7 +182,7 @@ class LinearizationTest {
         val node3 = newNode()
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2, node3),
+            referenceHashSetOf(node1, node2, node3),
             node1,
             referenceHashMapOf(),
             referenceHashMapOf(node1 to node2),
@@ -210,7 +211,7 @@ class LinearizationTest {
         val node5 = newNode()
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2, node3, node4, node5),
+            referenceHashSetOf(node1, node2, node3, node4, node5),
             node1,
             referenceHashMapOf(),
             referenceHashMapOf(node1 to node2, node3 to node4),
@@ -239,7 +240,7 @@ class LinearizationTest {
         val node2 = newNode()
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2),
+            referenceHashSetOf(node1, node2),
             node1,
             referenceHashMapOf(),
             referenceHashMapOf(node1 to node1),
@@ -264,7 +265,7 @@ class LinearizationTest {
         val node2 = newNode()
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2),
+            referenceHashSetOf(node1, node2),
             node1,
             referenceHashMapOf(),
             referenceHashMapOf(node1 to node2),
@@ -290,7 +291,7 @@ class LinearizationTest {
         val node3 = newNode()
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2, node3),
+            referenceHashSetOf(node1, node2, node3),
             node1,
             referenceHashMapOf(node2 to node1),
             referenceHashMapOf(node1 to node2),
@@ -319,7 +320,7 @@ class LinearizationTest {
         val node3 = newNode()
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2, node3),
+            referenceHashSetOf(node1, node2, node3),
             node1,
             referenceHashMapOf(node2 to node1),
             referenceHashMapOf(node1 to node3),
@@ -348,7 +349,7 @@ class LinearizationTest {
         val node3 = newNode()
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2, node3),
+            referenceHashSetOf(node1, node2, node3),
             node1,
             referenceHashMapOf(),
             referenceHashMapOf(node1 to node2, node2 to node2),
@@ -379,7 +380,7 @@ class LinearizationTest {
         val node4 = newNode()
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2, node3, node4),
+            referenceHashSetOf(node1, node2, node3, node4),
             node1,
             referenceHashMapOf(node3 to node2),
             referenceHashMapOf(node1 to node2, node2 to node3),

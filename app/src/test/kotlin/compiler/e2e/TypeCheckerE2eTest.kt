@@ -157,12 +157,12 @@ class TypeCheckerE2eTest {
             """
         )
 
-        assertProgramCorrect("stała a: Czy = prawda;")
-        assertProgramCorrect("stała a: Czy = fałsz;")
+        assertProgramCorrect("stała a: Czy = prawda; czynność główna() {}")
+        assertProgramCorrect("stała a: Czy = fałsz; czynność główna() {}")
 //        assertProgramCorrect("stała a: Czy = 134 > 43;")
 //        assertProgramCorrect("stała a: Czy = 34 > 7 ? fałsz : 23 == 10;")
-        assertProgramCorrect("stała a: Liczba = 0;")
-        assertProgramCorrect("stała a: Liczba = 123;")
+        assertProgramCorrect("stała a: Liczba = 0; czynność główna() {}")
+        assertProgramCorrect("stała a: Liczba = 123; czynność główna() {}")
 //        assertProgramCorrect("stała a: Liczba = -17;")
 //        assertProgramCorrect("stała a: Liczba = 10 + 4;")
 //        assertProgramCorrect("stała a: Liczba = 1 << 8;")
@@ -216,6 +216,7 @@ class TypeCheckerE2eTest {
 
         assertProgramCorrect(
             """
+                czynność główna() {}
                 czynność f(a: Liczba = 13) { 
                     zakończ
                 }
@@ -223,6 +224,7 @@ class TypeCheckerE2eTest {
         )
         assertProgramCorrect(
             """
+                czynność główna() {}
                 czynność f(a: Czy = fałsz) { 
                     zakończ
                 }
@@ -895,9 +897,15 @@ class TypeCheckerE2eTest {
 
     @Test
     fun `test non Unit function has explicit return at the end`() {
-        assertProgramCorrect("czynność f() -> Nic { zakończ; }")
         assertProgramCorrect(
             """
+                czynność główna() {}
+                czynność f() -> Nic { zakończ; }
+            """
+        )
+        assertProgramCorrect(
+            """
+                czynność główna() {}
                 czynność f() -> Nic {
                     zm a: Liczba = 0
                     a + 1
@@ -906,6 +914,7 @@ class TypeCheckerE2eTest {
         )
         assertProgramCorrect(
             """
+                czynność główna() {}
                 czynność f() -> Liczba {
                     zm a: Liczba = 0
                     zwróć a + 1
@@ -933,6 +942,7 @@ class TypeCheckerE2eTest {
         )
         assertProgramCorrect(
             """
+                czynność główna() {}
                 czynność f() -> Czy {
                     jeśli (prawda) {
                         jeśli (prawda) {
@@ -961,6 +971,11 @@ class TypeCheckerE2eTest {
                 }
             """
         )
-        assertProgramCorrect("czynność f() -> Czy { { { zwróć prawda;} } }")
+        assertProgramCorrect(
+            """
+                czynność f() -> Czy { { { zwróć prawda;} } } 
+                czynność główna() {}
+            """
+        )
     }
 }

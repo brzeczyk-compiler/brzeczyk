@@ -39,7 +39,7 @@ data class DefaultFunctionDetailsGenerator(
     private val calleeSavedBackupRegisters = calleeSavedRegistersWithoutRSPAndRBP.map { Register() }
 
     override val spilledRegistersOffset: ConstantPlaceholder = ConstantPlaceholder()
-
+    override val identifier: String = functionLocationInCode.label
     init {
         for ((variable, locationType) in variablesLocationTypes.entries) {
             when (locationType) {

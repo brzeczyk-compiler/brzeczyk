@@ -13,6 +13,7 @@ import compiler.diagnostics.Diagnostic.ResolutionDiagnostic.ControlFlowDiagnosti
 import compiler.diagnostics.Diagnostics
 import compiler.utils.ReferenceHashMap
 import compiler.utils.referenceHashMapOf
+import compiler.utils.referenceHashSetOf
 import java.lang.RuntimeException
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -33,7 +34,7 @@ class FunctionControlFlowTest {
 
     private fun getExpressionCFG(expression: Expression, variable: Variable?, function: Function): ControlFlowGraph {
         val node = expressionNodes[expression]?.get(variable)
-        val nodeList = node?.let { listOf(it) } ?: emptyList()
+        val nodeList = node?.let { referenceHashSetOf(it) } ?: referenceHashSetOf()
         return ControlFlowGraph(nodeList, node, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
     }
 
@@ -58,7 +59,7 @@ class FunctionControlFlowTest {
 
         val result = test(program)
 
-        val cfg = ControlFlowGraph(listOf(), null, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
+        val cfg = ControlFlowGraph(referenceHashSetOf(), null, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
         assertEquals(referenceHashMapOf(function to cfg), result)
     }
 
@@ -75,7 +76,7 @@ class FunctionControlFlowTest {
 
         val result = test(program)
 
-        val cfg = ControlFlowGraph(listOf(node), node, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
+        val cfg = ControlFlowGraph(referenceHashSetOf(node), node, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
         assertEquals(referenceHashMapOf(function to cfg), result)
     }
 
@@ -99,7 +100,7 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2),
+            referenceHashSetOf(node1, node2),
             node1,
             referenceHashMapOf(node1 to node2),
             referenceHashMapOf(),
@@ -123,7 +124,7 @@ class FunctionControlFlowTest {
 
         val result = test(program)
 
-        val cfg = ControlFlowGraph(listOf(node), node, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
+        val cfg = ControlFlowGraph(referenceHashSetOf(node), node, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
         assertEquals(referenceHashMapOf(function to cfg), result)
     }
 
@@ -146,8 +147,8 @@ class FunctionControlFlowTest {
 
         val result = test(program)
 
-        val cfg = ControlFlowGraph(listOf(node), node, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
-        val nestedCfg = ControlFlowGraph(listOf(), null, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
+        val cfg = ControlFlowGraph(referenceHashSetOf(node), node, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
+        val nestedCfg = ControlFlowGraph(referenceHashSetOf(), null, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
         assertEquals(referenceHashMapOf(function to cfg, nestedFunction to nestedCfg), result)
     }
 
@@ -170,7 +171,7 @@ class FunctionControlFlowTest {
 
         val result = test(program)
 
-        val cfg = ControlFlowGraph(listOf(node), node, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
+        val cfg = ControlFlowGraph(referenceHashSetOf(node), node, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
         assertEquals(referenceHashMapOf(function to cfg), result)
     }
 
@@ -188,7 +189,7 @@ class FunctionControlFlowTest {
 
         val result = test(program)
 
-        val cfg = ControlFlowGraph(listOf(node), node, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
+        val cfg = ControlFlowGraph(referenceHashSetOf(node), node, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
         assertEquals(referenceHashMapOf(function to cfg), result)
     }
 
@@ -215,7 +216,7 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2, node3),
+            referenceHashSetOf(node1, node2, node3),
             node1,
             referenceHashMapOf(node2 to node3),
             referenceHashMapOf(node1 to node2),
@@ -252,7 +253,7 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2, node3, node4),
+            referenceHashSetOf(node1, node2, node3, node4),
             node1,
             referenceHashMapOf(node2 to node4, node3 to node4),
             referenceHashMapOf(node1 to node2),
@@ -285,7 +286,7 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2, node3),
+            referenceHashSetOf(node1, node2, node3),
             node1,
             referenceHashMapOf(node2 to node1),
             referenceHashMapOf(node1 to node2),
@@ -324,7 +325,7 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2, node3, node4),
+            referenceHashSetOf(node1, node2, node3, node4),
             node1,
             referenceHashMapOf(node3 to node1),
             referenceHashMapOf(node1 to node2, node2 to node4),
@@ -363,7 +364,7 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2, node3, node4),
+            referenceHashSetOf(node1, node2, node3, node4),
             node1,
             referenceHashMapOf(node3 to node1),
             referenceHashMapOf(node1 to node2, node2 to node1),
@@ -406,7 +407,7 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2, node3, node4, node5),
+            referenceHashSetOf(node1, node2, node3, node4, node5),
             node1,
             referenceHashMapOf(node4 to node1),
             referenceHashMapOf(node1 to node2, node2 to node5, node3 to node1),
@@ -462,7 +463,7 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2, node3, node4, node5, node6, node7, node8),
+            referenceHashSetOf(node1, node2, node3, node4, node5, node6, node7, node8),
             node1,
             referenceHashMapOf(node6 to node3),
             referenceHashMapOf(node1 to node2, node2 to node1, node3 to node4, node4 to node3, node5 to node7, node7 to node8),
@@ -493,7 +494,7 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2),
+            referenceHashSetOf(node1, node2),
             node1,
             referenceHashMapOf(),
             referenceHashMapOf(),

@@ -6,6 +6,6 @@ import java.io.PrintWriter
 class DisplayStorage(private val programStaticDepth: Int) {
 
     fun writeAsm(output: PrintWriter) {
-        output.write("$DISPLAY_LABEL_IN_MEMORY: resq $programStaticDepth")
+        output.println("$DISPLAY_LABEL_IN_MEMORY: resq $programStaticDepth")
     }
 }

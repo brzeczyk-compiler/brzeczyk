@@ -6,6 +6,8 @@ import compiler.intermediate.generators.GlobalVariableAccessGenerator
 class IllegalCharacter(message: String) : RuntimeException(message)
 class InconsistentFunctionNamingConvention(message: String) : RuntimeException(message)
 
+const val MAIN_FUNCTION_IDENTIFIER = "główna"
+
 class UniqueIdentifierFactory() {
     companion object {
         // it might be handy to change these values with ease

@@ -1,9 +1,10 @@
 package compiler.intermediate
 
 import compiler.utils.ReferenceMap
+import compiler.utils.ReferenceSet
 
 data class ControlFlowGraph(
-    val treeRoots: List<IFTNode>,
+    val treeRoots: ReferenceSet<IFTNode>,
     val entryTreeRoot: IFTNode?,
     val unconditionalLinks: ReferenceMap<IFTNode, IFTNode>,
     val conditionalTrueLinks: ReferenceMap<IFTNode, IFTNode>,

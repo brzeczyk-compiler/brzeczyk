@@ -17,6 +17,8 @@ class ForeignFunctionDetailsGenerator(
 
     override val spilledRegistersOffset get() = throw NotImplementedError()
 
+    override val identifier: String = memoryLabel.label
+
     override fun genRead(namedNode: NamedNode, isDirect: Boolean) = throw NotImplementedError()
 
     override fun genWrite(namedNode: NamedNode, value: IFTNode, isDirect: Boolean) = throw NotImplementedError()

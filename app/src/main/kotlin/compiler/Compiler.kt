@@ -3,14 +3,14 @@ package compiler
 import compiler.analysis.BuiltinFunctions
 import compiler.analysis.ProgramAnalyzer
 import compiler.ast.Function
-import compiler.ast.Program
-import compiler.diagnostics.Diagnostic
+import compiler.ast.Type
 import compiler.diagnostics.Diagnostics
 import compiler.input.ReaderInput
 import compiler.intermediate.ControlFlow.createGraphForProgram
 import compiler.intermediate.FunctionDependenciesAnalyzer
 import compiler.lexer.Lexer
-import compiler.lowlevel.Instruction
+import compiler.lowlevel.AsmFile
+import compiler.lowlevel.CodeSection
 import compiler.lowlevel.allocation.Allocation
 import compiler.lowlevel.allocation.ColoringAllocation
 import compiler.lowlevel.dataflow.Liveness
@@ -28,6 +28,7 @@ import compiler.syntax.Symbol
 import compiler.syntax.TokenType
 import java.io.PrintWriter
 import java.io.Reader
+import java.io.Writer
 
 // The main class used to compile a source code into an executable machine code.
 class Compiler(val diagnostics: Diagnostics) {
@@ -39,7 +40,7 @@ class Compiler(val diagnostics: Diagnostics) {
     private val parser = Parser(LanguageGrammar.getGrammar(), diagnostics)
     private val covering = DynamicCoveringBuilder(InstructionSet.getInstructionSet())
 
-    fun process(input: Reader, output: PrintWriter): Boolean {
+    fun process(input: Reader, output: Writer): Boolean {
         try {
             val tokenSequence = lexer.process(ReaderInput(input))
 
@@ -63,12 +64,7 @@ class Compiler(val diagnostics: Diagnostics) {
 
             val functionCFGs = createGraphForProgram(astWithBuiltinFunctions, programProperties, functionDetailsGenerators, diagnostics)
 
-            val mainFunction = (
-                ast.globals.find { it is Program.Global.FunctionDefinition && it.function.name == "główna" } as Program.Global.FunctionDefinition?
-                )?.function
-            if (mainFunction == null) {
-                diagnostics.report(Diagnostic.MainFunctionNotFound())
-            }
+            val mainFunction = FunctionDependenciesAnalyzer.extractMainFunction(ast, diagnostics)
 
             if (diagnostics.hasAnyError())
                 return false
@@ -89,40 +85,25 @@ class Compiler(val diagnostics: Diagnostics) {
 
             finalCode.entries.forEach { functionDetailsGenerators[it.key]!!.spilledRegistersRegionSize.settledValue = it.value.spilledOffset.toLong() }
 
-            output.println("SECTION .bss")
-            DisplayStorage(programProperties.staticDepth).writeAsm(output)
-
-            output.println("\nSECTION .data")
-            GlobalVariableStorage(ast).writeAsm(output)
-
-            output.println("\nSECTION .text")
-            functionDetailsGenerators
-                .filter { it.key.implementation is Function.Implementation.Foreign }
-                .forEach { output.println("extern ${it.value.identifier}") }
-            output.println(
-                """
-                    global main
-                    main:
-                        call ${functionDetailsGenerators[mainFunction]!!.identifier}
-                        ret
-                    
-                """.trimIndent()
+            AsmFile.printFile(
+                PrintWriter(output),
+                DisplayStorage(programProperties.staticDepth)::writeAsm,
+                GlobalVariableStorage(ast)::writeAsm,
+                CodeSection(
+                    functionDetailsGenerators[mainFunction]!!.identifier,
+                    mainFunction!!.returnType != Type.Number,
+                    functionDetailsGenerators
+                        .filter { it.key.implementation is Function.Implementation.Foreign }
+                        .map { it.value.identifier },
+                    finalCode.map { functionCode ->
+                        functionDetailsGenerators[functionCode.key]!!.identifier to
+                            CodeSection.FunctionCode(
+                                functionCode.value.linearProgram,
+                                functionCode.value.allocatedRegisters
+                            )
+                    }.toMap()
+                )::writeAsm
             )
-
-            finalCode.forEach { functionCode ->
-                output.println("${functionDetailsGenerators[functionCode.key]!!.identifier}:")
-                functionCode.value.linearProgram
-                    .filterNot {
-                        it is Instruction.InPlaceInstruction.MoveRR &&
-                            functionCode.value.allocatedRegisters[it.reg_dest] == functionCode.value.allocatedRegisters[it.reg_src]
-                    }
-                    .forEach {
-                        output.print("    ")
-                        it.writeAsm(output, functionCode.value.allocatedRegisters)
-                        output.println()
-                    }
-                output.println()
-            }
 
             return true
         } catch (_: CompilationFailed) { }

@@ -2,6 +2,7 @@ package compiler.intermediate.generators
 
 import compiler.ast.NamedNode
 import compiler.ast.Variable
+import compiler.intermediate.AlignedConstant
 import compiler.intermediate.CFGLinkType
 import compiler.intermediate.ConstantPlaceholder
 import compiler.intermediate.ControlFlowGraph
@@ -82,7 +83,14 @@ data class DefaultFunctionDetailsGenerator(
             Register.RSP,
             IFTNode.Subtract(
                 IFTNode.RegisterRead(Register.RSP),
-                IFTNode.Const(SummedConstant(variablesRegionSize.toLong(), spilledRegistersRegionSize))
+                // make stack aligned back
+                IFTNode.Const(
+                    AlignedConstant(
+                        SummedConstant(variablesRegionSize.toLong(), spilledRegistersRegionSize),
+                        stackAlignmentInBytes.toLong(),
+                        stackAlignmentInBytes - 2 * memoryUnitSize.toLong() // -2 to account return address and backed up rbp
+                    )
+                )
             )
         )
         cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, subRsp)

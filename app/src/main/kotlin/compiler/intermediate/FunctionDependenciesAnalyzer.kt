@@ -9,6 +9,8 @@ import compiler.ast.Statement
 import compiler.ast.StatementBlock
 import compiler.ast.Type
 import compiler.ast.Variable
+import compiler.diagnostics.Diagnostic
+import compiler.diagnostics.Diagnostics
 import compiler.intermediate.generators.DISPLAY_LABEL_IN_MEMORY
 import compiler.intermediate.generators.DefaultFunctionDetailsGenerator
 import compiler.intermediate.generators.ForeignFunctionDetailsGenerator
@@ -69,6 +71,18 @@ object FunctionDependenciesAnalyzer {
         }
         program.globals.forEach { analyze(it) }
         return uniqueIdentifiers
+    }
+
+    fun extractMainFunction(program: Program, diagnostics: Diagnostics): Function? {
+        val mainFunction = (
+            program.globals.find {
+                it is Program.Global.FunctionDefinition && it.function.name == MAIN_FUNCTION_IDENTIFIER
+            } as Program.Global.FunctionDefinition?
+            )?.function
+        if (mainFunction == null) {
+            diagnostics.report(Diagnostic.MainFunctionNotFound())
+        }
+        return mainFunction
     }
 
     fun createFunctionDetailsGenerators(

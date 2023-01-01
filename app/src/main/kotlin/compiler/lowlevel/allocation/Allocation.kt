@@ -104,7 +104,10 @@ object Allocation {
                     registerAllocation,
                     spilledRegistersColoring,
                     spilledRegistersRegionOffset
-                )
+                ).filterNot {
+                    it is Instruction.InPlaceInstruction.MoveRR &&
+                        registerAllocation[it.reg_dest] == registerAllocation[it.reg_src]
+                }
 
                 return Result(
                     registerAllocation,

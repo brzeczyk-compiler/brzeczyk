@@ -22,7 +22,6 @@ class CodeSection(
                     mov rbp, rsp
                     call $mainFunctionLabel
                     ${if (ignoreMainReturnValue) "xor rax, rax" else "" }
-                    mov rsp, rbp
                     pop rbp
                     ret
                 

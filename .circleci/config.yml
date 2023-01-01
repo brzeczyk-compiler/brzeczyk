@@ -10,6 +10,9 @@ jobs:
       - image: cimg/openjdk:11.0
     steps:
       - checkout
+      - run:
+          name: Install dependencies
+          command: sudo apt update && xargs -a app/dependencies.txt sudo apt install
       - restore_cache:
           name: Restore Gradle
           keys:

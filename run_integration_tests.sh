@@ -59,7 +59,7 @@ if [[ ! -f $COMPILER_PATH ]]; then
     exit 0
 fi
 
-for tested_program in $(find . -path "./integration_tests/*.bzz"); do
+for tested_program in $(find . -path "./tests/*.bzz"); do
     $COMPILER_PATH $tested_program -o a.out -e stdlib/stdlib.c 1>/dev/null
     if [[ ! -f a.out ]]; then
         echo "Cannot compile $tested_program! Skipping, but you should fix this..."

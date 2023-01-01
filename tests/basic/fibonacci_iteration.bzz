@@ -1,0 +1,19 @@
+// INTEGRATION TESTS IGNORE
+czynność policz_liczbę_fibonacciego(którą: Liczba) -> Liczba {
+    zm pomocnicza1: Liczba = 1
+    zm pomocnicza2: Liczba = 1
+    zm pomocnicza3: Liczba = 1
+    zm pomocnicza4: Liczba = 1
+    dopóki (pomocnicza3 < którą) {
+        pomocnicza3 = pomocnicza3 + 1
+        pomocnicza4 = pomocnicza1 + pomocnicza2
+        pomocnicza1 = pomocnicza2
+        pomocnicza2 = pomocnicza4
+    }
+    zwróć pomocnicza1
+}
+
+czynność główna() {
+    wart wejście: Liczba = wczytaj()
+    napisz(policz_liczbę_fibonacciego(wejście))
+}

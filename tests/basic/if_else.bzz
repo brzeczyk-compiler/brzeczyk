@@ -1,0 +1,12 @@
+// INTEGRATION TESTS IGNORE
+czynność główna() {
+    zm a: Liczba = wczytaj()
+    zm b: Liczba = wczytaj()
+    jeśli (a > b) {
+        napisz(0)
+    } zaś gdy (a == b) {
+        napisz(1)
+    } wpp {
+        napisz(2)
+    }
+}

@@ -1,0 +1,17 @@
+// INTEGRATION TESTS IGNORE
+czynność podstępna() {
+    czynność podstępna() {
+        czynność podstępna() {
+            czynność podstępna() {
+                napisz(4)
+            }
+            napisz(3)
+        }
+        napisz(2)
+    }
+    napisz(1)
+}
+
+czynność główna() {
+    podstępna()
+}

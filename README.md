@@ -10,7 +10,7 @@ Project can be built using `gradle`. Installation of `gradle` is not required. T
 ## Testing
 Tests can be run with
 ```bash
-./gradlew test
+./test_all.sh
 ```
 
 ## Formatting

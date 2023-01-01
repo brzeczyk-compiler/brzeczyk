@@ -153,6 +153,73 @@ class DefaultFunctionDetailsGeneratorTest {
     }
 
     @Test
+    fun `test genCall ensures that stack is aligned`() {
+        val params: List<NamedNode> = (0..8).map { Function.Parameter(it.toString(), Type.Number, null) }.toList()
+        val variableToRegisterMap = params.associateWith { Register() } + mapOf(resultDummyVariable to resultVariableRegister)
+        val variablesLocation = params.associateWith { VariableLocationType.REGISTER } + mapOf(resultDummyVariable to VariableLocationType.REGISTER)
+
+        val fdg = DefaultFunctionDetailsGenerator(
+            params,
+            null,
+            functionLocation,
+            0u,
+            variablesLocation,
+            IFTNode.Const(0)
+        ) { variableToRegisterMap[it]!! }
+
+        val args = (0..8).map { IFTNode.Const(it.toLong()) }.toList()
+        val result = fdg.genCall(args)
+
+        val expectedCFGBuilder = ControlFlowGraphBuilder()
+
+        // align stack
+        expectedCFGBuilder.addLinksFromAllFinalRoots(
+            CFGLinkType.UNCONDITIONAL,
+            IFTNode.RegisterWrite(
+                Register.RSP,
+                IFTNode.Subtract(
+                    IFTNode.RegisterRead(Register.RSP),
+                    IFTNode.Const(8)
+                )
+            )
+        )
+
+        // write first 6 args to registers
+        for ((argRegister, arg) in argumentPassingRegisters zip args) {
+            expectedCFGBuilder.addLinksFromAllFinalRoots(
+                CFGLinkType.UNCONDITIONAL,
+                IFTNode.RegisterWrite(argRegister, arg)
+            )
+        }
+
+        // write stack args
+        for (stackArgPos in 8 downTo 6) {
+            expectedCFGBuilder.addLinksFromAllFinalRoots(
+                CFGLinkType.UNCONDITIONAL,
+                IFTNode.StackPush(args[stackArgPos])
+            )
+        }
+
+        // call
+        val callNode = IFTNode.Call(functionLocation, argumentPassingRegisters, callerSavedRegisters)
+        expectedCFGBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, callNode)
+
+        // remove arguments previously put on stack
+        expectedCFGBuilder.addLinksFromAllFinalRoots(
+            CFGLinkType.UNCONDITIONAL,
+            IFTNode.RegisterWrite(
+                Register.RSP,
+                IFTNode.Add(
+                    IFTNode.RegisterRead(Register.RSP),
+                    IFTNode.Const(8 * 4) // 3 args + stack alignment
+                )
+            )
+        )
+        val expected = expectedCFGBuilder.build()
+        assert(expected.equalsByValue(result.callGraph))
+    }
+
+    @Test
     fun `test gen read direct from memory`() {
         val memVar: Variable = Variable(Variable.Kind.VALUE, "memVar", Type.Number, null)
 

@@ -11,6 +11,7 @@ object AsmFile {
     ) {
         output.println("SECTION .bss")
         bssSection(output)
+        output.println()
 
         output.println("SECTION .data")
         dataSection(output)

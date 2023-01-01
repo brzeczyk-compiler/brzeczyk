@@ -79,8 +79,9 @@ object Allocation {
             val spilledRegisters = allocationResult.spilledRegisters.toSet()
 
             val instructionsToSpilled: Map<Int, SpilledInstruction> = linearProgram
-                .filterIsInstance<Instruction>()
-                .associate { linearProgram.indexOf(it) to toSpilledInstruction(it, spilledRegisters) }
+                .withIndex()
+                .filter { it.value is Instruction }
+                .associate { it.index to toSpilledInstruction(it.value as Instruction, spilledRegisters) }
             val maxInstructionSpill = instructionsToSpilled.values.maxOfOrNull { it.numberOfSpilledRegisters } ?: 0
 
             if (maxInstructionSpill <= reservedRegistersNumber) {

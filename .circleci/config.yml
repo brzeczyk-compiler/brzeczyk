@@ -10,6 +10,9 @@ jobs:
       - image: cimg/openjdk:11.0
     steps:
       - checkout
+      - run:
+          name: Install dependencies
+          command: sudo apt update && xargs -a app/dependencies.txt sudo apt install
       - restore_cache:
           name: Restore Gradle
           keys:
@@ -29,7 +32,8 @@ jobs:
       - run:
           name: Test project
           command: |
-            ./gradlew --no-daemon test
+            ./gradlew install
+            ./test_all.sh --no-daemon
       - save_cache:
           name: Save Gradle to cache
           key: gradle-dotfiles-{{ checksum "gradle.properties" }}-{{ checksum "app/build.gradle" }}-{{ checksum "settings.gradle" }}

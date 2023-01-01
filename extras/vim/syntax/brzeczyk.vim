@@ -1,5 +1,5 @@
 " Vim syntax file
-" Language: Nienazwany
+" Language: Brzeczyk
 " Latest Revision: 27 December 2022
 
 if exists("b:current_syntax")
@@ -40,7 +40,7 @@ syn match nnComment '//.*$' contains=nnSpecialCommentWord
 
 
 " Set colors
-let b:current_syntax = "nienazwany"
+let b:current_syntax = "brzeczyk"
 hi def link nnIntegerLiteral Number
 
 hi def link nnCustomType Type

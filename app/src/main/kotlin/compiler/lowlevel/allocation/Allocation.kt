@@ -11,14 +11,8 @@ import compiler.lowlevel.dataflow.Liveness
 object Allocation {
 
     val REGISTER_ORDER = listOf(
-        Register.R15,
-        Register.R14,
-        Register.R13,
-        Register.R12,
         Register.R11,
         Register.R10,
-        Register.RBP,
-        Register.RSP,
         Register.R9,
         Register.R8,
         Register.RDI,
@@ -27,6 +21,12 @@ object Allocation {
         Register.RCX,
         Register.RBX,
         Register.RAX,
+        Register.R15,
+        Register.R14,
+        Register.R13,
+        Register.R12,
+        Register.RBP,
+        Register.RSP,
     )
 
     data class Result(
@@ -72,7 +72,10 @@ object Allocation {
                     instructionsToSpilled,
                     registerAllocation,
                     spilledRegistersColoring,
-                )
+                ).filterNot {
+                    it is Instruction.InPlaceInstruction.MoveRR &&
+                        registerAllocation[it.reg_dest] == registerAllocation[it.reg_src]
+                }
 
                 return Result(
                     registerAllocation,

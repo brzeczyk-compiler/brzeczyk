@@ -200,7 +200,7 @@ object InstructionSet {
                 inRegisters, outRegister, _, _ ->
                 listOf(
                     Instruction.InPlaceInstruction.MulRR(inRegisters[0], inRegisters[1]), // IMUL reg0, reg1
-                    Instruction.InPlaceInstruction.MoveRR(outRegister, Register.RAX), //     MOV  out,  reg0
+                    Instruction.InPlaceInstruction.MoveRR(outRegister, inRegisters[0]), //     MOV  out,  reg0
                 )
             },
             InstructionPattern(IFTPattern.BinaryOperator(IFTNode.Divide::class)) {

@@ -104,8 +104,8 @@ object LanguageGrammar {
         val eExpr512Minus = getProduction("E_EXPR512", "{nE_EXPR1024}{tMINUS}$NLS{nE_EXPR512}")
 
         val eExpr256PassThrough = getProduction("E_EXPR256", "{nE_EXPR512}")
-        val eExpr256ShiftRight = getProduction("E_EXPR256", "{nE_EXPR512}{tSHIFT_LEFT}$NLS{nE_EXPR256}")
-        val eExpr256ShiftLeft = getProduction("E_EXPR256", "{nE_EXPR512}{tSHIFT_RIGHT}$NLS{nE_EXPR256}")
+        val eExpr256ShiftLeft = getProduction("E_EXPR256", "{nE_EXPR512}{tSHIFT_LEFT}$NLS{nE_EXPR256}")
+        val eExpr256ShiftRight = getProduction("E_EXPR256", "{nE_EXPR512}{tSHIFT_RIGHT}$NLS{nE_EXPR256}")
 
         val eExpr128PassThrough = getProduction("E_EXPR128", "{nE_EXPR256}")
         val eExpr128BitAnd = getProduction("E_EXPR128", "{nE_EXPR256}{tBIT_AND}$NLS{nE_EXPR128}")

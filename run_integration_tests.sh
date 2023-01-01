@@ -1,9 +1,11 @@
 #!/bin/bash
 IGNORE_HEADER="// INTEGRATION TESTS IGNORE"
+COMPILER_PATH="./app/build/install/app/bin/app"
 TEMP_TEST_CASE_PREFIX="test_case"
 TEMP_SPLIT_TEST_CASE_PREFIX="current_case"
 
 FAILED_CASES=0
+SUCCESSFUL_CASES=0
 FAILED_TO_COMPILE=0
 
 # bash trickery to get rid of identations at the start of lines
@@ -11,9 +13,11 @@ print_multiline_message() {
     echo "$1" | sed 's/^[ \t]*//g'
 }
 
+update() {
+    echo -en "\rPassed: $SUCCESSFUL_CASES, Failed: $FAILED_CASES, Compilation errors: $FAILED_TO_COMPILE"
+}
+
 run_test_case() {
-    test_number=$(echo $1 | grep -Eo '[0-9]+$')
-    echo "Case number $test_number..."
     csplit -f "$TEMP_SPLIT_TEST_CASE_PREFIX" -z $1 '/Input:/' '/Exit code:/' '/Output:/' 1>/dev/null
     input=$(cat "$TEMP_SPLIT_TEST_CASE_PREFIX"00 | tail +2)
     expected_exit_code=$(cat "$TEMP_SPLIT_TEST_CASE_PREFIX"01 | tail +2)
@@ -22,22 +26,22 @@ run_test_case() {
     actual_exit_code=$?
 
     if [[ $actual_output != $expected_output || $expected_exit_code != $actual_exit_code ]]; then
-        print_multiline_message "TEST FAILED!!!!
+        print_multiline_message "
+        TEST FAILED!!!!
         Input:
         $input
         Expected output:
         $expected_output
         Actual output:
         $actual_output
-        Expected exit code:
-        $expected_exit_code
-        Actual exit code:
-        $actual_exit_code
+        Expected exit code: $expected_exit_code
+        Actual exit code: $actual_exit_code
         "
         ((FAILED_CASES++))
     else
-        echo "Test number $test_number succeeded!"
+        ((SUCCESSFUL_CASES++))
     fi
+    update
     rm "$TEMP_SPLIT_TEST_CASE_PREFIX"*
 }
 
@@ -49,35 +53,25 @@ run_test_cases() {
     done
 }
 
-./gradlew install
+if [[ ! -f $COMPILER_PATH ]]; then
+    print_multiline_message "Could not find compiler at $COMPILER_PATH!
+    Have you run ./gradlew install?"
+    exit 0
+fi
 
 for tested_program in $(find . -path "./integration_tests/*.bzz"); do
-    if [[ $(head -1 $tested_program) == $IGNORE_HEADER ]]; then
-        echo "Skipping $tested_program..."
-        continue
-    fi
-
-    print_multiline_message "Compiling $tested_program...
-    "
-    ./app/build/install/app/bin/app $tested_program -o a.out -e stdlib/stdlib.c
-
+    $COMPILER_PATH $tested_program -o a.out -e stdlib/stdlib.c 1>/dev/null
     if [[ ! -f a.out ]]; then
-        echo "Compilation failed! Skipping, but you should fix this..."
-        ((FAILED_CASES++))
+        echo "Cannot compile $tested_program! Skipping, but you should fix this..."
         ((FAILED_TO_COMPILE++))
         continue
     fi
-
-    print_multiline_message "
-    Compiled, testing $tested_program...
-    "
 
     run_test_cases "${tested_program%%bzz}tests"
     # clean up
     rm a.o a.out a.asm
 done
 
-echo "Failed tests: $FAILED_CASES"
-echo "Failed to compile: $FAILED_TO_COMPILE"
+echo
 # exit code for CI
-exit $FAILED_CASES
+exit $(($FAILED_TO_COMPILE + $FAILED_CASES))

@@ -29,6 +29,7 @@ jobs:
       - run:
           name: Test project
           command: |
+            ./gradlew install
             ./test_all.sh --no-daemon
       - save_cache:
           name: Save Gradle to cache

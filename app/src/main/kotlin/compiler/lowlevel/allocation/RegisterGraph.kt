@@ -17,7 +17,7 @@ class RegisterGraph private constructor(
     availableColors: HashSet<Register>
 ) {
 
-    private val K = availableColors.size
+    private val maxColors = availableColors.size
     private val forbiddenColors = selfColoredRegisters - availableColors // colors that forbid merging
 
     // ------------ graph nodes -----------------
@@ -77,7 +77,7 @@ class RegisterGraph private constructor(
     private val spillCandidates: HashSet<Node> = hashSetOf()
 
     private fun classifyNode(node: Node) =
-        if (node.deg() >= K) spillCandidates // deg >= K
+        if (node.deg() >= maxColors) spillCandidates // deg >= K
         else if (copyGraph.getValue(node).isEmpty()) simplifyCandidates // deg < K, no copy edges
         else freezeCandidates // deg < K, some copy edges
 
@@ -118,15 +118,15 @@ class RegisterGraph private constructor(
 
         fun georgeCondition(sysReg: Node, toMerge: Node): Boolean =
             interferenceGraph[toMerge]!!.all {
-                it.deg() < K || it.containsSelfColoredRegister || interferenceGraph[sysReg]!!.contains(it)
+                it.deg() < maxColors || it.containsSelfColoredRegister || interferenceGraph[sysReg]!!.contains(it)
             }
 
         fun briggsCondition(first: Node, second: Node): Boolean {
             val commonOfSizeK: Int =
-                (interferenceGraph[first]!! intersect interferenceGraph[second]!!).count { it.deg() == K }
+                (interferenceGraph[first]!! intersect interferenceGraph[second]!!).count { it.deg() == maxColors }
             val allOfSizeGeK: Int =
-                (interferenceGraph[first]!! + interferenceGraph[second]!!).count { it.deg() >= K }
-            return allOfSizeGeK - commonOfSizeK < K
+                (interferenceGraph[first]!! + interferenceGraph[second]!!).count { it.deg() >= maxColors }
+            return allOfSizeGeK - commonOfSizeK < maxColors
         }
 
         fun Pair<Node, Node>.potentiallySelfColoredRegisterFirst() =
@@ -172,7 +172,7 @@ class RegisterGraph private constructor(
         removeFromSet(node)
 
         neighbours.forEach { reclassifyNode(it) }
-        neighbours.filter { it.deg() == K - 1 }.forEach { enableMoves((interferenceGraph[it]!! + setOf(it)).toHashSet()) }
+        neighbours.filter { it.deg() == maxColors - 1 }.forEach { enableMoves((interferenceGraph[it]!! + setOf(it)).toHashSet()) }
     }
 
     private fun enableMoves(nodes: HashSet<Node>) {

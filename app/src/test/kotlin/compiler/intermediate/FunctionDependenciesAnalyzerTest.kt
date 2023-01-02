@@ -1,6 +1,7 @@
 package compiler.intermediate
 
 import compiler.analysis.VariablePropertiesAnalyzer
+import compiler.ast.AstNode
 import compiler.ast.Expression
 import compiler.ast.Function
 import compiler.ast.NamedNode
@@ -13,13 +14,16 @@ import compiler.intermediate.generators.DISPLAY_LABEL_IN_MEMORY
 import compiler.intermediate.generators.DefaultFunctionDetailsGenerator
 import compiler.intermediate.generators.FunctionDetailsGenerator
 import compiler.intermediate.generators.VariableLocationType
-import compiler.utils.ReferenceMap
-import compiler.utils.ReferenceSet
-import compiler.utils.referenceHashMapOf
-import compiler.utils.referenceHashSetOf
+import compiler.utils.KeyRefMap
+import compiler.utils.Ref
+import compiler.utils.RefMap
+import compiler.utils.RefSet
+import compiler.utils.assertContentEquals
+import compiler.utils.keyRefMapOf
+import compiler.utils.refMapOf
+import compiler.utils.refSetOf
 import kotlin.test.Test
 import kotlin.test.assertContains
-import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
 class FunctionDependenciesAnalyzerTest {
@@ -33,8 +37,8 @@ class FunctionDependenciesAnalyzerTest {
 
         val program = Program(listOf(Program.Global.FunctionDefinition(noPolishSigns)))
         val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program, false)
-        val expectedIdentifiers = referenceHashMapOf(noPolishSigns to noPolishSignsIdentifier)
-        assertEquals(expectedIdentifiers, actualIdentifiers)
+        val expectedIdentifiers = keyRefMapOf(noPolishSigns to noPolishSignsIdentifier)
+        assertContentEquals(expectedIdentifiers, actualIdentifiers)
     }
 
     @Test fun `test create unique identifiers no polish signs`() {
@@ -47,8 +51,8 @@ class FunctionDependenciesAnalyzerTest {
 
         val program = Program(listOf(Program.Global.FunctionDefinition(polishSigns)))
         val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program, false)
-        val expectedIdentifiers = referenceHashMapOf(polishSigns to polishSignsIdentifier)
-        assertEquals(expectedIdentifiers, actualIdentifiers)
+        val expectedIdentifiers = keyRefMapOf(polishSigns to polishSignsIdentifier)
+        assertContentEquals(expectedIdentifiers, actualIdentifiers)
     }
 
     @Test fun `test create unique identifiers nested`() {
@@ -68,11 +72,11 @@ class FunctionDependenciesAnalyzerTest {
 
         val program = Program(listOf(Program.Global.FunctionDefinition(outerFunction)))
         val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program, false)
-        val expectedIdentifiers = referenceHashMapOf(
+        val expectedIdentifiers = keyRefMapOf(
             noPolishSigns to noPolishSignsIdentifier,
             outerFunction to outerFunctionIdentifier
         )
-        assertEquals(expectedIdentifiers, actualIdentifiers)
+        assertContentEquals(expectedIdentifiers, actualIdentifiers)
     }
 
     @Test fun `test identical function names with accuracy to polish signs do not cause identifier conflict`() {
@@ -102,13 +106,13 @@ class FunctionDependenciesAnalyzerTest {
 
         val program = Program(listOf(Program.Global.FunctionDefinition(outerFunction)))
         val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program, false)
-        val expectedIdentifiers = referenceHashMapOf(
+        val expectedIdentifiers = keyRefMapOf(
             inner1 to inner1Identifier,
             inner2 to inner2Identifier,
             inner3 to inner3Identifier,
             outerFunction to outerFunctionIdentifier
         )
-        assertEquals(expectedIdentifiers, actualIdentifiers)
+        assertContentEquals(expectedIdentifiers, actualIdentifiers)
     }
 
     @Test fun `test function with name in forbidden memory label list is not assigned forbidden identifier`() {
@@ -161,10 +165,10 @@ class FunctionDependenciesAnalyzerTest {
 
         val program = Program(listOf(Program.Global.FunctionDefinition(outerFunction)))
         val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program, false)
-        assertContains(actualIdentifiers, function)
-        assertContains(actualIdentifiers, function2)
-        assertContains(actualIdentifiers, function3)
-        assertContains(actualIdentifiers, outerFunction)
+        assertContains(actualIdentifiers, Ref(function))
+        assertContains(actualIdentifiers, Ref(function2))
+        assertContains(actualIdentifiers, Ref(function3))
+        assertContains(actualIdentifiers, Ref(outerFunction))
     }
 
     @Test fun `test functions at same level blocks with identical names do not cause conflicts`() {
@@ -214,14 +218,14 @@ class FunctionDependenciesAnalyzerTest {
         val functionCopy1Identifier = identifierFactory.build(outerFunctionIdentifier.value + "@block1", functionCopy1.name)
         val functionCopy2Identifier = identifierFactory.build(outerFunctionIdentifier.value + "@block2", functionCopy2.name)
         val functionCopy3Identifier = identifierFactory.build(outerFunctionIdentifier.value + "@block3", functionCopy3.name)
-        val expectedIdentifiers = referenceHashMapOf(
+        val expectedIdentifiers = keyRefMapOf(
             outerFunction to outerFunctionIdentifier,
             function to functionIdentifier,
             functionCopy1 to functionCopy1Identifier,
             functionCopy2 to functionCopy2Identifier,
             functionCopy3 to functionCopy3Identifier,
         )
-        assertEquals(expectedIdentifiers, actualIdentifiers)
+        assertContentEquals(expectedIdentifiers, actualIdentifiers)
     }
 
     @Test fun `test function details generator creation`() {
@@ -267,20 +271,20 @@ class FunctionDependenciesAnalyzerTest {
             )
         )
         val program = Program(listOf(Program.Global.FunctionDefinition(functionF)))
-        val variableProperties = referenceHashMapOf<Any, VariablePropertiesAnalyzer.VariableProperties>(
-            parameter to VariablePropertiesAnalyzer.VariableProperties(functionG, referenceHashSetOf(), referenceHashSetOf()),
-            varA to VariablePropertiesAnalyzer.VariableProperties(functionF, referenceHashSetOf(), referenceHashSetOf(functionG)),
-            varB to VariablePropertiesAnalyzer.VariableProperties(functionF, referenceHashSetOf(functionG), referenceHashSetOf()),
-            varC to VariablePropertiesAnalyzer.VariableProperties(functionF, referenceHashSetOf(), referenceHashSetOf())
+        val variableProperties = keyRefMapOf<AstNode, VariablePropertiesAnalyzer.VariableProperties>(
+            parameter to VariablePropertiesAnalyzer.VariableProperties(functionG, refSetOf(), refSetOf()),
+            varA to VariablePropertiesAnalyzer.VariableProperties(functionF, refSetOf(), refSetOf(functionG)),
+            varB to VariablePropertiesAnalyzer.VariableProperties(functionF, refSetOf(functionG), refSetOf()),
+            varC to VariablePropertiesAnalyzer.VariableProperties(functionF, refSetOf(), refSetOf())
         )
 
-        val expectedResult = referenceHashMapOf(
+        val expectedResult = keyRefMapOf(
             functionF to DefaultFunctionDetailsGenerator(
                 emptyList(),
                 null,
                 IFTNode.MemoryLabel("fun\$f"),
                 0u,
-                referenceHashMapOf(varA to VariableLocationType.MEMORY, varB to VariableLocationType.MEMORY, varC to VariableLocationType.REGISTER),
+                keyRefMapOf(varA to VariableLocationType.MEMORY, varB to VariableLocationType.MEMORY, varC to VariableLocationType.REGISTER),
                 IFTNode.MemoryLabel(DISPLAY_LABEL_IN_MEMORY)
             ) as FunctionDetailsGenerator,
             functionG to DefaultFunctionDetailsGenerator(
@@ -288,12 +292,12 @@ class FunctionDependenciesAnalyzerTest {
                 null,
                 IFTNode.MemoryLabel("fun\$f\$g"),
                 1u,
-                referenceHashMapOf(parameter to VariableLocationType.REGISTER),
+                keyRefMapOf(parameter to VariableLocationType.REGISTER),
                 IFTNode.MemoryLabel(DISPLAY_LABEL_IN_MEMORY)
             )
         )
-        val actualResult = FunctionDependenciesAnalyzer.createFunctionDetailsGenerators(program, variableProperties, referenceHashMapOf())
-        assertEquals(expectedResult, actualResult)
+        val actualResult = FunctionDependenciesAnalyzer.createFunctionDetailsGenerators(program, variableProperties, keyRefMapOf())
+        assertContentEquals(expectedResult, actualResult)
     }
 
     @Test fun `test function details generator creation for function that returns variable`() {
@@ -324,23 +328,23 @@ class FunctionDependenciesAnalyzerTest {
         val returnVariable = Variable(Variable.Kind.VARIABLE, "_return_dummy_", Type.Number, null)
 
         val program = Program(listOf(Program.Global.FunctionDefinition(functionF)))
-        val variableProperties = referenceHashMapOf<Any, VariablePropertiesAnalyzer.VariableProperties>(
-            varA to VariablePropertiesAnalyzer.VariableProperties(functionF, referenceHashSetOf(), referenceHashSetOf()),
-            returnVariable to VariablePropertiesAnalyzer.VariableProperties(functionF, referenceHashSetOf(), referenceHashSetOf()),
+        val variableProperties = keyRefMapOf<AstNode, VariablePropertiesAnalyzer.VariableProperties>(
+            varA to VariablePropertiesAnalyzer.VariableProperties(functionF, refSetOf(), refSetOf()),
+            returnVariable to VariablePropertiesAnalyzer.VariableProperties(functionF, refSetOf(), refSetOf()),
         )
 
-        val expectedResult = referenceHashMapOf(
+        val expectedResult = keyRefMapOf(
             functionF to DefaultFunctionDetailsGenerator(
                 emptyList(),
                 returnVariable,
                 IFTNode.MemoryLabel("fun\$f"),
                 0u,
-                referenceHashMapOf(varA to VariableLocationType.REGISTER, returnVariable to VariableLocationType.REGISTER),
+                keyRefMapOf(varA to VariableLocationType.REGISTER, returnVariable to VariableLocationType.REGISTER),
                 IFTNode.MemoryLabel(DISPLAY_LABEL_IN_MEMORY)
             ) as FunctionDetailsGenerator
         )
-        val actualResult = FunctionDependenciesAnalyzer.createFunctionDetailsGenerators(program, variableProperties, referenceHashMapOf(functionF to returnVariable))
-        assertEquals(expectedResult, actualResult)
+        val actualResult = FunctionDependenciesAnalyzer.createFunctionDetailsGenerators(program, variableProperties, keyRefMapOf(functionF to returnVariable))
+        assertContentEquals(expectedResult, actualResult)
     }
 
     @Test fun `test a function that does not call`() {
@@ -358,14 +362,14 @@ class FunctionDependenciesAnalyzerTest {
         )
 
         val program = Program(globals)
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceHashMapOf()
+        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf()
         val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
-        val expectedCallGraph: ReferenceMap<Function, ReferenceSet<Function>> = referenceHashMapOf(
-            fFunction to referenceHashSetOf<Function>(),
+        val expectedCallGraph: KeyRefMap<Function, RefSet<Function>> = keyRefMapOf(
+            fFunction to refSetOf(),
         )
 
-        assertEquals(expectedCallGraph, actualCallGraph)
+        assertContentEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test a function that calls another function`() {
@@ -390,15 +394,15 @@ class FunctionDependenciesAnalyzerTest {
         )
 
         val program = Program(globals)
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceHashMapOf(fFunctionCall to fFunction)
+        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(fFunctionCall to fFunction)
         val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
-        val expectedCallGraph: ReferenceMap<Function, ReferenceSet<Function>> = referenceHashMapOf(
-            fFunction to referenceHashSetOf(),
-            gFunction to referenceHashSetOf(fFunction),
+        val expectedCallGraph: KeyRefMap<Function, RefSet<Function>> = keyRefMapOf(
+            fFunction to refSetOf(),
+            gFunction to refSetOf(fFunction),
         )
 
-        assertEquals(expectedCallGraph, actualCallGraph)
+        assertContentEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test inner functions`() {
@@ -431,16 +435,16 @@ class FunctionDependenciesAnalyzerTest {
         )
 
         val program = Program(globals)
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceHashMapOf(gFunctionCall to gFunction)
+        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(gFunctionCall to gFunction)
         val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
-        val expectedCallGraph: ReferenceMap<Function, ReferenceSet<Function>> = referenceHashMapOf(
-            fFunction to referenceHashSetOf(),
-            gFunction to referenceHashSetOf(),
-            hFunction to referenceHashSetOf(gFunction),
+        val expectedCallGraph: KeyRefMap<Function, RefSet<Function>> = keyRefMapOf(
+            fFunction to refSetOf(),
+            gFunction to refSetOf(),
+            hFunction to refSetOf(gFunction),
         )
 
-        assertEquals(expectedCallGraph, actualCallGraph)
+        assertContentEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test recursion`() {
@@ -461,14 +465,14 @@ class FunctionDependenciesAnalyzerTest {
         )
 
         val program = Program(globals)
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceHashMapOf(fFunctionCall to fFunction)
+        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(fFunctionCall to fFunction)
         val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
-        val expectedCallGraph: ReferenceMap<Function, ReferenceSet<Function>> = referenceHashMapOf(
-            fFunction to referenceHashSetOf(fFunction),
+        val expectedCallGraph: KeyRefMap<Function, RefSet<Function>> = keyRefMapOf(
+            fFunction to refSetOf(fFunction),
         )
 
-        assertEquals(expectedCallGraph, actualCallGraph)
+        assertContentEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test transitivity`() {
@@ -500,19 +504,19 @@ class FunctionDependenciesAnalyzerTest {
         )
 
         val program = Program(globals)
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceHashMapOf(
+        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(
             fFunctionCall to fFunction,
             gFunctionCall to gFunction,
         )
         val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
-        val expectedCallGraph: ReferenceMap<Function, ReferenceSet<Function>> = referenceHashMapOf(
-            fFunction to referenceHashSetOf(),
-            gFunction to referenceHashSetOf(fFunction),
-            hFunction to referenceHashSetOf(fFunction, gFunction),
+        val expectedCallGraph: KeyRefMap<Function, RefSet<Function>> = keyRefMapOf(
+            fFunction to refSetOf(),
+            gFunction to refSetOf(fFunction),
+            hFunction to refSetOf(fFunction, gFunction),
         )
 
-        assertEquals(expectedCallGraph, actualCallGraph)
+        assertContentEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test a cycle`() {
@@ -556,7 +560,7 @@ class FunctionDependenciesAnalyzerTest {
         )
 
         val program = Program(globals)
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceHashMapOf(
+        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(
             fFunctionCall to fFunction,
             gFunctionCall to gFunction,
             hFunctionCall to hFunction,
@@ -564,14 +568,14 @@ class FunctionDependenciesAnalyzerTest {
         )
         val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
-        val expectedCallGraph: ReferenceMap<Function, ReferenceSet<Function>> = referenceHashMapOf(
-            fFunction to referenceHashSetOf(fFunction, gFunction, hFunction, iFunction),
-            gFunction to referenceHashSetOf(fFunction, gFunction, hFunction, iFunction),
-            hFunction to referenceHashSetOf(fFunction, gFunction, hFunction, iFunction),
-            iFunction to referenceHashSetOf(fFunction, gFunction, hFunction, iFunction),
+        val expectedCallGraph: KeyRefMap<Function, RefSet<Function>> = keyRefMapOf(
+            fFunction to refSetOf(fFunction, gFunction, hFunction, iFunction),
+            gFunction to refSetOf(fFunction, gFunction, hFunction, iFunction),
+            hFunction to refSetOf(fFunction, gFunction, hFunction, iFunction),
+            iFunction to refSetOf(fFunction, gFunction, hFunction, iFunction),
         )
 
-        assertEquals(expectedCallGraph, actualCallGraph)
+        assertContentEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test buried recursion`() {
@@ -627,7 +631,7 @@ class FunctionDependenciesAnalyzerTest {
         )
 
         val program = Program(globals)
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceHashMapOf(
+        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(
             fFunctionCall to fFunction,
             gFunctionCall to gFunction,
             hFunctionCall to hFunction,
@@ -635,14 +639,14 @@ class FunctionDependenciesAnalyzerTest {
         )
         val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
-        val expectedCallGraph: ReferenceMap<Function, ReferenceSet<Function>> = referenceHashMapOf(
-            fFunction to referenceHashSetOf(fFunction, gFunction, hFunction, iFunction),
-            gFunction to referenceHashSetOf(fFunction, gFunction, hFunction, iFunction),
-            hFunction to referenceHashSetOf(fFunction, gFunction, hFunction, iFunction),
-            iFunction to referenceHashSetOf(fFunction, gFunction, hFunction, iFunction),
+        val expectedCallGraph: KeyRefMap<Function, RefSet<Function>> = keyRefMapOf(
+            fFunction to refSetOf(fFunction, gFunction, hFunction, iFunction),
+            gFunction to refSetOf(fFunction, gFunction, hFunction, iFunction),
+            hFunction to refSetOf(fFunction, gFunction, hFunction, iFunction),
+            iFunction to refSetOf(fFunction, gFunction, hFunction, iFunction),
         )
 
-        assertEquals(expectedCallGraph, actualCallGraph)
+        assertContentEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test operators`() {
@@ -701,7 +705,7 @@ class FunctionDependenciesAnalyzerTest {
         )
 
         val program = Program(globals)
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceHashMapOf(
+        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(
             fFunctionCall to fFunction,
             gFunctionCall to gFunction,
             hFunctionCall to hFunction,
@@ -711,17 +715,17 @@ class FunctionDependenciesAnalyzerTest {
         )
         val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
-        val expectedCallGraph: ReferenceMap<Function, ReferenceSet<Function>> = referenceHashMapOf(
-            fFunction to referenceHashSetOf(),
-            gFunction to referenceHashSetOf(),
-            hFunction to referenceHashSetOf(),
-            iFunction to referenceHashSetOf(),
-            jFunction to referenceHashSetOf(),
-            kFunction to referenceHashSetOf(),
-            testFunction to referenceHashSetOf(fFunction, gFunction, hFunction, iFunction, jFunction, kFunction),
+        val expectedCallGraph: KeyRefMap<Function, RefSet<Function>> = keyRefMapOf(
+            fFunction to refSetOf(),
+            gFunction to refSetOf(),
+            hFunction to refSetOf(),
+            iFunction to refSetOf(),
+            jFunction to refSetOf(),
+            kFunction to refSetOf(),
+            testFunction to refSetOf(fFunction, gFunction, hFunction, iFunction, jFunction, kFunction),
         )
 
-        assertEquals(expectedCallGraph, actualCallGraph)
+        assertContentEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test variable definition and assignment`() {
@@ -768,20 +772,20 @@ class FunctionDependenciesAnalyzerTest {
         )
 
         val program = Program(globals)
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceHashMapOf(
+        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(
             fFunctionCall to fFunction,
             gFunctionCall to gFunction,
             yAssignment to yVariable,
         )
         val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
-        val expectedCallGraph: ReferenceMap<Function, ReferenceSet<Function>> = referenceHashMapOf(
-            fFunction to referenceHashSetOf(),
-            gFunction to referenceHashSetOf(),
-            testFunction to referenceHashSetOf(fFunction, gFunction),
+        val expectedCallGraph: KeyRefMap<Function, RefSet<Function>> = keyRefMapOf(
+            fFunction to refSetOf(),
+            gFunction to refSetOf(),
+            testFunction to refSetOf(fFunction, gFunction),
         )
 
-        assertEquals(expectedCallGraph, actualCallGraph)
+        assertContentEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test control flow`() {
@@ -859,7 +863,7 @@ class FunctionDependenciesAnalyzerTest {
         )
 
         val program = Program(globals)
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceHashMapOf(
+        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(
             fFunctionCall to fFunction,
             gFunctionCall to gFunction,
             hFunctionCall to hFunction,
@@ -870,18 +874,18 @@ class FunctionDependenciesAnalyzerTest {
         )
         val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
-        val expectedCallGraph: ReferenceMap<Function, ReferenceSet<Function>> = referenceHashMapOf(
-            fFunction to referenceHashSetOf(),
-            gFunction to referenceHashSetOf(),
-            hFunction to referenceHashSetOf(),
-            iFunction to referenceHashSetOf(),
-            jFunction to referenceHashSetOf(),
-            kFunction to referenceHashSetOf(),
-            lFunction to referenceHashSetOf(),
-            testFunction to referenceHashSetOf(fFunction, gFunction, hFunction, iFunction, jFunction, kFunction, lFunction),
+        val expectedCallGraph: KeyRefMap<Function, RefSet<Function>> = keyRefMapOf(
+            fFunction to refSetOf(),
+            gFunction to refSetOf(),
+            hFunction to refSetOf(),
+            iFunction to refSetOf(),
+            jFunction to refSetOf(),
+            kFunction to refSetOf(),
+            lFunction to refSetOf(),
+            testFunction to refSetOf(fFunction, gFunction, hFunction, iFunction, jFunction, kFunction, lFunction),
         )
 
-        assertEquals(expectedCallGraph, actualCallGraph)
+        assertContentEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test arguments`() {
@@ -956,7 +960,7 @@ class FunctionDependenciesAnalyzerTest {
         )
 
         val program = Program(globals)
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceHashMapOf(
+        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(
             fFunctionCall to fFunction,
             gFunctionCall to gFunction,
             hFunctionCall to hFunction,
@@ -964,15 +968,15 @@ class FunctionDependenciesAnalyzerTest {
         )
         val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
-        val expectedCallGraph: ReferenceMap<Function, ReferenceSet<Function>> = referenceHashMapOf(
-            fFunction to referenceHashSetOf(),
-            gFunction to referenceHashSetOf(),
-            hFunction to referenceHashSetOf(),
-            iFunction to referenceHashSetOf(),
-            testFunction to referenceHashSetOf(fFunction, gFunction, hFunction, iFunction),
+        val expectedCallGraph: KeyRefMap<Function, RefSet<Function>> = keyRefMapOf(
+            fFunction to refSetOf(),
+            gFunction to refSetOf(),
+            hFunction to refSetOf(),
+            iFunction to refSetOf(),
+            testFunction to refSetOf(fFunction, gFunction, hFunction, iFunction),
         )
 
-        assertEquals(expectedCallGraph, actualCallGraph)
+        assertContentEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test default arguments`() {
@@ -1014,18 +1018,18 @@ class FunctionDependenciesAnalyzerTest {
         )
 
         val program = Program(globals)
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceHashMapOf(
+        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(
             fFunctionCall to fFunction,
         )
         val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
-        val expectedCallGraph: ReferenceMap<Function, ReferenceSet<Function>> = referenceHashMapOf(
-            fFunction to referenceHashSetOf(),
-            gFunction to referenceHashSetOf(),
-            testFunction to referenceHashSetOf(fFunction),
+        val expectedCallGraph: KeyRefMap<Function, RefSet<Function>> = keyRefMapOf(
+            fFunction to refSetOf(),
+            gFunction to refSetOf(),
+            testFunction to refSetOf(fFunction),
         )
 
-        assertEquals(expectedCallGraph, actualCallGraph)
+        assertContentEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test comparison by reference`() {
@@ -1071,20 +1075,20 @@ class FunctionDependenciesAnalyzerTest {
         )
 
         val program = Program(globals)
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceHashMapOf(
+        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(
             pfFunctionCall to pfFunction,
             pgFunctionCall to pgFunction,
         )
         val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
-        val expectedCallGraph: ReferenceMap<Function, ReferenceSet<Function>> = referenceHashMapOf(
-            fFunction to referenceHashSetOf(pfFunction),
-            gFunction to referenceHashSetOf(pgFunction),
-            pfFunction to referenceHashSetOf(),
-            pgFunction to referenceHashSetOf(),
+        val expectedCallGraph: KeyRefMap<Function, RefSet<Function>> = keyRefMapOf(
+            fFunction to refSetOf(pfFunction),
+            gFunction to refSetOf(pgFunction),
+            pfFunction to refSetOf(),
+            pgFunction to refSetOf(),
         )
 
-        assertEquals(expectedCallGraph, actualCallGraph)
+        assertContentEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test comparison by reference - sets`() {
@@ -1144,7 +1148,7 @@ class FunctionDependenciesAnalyzerTest {
         )
 
         val program = Program(globals)
-        val nameResolution: ReferenceMap<Any, NamedNode> = referenceHashMapOf(
+        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(
             pfFunctionCall to pfFunction,
             pgFunctionCall to pgFunction,
             fFunctionCall to fFunction,
@@ -1152,14 +1156,14 @@ class FunctionDependenciesAnalyzerTest {
         )
         val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
-        val expectedCallGraph: ReferenceMap<Function, ReferenceSet<Function>> = referenceHashMapOf(
-            fFunction to referenceHashSetOf(pfFunction),
-            gFunction to referenceHashSetOf(pgFunction),
-            pfFunction to referenceHashSetOf(),
-            pgFunction to referenceHashSetOf(),
-            testFunction to referenceHashSetOf(fFunction, gFunction, pfFunction, pgFunction)
+        val expectedCallGraph: KeyRefMap<Function, RefSet<Function>> = keyRefMapOf(
+            fFunction to refSetOf(pfFunction),
+            gFunction to refSetOf(pgFunction),
+            pfFunction to refSetOf(),
+            pgFunction to refSetOf(),
+            testFunction to refSetOf(fFunction, gFunction, pfFunction, pgFunction)
         )
 
-        assertEquals<ReferenceMap<Function, ReferenceSet<Function>>>(expectedCallGraph, actualCallGraph)
+        assertContentEquals(expectedCallGraph, actualCallGraph)
     }
 }

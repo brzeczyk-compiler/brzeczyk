@@ -10,7 +10,10 @@ import compiler.intermediate.ControlFlowGraphBuilder
 import compiler.intermediate.IFTNode
 import compiler.intermediate.Register
 import compiler.intermediate.SummedConstant
-import compiler.utils.referenceHashMapOf
+import compiler.utils.KeyRefMap
+import compiler.utils.MutableKeyRefMap
+import compiler.utils.Ref
+import compiler.utils.mutableKeyRefMapOf
 
 enum class VariableLocationType {
     MEMORY,
@@ -27,13 +30,13 @@ data class DefaultFunctionDetailsGenerator(
     val variableToStoreFunctionResult: Variable?,
     val functionLocationInCode: IFTNode.MemoryLabel,
     val depth: ULong,
-    val variablesLocationTypes: Map<NamedNode, VariableLocationType>, // should contain parameters
+    val variablesLocationTypes: KeyRefMap<NamedNode, VariableLocationType>, // should contain parameters
     val displayAddress: IFTNode,
     val createRegisterFor: (NamedNode) -> Register = { Register() } // for testing
 ) : FunctionDetailsGenerator {
 
-    private val variablesStackOffsets: MutableMap<NamedNode, ULong> = referenceHashMapOf()
-    private val variablesRegisters: MutableMap<NamedNode, Register> = referenceHashMapOf()
+    private val variablesStackOffsets: MutableKeyRefMap<NamedNode, ULong> = mutableKeyRefMapOf()
+    private val variablesRegisters: MutableKeyRefMap<NamedNode, Register> = mutableKeyRefMapOf()
     private var variablesRegionSize: ULong = 0u
     private val previousDisplayEntryRegister = Register()
     private val calleeSavedBackupRegisters = calleeSavedRegistersWithoutRSPAndRBP.map { Register() }
@@ -50,7 +53,7 @@ data class DefaultFunctionDetailsGenerator(
                 }
 
                 VariableLocationType.REGISTER -> {
-                    variablesRegisters[variable] = createRegisterFor(variable)
+                    variablesRegisters[variable] = createRegisterFor(variable.value)
                 }
             }
         }
@@ -193,27 +196,27 @@ data class DefaultFunctionDetailsGenerator(
     private fun genAccess(namedNode: NamedNode, isDirect: Boolean, regAccessGenerator: (Register) -> IFTNode, memAccessGenerator: (IFTNode) -> IFTNode): IFTNode {
         // requires correct value for RBP register
         return if (isDirect) {
-            when (variablesLocationTypes[namedNode]!!) {
+            when (variablesLocationTypes[Ref(namedNode)]!!) {
                 VariableLocationType.MEMORY -> {
                     memAccessGenerator(
                         IFTNode.Subtract(
                             IFTNode.RegisterRead(Register.RBP),
-                            IFTNode.Const(variablesStackOffsets[namedNode]!!.toLong())
+                            IFTNode.Const(variablesStackOffsets[Ref(namedNode)]!!.toLong())
                         )
                     )
                 }
 
                 VariableLocationType.REGISTER ->
-                    regAccessGenerator(variablesRegisters[namedNode]!!)
+                    regAccessGenerator(variablesRegisters[Ref(namedNode)]!!)
             }
         } else {
-            if (variablesLocationTypes[namedNode]!! == VariableLocationType.REGISTER)
+            if (variablesLocationTypes[Ref(namedNode)]!! == VariableLocationType.REGISTER)
                 throw IndirectRegisterAccess()
 
             memAccessGenerator(
                 IFTNode.Subtract(
                     IFTNode.MemoryRead(displayElementAddress()),
-                    IFTNode.Const(variablesStackOffsets[namedNode]!!.toLong())
+                    IFTNode.Const(variablesStackOffsets[Ref(namedNode)]!!.toLong())
                 )
             )
         }

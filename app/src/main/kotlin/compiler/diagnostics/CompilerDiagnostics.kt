@@ -11,7 +11,7 @@ class CompilerDiagnostics : Diagnostics {
         diagnosticsList.clear()
     }
 
-    override fun hasAnyError() = diagnosticsList.any { it.isError() }
+    override fun hasAnyError() = diagnosticsList.any { it.isError }
 
     override fun toString() =
         if (diagnosticsList.size > 0) diagnostics.map { it.toString() }.joinToString(separator = "\n")

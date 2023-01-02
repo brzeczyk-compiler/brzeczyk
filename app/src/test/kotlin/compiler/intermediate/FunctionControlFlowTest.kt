@@ -1,6 +1,6 @@
 package compiler.intermediate
 
-import compiler.analysis.assertResolutionDiagnosticEquals
+import compiler.ast.AstNode
 import compiler.ast.Expression
 import compiler.ast.Function
 import compiler.ast.NamedNode
@@ -11,31 +11,35 @@ import compiler.ast.Variable
 import compiler.diagnostics.Diagnostic
 import compiler.diagnostics.Diagnostic.ResolutionDiagnostic.ControlFlowDiagnostic
 import compiler.diagnostics.Diagnostics
-import compiler.utils.ReferenceHashMap
-import compiler.utils.referenceHashMapOf
-import compiler.utils.referenceHashSetOf
+import compiler.utils.MutableRefMap
+import compiler.utils.Ref
+import compiler.utils.assertContentEquals
+import compiler.utils.keyRefMapOf
+import compiler.utils.mutableKeyRefMapOf
+import compiler.utils.mutableRefMapOf
+import compiler.utils.refMapOf
 import java.lang.RuntimeException
 import kotlin.test.Test
-import kotlin.test.assertEquals
+import kotlin.test.assertContentEquals
 
 class FunctionControlFlowTest {
-    private val expressionNodes = referenceHashMapOf<Expression, ReferenceHashMap<Variable?, IFTNode>>()
-    private val nameResolution = referenceHashMapOf<Any, NamedNode>()
-    private val defaultParameterValues = referenceHashMapOf<Function.Parameter, Variable>()
-    private val functionReturnedValueVariables = referenceHashMapOf<Function, Variable>()
+    private val expressionNodes = mutableKeyRefMapOf<Expression, MutableRefMap<Variable?, IFTNode>>()
+    private val nameResolution = mutableRefMapOf<AstNode, NamedNode>()
+    private val defaultParameterValues = mutableKeyRefMapOf<Function.Parameter, Variable>()
+    private val functionReturnedValueVariables = mutableKeyRefMapOf<Function, Variable>()
     private val diagnostics = mutableListOf<Diagnostic>()
 
     private fun addExpressionNode(expression: Expression, variable: Variable?): IFTNode {
-        val node = IFTNode.NoOp()
-        expressionNodes.putIfAbsent(expression, referenceHashMapOf())
-        expressionNodes[expression]!![variable] = node
+        val node = IFTNode.Dummy()
+        expressionNodes.putIfAbsent(Ref(expression), mutableRefMapOf())
+        expressionNodes[Ref(expression)]!![Ref(variable)] = Ref(node)
         return node
     }
 
     private fun getExpressionCFG(expression: Expression, variable: Variable?, function: Function): ControlFlowGraph {
-        val node = expressionNodes[expression]?.get(variable)
-        val nodeList = node?.let { referenceHashSetOf(it) } ?: referenceHashSetOf()
-        return ControlFlowGraph(nodeList, node, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
+        val node = expressionNodes[Ref(expression)]?.get(Ref(variable))
+        val nodeList = node?.let { listOf(it.value) } ?: emptyList()
+        return ControlFlowGraph(nodeList, node?.value, refMapOf(), refMapOf(), refMapOf())
     }
 
     private fun test(program: Program) = ControlFlow.createGraphForEachFunction(
@@ -59,8 +63,8 @@ class FunctionControlFlowTest {
 
         val result = test(program)
 
-        val cfg = ControlFlowGraph(referenceHashSetOf(), null, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
-        assertEquals(referenceHashMapOf(function to cfg), result)
+        val cfg = ControlFlowGraph(listOf(), null, refMapOf(), refMapOf(), refMapOf())
+        assertContentEquals(keyRefMapOf(function to cfg), result)
     }
 
     // czynność f() { 123 }
@@ -76,8 +80,8 @@ class FunctionControlFlowTest {
 
         val result = test(program)
 
-        val cfg = ControlFlowGraph(referenceHashSetOf(node), node, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
-        assertEquals(referenceHashMapOf(function to cfg), result)
+        val cfg = ControlFlowGraph(listOf(node), node, refMapOf(), refMapOf(), refMapOf())
+        assertContentEquals(keyRefMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -100,14 +104,14 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(
-            referenceHashSetOf(node1, node2),
+            listOf(node1, node2),
             node1,
-            referenceHashMapOf(node1 to node2),
-            referenceHashMapOf(),
-            referenceHashMapOf()
+            refMapOf(node1 to node2),
+            refMapOf(),
+            refMapOf()
         )
 
-        assertEquals(referenceHashMapOf(function to cfg), result)
+        assertContentEquals(keyRefMapOf(function to cfg), result)
     }
 
     // czynność f() { wart x: Liczba = 123 }
@@ -124,8 +128,8 @@ class FunctionControlFlowTest {
 
         val result = test(program)
 
-        val cfg = ControlFlowGraph(referenceHashSetOf(node), node, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
-        assertEquals(referenceHashMapOf(function to cfg), result)
+        val cfg = ControlFlowGraph(listOf(node), node, refMapOf(), refMapOf(), refMapOf())
+        assertContentEquals(keyRefMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -137,7 +141,7 @@ class FunctionControlFlowTest {
         val value = Expression.NumberLiteral(123)
         val parameter = Function.Parameter("x", Type.Number, value)
         val parameterVariable = Variable(Variable.Kind.VALUE, "", Type.Number, null)
-        defaultParameterValues[parameter] = parameterVariable
+        defaultParameterValues[Ref(parameter)] = parameterVariable
         val nestedFunction = Function("g", listOf(parameter), Type.Unit, listOf())
         val definition = Statement.FunctionDefinition(nestedFunction)
         val function = Function("f", listOf(), Type.Unit, listOf(definition))
@@ -147,9 +151,9 @@ class FunctionControlFlowTest {
 
         val result = test(program)
 
-        val cfg = ControlFlowGraph(referenceHashSetOf(node), node, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
-        val nestedCfg = ControlFlowGraph(referenceHashSetOf(), null, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
-        assertEquals(referenceHashMapOf(function to cfg, nestedFunction to nestedCfg), result)
+        val cfg = ControlFlowGraph(listOf(node), node, refMapOf(), refMapOf(), refMapOf())
+        val nestedCfg = ControlFlowGraph(listOf(), null, refMapOf(), refMapOf(), refMapOf())
+        assertContentEquals(keyRefMapOf(function to cfg, nestedFunction to nestedCfg), result)
     }
 
     // czynność f() {
@@ -163,7 +167,7 @@ class FunctionControlFlowTest {
         val definition = Statement.VariableDefinition(variable)
         val value = Expression.NumberLiteral(123)
         val assignment = Statement.Assignment("x", value)
-        nameResolution[assignment] = variable
+        nameResolution[Ref(assignment)] = Ref(variable)
         val function = Function("f", listOf(), Type.Unit, listOf(definition, assignment))
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
@@ -171,8 +175,8 @@ class FunctionControlFlowTest {
 
         val result = test(program)
 
-        val cfg = ControlFlowGraph(referenceHashSetOf(node), node, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
-        assertEquals(referenceHashMapOf(function to cfg), result)
+        val cfg = ControlFlowGraph(listOf(node), node, refMapOf(), refMapOf(), refMapOf())
+        assertContentEquals(keyRefMapOf(function to cfg), result)
     }
 
     // czynność f() { { 123 } }
@@ -189,8 +193,8 @@ class FunctionControlFlowTest {
 
         val result = test(program)
 
-        val cfg = ControlFlowGraph(referenceHashSetOf(node), node, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
-        assertEquals(referenceHashMapOf(function to cfg), result)
+        val cfg = ControlFlowGraph(listOf(node), node, refMapOf(), refMapOf(), refMapOf())
+        assertContentEquals(keyRefMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -216,14 +220,14 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(
-            referenceHashSetOf(node1, node2, node3),
+            listOf(node1, node2, node3),
             node1,
-            referenceHashMapOf(node2 to node3),
-            referenceHashMapOf(node1 to node2),
-            referenceHashMapOf(node1 to node3)
+            refMapOf(node2 to node3),
+            refMapOf(node1 to node2),
+            refMapOf(node1 to node3)
         )
 
-        assertEquals(referenceHashMapOf(function to cfg), result)
+        assertContentEquals(keyRefMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -253,14 +257,14 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(
-            referenceHashSetOf(node1, node2, node3, node4),
+            listOf(node1, node2, node3, node4),
             node1,
-            referenceHashMapOf(node2 to node4, node3 to node4),
-            referenceHashMapOf(node1 to node2),
-            referenceHashMapOf(node1 to node3)
+            refMapOf(node2 to node4, node3 to node4),
+            refMapOf(node1 to node2),
+            refMapOf(node1 to node3)
         )
 
-        assertEquals(referenceHashMapOf(function to cfg), result)
+        assertContentEquals(keyRefMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -286,14 +290,14 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(
-            referenceHashSetOf(node1, node2, node3),
+            listOf(node1, node2, node3),
             node1,
-            referenceHashMapOf(node2 to node1),
-            referenceHashMapOf(node1 to node2),
-            referenceHashMapOf(node1 to node3)
+            refMapOf(node2 to node1),
+            refMapOf(node1 to node2),
+            refMapOf(node1 to node3)
         )
 
-        assertEquals(referenceHashMapOf(function to cfg), result)
+        assertContentEquals(keyRefMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -325,14 +329,14 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(
-            referenceHashSetOf(node1, node2, node3, node4),
+            listOf(node1, node2, node3, node4),
             node1,
-            referenceHashMapOf(node3 to node1),
-            referenceHashMapOf(node1 to node2, node2 to node4),
-            referenceHashMapOf(node1 to node4, node2 to node3)
+            refMapOf(node3 to node1),
+            refMapOf(node1 to node2, node2 to node4),
+            refMapOf(node1 to node4, node2 to node3)
         )
 
-        assertEquals(referenceHashMapOf(function to cfg), result)
+        assertContentEquals(keyRefMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -364,14 +368,14 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(
-            referenceHashSetOf(node1, node2, node3, node4),
+            listOf(node1, node2, node3, node4),
             node1,
-            referenceHashMapOf(node3 to node1),
-            referenceHashMapOf(node1 to node2, node2 to node1),
-            referenceHashMapOf(node1 to node4, node2 to node3)
+            refMapOf(node3 to node1),
+            refMapOf(node1 to node2, node2 to node1),
+            refMapOf(node1 to node4, node2 to node3)
         )
 
-        assertEquals(referenceHashMapOf(function to cfg), result)
+        assertContentEquals(keyRefMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -407,14 +411,14 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(
-            referenceHashSetOf(node1, node2, node3, node4, node5),
+            listOf(node1, node2, node3, node4, node5),
             node1,
-            referenceHashMapOf(node4 to node1),
-            referenceHashMapOf(node1 to node2, node2 to node5, node3 to node1),
-            referenceHashMapOf(node1 to node5, node2 to node3, node3 to node4)
+            refMapOf(node4 to node1),
+            refMapOf(node1 to node2, node2 to node5, node3 to node1),
+            refMapOf(node1 to node5, node2 to node3, node3 to node4)
         )
 
-        assertEquals(referenceHashMapOf(function to cfg), result)
+        assertContentEquals(keyRefMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -463,14 +467,14 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(
-            referenceHashSetOf(node1, node2, node3, node4, node5, node6, node7, node8),
+            listOf(node1, node2, node3, node4, node5, node6, node7, node8),
             node1,
-            referenceHashMapOf(node6 to node3),
-            referenceHashMapOf(node1 to node2, node2 to node1, node3 to node4, node4 to node3, node5 to node7, node7 to node8),
-            referenceHashMapOf(node1 to node8, node2 to node3, node3 to node7, node4 to node5, node5 to node6, node7 to node1)
+            refMapOf(node6 to node3),
+            refMapOf(node1 to node2, node2 to node1, node3 to node4, node4 to node3, node5 to node7, node7 to node8),
+            refMapOf(node1 to node8, node2 to node3, node3 to node7, node4 to node5, node5 to node6, node7 to node1)
         )
 
-        assertEquals(referenceHashMapOf(function to cfg), result)
+        assertContentEquals(keyRefMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -494,14 +498,14 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(
-            referenceHashSetOf(node1, node2),
+            listOf(node1, node2),
             node1,
-            referenceHashMapOf(),
-            referenceHashMapOf(),
-            referenceHashMapOf(node1 to node2)
+            refMapOf(),
+            refMapOf(),
+            refMapOf(node1 to node2)
         )
 
-        assertEquals(referenceHashMapOf(function to cfg), result)
+        assertContentEquals(keyRefMapOf(function to cfg), result)
     }
 
     // czynność f() { przerwij }
@@ -514,7 +518,7 @@ class FunctionControlFlowTest {
 
         test(program)
 
-        assertResolutionDiagnosticEquals(listOf(ControlFlowDiagnostic.Errors.BreakOutsideOfLoop(loopBreak)), diagnostics)
+        assertContentEquals(listOf(ControlFlowDiagnostic.Errors.BreakOutsideOfLoop(loopBreak)), diagnostics)
     }
 
     // czynność f() { pomiń }
@@ -527,7 +531,7 @@ class FunctionControlFlowTest {
 
         test(program)
 
-        assertResolutionDiagnosticEquals(listOf(ControlFlowDiagnostic.Errors.ContinuationOutsideOfLoop(loopContinuation)), diagnostics)
+        assertContentEquals(listOf(ControlFlowDiagnostic.Errors.ContinuationOutsideOfLoop(loopContinuation)), diagnostics)
     }
 
     // czynność f() {
@@ -547,7 +551,7 @@ class FunctionControlFlowTest {
 
         test(program)
 
-        assertResolutionDiagnosticEquals(listOf(ControlFlowDiagnostic.Warnings.UnreachableStatement(evaluation)), diagnostics)
+        assertContentEquals(listOf(ControlFlowDiagnostic.Warnings.UnreachableStatement(evaluation)), diagnostics)
     }
 
     // czynność f() {
@@ -571,7 +575,7 @@ class FunctionControlFlowTest {
 
         test(program)
 
-        assertResolutionDiagnosticEquals(listOf(ControlFlowDiagnostic.Warnings.UnreachableStatement(evaluation)), diagnostics)
+        assertContentEquals(listOf(ControlFlowDiagnostic.Warnings.UnreachableStatement(evaluation)), diagnostics)
     }
 
     // czynność f() {
@@ -595,6 +599,6 @@ class FunctionControlFlowTest {
 
         test(program)
 
-        assertResolutionDiagnosticEquals(listOf(ControlFlowDiagnostic.Warnings.UnreachableStatement(evaluation)), diagnostics)
+        assertContentEquals(listOf(ControlFlowDiagnostic.Warnings.UnreachableStatement(evaluation)), diagnostics)
     }
 }

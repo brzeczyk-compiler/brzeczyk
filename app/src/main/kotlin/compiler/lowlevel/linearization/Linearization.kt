@@ -5,7 +5,8 @@ import compiler.intermediate.IFTNode
 import compiler.lowlevel.Asmable
 import compiler.lowlevel.Instruction.UnconditionalJumpInstruction.Jmp
 import compiler.lowlevel.Label
-import compiler.utils.referenceHashMapOf
+import compiler.utils.Ref
+import compiler.utils.mutableKeyRefMapOf
 
 object Linearization {
     fun linearize(
@@ -16,12 +17,12 @@ object Linearization {
             return emptyList()
 
         val instructions = mutableListOf<Asmable>()
-        val labels = referenceHashMapOf<IFTNode, String>()
+        val labels = mutableKeyRefMapOf<IFTNode, String>()
         val usedLabels = mutableSetOf<String>()
 
         fun assignLabel(node: IFTNode): String {
             val label = "._" + labels.size
-            labels[node] = label
+            labels[Ref(node)] = label
             return label
         }
 
@@ -30,7 +31,7 @@ object Linearization {
         }
 
         fun dfs(node: IFTNode, nextLabel: String) {
-            addLabel(labels[node] ?: assignLabel(node))
+            addLabel(labels[Ref(node)] ?: assignLabel(node))
 
             fun addUnconditional() {
                 instructions.addAll(covering.coverUnconditional(node))
@@ -48,27 +49,27 @@ object Linearization {
                 }
             }
 
-            if (node in cfg.unconditionalLinks) {
-                val target = cfg.unconditionalLinks[node]!!
+            if (Ref(node) in cfg.unconditionalLinks) {
+                val target = cfg.unconditionalLinks[Ref(node)]!!.value
 
                 addUnconditional()
 
-                if (target in labels)
-                    addJump(labels[target]!!)
+                if (Ref(target) in labels)
+                    addJump(labels[Ref(target)]!!)
                 else
                     dfs(target, nextLabel)
-            } else if (node in cfg.conditionalTrueLinks && node in cfg.conditionalFalseLinks) {
-                val targetWhenTrue = cfg.conditionalTrueLinks[node]!!
-                val targetWhenFalse = cfg.conditionalFalseLinks[node]!!
+            } else if (Ref(node) in cfg.conditionalTrueLinks && Ref(node) in cfg.conditionalFalseLinks) {
+                val targetWhenTrue = cfg.conditionalTrueLinks[Ref(node)]!!.value
+                val targetWhenFalse = cfg.conditionalFalseLinks[Ref(node)]!!.value
 
-                if (targetWhenTrue in labels && targetWhenFalse in labels) {
-                    addConditional(true, labels[targetWhenTrue]!!)
-                    addJump(labels[targetWhenFalse]!!)
-                } else if (targetWhenTrue in labels) {
-                    addConditional(true, labels[targetWhenTrue]!!)
+                if (Ref(targetWhenTrue) in labels && Ref(targetWhenFalse) in labels) {
+                    addConditional(true, labels[Ref(targetWhenTrue)]!!)
+                    addJump(labels[Ref(targetWhenFalse)]!!)
+                } else if (Ref(targetWhenTrue) in labels) {
+                    addConditional(true, labels[Ref(targetWhenTrue)]!!)
                     dfs(targetWhenFalse, nextLabel)
-                } else if (targetWhenFalse in labels) {
-                    addConditional(false, labels[targetWhenFalse]!!)
+                } else if (Ref(targetWhenFalse) in labels) {
+                    addConditional(false, labels[Ref(targetWhenFalse)]!!)
                     dfs(targetWhenTrue, nextLabel)
                 } else {
                     val label = assignLabel(targetWhenFalse)
@@ -76,7 +77,7 @@ object Linearization {
                     dfs(targetWhenTrue, label)
                     dfs(targetWhenFalse, nextLabel)
                 }
-            } else if (node in cfg.conditionalTrueLinks || node in cfg.conditionalFalseLinks) {
+            } else if (Ref(node) in cfg.conditionalTrueLinks || Ref(node) in cfg.conditionalFalseLinks) {
                 throw IllegalArgumentException() // unreachable state
             } else {
                 addUnconditional() // this must be RET, so no jump is needed

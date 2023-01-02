@@ -6,28 +6,29 @@ import compiler.lowlevel.Asmable
 import compiler.lowlevel.Instruction
 import compiler.lowlevel.Instruction.UnconditionalJumpInstruction.Jmp
 import compiler.lowlevel.Label
-import compiler.utils.referenceHashMapOf
-import compiler.utils.referenceHashSetOf
+import compiler.utils.Ref
+import compiler.utils.mutableKeyRefMapOf
+import compiler.utils.mutableRefMapOf
+import compiler.utils.refMapOf
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import kotlin.test.assertSame
 
 class LinearizationTest {
-    private val unconditional = referenceHashMapOf<Instruction, IFTNode>()
-    private val conditional = referenceHashMapOf<Instruction, Triple<IFTNode, Boolean, String>>()
+    private val unconditional = mutableRefMapOf<Instruction, IFTNode>()
+    private val conditional = mutableKeyRefMapOf<Instruction, Triple<Ref<IFTNode>, Boolean, String>>()
 
     private val covering = object : Covering {
         override fun coverUnconditional(iftNode: IFTNode): List<Instruction> {
             val instruction = Instruction.InPlaceInstruction.Dummy()
-            unconditional[instruction] = iftNode
+            unconditional[Ref(instruction)] = Ref(iftNode)
             return listOf(instruction)
         }
 
         override fun coverConditional(iftNode: IFTNode, targetLabel: String, invert: Boolean): List<Instruction> {
             val instruction = Instruction.InPlaceInstruction.Dummy()
-            conditional[instruction] = Triple(iftNode, !invert, targetLabel)
+            conditional[Ref(instruction)] = Triple(Ref(iftNode), !invert, targetLabel)
             return listOf(instruction)
         }
     }
@@ -42,48 +43,49 @@ class LinearizationTest {
     private fun assertLinearizationMatches(expected: List<AsmablePattern>, actual: List<Asmable>) {
         assertEquals(expected.size, actual.size)
 
-        val labels = mutableMapOf<String, Int>()
+        val labels = mutableListOf<String>()
+        val labelNumbers = mutableMapOf<String, Int>()
         var labelCount = 0
 
         for (label in actual.filterIsInstance<Label>().map { it.label }) {
-            if (label !in labels)
-                labels[label] = labels.size
+            if (label !in labelNumbers) {
+                labels.add(label)
+                labelNumbers[label] = labelNumbers.size
+            }
         }
 
         for ((expectedItem, actualItem) in expected.zip(actual)) {
             when (expectedItem) {
                 is Unconditional -> {
                     assertIs<Instruction>(actualItem)
-                    assertContains(unconditional, actualItem)
-                    assertSame(expectedItem.node, unconditional[actualItem]!!)
+                    assertContains(unconditional, Ref(actualItem))
+                    assertEquals(Ref(expectedItem.node), unconditional[Ref(actualItem)]!!)
                 }
 
                 is Conditional -> {
                     assertIs<Instruction>(actualItem)
-                    assertContains(conditional, actualItem)
-                    assertSame(expectedItem.node, conditional[actualItem]!!.first)
-                    assertEquals(expectedItem.whenTrue, conditional[actualItem]!!.second)
-                    assertEquals(expectedItem.targetLabelNumber, labels[conditional[actualItem]!!.third])
+                    assertContains(conditional, Ref(actualItem))
+                    assertEquals(Triple(Ref(expectedItem.node), expectedItem.whenTrue, labels[expectedItem.targetLabelNumber]), conditional[Ref(actualItem)]!!)
                 }
 
                 is NextLabel -> {
                     assertIs<Label>(actualItem)
-                    assertEquals(labelCount++, labels[actualItem.label])
+                    assertEquals(labelCount++, labelNumbers[actualItem.label])
                 }
 
                 is Jump -> {
                     assertIs<Jmp>(actualItem)
-                    assertEquals(expectedItem.targetLabelNumber, labels[actualItem.targetLabel])
+                    assertEquals(expectedItem.targetLabelNumber, labelNumbers[actualItem.targetLabel])
                 }
             }
         }
     }
 
-    private fun newNode() = IFTNode.NoOp()
+    private fun newNode() = IFTNode.Dummy()
 
     @Test
     fun `empty graph`() {
-        val cfg = ControlFlowGraph(referenceHashSetOf(), null, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
+        val cfg = ControlFlowGraph(listOf(), null, refMapOf(), refMapOf(), refMapOf())
 
         val result = Linearization.linearize(cfg, covering)
 
@@ -93,7 +95,7 @@ class LinearizationTest {
     @Test
     fun `single node`() {
         val node = newNode()
-        val cfg = ControlFlowGraph(referenceHashSetOf(node), node, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf())
+        val cfg = ControlFlowGraph(listOf(node), node, refMapOf(), refMapOf(), refMapOf())
 
         val result = Linearization.linearize(cfg, covering)
 
@@ -106,11 +108,11 @@ class LinearizationTest {
         val node2 = newNode()
 
         val cfg = ControlFlowGraph(
-            referenceHashSetOf(node1, node2),
+            listOf(node1, node2),
             node1,
-            referenceHashMapOf(node1 to node2),
-            referenceHashMapOf(),
-            referenceHashMapOf()
+            refMapOf(node1 to node2),
+            refMapOf(),
+            refMapOf()
         )
 
         val result = Linearization.linearize(cfg, covering)
@@ -129,11 +131,11 @@ class LinearizationTest {
         val node = newNode()
 
         val cfg = ControlFlowGraph(
-            referenceHashSetOf(node),
+            listOf(node),
             node,
-            referenceHashMapOf(node to node),
-            referenceHashMapOf(),
-            referenceHashMapOf()
+            refMapOf(node to node),
+            refMapOf(),
+            refMapOf()
         )
 
         val result = Linearization.linearize(cfg, covering)
@@ -155,11 +157,11 @@ class LinearizationTest {
         val node3 = newNode()
 
         val cfg = ControlFlowGraph(
-            referenceHashSetOf(node1, node2, node3),
+            listOf(node1, node2, node3),
             node1,
-            referenceHashMapOf(node2 to node3),
-            referenceHashMapOf(node1 to node2),
-            referenceHashMapOf(node1 to node3)
+            refMapOf(node2 to node3),
+            refMapOf(node1 to node2),
+            refMapOf(node1 to node3)
         )
 
         val result = Linearization.linearize(cfg, covering)
@@ -182,11 +184,11 @@ class LinearizationTest {
         val node3 = newNode()
 
         val cfg = ControlFlowGraph(
-            referenceHashSetOf(node1, node2, node3),
+            listOf(node1, node2, node3),
             node1,
-            referenceHashMapOf(),
-            referenceHashMapOf(node1 to node2),
-            referenceHashMapOf(node1 to node3)
+            refMapOf(),
+            refMapOf(node1 to node2),
+            refMapOf(node1 to node3)
         )
 
         val result = Linearization.linearize(cfg, covering)
@@ -211,11 +213,11 @@ class LinearizationTest {
         val node5 = newNode()
 
         val cfg = ControlFlowGraph(
-            referenceHashSetOf(node1, node2, node3, node4, node5),
+            listOf(node1, node2, node3, node4, node5),
             node1,
-            referenceHashMapOf(),
-            referenceHashMapOf(node1 to node2, node3 to node4),
-            referenceHashMapOf(node1 to node3, node3 to node5)
+            refMapOf(),
+            refMapOf(node1 to node2, node3 to node4),
+            refMapOf(node1 to node3, node3 to node5)
         )
 
         val result = Linearization.linearize(cfg, covering)
@@ -240,11 +242,11 @@ class LinearizationTest {
         val node2 = newNode()
 
         val cfg = ControlFlowGraph(
-            referenceHashSetOf(node1, node2),
+            listOf(node1, node2),
             node1,
-            referenceHashMapOf(),
-            referenceHashMapOf(node1 to node1),
-            referenceHashMapOf(node1 to node2)
+            refMapOf(),
+            refMapOf(node1 to node1),
+            refMapOf(node1 to node2)
         )
 
         val result = Linearization.linearize(cfg, covering)
@@ -265,11 +267,11 @@ class LinearizationTest {
         val node2 = newNode()
 
         val cfg = ControlFlowGraph(
-            referenceHashSetOf(node1, node2),
+            listOf(node1, node2),
             node1,
-            referenceHashMapOf(),
-            referenceHashMapOf(node1 to node2),
-            referenceHashMapOf(node1 to node1)
+            refMapOf(),
+            refMapOf(node1 to node2),
+            refMapOf(node1 to node1)
         )
 
         val result = Linearization.linearize(cfg, covering)
@@ -291,11 +293,11 @@ class LinearizationTest {
         val node3 = newNode()
 
         val cfg = ControlFlowGraph(
-            referenceHashSetOf(node1, node2, node3),
+            listOf(node1, node2, node3),
             node1,
-            referenceHashMapOf(node2 to node1),
-            referenceHashMapOf(node1 to node2),
-            referenceHashMapOf(node1 to node3)
+            refMapOf(node2 to node1),
+            refMapOf(node1 to node2),
+            refMapOf(node1 to node3)
         )
 
         val result = Linearization.linearize(cfg, covering)
@@ -320,11 +322,11 @@ class LinearizationTest {
         val node3 = newNode()
 
         val cfg = ControlFlowGraph(
-            referenceHashSetOf(node1, node2, node3),
+            listOf(node1, node2, node3),
             node1,
-            referenceHashMapOf(node2 to node1),
-            referenceHashMapOf(node1 to node3),
-            referenceHashMapOf(node1 to node2)
+            refMapOf(node2 to node1),
+            refMapOf(node1 to node3),
+            refMapOf(node1 to node2)
         )
 
         val result = Linearization.linearize(cfg, covering)
@@ -349,11 +351,11 @@ class LinearizationTest {
         val node3 = newNode()
 
         val cfg = ControlFlowGraph(
-            referenceHashSetOf(node1, node2, node3),
+            listOf(node1, node2, node3),
             node1,
-            referenceHashMapOf(),
-            referenceHashMapOf(node1 to node2, node2 to node2),
-            referenceHashMapOf(node1 to node3, node2 to node1)
+            refMapOf(),
+            refMapOf(node1 to node2, node2 to node2),
+            refMapOf(node1 to node3, node2 to node1)
         )
 
         val result = Linearization.linearize(cfg, covering)
@@ -380,11 +382,11 @@ class LinearizationTest {
         val node4 = newNode()
 
         val cfg = ControlFlowGraph(
-            referenceHashSetOf(node1, node2, node3, node4),
+            listOf(node1, node2, node3, node4),
             node1,
-            referenceHashMapOf(node3 to node2),
-            referenceHashMapOf(node1 to node2, node2 to node3),
-            referenceHashMapOf(node1 to node4, node2 to node1)
+            refMapOf(node3 to node2),
+            refMapOf(node1 to node2, node2 to node3),
+            refMapOf(node1 to node4, node2 to node1)
         )
 
         val result = Linearization.linearize(cfg, covering)

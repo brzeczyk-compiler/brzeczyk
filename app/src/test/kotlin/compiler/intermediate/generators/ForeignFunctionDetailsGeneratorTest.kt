@@ -19,7 +19,7 @@ class ForeignFunctionDetailsGeneratorTest {
         val expected = ControlFlowGraphBuilder(IFTNode.Call(foreignLabel, emptyList(), callerSavedRegisters)).build()
         val result = fdg.genCall(listOf())
 
-        assert(expected.equalsByValue(result.callGraph))
+        assert(expected.isIsomorphicTo(result.callGraph))
         assertEquals(null, result.result)
     }
 
@@ -27,8 +27,8 @@ class ForeignFunctionDetailsGeneratorTest {
     fun `test genCall for two argument, Unit return function`() {
         val fdg = ForeignFunctionDetailsGenerator(foreignLabel, false)
 
-        val arg1 = IFTNode.NoOp()
-        val arg2 = IFTNode.NoOp()
+        val arg1 = IFTNode.Dummy()
+        val arg2 = IFTNode.Dummy()
         val result = fdg.genCall(listOf(arg1, arg2))
 
         val expectedCFGBuilder = ControlFlowGraphBuilder()
@@ -43,7 +43,7 @@ class ForeignFunctionDetailsGeneratorTest {
         expectedCFGBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, IFTNode.Call(foreignLabel, argumentPassingRegisters.take(2), callerSavedRegisters))
         val expected = expectedCFGBuilder.build()
 
-        assert(expected.equalsByValue(result.callGraph))
+        assert(expected.isIsomorphicTo(result.callGraph))
         assertEquals(null, result.result)
     }
 
@@ -56,7 +56,7 @@ class ForeignFunctionDetailsGeneratorTest {
         val expectedResult = IFTNode.RegisterRead(Register.RAX)
         val expected = expectedCFGBuilder.build()
         val result = fdg.genCall(listOf())
-        assert(expected.equalsByValue(result.callGraph))
+        assert(expected.isIsomorphicTo(result.callGraph))
         assertEquals(expectedResult, result.result)
     }
 
@@ -103,7 +103,7 @@ class ForeignFunctionDetailsGeneratorTest {
         val expectedResult = IFTNode.RegisterRead(Register.RAX)
         val expected = expectedCFGBuilder.build()
 
-        assert(expected.equalsByValue(result.callGraph))
+        assert(expected.isIsomorphicTo(result.callGraph))
         assertEquals(expectedResult, result.result)
     }
 }

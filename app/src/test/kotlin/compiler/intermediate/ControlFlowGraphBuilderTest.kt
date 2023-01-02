@@ -1,9 +1,12 @@
 package compiler.intermediate
-import compiler.utils.referenceHashMapOf
-import compiler.utils.referenceHashSetOf
+
+import compiler.utils.assertContentEquals
+import compiler.utils.refMapOf
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertSame
 
 class ControlFlowGraphBuilderTest {
     private val regToRead = Register()
@@ -12,40 +15,40 @@ class ControlFlowGraphBuilderTest {
     private val innerNode = IFTNode.RegisterRead(regToRead)
 
     private val entryNode = IFTNode.RegisterWrite(regToWrite, innerNode)
-    private val secondNode = IFTNode.NoOp()
-    private val conditionalTrueNode = IFTNode.NoOp()
-    private val conditionalFalseNode = IFTNode.NoOp()
-    private val afterConditionalNode = IFTNode.NoOp()
+    private val secondNode = IFTNode.Dummy()
+    private val conditionalTrueNode = IFTNode.Dummy()
+    private val conditionalFalseNode = IFTNode.Dummy()
+    private val afterConditionalNode = IFTNode.Dummy()
 
     private val simpleCFG = ControlFlowGraph(
-        treeRoots = referenceHashSetOf(entryNode, secondNode, conditionalTrueNode, conditionalFalseNode),
+        treeRoots = listOf(entryNode, secondNode, conditionalTrueNode, conditionalFalseNode),
         entryTreeRoot = entryNode,
-        unconditionalLinks = referenceHashMapOf(entryNode to secondNode),
-        conditionalTrueLinks = referenceHashMapOf(secondNode to conditionalTrueNode),
-        conditionalFalseLinks = referenceHashMapOf(secondNode to conditionalFalseNode)
+        unconditionalLinks = refMapOf(entryNode to secondNode),
+        conditionalTrueLinks = refMapOf(secondNode to conditionalTrueNode),
+        conditionalFalseLinks = refMapOf(secondNode to conditionalFalseNode)
     )
 
     private val simpleCFGWithExtraFinalNode = ControlFlowGraph(
-        treeRoots = referenceHashSetOf(entryNode, secondNode, conditionalTrueNode, conditionalFalseNode, afterConditionalNode),
+        treeRoots = listOf(entryNode, secondNode, conditionalTrueNode, conditionalFalseNode, afterConditionalNode),
         entryTreeRoot = entryNode,
-        unconditionalLinks = referenceHashMapOf(
+        unconditionalLinks = refMapOf(
             entryNode to secondNode,
             conditionalTrueNode to afterConditionalNode,
             conditionalFalseNode to afterConditionalNode
         ),
-        conditionalTrueLinks = referenceHashMapOf(secondNode to conditionalTrueNode),
-        conditionalFalseLinks = referenceHashMapOf(secondNode to conditionalFalseNode)
+        conditionalTrueLinks = refMapOf(secondNode to conditionalTrueNode),
+        conditionalFalseLinks = refMapOf(secondNode to conditionalFalseNode)
     )
 
     @Test
     fun `test pass entryTreeRoot in constructor`() {
         val cfg = ControlFlowGraphBuilder(entryNode).build()
 
-        assertEquals(cfg.entryTreeRoot, entryNode)
-        assertEquals(cfg.treeRoots, referenceHashSetOf<IFTNode>(entryNode))
-        assertEquals(cfg.unconditionalLinks, referenceHashMapOf())
-        assertEquals(cfg.conditionalFalseLinks, referenceHashMapOf())
-        assertEquals(cfg.conditionalTrueLinks, referenceHashMapOf())
+        assertSame(cfg.entryTreeRoot, entryNode)
+        assertContentEquals(cfg.treeRoots, listOf<IFTNode>(entryNode))
+        assertContentEquals(cfg.unconditionalLinks, refMapOf())
+        assertContentEquals(cfg.conditionalFalseLinks, refMapOf())
+        assertContentEquals(cfg.conditionalTrueLinks, refMapOf())
     }
 
     @Test
@@ -95,9 +98,9 @@ class ControlFlowGraphBuilderTest {
     fun `test addLinkFromAllFinalRoots`() {
         val cfgBuilder = ControlFlowGraphBuilder(entryNode)
         cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, secondNode)
-        cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.CONDITIONAL_FALSE, conditionalFalseNode)
-        cfgBuilder.addLink(Pair(secondNode, CFGLinkType.CONDITIONAL_TRUE), conditionalTrueNode)
-        assert(simpleCFG.equalsByValue(cfgBuilder.build()))
+        cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.CONDITIONAL_TRUE, conditionalTrueNode)
+        cfgBuilder.addLink(Pair(secondNode, CFGLinkType.CONDITIONAL_FALSE), conditionalFalseNode)
+        assertEquals(simpleCFG, cfgBuilder.build())
     }
 
     @Test

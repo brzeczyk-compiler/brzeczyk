@@ -14,7 +14,7 @@ abstract class ParserTestBase {
         var loggedErrors = 0
         var loggedWarnings = 0
         override fun report(diagnostic: Diagnostic) {
-            if (diagnostic.isError())
+            if (diagnostic.isError)
                 loggedErrors += 1
             else
                 loggedWarnings += 1

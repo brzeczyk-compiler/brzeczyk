@@ -10,10 +10,12 @@ import compiler.ast.Statement
 import compiler.ast.Variable
 import compiler.diagnostics.Diagnostic
 import compiler.diagnostics.Diagnostics
-import compiler.utils.MutableReferenceMap
-import compiler.utils.ReferenceMap
-import compiler.utils.referenceHashMapOf
+import compiler.utils.MutableRefMap
+import compiler.utils.Ref
+import compiler.utils.RefMap
+import compiler.utils.mutableRefMapOf
 import java.util.Stack
+import kotlin.collections.HashMap
 import kotlin.math.max
 
 object NameResolver {
@@ -42,11 +44,11 @@ object NameResolver {
         fun onlyHasFunctions(): Boolean = functions.isNotEmpty() && variables.isEmpty()
     }
 
-    data class Result(val nameDefinitions: ReferenceMap<Any, NamedNode>, val programStaticDepth: Int)
+    data class Result(val nameDefinitions: RefMap<AstNode, NamedNode>, val programStaticDepth: Int)
 
     fun calculateNameResolution(ast: Program, diagnostics: Diagnostics): Result {
 
-        val nameDefinitions: MutableReferenceMap<Any, NamedNode> = referenceHashMapOf()
+        val nameDefinitions: MutableRefMap<AstNode, NamedNode> = mutableRefMapOf()
 
         val visibleNames: MutableMap<String, NameOverloadState> = HashMap()
 
@@ -130,7 +132,7 @@ object NameResolver {
         // Core function
 
         fun analyzeNode(
-            node: Any,
+            node: AstNode,
             currentScope: MutableMap<String, NamedNode>
         ) {
 
@@ -191,12 +193,12 @@ object NameResolver {
 
                 is Expression.Variable -> {
                     if (!checkVariableUsage(node.name, node))
-                        nameDefinitions[node] = visibleNames[node.name]!!.topVariable()
+                        nameDefinitions[Ref(node)] = Ref(visibleNames[node.name]!!.topVariable())
                 }
 
                 is Expression.FunctionCall -> {
                     if (!checkFunctionUsage(node)) {
-                        nameDefinitions[node] = visibleNames[node.name]!!.topFunction()
+                        nameDefinitions[Ref(node)] = Ref(visibleNames[node.name]!!.topFunction())
                         node.arguments.forEach { analyzeNode(it, currentScope) }
                     }
                 }
@@ -236,7 +238,7 @@ object NameResolver {
 
                 is Statement.Assignment -> {
                     if (!checkVariableUsage(node.variableName, node)) {
-                        nameDefinitions[node] = visibleNames[node.variableName]!!.topVariable()
+                        nameDefinitions[Ref(node)] = Ref(visibleNames[node.variableName]!!.topVariable())
                         analyzeNode(node.value, currentScope)
                     }
                 }
@@ -270,6 +272,8 @@ object NameResolver {
                 is Statement.FunctionReturn -> {
                     analyzeNode(node.value, currentScope)
                 }
+
+                else -> {}
             }
         }
 

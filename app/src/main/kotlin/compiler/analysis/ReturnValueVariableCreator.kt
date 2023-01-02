@@ -5,18 +5,19 @@ import compiler.ast.Program
 import compiler.ast.Statement
 import compiler.ast.Type
 import compiler.ast.Variable
-import compiler.utils.ReferenceHashMap
-import compiler.utils.ReferenceMap
-import compiler.utils.referenceHashMapOf
+import compiler.utils.KeyRefMap
+import compiler.utils.MutableKeyRefMap
+import compiler.utils.Ref
+import compiler.utils.mutableKeyRefMapOf
 
 object ReturnValueVariableCreator {
 
-    fun createDummyVariablesForFunctionReturnValue(ast: Program): ReferenceMap<Function, Variable> {
-        val resultMapping: ReferenceHashMap<Function, Variable> = referenceHashMapOf()
+    fun createDummyVariablesForFunctionReturnValue(ast: Program): KeyRefMap<Function, Variable> {
+        val resultMapping: MutableKeyRefMap<Function, Variable> = mutableKeyRefMapOf()
 
         fun createReturnVariableFor(function: Function) {
             if (function.implementation is Function.Implementation.Local && function.returnType !is Type.Unit)
-                resultMapping[function] = Variable(
+                resultMapping[Ref(function)] = Variable(
                     Variable.Kind.VALUE,
                     "_result_dummy_${function.name}",
                     function.returnType,

@@ -156,31 +156,31 @@ class RegexFactoryTest {
     @Test fun `test long unions are commutative`() {
         // from theoretical point of view, the previous test should be sufficient
         // however, practically, it is very easy to write code that only works for the shortest case
-        val unionAB_AC_BC = RegexFactory.createUnion(
+        val unionAbAcBC = RegexFactory.createUnion(
             RegexFactory.createUnion(CONCAT_AB, CONCAT_AC),
             CONCAT_BC
         )
-        val unionAB_BC_AC = RegexFactory.createUnion(
+        val unionAbBcAc = RegexFactory.createUnion(
             RegexFactory.createUnion(CONCAT_AB, CONCAT_BC),
             CONCAT_AC
         )
-        val unionAC_AB_BC = RegexFactory.createUnion(
+        val unionAcAbBc = RegexFactory.createUnion(
             RegexFactory.createUnion(CONCAT_AC, CONCAT_AB),
             CONCAT_BC
         )
-        val unionAC_BC_AB = RegexFactory.createUnion(
+        val unionAcBcAb = RegexFactory.createUnion(
             RegexFactory.createUnion(CONCAT_AC, CONCAT_BC),
             CONCAT_AB
         )
-        val unionBC_AB_AC = RegexFactory.createUnion(
+        val unionBcAbAc = RegexFactory.createUnion(
             RegexFactory.createUnion(CONCAT_BC, CONCAT_AB),
             CONCAT_AC
         )
-        val unionBC_AC_AB = RegexFactory.createUnion(
+        val unionBcAcAb = RegexFactory.createUnion(
             RegexFactory.createUnion(CONCAT_BC, CONCAT_AC),
             CONCAT_AB
         )
-        assertAllEqual(listOf(unionAB_AC_BC, unionAB_BC_AC, unionAC_AB_BC, unionAC_BC_AB, unionBC_AB_AC, unionBC_AC_AB))
+        assertAllEqual(listOf(unionAbAcBC, unionAbBcAc, unionAcAbBc, unionAcBcAb, unionBcAbAc, unionBcAcAb))
     }
 
     @Test fun `test union removes repetitions`() {

@@ -106,7 +106,7 @@ object Allocation {
                     spilledRegistersRegionOffset
                 ).filterNot {
                     it is Instruction.InPlaceInstruction.MoveRR &&
-                        registerAllocation[it.reg_dest] == registerAllocation[it.reg_src]
+                        registerAllocation[it.regDest] == registerAllocation[it.regSrc]
                 }
 
                 return Result(

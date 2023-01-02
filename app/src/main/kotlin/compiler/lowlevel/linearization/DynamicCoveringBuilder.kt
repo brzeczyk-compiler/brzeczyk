@@ -3,11 +3,12 @@ package compiler.lowlevel.linearization
 import compiler.intermediate.IFTNode
 import compiler.intermediate.Register
 import compiler.lowlevel.Instruction
-import compiler.utils.ReferenceHashMap
-import compiler.utils.referenceHashMapOf
+import compiler.utils.KeyRefMap
+import compiler.utils.Ref
+import compiler.utils.mutableKeyRefMapOf
 
-typealias PatternChoices = ReferenceHashMap<IFTNode, Pattern>
-val matchValue: (Pattern, IFTNode) -> Pattern.Result? = { pattern, iftnode -> pattern.matchValue(iftnode) }
+typealias PatternChoices = KeyRefMap<IFTNode, Pattern>
+val matchValue: (Pattern, IFTNode) -> Pattern.Result? = { pattern, iftNode -> pattern.matchValue(iftNode) }
 
 // Assumes that every possible IFTNode has at least one viable covering with the passed instruction set
 class DynamicCoveringBuilder(private val instructionSet: List<Pattern>) : Covering {
@@ -15,8 +16,8 @@ class DynamicCoveringBuilder(private val instructionSet: List<Pattern>) : Coveri
         topPatternMatcher: (Pattern, IFTNode) -> Pattern.Result?,
         parent: IFTNode
     ): PatternChoices {
-        val minimalCosts = referenceHashMapOf<IFTNode, Int>()
-        val bestPatterns: PatternChoices = referenceHashMapOf()
+        val minimalCosts = mutableKeyRefMapOf<IFTNode, Int>()
+        val bestPatterns = mutableKeyRefMapOf<IFTNode, Pattern>()
 
         // all IFTNodes aside from parent are treated as values
         // as any conditional/unconditional jumps can only be performed from the root of the tree
@@ -26,18 +27,17 @@ class DynamicCoveringBuilder(private val instructionSet: List<Pattern>) : Coveri
             iftNode: IFTNode,
             patternMatcher: (Pattern, IFTNode) -> Pattern.Result? = matchValue
         ): Int {
-            if (iftNode in minimalCosts) return minimalCosts[iftNode]!!
+            if (Ref(iftNode) in minimalCosts) return minimalCosts[Ref(iftNode)]!!
 
             fun calculateCostForPattern(pattern: Pattern): Int? {
-                val matchedPattern = patternMatcher(pattern, iftNode)
-                if (matchedPattern == null) return null
+                val matchedPattern = patternMatcher(pattern, iftNode) ?: return null
                 return matchedPattern.subtrees.sumOf { calculateBestPatternAndCost(it) } + matchedPattern.cost
             }
             val possiblePatternsToCosts = instructionSet.associateWith(::calculateCostForPattern)
                 .filter { it.value != null }
-            minimalCosts[iftNode] = possiblePatternsToCosts.maxOf { it.value as Int }
-            bestPatterns[iftNode] = possiblePatternsToCosts.minByOrNull { it.value!! }!!.key
-            return minimalCosts[iftNode]!!
+            minimalCosts[Ref(iftNode)] = possiblePatternsToCosts.maxOf { it.value as Int }
+            bestPatterns[Ref(iftNode)] = possiblePatternsToCosts.minByOrNull { it.value!! }!!.key
+            return minimalCosts[Ref(iftNode)]!!
         }
         calculateBestPatternAndCost(parent, topPatternMatcher)
         return bestPatterns
@@ -53,7 +53,7 @@ class DynamicCoveringBuilder(private val instructionSet: List<Pattern>) : Coveri
             iftNode: IFTNode,
             patternMatcher: (Pattern, IFTNode) -> Pattern.Result? = matchValue,
         ): Pair<List<Instruction>, Register> { // Register is where the value of the node will be stored
-            val result = patternMatcher(patternChoices[iftNode]!!, iftNode)!!
+            val result = patternMatcher(patternChoices[Ref(iftNode)]!!, iftNode)!!
             val (childrenInstructions, childrenOutRegisters) = result.subtrees
                 .map { getInstructionsForValueNode(it) }.toList().unzip()
             val outRegister = Register()

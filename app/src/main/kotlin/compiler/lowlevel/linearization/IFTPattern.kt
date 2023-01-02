@@ -51,8 +51,8 @@ sealed class IFTPattern {
 
     // Matches every intermediate form tree node
     // Doesn't consume the nodes, returns it as a subtree
-    class AnyNode : IFTPattern() {
-        override fun match(node: IFTNode): MatchResult? {
+    data class AnyNode(val dummy: Unit = Unit) : IFTPattern() {
+        override fun match(node: IFTNode): MatchResult {
             return MatchResult(listOf(node), emptyMap())
         }
     }
@@ -161,7 +161,7 @@ sealed class IFTPattern {
         }
     }
 
-    class StackPop : IFTPattern() {
+    data class StackPop(val dummy: Unit = Unit) : IFTPattern() {
         override fun match(node: IFTNode): MatchResult? {
             if (node !is IFTNode.StackPop) return null
             return MatchResult(emptyList(), emptyMap())

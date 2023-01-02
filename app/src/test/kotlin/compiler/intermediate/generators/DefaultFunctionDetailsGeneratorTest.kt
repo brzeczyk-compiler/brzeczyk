@@ -9,6 +9,8 @@ import compiler.intermediate.ControlFlowGraphBuilder
 import compiler.intermediate.FixedConstant
 import compiler.intermediate.IFTNode
 import compiler.intermediate.Register
+import compiler.utils.Ref
+import compiler.utils.keyRefMapOf
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -36,7 +38,7 @@ class DefaultFunctionDetailsGeneratorTest {
         val expected = ControlFlowGraphBuilder(IFTNode.Call(functionLocation, emptyList(), callerSavedRegisters)).build()
         val result = fdg.genCall(listOf())
 
-        assert(expected.equalsByValue(result.callGraph))
+        assert(expected.isIsomorphicTo(result.callGraph))
         assertEquals(null, result.result)
     }
 
@@ -49,12 +51,12 @@ class DefaultFunctionDetailsGeneratorTest {
             null,
             functionLocation,
             0u,
-            mapOf(param1 to VariableLocationType.REGISTER, param2 to VariableLocationType.MEMORY),
+            keyRefMapOf(param1 to VariableLocationType.REGISTER, param2 to VariableLocationType.MEMORY),
             IFTNode.Const(0)
         )
 
-        val arg1 = IFTNode.NoOp()
-        val arg2 = IFTNode.NoOp()
+        val arg1 = IFTNode.Dummy()
+        val arg2 = IFTNode.Dummy()
         val result = fdg.genCall(listOf(arg1, arg2))
 
         val expectedCFGBuilder = ControlFlowGraphBuilder()
@@ -69,7 +71,7 @@ class DefaultFunctionDetailsGeneratorTest {
         expectedCFGBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, IFTNode.Call(functionLocation, argumentPassingRegisters.take(2), callerSavedRegisters))
         val expected = expectedCFGBuilder.build()
 
-        assert(expected.equalsByValue(result.callGraph))
+        assert(expected.isIsomorphicTo(result.callGraph))
         assertEquals(null, result.result)
     }
 
@@ -81,7 +83,7 @@ class DefaultFunctionDetailsGeneratorTest {
             resultDummyVariable,
             functionLocation,
             0u,
-            mapOf(resultDummyVariable to VariableLocationType.REGISTER),
+            keyRefMapOf(resultDummyVariable to VariableLocationType.REGISTER),
             IFTNode.Const(0)
         ) { variableToRegisterMap[it]!! }
 
@@ -90,7 +92,7 @@ class DefaultFunctionDetailsGeneratorTest {
         val expectedResult = IFTNode.RegisterRead(Register.RAX)
         val expected = expectedCFGBuilder.build()
         val result = fdg.genCall(listOf())
-        assert(expected.equalsByValue(result.callGraph))
+        assert(expected.isIsomorphicTo(result.callGraph))
         assertEquals(expectedResult, result.result)
     }
 
@@ -98,7 +100,7 @@ class DefaultFunctionDetailsGeneratorTest {
     fun `test genCall for 8 argument, Number return function`() {
         val params: List<NamedNode> = (0..7).map { Function.Parameter(it.toString(), Type.Number, null) }.toList()
         val variableToRegisterMap = params.associateWith { Register() } + mapOf(resultDummyVariable to resultVariableRegister)
-        val variablesLocation = params.associateWith { VariableLocationType.REGISTER } + mapOf(resultDummyVariable to VariableLocationType.REGISTER)
+        val variablesLocation = params.associate { Ref(it) to VariableLocationType.REGISTER } + keyRefMapOf(resultDummyVariable to VariableLocationType.REGISTER)
 
         val fdg = DefaultFunctionDetailsGenerator(
             params,
@@ -148,7 +150,7 @@ class DefaultFunctionDetailsGeneratorTest {
         val expectedResult = IFTNode.RegisterRead(Register.RAX)
         val expected = expectedCFGBuilder.build()
 
-        assert(expected.equalsByValue(result.callGraph))
+        assert(expected.isIsomorphicTo(result.callGraph))
         assertEquals(expectedResult, result.result)
     }
 
@@ -156,7 +158,7 @@ class DefaultFunctionDetailsGeneratorTest {
     fun `test genCall ensures that stack is aligned`() {
         val params: List<NamedNode> = (0..8).map { Function.Parameter(it.toString(), Type.Number, null) }.toList()
         val variableToRegisterMap = params.associateWith { Register() } + mapOf(resultDummyVariable to resultVariableRegister)
-        val variablesLocation = params.associateWith { VariableLocationType.REGISTER } + mapOf(resultDummyVariable to VariableLocationType.REGISTER)
+        val variablesLocation = params.associate { Ref(it) to VariableLocationType.REGISTER } + keyRefMapOf(resultDummyVariable to VariableLocationType.REGISTER)
 
         val fdg = DefaultFunctionDetailsGenerator(
             params,
@@ -216,19 +218,19 @@ class DefaultFunctionDetailsGeneratorTest {
             )
         )
         val expected = expectedCFGBuilder.build()
-        assert(expected.equalsByValue(result.callGraph))
+        assert(expected.isIsomorphicTo(result.callGraph))
     }
 
     @Test
     fun `test gen read direct from memory`() {
-        val memVar: Variable = Variable(Variable.Kind.VALUE, "memVar", Type.Number, null)
+        val memVar = Variable(Variable.Kind.VALUE, "memVar", Type.Number, null)
 
         val fdg = DefaultFunctionDetailsGenerator(
             listOf(),
             null,
             IFTNode.MemoryLabel(""),
             0u,
-            mapOf(Pair(memVar, VariableLocationType.MEMORY)),
+            keyRefMapOf(Pair(memVar, VariableLocationType.MEMORY)),
             IFTNode.Const(0)
         )
 
@@ -251,7 +253,7 @@ class DefaultFunctionDetailsGeneratorTest {
 
     @Test
     fun `test gen read indirect from memory`() {
-        val memVar: Variable = Variable(Variable.Kind.VALUE, "memVar", Type.Number, null)
+        val memVar = Variable(Variable.Kind.VALUE, "memVar", Type.Number, null)
         val displayAddress = IFTNode.MemoryLabel("display")
         val depth: ULong = 5u
         val displayElementAddress = IFTNode.Add(
@@ -264,7 +266,7 @@ class DefaultFunctionDetailsGeneratorTest {
             null,
             IFTNode.MemoryLabel(""),
             depth,
-            mapOf(Pair(memVar, VariableLocationType.MEMORY)),
+            keyRefMapOf(Pair(memVar, VariableLocationType.MEMORY)),
             displayAddress
         )
 
@@ -286,14 +288,14 @@ class DefaultFunctionDetailsGeneratorTest {
 
     @Test
     fun `test gen read direct from register`() {
-        val regVar: Variable = Variable(Variable.Kind.VALUE, "regVar", Type.Number, null)
+        val regVar = Variable(Variable.Kind.VALUE, "regVar", Type.Number, null)
 
         val fdg = DefaultFunctionDetailsGenerator(
             listOf(),
             null,
             IFTNode.MemoryLabel(""),
             0u,
-            mapOf(Pair(regVar, VariableLocationType.REGISTER)),
+            keyRefMapOf(Pair(regVar, VariableLocationType.REGISTER)),
             IFTNode.Const(0)
         )
 
@@ -311,7 +313,7 @@ class DefaultFunctionDetailsGeneratorTest {
             null,
             IFTNode.MemoryLabel(""),
             0u,
-            mapOf(Pair(regVar, VariableLocationType.REGISTER)),
+            keyRefMapOf(Pair(regVar, VariableLocationType.REGISTER)),
             IFTNode.Const(0)
         )
 
@@ -327,7 +329,7 @@ class DefaultFunctionDetailsGeneratorTest {
             null,
             IFTNode.MemoryLabel(""),
             0u,
-            mapOf(Pair(memVar, VariableLocationType.MEMORY)),
+            keyRefMapOf(Pair(memVar, VariableLocationType.MEMORY)),
             IFTNode.Const(0)
         )
 
@@ -365,7 +367,7 @@ class DefaultFunctionDetailsGeneratorTest {
             null,
             IFTNode.MemoryLabel(""),
             depth,
-            mapOf(Pair(memVar, VariableLocationType.MEMORY)),
+            keyRefMapOf(Pair(memVar, VariableLocationType.MEMORY)),
             displayAddress
         )
 
@@ -396,7 +398,7 @@ class DefaultFunctionDetailsGeneratorTest {
             null,
             IFTNode.MemoryLabel(""),
             0u,
-            mapOf(Pair(regVar, VariableLocationType.REGISTER)),
+            keyRefMapOf(Pair(regVar, VariableLocationType.REGISTER)),
             IFTNode.Const(0)
         )
 
@@ -416,7 +418,7 @@ class DefaultFunctionDetailsGeneratorTest {
             null,
             IFTNode.MemoryLabel(""),
             0u,
-            mapOf(Pair(regVar, VariableLocationType.REGISTER)),
+            keyRefMapOf(Pair(regVar, VariableLocationType.REGISTER)),
             IFTNode.Const(0)
         )
 

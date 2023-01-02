@@ -1,5 +1,6 @@
 package compiler.analysis
 
+import compiler.ast.AstNode
 import compiler.ast.Expression
 import compiler.ast.Function
 import compiler.ast.NamedNode
@@ -9,16 +10,13 @@ import compiler.ast.StatementBlock
 import compiler.ast.Type
 import compiler.diagnostics.CompilerDiagnostics
 import compiler.diagnostics.Diagnostic
-import compiler.utils.ReferenceMap
-import compiler.utils.ReferenceSet
-import compiler.utils.referenceElements
-import compiler.utils.referenceHashMapOf
-import compiler.utils.referenceHashSetOf
-import compiler.utils.referenceKeys
+import compiler.utils.assertContentEquals
+import compiler.utils.keyRefMapOf
+import compiler.utils.refMapOf
+import compiler.utils.refSetOf
 import kotlin.test.Test
-import kotlin.test.assertEquals
+import kotlin.test.assertContentEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertTrue
 
 internal class ArgumentResolverTest {
     private fun namedArgument(name: String?, expr: Expression) = Expression.FunctionCall.Argument(name, expr)
@@ -43,17 +41,6 @@ internal class ArgumentResolverTest {
     private fun defaultBoolParameter(name: String, value: Boolean) =
         Function.Parameter(name, Type.Boolean, Expression.BooleanLiteral(value))
 
-    private fun assertContentEquals(
-        expected: ReferenceMap<Expression.FunctionCall, ReferenceSet<Function.Parameter>>,
-        actual: ReferenceMap<Expression.FunctionCall, ReferenceSet<Function.Parameter>>,
-    ) {
-        assertEquals(expected.referenceKeys.size, actual.referenceKeys.size)
-        expected.referenceKeys.forEach {
-            assertTrue(it in actual.referenceKeys)
-            assertEquals(expected[it]!!.referenceElements, actual[it]!!.referenceElements)
-        }
-    }
-
     @Test
     fun `test simple argument resolution`() {
         /*
@@ -68,13 +55,13 @@ internal class ArgumentResolverTest {
         val call = functionCall("f", listOf(argument))
         val main = mainFunction(listOf(Statement.Evaluation(call)))
         val program = Program(listOf(function, main))
-        val nameResolution = referenceHashMapOf<Any, NamedNode>(call to function.function)
+        val nameResolution = refMapOf<AstNode, NamedNode>(call to function.function)
         val diagnostics = CompilerDiagnostics()
 
         val argumentResolution = ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
 
-        assertEquals(emptyList(), diagnostics.diagnostics.toList())
-        assertEquals(referenceHashMapOf(argument to parameter), argumentResolution.argumentsToParametersMap)
+        assertContentEquals(emptyList(), diagnostics.diagnostics.toList())
+        assertContentEquals(refMapOf(argument to parameter), argumentResolution.argumentsToParametersMap)
     }
 
     @Test
@@ -93,13 +80,13 @@ internal class ArgumentResolverTest {
         val outerCall = functionCall("f", listOf(outerArg))
         val main = mainFunction(listOf(Statement.Evaluation(outerCall)))
         val program = Program(listOf(function, main))
-        val nameResolution = referenceHashMapOf<Any, NamedNode>(innerCall to function.function, outerCall to function.function)
+        val nameResolution = refMapOf<AstNode, NamedNode>(innerCall to function.function, outerCall to function.function)
         val diagnostics = CompilerDiagnostics()
 
         val argumentResolution = ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
 
-        assertEquals(emptyList(), diagnostics.diagnostics.toList())
-        assertEquals(referenceHashMapOf(innerArg to par, outerArg to par), argumentResolution.argumentsToParametersMap)
+        assertContentEquals(emptyList(), diagnostics.diagnostics.toList())
+        assertContentEquals(refMapOf(innerArg to par, outerArg to par), argumentResolution.argumentsToParametersMap)
     }
 
     @Test
@@ -120,15 +107,15 @@ internal class ArgumentResolverTest {
         val call = functionCall("f", listOf(arg1, arg2, arg3))
         val main = mainFunction(listOf(Statement.Evaluation(call)))
         val program = Program(listOf(function, main))
-        val nameResolution = referenceHashMapOf<Any, NamedNode>(call to function.function)
+        val nameResolution = refMapOf<AstNode, NamedNode>(call to function.function)
         val diagnostics = CompilerDiagnostics()
 
         val argumentResolution = ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
 
-        val expected = referenceHashMapOf(arg1 to parA, arg2 to parC, arg3 to parB)
+        val expected = refMapOf(arg1 to parA, arg2 to parC, arg3 to parB)
 
-        assertEquals(emptyList(), diagnostics.diagnostics.toList())
-        assertEquals(expected, argumentResolution.argumentsToParametersMap)
+        assertContentEquals(emptyList(), diagnostics.diagnostics.toList())
+        assertContentEquals(expected, argumentResolution.argumentsToParametersMap)
     }
 
     @Test
@@ -148,16 +135,16 @@ internal class ArgumentResolverTest {
         val call = functionCall("f", listOf(arg1, arg2))
         val main = mainFunction(listOf(Statement.Evaluation(call)))
         val program = Program(listOf(function, main))
-        val nameResolution = referenceHashMapOf<Any, NamedNode>(call to function.function)
+        val nameResolution = refMapOf<AstNode, NamedNode>(call to function.function)
         val diagnostics = CompilerDiagnostics()
 
         val argumentResolution = ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
 
-        val expected = referenceHashMapOf(arg1 to parA, arg2 to parC)
+        val expected = refMapOf(arg1 to parA, arg2 to parC)
 
-        assertEquals(emptyList(), diagnostics.diagnostics.toList())
-        assertEquals(expected, argumentResolution.argumentsToParametersMap)
-        assertContentEquals(referenceHashMapOf(call to referenceHashSetOf(parB)), argumentResolution.accessedDefaultValues)
+        assertContentEquals(emptyList(), diagnostics.diagnostics.toList())
+        assertContentEquals(expected, argumentResolution.argumentsToParametersMap)
+        assertContentEquals(keyRefMapOf(call to refSetOf(parB)), argumentResolution.accessedDefaultValues)
     }
 
     @Test
@@ -175,14 +162,14 @@ internal class ArgumentResolverTest {
         val call = functionCall("f", listOf())
         val main = mainFunction(listOf(Statement.Evaluation(call)))
         val program = Program(listOf(function, main))
-        val nameResolution = referenceHashMapOf<Any, NamedNode>(call to function.function)
+        val nameResolution = refMapOf<AstNode, NamedNode>(call to function.function)
         val diagnostics = CompilerDiagnostics()
 
         val argumentResolution = ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
 
-        assertEquals(emptyList(), diagnostics.diagnostics.toList())
-        assertEquals(referenceHashMapOf(), argumentResolution.argumentsToParametersMap)
-        assertContentEquals(referenceHashMapOf(call to referenceHashSetOf(parA, parB, parC)), argumentResolution.accessedDefaultValues)
+        assertContentEquals(emptyList(), diagnostics.diagnostics.toList())
+        assertContentEquals(refMapOf(), argumentResolution.argumentsToParametersMap)
+        assertContentEquals(keyRefMapOf(call to refSetOf(parA, parB, parC)), argumentResolution.accessedDefaultValues)
     }
 
     @Test
@@ -199,15 +186,15 @@ internal class ArgumentResolverTest {
         val inner = localFunction("g", listOf(par))
         val outer = globalFunction("f", emptyList(), listOf(inner, Statement.Evaluation(call)))
         val program = Program(listOf(outer))
-        val nameResolution = referenceHashMapOf<Any, NamedNode>(call to inner.function)
+        val nameResolution = refMapOf<AstNode, NamedNode>(call to inner.function)
         val diagnostics = CompilerDiagnostics()
 
         val argumentResolution = ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
 
-        val expected = referenceHashMapOf(arg to par)
+        val expected = refMapOf(arg to par)
 
-        assertEquals(emptyList(), diagnostics.diagnostics.toList())
-        assertEquals(expected, argumentResolution.argumentsToParametersMap)
+        assertContentEquals(emptyList(), diagnostics.diagnostics.toList())
+        assertContentEquals(expected, argumentResolution.argumentsToParametersMap)
     }
 
     @Test
@@ -219,7 +206,7 @@ internal class ArgumentResolverTest {
         val par2 = boolParameter("b")
         val function = globalFunction("f", listOf(par1, par2))
         val program = Program(listOf(function))
-        val nameResolution = referenceHashMapOf<Any, NamedNode>()
+        val nameResolution = refMapOf<AstNode, NamedNode>()
         val diagnostics = CompilerDiagnostics()
 
         assertFailsWith<ArgumentResolver.ResolutionFailed> {
@@ -228,7 +215,7 @@ internal class ArgumentResolverTest {
 
         val expected = listOf(Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.DefaultParametersNotLast(function.function))
 
-        assertResolutionDiagnosticEquals(expected, diagnostics.diagnostics.toList())
+        assertContentEquals(expected, diagnostics.diagnostics.toList())
     }
 
     @Test
@@ -247,7 +234,7 @@ internal class ArgumentResolverTest {
         val call = functionCall("f", listOf(arg1, arg2))
         val main = mainFunction(listOf(Statement.Evaluation(call)))
         val program = Program(listOf(function, main))
-        val nameResolution = referenceHashMapOf<Any, NamedNode>(call to function.function)
+        val nameResolution = refMapOf<AstNode, NamedNode>(call to function.function)
         val diagnostics = CompilerDiagnostics()
 
         assertFailsWith<ArgumentResolver.ResolutionFailed> {
@@ -256,7 +243,7 @@ internal class ArgumentResolverTest {
 
         val expected = listOf(Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.PositionalArgumentAfterNamed(call))
 
-        assertResolutionDiagnosticEquals(expected, diagnostics.diagnostics.toList())
+        assertContentEquals(expected, diagnostics.diagnostics.toList())
     }
 
     @Test
@@ -274,7 +261,7 @@ internal class ArgumentResolverTest {
         val call = functionCall("f", listOf(arg1))
         val main = mainFunction(listOf(Statement.Evaluation(call)))
         val program = Program(listOf(function, main))
-        val nameResolution = referenceHashMapOf<Any, NamedNode>(call to function.function)
+        val nameResolution = refMapOf<AstNode, NamedNode>(call to function.function)
         val diagnostics = CompilerDiagnostics()
 
         assertFailsWith<ArgumentResolver.ResolutionFailed> {
@@ -283,7 +270,7 @@ internal class ArgumentResolverTest {
 
         val expected = listOf(Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.MissingArgument(function.function, call, par2))
 
-        assertResolutionDiagnosticEquals(expected, diagnostics.diagnostics.toList())
+        assertContentEquals(expected, diagnostics.diagnostics.toList())
     }
 
     @Test
@@ -303,7 +290,7 @@ internal class ArgumentResolverTest {
         val call = functionCall("f", listOf(arg1, arg2, arg3))
         val main = mainFunction(listOf(Statement.Evaluation(call)))
         val program = Program(listOf(function, main))
-        val nameResolution = referenceHashMapOf<Any, NamedNode>(call to function.function)
+        val nameResolution = refMapOf<AstNode, NamedNode>(call to function.function)
         val diagnostics = CompilerDiagnostics()
 
         assertFailsWith<ArgumentResolver.ResolutionFailed> {
@@ -312,7 +299,7 @@ internal class ArgumentResolverTest {
 
         val expected = listOf(Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.TooManyArguments(call))
 
-        assertResolutionDiagnosticEquals(expected, diagnostics.diagnostics.toList())
+        assertContentEquals(expected, diagnostics.diagnostics.toList())
     }
 
     @Test
@@ -331,7 +318,7 @@ internal class ArgumentResolverTest {
         val call = functionCall("f", listOf(arg1, arg2))
         val main = mainFunction(listOf(Statement.Evaluation(call)))
         val program = Program(listOf(function, main))
-        val nameResolution = referenceHashMapOf<Any, NamedNode>(call to function.function)
+        val nameResolution = refMapOf<AstNode, NamedNode>(call to function.function)
         val diagnostics = CompilerDiagnostics()
 
         assertFailsWith<ArgumentResolver.ResolutionFailed> {
@@ -340,7 +327,7 @@ internal class ArgumentResolverTest {
 
         val expected = listOf(Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.RepeatedArgument(function.function, call, par1))
 
-        assertResolutionDiagnosticEquals(expected, diagnostics.diagnostics.toList())
+        assertContentEquals(expected, diagnostics.diagnostics.toList())
     }
 
     @Test
@@ -359,7 +346,7 @@ internal class ArgumentResolverTest {
         val call = functionCall("f", listOf(arg1, arg2))
         val main = mainFunction(listOf(Statement.Evaluation(call)))
         val program = Program(listOf(function, main))
-        val nameResolution = referenceHashMapOf<Any, NamedNode>(call to function.function)
+        val nameResolution = refMapOf<AstNode, NamedNode>(call to function.function)
         val diagnostics = CompilerDiagnostics()
 
         assertFailsWith<ArgumentResolver.ResolutionFailed> {
@@ -368,6 +355,6 @@ internal class ArgumentResolverTest {
 
         val expected = listOf(Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.UnknownArgument(function.function, call, arg2))
 
-        assertResolutionDiagnosticEquals(expected, diagnostics.diagnostics.toList())
+        assertContentEquals(expected, diagnostics.diagnostics.toList())
     }
 }

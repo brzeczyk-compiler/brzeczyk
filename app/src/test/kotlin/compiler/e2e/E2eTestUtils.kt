@@ -29,7 +29,7 @@ object E2eTestUtils {
         val actualDiagnostics = runProgram(program)
         val actualDiagnosticsOfType = actualDiagnostics.filter { errorType.isInstance(it) }.toList()
         assertNotEquals(0, actualDiagnosticsOfType.size, "Found 0 diagnostics (expected > 0) for program:\n$program")
-        assertTrue(actualDiagnosticsOfType.map { it.isError() }.any(), "Found 0 errors (expected > 0) for program:\n$program")
+        assertTrue(actualDiagnosticsOfType.map { it.isError }.any(), "Found 0 errors (expected > 0) for program:\n$program")
     }
 
     fun assertProgramCorrect(program: String) {

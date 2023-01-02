@@ -4,14 +4,15 @@ import compiler.ast.Function
 import compiler.ast.Program
 import compiler.ast.Statement
 import compiler.ast.Variable
-import compiler.utils.ReferenceHashMap
-import compiler.utils.ReferenceMap
-import compiler.utils.referenceHashMapOf
+import compiler.utils.KeyRefMap
+import compiler.utils.MutableKeyRefMap
+import compiler.utils.Ref
+import compiler.utils.mutableKeyRefMapOf
 
 object DefaultParameterResolver {
 
-    fun mapFunctionParametersToDummyVariables(ast: Program): ReferenceMap<Function.Parameter, Variable> {
-        val resultMapping: ReferenceHashMap<Function.Parameter, Variable> = referenceHashMapOf()
+    fun mapFunctionParametersToDummyVariables(ast: Program): KeyRefMap<Function.Parameter, Variable> {
+        val resultMapping: MutableKeyRefMap<Function.Parameter, Variable> = mutableKeyRefMapOf()
 
         fun process(statement: Statement) {
             fun process(vararg bunchOfBlocks: List<Statement>?) = bunchOfBlocks.toList().forEach { block -> block?.forEach { process(it) } }
@@ -32,7 +33,7 @@ object DefaultParameterResolver {
                 is Statement.FunctionDefinition -> {
                     statement.function.parameters.forEach {
                         if (it.defaultValue != null) {
-                            resultMapping[it] = Variable(
+                            resultMapping[Ref(it)] = Variable(
                                 Variable.Kind.VALUE,
                                 "_dummy_${it.name}",
                                 it.type,
@@ -52,7 +53,7 @@ object DefaultParameterResolver {
                 is Program.Global.FunctionDefinition -> {
                     global.function.parameters.forEach {
                         if (it.defaultValue != null) {
-                            resultMapping[it] = Variable(
+                            resultMapping[Ref(it)] = Variable(
                                 Variable.Kind.CONSTANT,
                                 "_dummy_${it.name}",
                                 it.type,

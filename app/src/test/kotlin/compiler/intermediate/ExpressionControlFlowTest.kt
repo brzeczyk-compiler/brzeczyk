@@ -1,6 +1,7 @@
 package compiler.intermediate
 
 import compiler.analysis.VariablePropertiesAnalyzer
+import compiler.ast.AstNode
 import compiler.ast.Expression
 import compiler.ast.Function
 import compiler.ast.NamedNode
@@ -8,10 +9,14 @@ import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.intermediate.generators.FunctionDetailsGenerator
 import compiler.intermediate.generators.VariableAccessGenerator
-import compiler.utils.ReferenceHashMap
-import compiler.utils.ReferenceSet
-import compiler.utils.referenceHashMapOf
-import compiler.utils.referenceHashSetOf
+import compiler.utils.MutableKeyRefMap
+import compiler.utils.MutableRefMap
+import compiler.utils.Ref
+import compiler.utils.RefSet
+import compiler.utils.keyRefMapOf
+import compiler.utils.mutableKeyRefMapOf
+import compiler.utils.mutableRefMapOf
+import compiler.utils.refSetOf
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
@@ -53,32 +58,31 @@ class ExpressionControlFlowTest {
         functions: Map<String, Pair<Type, List<Type>>> = emptyMap(), // first element is return type
         funToAffectedVar: Map<String, Set<String>> = emptyMap(),
         val currentFunction: Function = Function("dummy", emptyList(), Type.Unit, emptyList()),
-        val callGraph: ReferenceHashMap<String, ReferenceSet<String>> = referenceHashMapOf(),
         val globals: Set<String> = emptySet()
     ) {
-        val nameResolution: ReferenceHashMap<Any, NamedNode> = referenceHashMapOf()
+        val nameResolution: MutableRefMap<AstNode, NamedNode> = mutableRefMapOf()
         var nameToVarMap: Map<String, Variable>
         var nameToParamMap: Map<String, Function.Parameter>
         var nameToFunMap: Map<String, Function>
 
-        val functionDetailsGenerators = referenceHashMapOf<Function, FunctionDetailsGenerator>()
-        val variableProperties = referenceHashMapOf<Any, VariablePropertiesAnalyzer.VariableProperties>()
-        val finalCallGraph = referenceHashMapOf<Function, ReferenceSet<Function>>()
-        val argumentResolution: ReferenceHashMap<Expression.FunctionCall.Argument, Function.Parameter> = referenceHashMapOf()
+        val functionDetailsGenerators = mutableKeyRefMapOf<Function, FunctionDetailsGenerator>()
+        val variableProperties = mutableKeyRefMapOf<AstNode, VariablePropertiesAnalyzer.VariableProperties>()
+        val finalCallGraph = mutableKeyRefMapOf<Function, RefSet<Function>>()
+        val argumentResolution: MutableRefMap<Expression.FunctionCall.Argument, Function.Parameter> = mutableRefMapOf()
 
         init {
-            val mutableVariableProperties = referenceHashMapOf<Any, VariablePropertiesAnalyzer.MutableVariableProperties>()
+            val mutableVariableProperties = mutableKeyRefMapOf<AstNode, VariablePropertiesAnalyzer.MutableVariableProperties>()
 
             nameToVarMap = varNames.associateWith { Variable(Variable.Kind.VARIABLE, it, Type.Number, null) }
             for (name in varNames) {
-                mutableVariableProperties[nameToVarMap[name]!!] =
+                mutableVariableProperties[Ref(nameToVarMap[name]!!)] =
                     VariablePropertiesAnalyzer.MutableVariableProperties(
                         if (name in globals) VariablePropertiesAnalyzer.GlobalContext else currentFunction
                     )
             }
-            nameToParamMap = currentFunction.parameters.map { it.name to it }.toMap()
+            nameToParamMap = currentFunction.parameters.associateBy { it.name }
             for (param in currentFunction.parameters)
-                mutableVariableProperties[param] = VariablePropertiesAnalyzer.MutableVariableProperties(currentFunction)
+                mutableVariableProperties[Ref(param)] = VariablePropertiesAnalyzer.MutableVariableProperties(currentFunction)
             nameToFunMap = functions.keys.associateWith {
                 Function(
                     it,
@@ -88,14 +92,14 @@ class ExpressionControlFlowTest {
                 )
             }
             for (name in functions.keys) {
-                finalCallGraph[nameToFunMap[name]!!] = referenceHashSetOf(nameToFunMap[name]!!)
+                finalCallGraph[Ref(nameToFunMap[name]!!)] = refSetOf(nameToFunMap[name]!!)
             }
             for (function in nameToFunMap.values union setOf(currentFunction)) {
-                functionDetailsGenerators[function] = TestFunctionDetailsGenerator(function)
+                functionDetailsGenerators[Ref(function)] = TestFunctionDetailsGenerator(function)
             }
             funToAffectedVar.forEach {
                 for (variable in it.value) {
-                    mutableVariableProperties[nameToVarMap[variable]]!!.writtenIn.add(nameToFunMap[it.key]!!)
+                    mutableVariableProperties[Ref(nameToVarMap[variable] as AstNode)]!!.writtenIn.add(Ref(nameToFunMap[it.key]!!))
                 }
             }
 
@@ -113,7 +117,7 @@ class ExpressionControlFlowTest {
                 finalCallGraph,
                 functionDetailsGenerators,
                 argumentResolution,
-                referenceHashMapOf(),
+                keyRefMapOf(),
                 object : VariableAccessGenerator {
                     override fun genRead(namedNode: NamedNode, isDirect: Boolean): IFTNode =
                         IFTNode.DummyRead(namedNode, isDirect, true)
@@ -140,9 +144,9 @@ class ExpressionControlFlowTest {
     private infix fun Pair<String, List<Expression>>.asFunCallIn(exprContext: ExpressionContext): Expression.FunctionCall {
         val result = Expression.FunctionCall(this.first, this.second.map { Expression.FunctionCall.Argument(null, it) })
         for (i in result.arguments.indices) {
-            exprContext.argumentResolution[result.arguments[i]] = (this.first asFunIn exprContext).parameters[i]
+            exprContext.argumentResolution[Ref(result.arguments[i])] = Ref((this.first asFunIn exprContext).parameters[i])
         }
-        exprContext.nameResolution[result] = exprContext.nameToFunMap[this.first]!!
+        exprContext.nameResolution[Ref(result)] = Ref(exprContext.nameToFunMap[this.first]!!)
         return result
     }
 
@@ -156,13 +160,13 @@ class ExpressionControlFlowTest {
 
     private infix fun String.asVarExprIn(exprContext: ExpressionContext): Expression.Variable {
         val result = Expression.Variable(this)
-        exprContext.nameResolution[result] = this asVarIn exprContext
+        exprContext.nameResolution[Ref(result)] = Ref(this asVarIn exprContext)
         return result
     }
 
     private infix fun String.asParamExprIn(exprContext: ExpressionContext): Expression.Variable {
         val result = Expression.Variable(this)
-        exprContext.nameResolution[result] = this asParamIn exprContext
+        exprContext.nameResolution[Ref(result)] = Ref(this asParamIn exprContext)
         return result
     }
 
@@ -183,16 +187,16 @@ class ExpressionControlFlowTest {
     }
 
     private infix fun ControlFlowGraph.hasSameStructureAs(cfg: ControlFlowGraph): Boolean {
-        val registersMap = referenceHashMapOf<Register, Register>()
-        val callResultsMap = referenceHashMapOf<IFTNode.DummyCallResult, IFTNode.DummyCallResult>()
-        val nodeMap = referenceHashMapOf<IFTNode, IFTNode>()
+        val registersMap = mutableKeyRefMapOf<Register, Register>()
+        val callResultsMap = mutableKeyRefMapOf<IFTNode.DummyCallResult, IFTNode.DummyCallResult>()
+        val nodeMap = mutableKeyRefMapOf<IFTNode, IFTNode>()
 
-        fun <T> ReferenceHashMap<T, T>.ensurePairSymmetrical(a: T, b: T): Boolean {
-            if (!this.containsKey(a)) {
-                this[a] = b
+        fun <T> MutableKeyRefMap<T, T>.ensurePairSymmetrical(a: T, b: T): Boolean {
+            if (!this.containsKey(Ref(a))) {
+                this[Ref(a)] = b
                 return true
             }
-            return this[a]!! === b
+            return this[Ref(a)]!! === b
         }
 
         infix fun IFTNode.hasSameStructureAs(iftNode: IFTNode): Boolean {
@@ -234,34 +238,34 @@ class ExpressionControlFlowTest {
         fun dfs(left: IFTNode, right: IFTNode): Boolean {
             if (! (left hasSameStructureAs right)) return false
 
-            if (this.unconditionalLinks.containsKey(left)) {
-                if (!cfg.unconditionalLinks.containsKey(right)) return false
-                val leftNext = this.unconditionalLinks[left]!!
-                val rightNext = cfg.unconditionalLinks[right]!!
-                if (nodeMap.containsKey(leftNext)) {
-                    if (!(nodeMap[leftNext]!! === rightNext)) return false
+            if (this.unconditionalLinks.containsKey(Ref(left))) {
+                if (!cfg.unconditionalLinks.containsKey(Ref(right))) return false
+                val leftNext = this.unconditionalLinks[Ref(left)]!!.value
+                val rightNext = cfg.unconditionalLinks[Ref(right)]!!.value
+                if (nodeMap.containsKey(Ref(leftNext))) {
+                    if (nodeMap[Ref(leftNext)]!! !== rightNext) return false
                 } else {
                     if (!dfs(leftNext, rightNext)) return false
                 }
             }
 
-            if (this.conditionalTrueLinks.containsKey(left)) {
-                if (!cfg.conditionalTrueLinks.containsKey(right)) return false
-                val leftNext = this.conditionalTrueLinks[left]!!
-                val rightNext = cfg.conditionalTrueLinks[right]!!
-                if (nodeMap.containsKey(leftNext)) {
-                    if (!(nodeMap[leftNext]!! === rightNext)) return false
+            if (this.conditionalTrueLinks.containsKey(Ref(left))) {
+                if (!cfg.conditionalTrueLinks.containsKey(Ref(right))) return false
+                val leftNext = this.conditionalTrueLinks[Ref(left)]!!.value
+                val rightNext = cfg.conditionalTrueLinks[Ref(right)]!!.value
+                if (nodeMap.containsKey(Ref(leftNext))) {
+                    if (nodeMap[Ref(leftNext)]!! !== rightNext) return false
                 } else {
                     if (!dfs(leftNext, rightNext)) return false
                 }
             }
 
-            if (this.conditionalFalseLinks.containsKey(left)) {
-                if (!cfg.conditionalFalseLinks.containsKey(right)) return false
-                val leftNext = this.conditionalFalseLinks[left]!!
-                val rightNext = cfg.conditionalFalseLinks[right]!!
-                if (nodeMap.containsKey(leftNext)) {
-                    if (!(nodeMap[leftNext]!! === rightNext)) return false
+            if (this.conditionalFalseLinks.containsKey(Ref(left))) {
+                if (!cfg.conditionalFalseLinks.containsKey(Ref(right))) return false
+                val leftNext = this.conditionalFalseLinks[Ref(left)]!!.value
+                val rightNext = cfg.conditionalFalseLinks[Ref(right)]!!.value
+                if (nodeMap.containsKey(Ref(leftNext))) {
+                    if (nodeMap[Ref(leftNext)]!! !== rightNext) return false
                 } else {
                     if (!dfs(leftNext, rightNext)) return false
                 }

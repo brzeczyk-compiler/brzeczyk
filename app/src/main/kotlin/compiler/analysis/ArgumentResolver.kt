@@ -1,6 +1,7 @@
 package compiler.analysis
 
 import compiler.Compiler.CompilationFailed
+import compiler.ast.AstNode
 import compiler.ast.Expression
 import compiler.ast.Function
 import compiler.ast.NamedNode
@@ -10,29 +11,31 @@ import compiler.ast.StatementBlock
 import compiler.ast.Variable
 import compiler.diagnostics.Diagnostic
 import compiler.diagnostics.Diagnostics
-import compiler.utils.ReferenceMap
-import compiler.utils.ReferenceSet
-import compiler.utils.referenceHashMapOf
-import compiler.utils.referenceHashSetOf
+import compiler.utils.KeyRefMap
+import compiler.utils.Ref
+import compiler.utils.RefMap
+import compiler.utils.RefSet
+import compiler.utils.mutableKeyRefMapOf
+import compiler.utils.mutableRefMapOf
 
-typealias ArgumentResolutionResult = ReferenceMap<Expression.FunctionCall.Argument, Function.Parameter>
+typealias ArgumentResolutionResult = RefMap<Expression.FunctionCall.Argument, Function.Parameter>
 
-class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>, private val diagnostics: Diagnostics) {
+class ArgumentResolver(private val nameResolution: RefMap<AstNode, NamedNode>, private val diagnostics: Diagnostics) {
     data class ArgumentResolutionResult(
-        val argumentsToParametersMap: ReferenceMap<Expression.FunctionCall.Argument, Function.Parameter>,
-        val accessedDefaultValues: ReferenceMap<Expression.FunctionCall, ReferenceSet<Function.Parameter>>
+        val argumentsToParametersMap: RefMap<Expression.FunctionCall.Argument, Function.Parameter>,
+        val accessedDefaultValues: KeyRefMap<Expression.FunctionCall, RefSet<Function.Parameter>>
     )
 
     class ResolutionFailed : CompilationFailed()
 
-    private val argumentsToParametersMap = referenceHashMapOf<Expression.FunctionCall.Argument, Function.Parameter>()
-    private val accessedDefaultValues = referenceHashMapOf<Expression.FunctionCall, ReferenceSet<Function.Parameter>>()
+    private val argumentsToParametersMap = mutableRefMapOf<Expression.FunctionCall.Argument, Function.Parameter>()
+    private val accessedDefaultValues = mutableKeyRefMapOf<Expression.FunctionCall, RefSet<Function.Parameter>>()
     private var failed = false
 
     companion object {
         fun calculateArgumentToParameterResolution(
             program: Program,
-            nameResolution: ReferenceMap<Any, NamedNode>,
+            nameResolution: RefMap<AstNode, NamedNode>,
             diagnostics: Diagnostics
         ): ArgumentResolutionResult {
             val resolver = ArgumentResolver(nameResolution, diagnostics)
@@ -63,7 +66,7 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
             }
         }
 
-        val function: Function = nameResolution[functionCall] as Function
+        val function: Function = nameResolution[Ref(functionCall)]!!.value as Function
         val parameterNames = function.parameters.map { it.name }
         val isMatched = function.parameters.map { false }.toMutableList()
 
@@ -74,7 +77,7 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
 
         for ((index, argument) in functionCall.arguments.withIndex()) {
             if (argument.name == null) {
-                argumentsToParametersMap[argument] = function.parameters[index]
+                argumentsToParametersMap[Ref(argument)] = Ref(function.parameters[index])
                 isMatched[index] = true
             } else {
                 val parameterIndex = parameterNames.indexOf(argument.name)
@@ -86,23 +89,23 @@ class ArgumentResolver(private val nameResolution: ReferenceMap<Any, NamedNode>,
                     report(Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.RepeatedArgument(function, functionCall, function.parameters[parameterIndex]))
                     return
                 }
-                argumentsToParametersMap[argument] = function.parameters[parameterIndex]
+                argumentsToParametersMap[Ref(argument)] = Ref(function.parameters[parameterIndex])
                 isMatched[parameterIndex] = true
             }
         }
 
-        val parametersWithDefaultValue = mutableListOf<Function.Parameter>()
+        val parametersWithDefaultValue = mutableListOf<Ref<Function.Parameter>>()
 
         for ((index, parameter) in function.parameters.withIndex()) {
             if (!isMatched[index]) {
                 if (parameter.defaultValue == null) {
                     report(Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.MissingArgument(function, functionCall, parameter))
                 } else {
-                    parametersWithDefaultValue.add(parameter)
+                    parametersWithDefaultValue.add(Ref(parameter))
                 }
             }
         }
-        accessedDefaultValues[functionCall] = referenceHashSetOf(parametersWithDefaultValue)
+        accessedDefaultValues[Ref(functionCall)] = parametersWithDefaultValue.toSet()
     }
 
     private fun resolveFunctionCallsArguments(program: Program) {

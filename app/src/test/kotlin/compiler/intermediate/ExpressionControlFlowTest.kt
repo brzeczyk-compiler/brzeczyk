@@ -35,7 +35,8 @@ class ExpressionControlFlowTest {
             throw NotImplementedError()
         }
 
-        override val spilledRegistersOffset get() = throw NotImplementedError()
+        override val spilledRegistersRegionOffset get() = throw NotImplementedError()
+        override val spilledRegistersRegionSize get() = throw NotImplementedError()
         override val identifier: String get() = throw NotImplementedError()
 
         override fun genRead(namedNode: NamedNode, isDirect: Boolean): IFTNode {
@@ -594,7 +595,7 @@ class ExpressionControlFlowTest {
             ) add ("f" asFunCallIn context)
         )
 
-        val v = (
+        assertTrue(
             variableInConditional hasSameStructureAs (
                 mergeCFGsConditionally(
                     IFTNode.DummyRead("x" asVarIn context, true).toCfg(),
@@ -605,7 +606,7 @@ class ExpressionControlFlowTest {
                     merge IFTNode.RegisterWrite(r2, callResult1)
                     merge IFTNode.Add(IFTNode.RegisterRead(r1), IFTNode.RegisterRead(r2))
                 )
-            )
+        )
 
         val functionCallsInConditional = context.createCfg( // x + y + z + ( f() ? g() : h() ), f -> x, g -> y, h -> z
             ("x" asVarExprIn context) add ("y" asVarExprIn context) add ("z" asVarExprIn context) add

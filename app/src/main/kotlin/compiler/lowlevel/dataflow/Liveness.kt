@@ -7,6 +7,7 @@ import compiler.utils.ReferenceSet
 import compiler.utils.combineReferenceSets
 import compiler.utils.referenceHashMapOf
 import compiler.utils.referenceHashSetOf
+import compiler.utils.referenceMapOf
 
 object Liveness {
     data class LivenessGraphs(
@@ -52,7 +53,7 @@ object Liveness {
 
         // run analysis and fill the graphs
         val dataFlowResult = LivenessDataFlowAnalyzer.analyze(linearProgram)
-        val outLiveRegisters = dataFlowResult.outValues.mapValues { (instr, regs) -> combineReferenceSets(regs, referenceHashSetOf(instr.regsDefined.toList())) }
+        val outLiveRegisters = referenceMapOf(dataFlowResult.outValues.map { (instr, regs) -> instr to combineReferenceSets(regs, referenceHashSetOf(instr.regsDefined.toList())) })
 
         instructionList.forEach {
             for (definedReg in it.regsDefined)

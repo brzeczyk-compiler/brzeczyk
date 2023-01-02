@@ -13,25 +13,27 @@ import kotlin.collections.HashSet
 
 class RegisterGraph private constructor(
     livenessGraphs: Liveness.LivenessGraphs,
-    val accessibleRegisters: HashSet<Register>
+    val selfColoredRegisters: HashSet<Register>,
+    availableColors: HashSet<Register>
 ) {
 
-    private val K = accessibleRegisters.size
+    private val K = availableColors.size
+    private val forbiddenColors = selfColoredRegisters - availableColors // colors that forbid merging
 
     // ------------ graph nodes -----------------
 
-    private data class NodeData(val registers: HashSet<Register>, val containsHardwareRegister: Boolean)
+    private data class NodeData(val registers: HashSet<Register>, val containsSelfColoredRegister: Boolean)
 
     private val regToNodeData = HashMap<Register, NodeData>()
 
     inner class Node(private val founder: Register) {
 
         init {
-            regToNodeData.putIfAbsent(founder, NodeData(hashSetOf(founder), founder in accessibleRegisters))
+            regToNodeData.putIfAbsent(founder, NodeData(hashSetOf(founder), founder in selfColoredRegisters))
         }
 
         val registers: HashSet<Register> by regToNodeData[founder]!!::registers
-        val containsHardwareRegister: Boolean by regToNodeData[founder]!!::containsHardwareRegister
+        val containsSelfColoredRegister: Boolean by regToNodeData[founder]!!::containsSelfColoredRegister
 
         override fun equals(other: Any?): Boolean {
             if (other !is Node) return false
@@ -46,11 +48,12 @@ class RegisterGraph private constructor(
     companion object {
         fun process(
             livenessGraphs: Liveness.LivenessGraphs,
-            accessibleRegisters: List<Register>
+            selfColoredRegisters: List<Register>,
+            availableColors: List<Register>
         ): Stack<Node> {
             val stack = Stack<Node>()
 
-            with(RegisterGraph(livenessGraphs, accessibleRegisters.toHashSet())) {
+            with(RegisterGraph(livenessGraphs, selfColoredRegisters.toHashSet(), availableColors.toHashSet())) {
                 while (isNotEmpty()) when {
                     simplifyCandidates.isNotEmpty() -> stack.push(simplify()!!)
                     coalesceCandidates.isNotEmpty() -> coalesce()
@@ -69,12 +72,18 @@ class RegisterGraph private constructor(
 
     // ---------------- invariants ---------------------
 
-    private val simplifyCandidates: HashSet<Node> = // deg < K, no copy edges
-        interferenceGraph.filter { it.value.size < K && copyGraph.getValue(it.key).size == 0 }.map { it.key }.toHashSet()
-    private val freezeCandidates: HashSet<Node> = // deg < K, some copy edges
-        interferenceGraph.filter { it.value.size < K && it.key !in simplifyCandidates }.map { it.key }.toHashSet()
-    private val spillCandidates: HashSet<Node> = // deg >=K
-        (interferenceGraph.keys - simplifyCandidates - freezeCandidates).toHashSet()
+    private val simplifyCandidates: HashSet<Node> = hashSetOf()
+    private val freezeCandidates: HashSet<Node> = hashSetOf()
+    private val spillCandidates: HashSet<Node> = hashSetOf()
+
+    private fun classifyNode(node: Node) =
+        if (node.deg() >= K) spillCandidates // deg >= K
+        else if (copyGraph.getValue(node).isEmpty()) simplifyCandidates // deg < K, no copy edges
+        else freezeCandidates // deg < K, some copy edges
+
+    init {
+        interferenceGraph.keys.forEach { classifyNode(it).add(it) }
+    }
 
     // ------------ candidates for coalesce -------------
 
@@ -94,13 +103,14 @@ class RegisterGraph private constructor(
 
         // --- helper functions ---
 
-        fun checkBasicMergeAbility(potentialSysReg: Node, nonSysReg: Node): Boolean {
-            if (potentialSysReg !in interferenceGraph || nonSysReg !in interferenceGraph) return false // one of nodes was previously removed
+        fun checkBasicMergeAbility(potentiallySelfColReg: Node, nonSelfColReg: Node): Boolean {
+            if (potentiallySelfColReg !in interferenceGraph || nonSelfColReg !in interferenceGraph) return false // one of nodes was previously removed
             if (
-                interferenceGraph[potentialSysReg]!!.contains(nonSysReg) || // interference between nodes
-                nonSysReg.containsHardwareRegister // both nodes contain system registers
+                interferenceGraph[potentiallySelfColReg]!!.contains(nonSelfColReg) || // interference between nodes
+                nonSelfColReg.containsSelfColoredRegister || // both nodes contain self colored registers
+                (potentiallySelfColReg.registers intersect forbiddenColors).isNotEmpty() // merging would give some register a forbidden color
             ) {
-                copyGraph.removeEdge(nonSysReg, potentialSysReg) // we won't be able to merge
+                copyGraph.removeEdge(nonSelfColReg, potentiallySelfColReg) // we won't be able to merge
                 return false
             }
             return true
@@ -108,7 +118,7 @@ class RegisterGraph private constructor(
 
         fun georgeCondition(sysReg: Node, toMerge: Node): Boolean =
             interferenceGraph[toMerge]!!.all {
-                it.deg() < K || it.containsHardwareRegister || interferenceGraph[sysReg]!!.contains(it)
+                it.deg() < K || it.containsSelfColoredRegister || interferenceGraph[sysReg]!!.contains(it)
             }
 
         fun briggsCondition(first: Node, second: Node): Boolean {
@@ -119,19 +129,19 @@ class RegisterGraph private constructor(
             return allOfSizeGeK - commonOfSizeK < K
         }
 
-        fun Pair<Node, Node>.potentialSystemRegisterFirst() =
-            if (second.containsHardwareRegister) Pair(second, first)
+        fun Pair<Node, Node>.potentiallySelfColoredRegisterFirst() =
+            if (second.containsSelfColoredRegister) Pair(second, first)
             else this
 
         // --- main impl ---
 
-        val candidate = coalesceCandidates.ifEmpty { return }.pop().potentialSystemRegisterFirst()
+        val candidate = coalesceCandidates.ifEmpty { return }.pop().potentiallySelfColoredRegisterFirst()
 
         checkBasicMergeAbility(candidate.first, candidate.second).ifFalse { return }
 
-        val ableToCoalesce: Boolean = candidate.let { (potentialSysReg, secondReg) ->
-            potentialSysReg.containsHardwareRegister && georgeCondition(potentialSysReg, secondReg) || // system registers may have large degree, so we check the George condition in O(secondReg.deg())
-                !potentialSysReg.containsHardwareRegister && briggsCondition(potentialSysReg, secondReg)
+        val ableToCoalesce: Boolean = candidate.let { (potentialSelfColReg, secondReg) ->
+            potentialSelfColReg.containsSelfColoredRegister && georgeCondition(potentialSelfColReg, secondReg) || // self colored registers may have large degree, so we check the George condition in O(secondReg.deg())
+                !potentialSelfColReg.containsSelfColoredRegister && briggsCondition(potentialSelfColReg, secondReg)
         }
 
         if (ableToCoalesce) {
@@ -144,11 +154,7 @@ class RegisterGraph private constructor(
                     coalesceCandidates.add(Pair(it, mergedTo))
                 }
                 remove(toRemove)
-
-                if (mergedTo.deg() >= K) { // mergedTo cannot be in simplifyCandidates, because those nodes were removed in the previous phase
-                    freezeCandidates.remove(mergedTo)
-                    spillCandidates.add(mergedTo)
-                }
+                reclassifyNode(mergedTo)
             }
         }
     }
@@ -163,15 +169,10 @@ class RegisterGraph private constructor(
         val neighbours = interferenceGraph[node]!!
         interferenceGraph.removeNode(node)
         copyGraph.removeNode(node)
+        removeFromSet(node)
 
-        neighbours.filter { it.deg() == K - 1 }.forEach {
-            spillCandidates.remove(it)
-            if (copyGraph[it]!!.size == 0) {
-                simplifyCandidates.add(it)
-            } else freezeCandidates.add(it)
-            enableMoves((interferenceGraph[it]!! + setOf(it)).toHashSet())
-        }
-        removeFromAllSets(node)
+        neighbours.forEach { reclassifyNode(it) }
+        neighbours.filter { it.deg() == K - 1 }.forEach { enableMoves((interferenceGraph[it]!! + setOf(it)).toHashSet()) }
     }
 
     private fun enableMoves(nodes: HashSet<Node>) {
@@ -203,8 +204,13 @@ class RegisterGraph private constructor(
         getOrPut(node2) { getValue(node2) }.add(node1)
     }
 
-    private fun removeFromAllSets(node: Node) =
+    private fun removeFromSet(node: Node) =
         simplifyCandidates.remove(node) || freezeCandidates.remove(node) || spillCandidates.remove(node)
+
+    private fun reclassifyNode(node: Node) {
+        removeFromSet(node)
+        classifyNode(node).add(node)
+    }
 
     private inline fun Boolean.ifFalse(action: () -> Unit) {
         if (!this) action()

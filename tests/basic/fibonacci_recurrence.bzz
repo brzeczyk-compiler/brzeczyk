@@ -1,4 +1,3 @@
-// INTEGRATION TESTS IGNORE
 czynność policz_liczbę_fibonacciego(którą: Liczba) -> Liczba {
     jeśli (którą <= 2) {
         zwróć 1

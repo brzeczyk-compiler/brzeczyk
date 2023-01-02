@@ -8,26 +8,28 @@ FAILED_CASES=0
 SUCCESSFUL_CASES=0
 FAILED_TO_COMPILE=0
 
-# bash trickery to get rid of identations at the start of lines
+CLEAR_CR="\r\033[K"
+
+# bash trickery to get rid of indentations at the start of lines
 print_multiline_message() {
     echo "$1" | sed 's/^[ \t]*//g'
 }
 
 update() {
-    echo -en "\rPassed: $SUCCESSFUL_CASES, Failed: $FAILED_CASES, Compilation errors: $FAILED_TO_COMPILE"
+    echo -en "${CLEAR_CR}Passed: $SUCCESSFUL_CASES, Failed: $FAILED_CASES, Compilation errors: $FAILED_TO_COMPILE"
 }
 
 run_test_case() {
-    csplit -f "$TEMP_SPLIT_TEST_CASE_PREFIX" -z $1 '/Input:/' '/Exit code:/' '/Output:/' 1>/dev/null
-    input=$(cat "$TEMP_SPLIT_TEST_CASE_PREFIX"00 | tail +2)
-    expected_exit_code=$(cat "$TEMP_SPLIT_TEST_CASE_PREFIX"01 | tail +2)
-    expected_output=$(cat "$TEMP_SPLIT_TEST_CASE_PREFIX"02 | tail +2)
+    csplit -f "$TEMP_SPLIT_TEST_CASE_PREFIX" -z "$1" '/Input:/' '/Exit code:/' '/Output:/' 1>/dev/null
+    input=$(tail +2 "${TEMP_SPLIT_TEST_CASE_PREFIX}00")
+    expected_exit_code=$(tail +2 "${TEMP_SPLIT_TEST_CASE_PREFIX}01")
+    expected_output=$(tail +2 "${TEMP_SPLIT_TEST_CASE_PREFIX}02")
     actual_output=$(./a.out <<< "$input")
     actual_exit_code=$?
 
-    if [[ $actual_output != $expected_output || $expected_exit_code != $actual_exit_code ]]; then
+    if [[ $actual_output != "$expected_output" || $expected_exit_code != "$actual_exit_code" ]]; then
         print_multiline_message "
-        TEST FAILED!!!!
+        TEST $2::$(basename "$1") FAILED!!!!
         Input:
         $input
         Expected output:
@@ -46,10 +48,10 @@ run_test_case() {
 }
 
 run_test_cases() {
-    csplit --suppress-matched -f "$TEMP_TEST_CASE_PREFIX" -z $1 "/^-*$/" '{*}' 1>/dev/null
+    csplit --suppress-matched -f "$TEMP_TEST_CASE_PREFIX" -z "$1" "/^-*$/" '{*}' 1>/dev/null
     for test_case in $(find . -name "$TEMP_TEST_CASE_PREFIX*"); do
-        run_test_case $test_case
-        rm $test_case
+        run_test_case "$test_case" "$2"
+        rm "$test_case"
     done
 }
 
@@ -60,23 +62,25 @@ if [[ ! -f $COMPILER_PATH ]]; then
 fi
 
 for tested_program in $(find . -path "./tests/*.bzz"); do
-    if [[ $(head -1 $tested_program) == $IGNORE_HEADER ]]; then
-        echo "Skipping $tested_program..."
+    if [[ $(head -1 "$tested_program") == "$IGNORE_HEADER" ]]; then
+        echo -e "${CLEAR_CR}Skipping $tested_program..."
+        update
         continue
     fi
 
-    $COMPILER_PATH $tested_program -o a.out -e stdlib/stdlib.c 1>/dev/null
+    $COMPILER_PATH "$tested_program" -o a.out -l stdlib/stdlib.c 1>/dev/null
     if [[ ! -f a.out ]]; then
-        echo "Cannot compile $tested_program! Skipping, but you should fix this..."
+        echo -e "${CLEAR_CR}Cannot compile $tested_program! Skipping, but you should fix this..."
         ((FAILED_TO_COMPILE++))
+        update
         continue
     fi
 
-    run_test_cases "${tested_program%%bzz}tests"
+    run_test_cases "${tested_program%%bzz}tests" "${tested_program%%.bzz}"
     # clean up
     rm a.o a.out a.asm
 done
 
 echo
 # exit code for CI
-exit $(($FAILED_TO_COMPILE + $FAILED_CASES))
+exit $((FAILED_TO_COMPILE + FAILED_CASES))

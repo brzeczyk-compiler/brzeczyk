@@ -34,18 +34,19 @@ data class DefaultFunctionDetailsGenerator(
 
     private val variablesStackOffsets: MutableMap<NamedNode, ULong> = referenceHashMapOf()
     private val variablesRegisters: MutableMap<NamedNode, Register> = referenceHashMapOf()
-    private var variablesTotalOffset: ULong = 0u
+    private var variablesRegionSize: ULong = 0u
     private val previousDisplayEntryRegister = Register()
     private val calleeSavedBackupRegisters = calleeSavedRegistersWithoutRSPAndRBP.map { Register() }
 
-    override val spilledRegistersOffset: ConstantPlaceholder = ConstantPlaceholder()
+    override val spilledRegistersRegionOffset: ULong get() = variablesRegionSize
+    override val spilledRegistersRegionSize: ConstantPlaceholder = ConstantPlaceholder()
     override val identifier: String = functionLocationInCode.label
     init {
         for ((variable, locationType) in variablesLocationTypes.entries) {
             when (locationType) {
                 VariableLocationType.MEMORY -> {
-                    variablesTotalOffset += memoryUnitSize
-                    variablesStackOffsets[variable] = variablesTotalOffset
+                    variablesRegionSize += memoryUnitSize
+                    variablesStackOffsets[variable] = variablesRegionSize
                 }
 
                 VariableLocationType.REGISTER -> {
@@ -85,7 +86,7 @@ data class DefaultFunctionDetailsGenerator(
                 // make stack aligned back
                 IFTNode.Const(
                     AlignedConstant(
-                        SummedConstant(variablesTotalOffset.toLong(), spilledRegistersOffset),
+                        SummedConstant(variablesRegionSize.toLong(), spilledRegistersRegionSize),
                         stackAlignmentInBytes.toLong(),
                         stackAlignmentInBytes - 2 * memoryUnitSize.toLong() // -2 to account return address and backed up rbp
                     )

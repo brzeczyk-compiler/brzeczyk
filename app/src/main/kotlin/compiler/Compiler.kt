@@ -75,12 +75,15 @@ class Compiler(val diagnostics: Diagnostics) {
                 Allocation.allocateRegistersWithSpillsHandling(
                     it.value,
                     Liveness.computeLiveness(it.value),
-                    Allocation.REGISTER_ORDER,
-                    ColoringAllocation
+                    Allocation.HARDWARE_REGISTERS,
+                    Allocation.AVAILABLE_REGISTERS,
+                    Allocation.POTENTIAL_SPILL_HANDLING_REGISTERS,
+                    ColoringAllocation,
+                    functionDetailsGenerators[it.key]!!.spilledRegistersRegionOffset
                 )
             }
 
-            finalCode.entries.forEach { functionDetailsGenerators[it.key]!!.spilledRegistersOffset.settledValue = it.value.spilledOffset.toLong() }
+            finalCode.entries.forEach { functionDetailsGenerators[it.key]!!.spilledRegistersRegionSize.settledValue = it.value.spilledOffset.toLong() }
 
             AsmFile.printFile(
                 PrintWriter(output),

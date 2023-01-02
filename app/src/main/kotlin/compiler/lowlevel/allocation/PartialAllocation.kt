@@ -11,6 +11,7 @@ interface PartialAllocation {
 
     fun allocateRegisters(
         livenessGraphs: Liveness.LivenessGraphs,
-        accessibleRegisters: List<Register>,
+        selfAllocatedRegisters: List<Register>,
+        availableRegisters: List<Register>,
     ): AllocationResult
 }

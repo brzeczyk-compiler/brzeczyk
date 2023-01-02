@@ -1,28 +1,32 @@
 Input:
 1
 5
-Exit code: 0
+Exit code:
+0
 Output:
 6
 ----------
 Input:
 -69
 420
-Exit code: 0
+Exit code:
+0
 Output:
 351
 ----------
 Input:
 23
 121
-Exit code: 0
+Exit code:
+0
 Output:
 144
 ----------
 Input:
 -1000000
 121
-Exit code: 0
+Exit code:
+0
 Output:
 -999879
 ----------

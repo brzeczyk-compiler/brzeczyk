@@ -16,7 +16,9 @@ interface FunctionDetailsGenerator : VariableAccessGenerator {
 
     fun genEpilogue(): ControlFlowGraph
 
-    val spilledRegistersOffset: ConstantPlaceholder
+    val spilledRegistersRegionOffset: ULong
+
+    val spilledRegistersRegionSize: ConstantPlaceholder
 
     val identifier: String
 }

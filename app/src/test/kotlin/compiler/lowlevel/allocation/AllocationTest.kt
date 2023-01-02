@@ -21,6 +21,11 @@ class AllocationTest {
     private val phReg3 = Register()
     private val phReg4 = Register()
 
+    private val phRegs = listOf(phReg1, phReg2, phReg3, phReg4)
+
+    private val variableBlockSize: ULong = 24U
+    private fun getSpillOffset(index: UInt) = -(variableBlockSize + index * memoryUnitSize).toInt()
+
     @Test
     fun `test program which uses no registers`() {
         val linearProgram = listOf(
@@ -35,7 +40,8 @@ class AllocationTest {
         val allocator = object : PartialAllocation {
             override fun allocateRegisters(
                 livenessGraphs: Liveness.LivenessGraphs,
-                accessibleRegisters: List<Register>
+                selfAllocatedRegisters: List<Register>,
+                availableRegisters: List<Register>
             ): PartialAllocation.AllocationResult = PartialAllocation.AllocationResult(mapOf(), listOf())
         }
 
@@ -43,7 +49,10 @@ class AllocationTest {
             linearProgram,
             livenessGraphs,
             orderedPhysicalRegisters,
+            orderedPhysicalRegisters,
+            orderedPhysicalRegisters,
             allocator,
+            variableBlockSize
         )
 
         assertEquals(mapOf(), result.allocatedRegisters)
@@ -75,11 +84,12 @@ class AllocationTest {
             var usages = 0
             override fun allocateRegisters(
                 livenessGraphs: Liveness.LivenessGraphs,
-                accessibleRegisters: List<Register>
+                selfAllocatedRegisters: List<Register>,
+                availableRegisters: List<Register>
             ): PartialAllocation.AllocationResult {
                 return if (usages >= 4) {
                     PartialAllocation.AllocationResult(
-                        mapOf(reg1 to accessibleRegisters[0], reg2 to accessibleRegisters[1], reg3 to accessibleRegisters[2]),
+                        mapOf(reg1 to availableRegisters[0], reg2 to availableRegisters[1], reg3 to availableRegisters[2]),
                         listOf(),
                     )
                 } else {
@@ -96,11 +106,17 @@ class AllocationTest {
             linearProgram,
             livenessGraphs,
             orderedPhysicalRegisters,
+            orderedPhysicalRegisters,
+            orderedPhysicalRegisters,
             allocator,
+            variableBlockSize
         )
 
         assertEquals(
             mapOf(
+                phReg1 to phReg1,
+                phReg2 to phReg2,
+                phReg3 to phReg3,
                 phReg4 to phReg4,
                 reg1 to phReg1,
                 reg2 to phReg2,
@@ -113,19 +129,19 @@ class AllocationTest {
                 linearProgram[0],
                 Instruction.InPlaceInstruction.MoveRM(
                     phReg1,
-                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(1u * memoryUnitSize)),
+                    Addressing.Base(Register.RBP, Addressing.MemoryAddress.Const(getSpillOffset(1u))),
                 ),
                 Instruction.InPlaceInstruction.MoveRM(
                     phReg2,
-                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(2u * memoryUnitSize)),
+                    Addressing.Base(Register.RBP, Addressing.MemoryAddress.Const(getSpillOffset(2u))),
                 ),
                 linearProgram[1],
                 Instruction.InPlaceInstruction.MoveMR(
-                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(1u * memoryUnitSize)),
+                    Addressing.Base(Register.RBP, Addressing.MemoryAddress.Const(getSpillOffset(1u))),
                     phReg1,
                 ),
                 Instruction.InPlaceInstruction.MoveMR(
-                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(3u * memoryUnitSize)),
+                    Addressing.Base(Register.RBP, Addressing.MemoryAddress.Const(getSpillOffset(3u))),
                     phReg3,
                 ),
                 linearProgram[2],
@@ -160,11 +176,12 @@ class AllocationTest {
             var usages = 0
             override fun allocateRegisters(
                 livenessGraphs: Liveness.LivenessGraphs,
-                accessibleRegisters: List<Register>
+                selfAllocatedRegisters: List<Register>,
+                availableRegisters: List<Register>
             ): PartialAllocation.AllocationResult {
                 return if (usages >= 2) {
                     PartialAllocation.AllocationResult(
-                        mapOf(reg1 to accessibleRegisters[0], reg2 to accessibleRegisters[1], reg3 to accessibleRegisters[2]),
+                        mapOf(reg1 to availableRegisters[0], reg2 to availableRegisters[1], reg3 to availableRegisters[2]),
                         listOf(),
                     )
                 } else {
@@ -180,12 +197,16 @@ class AllocationTest {
         val result = Allocation.allocateRegistersWithSpillsHandling(
             linearProgram,
             livenessGraphs,
+            phRegs,
+            orderedPhysicalRegisters,
             orderedPhysicalRegisters,
             allocator,
+            variableBlockSize
         )
 
         assertEquals(
             mapOf(
+                phReg1 to phReg1,
                 phReg4 to phReg4,
                 reg1 to phReg1,
                 reg2 to phReg1,
@@ -198,17 +219,17 @@ class AllocationTest {
                 linearProgram[0],
                 Instruction.InPlaceInstruction.MoveRM(
                     phReg1,
-                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(1u * memoryUnitSize)),
+                    Addressing.Base(Register.RBP, Addressing.MemoryAddress.Const(getSpillOffset(1u))),
                 ),
                 linearProgram[1],
                 Instruction.InPlaceInstruction.MoveRM(
                     phReg1,
-                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(2u * memoryUnitSize)),
+                    Addressing.Base(Register.RBP, Addressing.MemoryAddress.Const(getSpillOffset(2u))),
                 ),
                 linearProgram[2],
                 Instruction.InPlaceInstruction.MoveRM(
                     phReg1,
-                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(3u * memoryUnitSize)),
+                    Addressing.Base(Register.RBP, Addressing.MemoryAddress.Const(getSpillOffset(3u))),
                 ),
                 linearProgram[3],
                 linearProgram[4],
@@ -231,7 +252,7 @@ class AllocationTest {
             Instruction.RetInstruction.Dummy(),
         )
         val livenessGraphs = Liveness.LivenessGraphs(mapOf(), mapOf())
-        val orderedPhysicalRegisters = listOf(phReg1, phReg2)
+        val allocatablePhysicalRegisters = listOf(phReg1, phReg2)
         val allocator = object : PartialAllocation {
             // First time there are too few reserved registers (0)
             // Second time there are too few reserved registers (1)
@@ -240,11 +261,12 @@ class AllocationTest {
             var usages = 0
             override fun allocateRegisters(
                 livenessGraphs: Liveness.LivenessGraphs,
-                accessibleRegisters: List<Register>
+                selfAllocatedRegisters: List<Register>,
+                availableRegisters: List<Register>
             ): PartialAllocation.AllocationResult {
                 return if (usages >= 3) {
                     PartialAllocation.AllocationResult(
-                        mapOf(reg1 to accessibleRegisters[0], reg2 to accessibleRegisters[1], reg3 to accessibleRegisters[0], reg4 to accessibleRegisters[1]),
+                        mapOf(reg1 to availableRegisters[0], reg2 to availableRegisters[1], reg3 to availableRegisters[0], reg4 to availableRegisters[1]),
                         listOf(),
                     )
                 } else {
@@ -260,12 +282,17 @@ class AllocationTest {
         val result = Allocation.allocateRegistersWithSpillsHandling(
             linearProgram,
             livenessGraphs,
-            orderedPhysicalRegisters,
+            phRegs,
+            allocatablePhysicalRegisters,
+            allocatablePhysicalRegisters,
             allocator,
+            variableBlockSize
         )
 
         assertEquals(
             mapOf(
+                phReg1 to phReg1,
+                phReg2 to phReg2,
                 phReg4 to phReg4,
                 reg1 to phReg1,
                 reg2 to phReg2,
@@ -279,20 +306,20 @@ class AllocationTest {
                 linearProgram[0],
                 linearProgram[1],
                 Instruction.InPlaceInstruction.MoveMR(
-                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(1u * memoryUnitSize)),
+                    Addressing.Base(Register.RBP, Addressing.MemoryAddress.Const(getSpillOffset(1u))),
                     phReg1,
                 ),
                 Instruction.InPlaceInstruction.MoveMR(
-                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(2u * memoryUnitSize)),
+                    Addressing.Base(Register.RBP, Addressing.MemoryAddress.Const(getSpillOffset(2u))),
                     phReg2,
                 ),
                 linearProgram[2],
                 Instruction.InPlaceInstruction.MoveMR(
-                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(1u * memoryUnitSize)),
+                    Addressing.Base(Register.RBP, Addressing.MemoryAddress.Const(getSpillOffset(1u))),
                     phReg1,
                 ),
                 Instruction.InPlaceInstruction.MoveMR(
-                    Addressing.Base(Register.RSP, Addressing.MemoryAddress.Const(2u * memoryUnitSize)),
+                    Addressing.Base(Register.RBP, Addressing.MemoryAddress.Const(getSpillOffset(2u))),
                     phReg2,
                 ),
                 linearProgram[3],

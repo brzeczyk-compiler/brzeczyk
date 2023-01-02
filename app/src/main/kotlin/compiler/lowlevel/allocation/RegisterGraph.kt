@@ -72,12 +72,18 @@ class RegisterGraph private constructor(
 
     // ---------------- invariants ---------------------
 
-    private val simplifyCandidates: HashSet<Node> = // deg < K, no copy edges
-        interferenceGraph.filter { it.value.size < K && copyGraph.getValue(it.key).size == 0 }.map { it.key }.toHashSet()
-    private val freezeCandidates: HashSet<Node> = // deg < K, some copy edges
-        interferenceGraph.filter { it.value.size < K && it.key !in simplifyCandidates }.map { it.key }.toHashSet()
-    private val spillCandidates: HashSet<Node> = // deg >=K
-        (interferenceGraph.keys - simplifyCandidates - freezeCandidates).toHashSet()
+    private val simplifyCandidates: HashSet<Node> = hashSetOf()
+    private val freezeCandidates: HashSet<Node> = hashSetOf()
+    private val spillCandidates: HashSet<Node> = hashSetOf()
+
+    private fun classifyNode(node: Node) =
+        if (node.deg() >= K) spillCandidates // deg >= K
+        else if (copyGraph.getValue(node).isEmpty()) simplifyCandidates // deg < K, no copy edges
+        else freezeCandidates // deg < K, some copy edges
+
+    init {
+        interferenceGraph.keys.forEach { classifyNode(it).add(it) }
+    }
 
     // ------------ candidates for coalesce -------------
 
@@ -148,11 +154,7 @@ class RegisterGraph private constructor(
                     coalesceCandidates.add(Pair(it, mergedTo))
                 }
                 remove(toRemove)
-
-                if (mergedTo.deg() >= K) { // mergedTo cannot be in simplifyCandidates, because those nodes were removed in the previous phase
-                    freezeCandidates.remove(mergedTo)
-                    spillCandidates.add(mergedTo)
-                }
+                reclassifyNode(mergedTo)
             }
         }
     }
@@ -167,15 +169,10 @@ class RegisterGraph private constructor(
         val neighbours = interferenceGraph[node]!!
         interferenceGraph.removeNode(node)
         copyGraph.removeNode(node)
+        removeFromSet(node)
 
-        neighbours.filter { it.deg() == K - 1 }.forEach {
-            spillCandidates.remove(it)
-            if (copyGraph[it]!!.size == 0) {
-                simplifyCandidates.add(it)
-            } else freezeCandidates.add(it)
-            enableMoves((interferenceGraph[it]!! + setOf(it)).toHashSet())
-        }
-        removeFromAllSets(node)
+        neighbours.forEach { reclassifyNode(it) }
+        neighbours.filter { it.deg() == K - 1 }.forEach { enableMoves((interferenceGraph[it]!! + setOf(it)).toHashSet()) }
     }
 
     private fun enableMoves(nodes: HashSet<Node>) {
@@ -207,8 +204,13 @@ class RegisterGraph private constructor(
         getOrPut(node2) { getValue(node2) }.add(node1)
     }
 
-    private fun removeFromAllSets(node: Node) =
+    private fun removeFromSet(node: Node) =
         simplifyCandidates.remove(node) || freezeCandidates.remove(node) || spillCandidates.remove(node)
+
+    private fun reclassifyNode(node: Node) {
+        removeFromSet(node)
+        classifyNode(node).add(node)
+    }
 
     private inline fun Boolean.ifFalse(action: () -> Unit) {
         if (!this) action()

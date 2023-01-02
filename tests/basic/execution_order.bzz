@@ -1,4 +1,3 @@
-// INTEGRATION TESTS IGNORE
 zm a: Liczba = 10
 czynność podstępna() -> Liczba {
     a = 12

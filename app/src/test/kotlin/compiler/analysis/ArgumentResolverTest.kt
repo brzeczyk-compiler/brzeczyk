@@ -10,12 +10,11 @@ import compiler.ast.StatementBlock
 import compiler.ast.Type
 import compiler.diagnostics.CompilerDiagnostics
 import compiler.diagnostics.Diagnostic
-import compiler.utils.assertContentEquals
 import compiler.utils.keyRefMapOf
 import compiler.utils.refMapOf
 import compiler.utils.refSetOf
 import kotlin.test.Test
-import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 internal class ArgumentResolverTest {
@@ -60,8 +59,8 @@ internal class ArgumentResolverTest {
 
         val argumentResolution = ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
 
-        assertContentEquals(emptyList(), diagnostics.diagnostics.toList())
-        assertContentEquals(refMapOf(argument to parameter), argumentResolution.argumentsToParametersMap)
+        assertEquals(emptyList(), diagnostics.diagnostics.toList())
+        assertEquals(refMapOf(argument to parameter), argumentResolution.argumentsToParametersMap)
     }
 
     @Test
@@ -85,8 +84,8 @@ internal class ArgumentResolverTest {
 
         val argumentResolution = ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
 
-        assertContentEquals(emptyList(), diagnostics.diagnostics.toList())
-        assertContentEquals(refMapOf(innerArg to par, outerArg to par), argumentResolution.argumentsToParametersMap)
+        assertEquals(emptyList(), diagnostics.diagnostics.toList())
+        assertEquals(refMapOf(innerArg to par, outerArg to par), argumentResolution.argumentsToParametersMap)
     }
 
     @Test
@@ -114,8 +113,8 @@ internal class ArgumentResolverTest {
 
         val expected = refMapOf(arg1 to parA, arg2 to parC, arg3 to parB)
 
-        assertContentEquals(emptyList(), diagnostics.diagnostics.toList())
-        assertContentEquals(expected, argumentResolution.argumentsToParametersMap)
+        assertEquals(emptyList(), diagnostics.diagnostics.toList())
+        assertEquals(expected, argumentResolution.argumentsToParametersMap)
     }
 
     @Test
@@ -142,9 +141,9 @@ internal class ArgumentResolverTest {
 
         val expected = refMapOf(arg1 to parA, arg2 to parC)
 
-        assertContentEquals(emptyList(), diagnostics.diagnostics.toList())
-        assertContentEquals(expected, argumentResolution.argumentsToParametersMap)
-        assertContentEquals(keyRefMapOf(call to refSetOf(parB)), argumentResolution.accessedDefaultValues)
+        assertEquals(emptyList(), diagnostics.diagnostics.toList())
+        assertEquals(expected, argumentResolution.argumentsToParametersMap)
+        assertEquals(keyRefMapOf(call to refSetOf(parB)), argumentResolution.accessedDefaultValues)
     }
 
     @Test
@@ -167,9 +166,9 @@ internal class ArgumentResolverTest {
 
         val argumentResolution = ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
 
-        assertContentEquals(emptyList(), diagnostics.diagnostics.toList())
-        assertContentEquals(refMapOf(), argumentResolution.argumentsToParametersMap)
-        assertContentEquals(keyRefMapOf(call to refSetOf(parA, parB, parC)), argumentResolution.accessedDefaultValues)
+        assertEquals(emptyList(), diagnostics.diagnostics.toList())
+        assertEquals(emptyMap(), argumentResolution.argumentsToParametersMap)
+        assertEquals(keyRefMapOf(call to refSetOf(parA, parB, parC)), argumentResolution.accessedDefaultValues)
     }
 
     @Test
@@ -193,8 +192,8 @@ internal class ArgumentResolverTest {
 
         val expected = refMapOf(arg to par)
 
-        assertContentEquals(emptyList(), diagnostics.diagnostics.toList())
-        assertContentEquals(expected, argumentResolution.argumentsToParametersMap)
+        assertEquals(emptyList(), diagnostics.diagnostics.toList())
+        assertEquals(expected, argumentResolution.argumentsToParametersMap)
     }
 
     @Test
@@ -215,7 +214,7 @@ internal class ArgumentResolverTest {
 
         val expected = listOf(Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.DefaultParametersNotLast(function.function))
 
-        assertContentEquals(expected, diagnostics.diagnostics.toList())
+        assertEquals(expected, diagnostics.diagnostics.toList())
     }
 
     @Test
@@ -243,7 +242,7 @@ internal class ArgumentResolverTest {
 
         val expected = listOf(Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.PositionalArgumentAfterNamed(call))
 
-        assertContentEquals(expected, diagnostics.diagnostics.toList())
+        assertEquals(expected, diagnostics.diagnostics.toList())
     }
 
     @Test
@@ -270,7 +269,7 @@ internal class ArgumentResolverTest {
 
         val expected = listOf(Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.MissingArgument(function.function, call, par2))
 
-        assertContentEquals(expected, diagnostics.diagnostics.toList())
+        assertEquals(expected, diagnostics.diagnostics.toList())
     }
 
     @Test
@@ -299,7 +298,7 @@ internal class ArgumentResolverTest {
 
         val expected = listOf(Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.TooManyArguments(call))
 
-        assertContentEquals(expected, diagnostics.diagnostics.toList())
+        assertEquals(expected, diagnostics.diagnostics.toList())
     }
 
     @Test
@@ -327,7 +326,7 @@ internal class ArgumentResolverTest {
 
         val expected = listOf(Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.RepeatedArgument(function.function, call, par1))
 
-        assertContentEquals(expected, diagnostics.diagnostics.toList())
+        assertEquals(expected, diagnostics.diagnostics.toList())
     }
 
     @Test
@@ -355,6 +354,6 @@ internal class ArgumentResolverTest {
 
         val expected = listOf(Diagnostic.ResolutionDiagnostic.ArgumentResolutionError.UnknownArgument(function.function, call, arg2))
 
-        assertContentEquals(expected, diagnostics.diagnostics.toList())
+        assertEquals(expected, diagnostics.diagnostics.toList())
     }
 }

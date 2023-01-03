@@ -1,9 +1,7 @@
 package compiler.intermediate
 
-import compiler.utils.assertContentEquals
 import compiler.utils.refMapOf
 import kotlin.test.Test
-import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertSame
@@ -45,10 +43,10 @@ class ControlFlowGraphBuilderTest {
         val cfg = ControlFlowGraphBuilder(entryNode).build()
 
         assertSame(cfg.entryTreeRoot, entryNode)
-        assertContentEquals(cfg.treeRoots, listOf<IFTNode>(entryNode))
-        assertContentEquals(cfg.unconditionalLinks, refMapOf())
-        assertContentEquals(cfg.conditionalFalseLinks, refMapOf())
-        assertContentEquals(cfg.conditionalTrueLinks, refMapOf())
+        assertEquals(cfg.treeRoots, listOf<IFTNode>(entryNode))
+        assertEquals(cfg.unconditionalLinks, emptyMap())
+        assertEquals(cfg.conditionalFalseLinks, emptyMap())
+        assertEquals(cfg.conditionalTrueLinks, emptyMap())
     }
 
     @Test

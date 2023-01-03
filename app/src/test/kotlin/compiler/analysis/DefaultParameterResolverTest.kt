@@ -7,9 +7,9 @@ import compiler.ast.Statement
 import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.utils.Ref
-import compiler.utils.assertContentEquals
 import compiler.utils.keyRefMapOf
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertNotSame
 
 class DefaultParameterResolverTest {
@@ -61,7 +61,7 @@ class DefaultParameterResolverTest {
             dParameter to UnnamedVariable(Variable.Kind.CONSTANT, Type.Boolean, dValue),
         )
 
-        assertContentEquals(expectedMappingSimplified, actualMappingSimplified)
+        assertEquals(expectedMappingSimplified, actualMappingSimplified)
     }
 
     @Test fun `test default parameters mapping in a local function`() {
@@ -111,7 +111,7 @@ class DefaultParameterResolverTest {
             dParameter to UnnamedVariable(Variable.Kind.VALUE, Type.Boolean, dValue),
         )
 
-        assertContentEquals(expectedMappingSimplified, actualMappingSimplified)
+        assertEquals(expectedMappingSimplified, actualMappingSimplified)
     }
 
     @Test fun `test default parameters mapping in functions defined in various places`() {
@@ -178,7 +178,7 @@ class DefaultParameterResolverTest {
             eParameter to UnnamedVariable(Variable.Kind.VALUE, Type.Number, eValue),
         )
 
-        assertContentEquals(expectedMappingSimplified, actualMappingSimplified)
+        assertEquals(expectedMappingSimplified, actualMappingSimplified)
     }
 
     @Test fun `test reference comparison`() {
@@ -228,7 +228,7 @@ class DefaultParameterResolverTest {
             agParameter to UnnamedVariable(Variable.Kind.VALUE, Type.Number, agValue),
         )
 
-        assertContentEquals(expectedMappingSimplified, actualMappingSimplified)
+        assertEquals(expectedMappingSimplified, actualMappingSimplified)
 
         assertNotSame(actualMapping[Ref(afParameter)]!!, actualMapping[Ref(agParameter)]!!)
     }

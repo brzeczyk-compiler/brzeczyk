@@ -12,14 +12,13 @@ import compiler.diagnostics.Diagnostic
 import compiler.diagnostics.Diagnostic.ResolutionDiagnostic.ControlFlowDiagnostic
 import compiler.diagnostics.Diagnostics
 import compiler.utils.Ref
-import compiler.utils.assertContentEquals
 import compiler.utils.keyRefMapOf
 import compiler.utils.mutableKeyRefMapOf
 import compiler.utils.mutableRefMapOf
 import compiler.utils.refMapOf
 import java.lang.RuntimeException
 import kotlin.test.Test
-import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
 
 class FunctionControlFlowTest {
     private val expressionNodes = mutableKeyRefMapOf<Expression, MutableMap<Ref<Variable?>, Ref<IFTNode>>>()
@@ -63,7 +62,7 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(listOf(), null, refMapOf(), refMapOf(), refMapOf())
-        assertContentEquals(keyRefMapOf(function to cfg), result)
+        assertEquals(keyRefMapOf(function to cfg), result)
     }
 
     // czynność f() { 123 }
@@ -80,7 +79,7 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(listOf(node), node, refMapOf(), refMapOf(), refMapOf())
-        assertContentEquals(keyRefMapOf(function to cfg), result)
+        assertEquals(keyRefMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -110,7 +109,7 @@ class FunctionControlFlowTest {
             refMapOf()
         )
 
-        assertContentEquals(keyRefMapOf(function to cfg), result)
+        assertEquals(keyRefMapOf(function to cfg), result)
     }
 
     // czynność f() { wart x: Liczba = 123 }
@@ -128,7 +127,7 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(listOf(node), node, refMapOf(), refMapOf(), refMapOf())
-        assertContentEquals(keyRefMapOf(function to cfg), result)
+        assertEquals(keyRefMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -152,7 +151,7 @@ class FunctionControlFlowTest {
 
         val cfg = ControlFlowGraph(listOf(node), node, refMapOf(), refMapOf(), refMapOf())
         val nestedCfg = ControlFlowGraph(listOf(), null, refMapOf(), refMapOf(), refMapOf())
-        assertContentEquals(keyRefMapOf(function to cfg, nestedFunction to nestedCfg), result)
+        assertEquals(keyRefMapOf(function to cfg, nestedFunction to nestedCfg), result)
     }
 
     // czynność f() {
@@ -175,7 +174,7 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(listOf(node), node, refMapOf(), refMapOf(), refMapOf())
-        assertContentEquals(keyRefMapOf(function to cfg), result)
+        assertEquals(keyRefMapOf(function to cfg), result)
     }
 
     // czynność f() { { 123 } }
@@ -193,7 +192,7 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(listOf(node), node, refMapOf(), refMapOf(), refMapOf())
-        assertContentEquals(keyRefMapOf(function to cfg), result)
+        assertEquals(keyRefMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -226,7 +225,7 @@ class FunctionControlFlowTest {
             refMapOf(node1 to node3)
         )
 
-        assertContentEquals(keyRefMapOf(function to cfg), result)
+        assertEquals(keyRefMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -263,7 +262,7 @@ class FunctionControlFlowTest {
             refMapOf(node1 to node3)
         )
 
-        assertContentEquals(keyRefMapOf(function to cfg), result)
+        assertEquals(keyRefMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -296,7 +295,7 @@ class FunctionControlFlowTest {
             refMapOf(node1 to node3)
         )
 
-        assertContentEquals(keyRefMapOf(function to cfg), result)
+        assertEquals(keyRefMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -335,7 +334,7 @@ class FunctionControlFlowTest {
             refMapOf(node1 to node4, node2 to node3)
         )
 
-        assertContentEquals(keyRefMapOf(function to cfg), result)
+        assertEquals(keyRefMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -374,7 +373,7 @@ class FunctionControlFlowTest {
             refMapOf(node1 to node4, node2 to node3)
         )
 
-        assertContentEquals(keyRefMapOf(function to cfg), result)
+        assertEquals(keyRefMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -417,7 +416,7 @@ class FunctionControlFlowTest {
             refMapOf(node1 to node5, node2 to node3, node3 to node4)
         )
 
-        assertContentEquals(keyRefMapOf(function to cfg), result)
+        assertEquals(keyRefMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -473,7 +472,7 @@ class FunctionControlFlowTest {
             refMapOf(node1 to node8, node2 to node3, node3 to node7, node4 to node5, node5 to node6, node7 to node1)
         )
 
-        assertContentEquals(keyRefMapOf(function to cfg), result)
+        assertEquals(keyRefMapOf(function to cfg), result)
     }
 
     // czynność f() {
@@ -504,7 +503,7 @@ class FunctionControlFlowTest {
             refMapOf(node1 to node2)
         )
 
-        assertContentEquals(keyRefMapOf(function to cfg), result)
+        assertEquals(keyRefMapOf(function to cfg), result)
     }
 
     // czynność f() { przerwij }
@@ -517,7 +516,7 @@ class FunctionControlFlowTest {
 
         test(program)
 
-        assertContentEquals(listOf(ControlFlowDiagnostic.Errors.BreakOutsideOfLoop(loopBreak)), diagnostics)
+        assertEquals(listOf<Diagnostic>(ControlFlowDiagnostic.Errors.BreakOutsideOfLoop(loopBreak)), diagnostics)
     }
 
     // czynność f() { pomiń }
@@ -530,7 +529,7 @@ class FunctionControlFlowTest {
 
         test(program)
 
-        assertContentEquals(listOf(ControlFlowDiagnostic.Errors.ContinuationOutsideOfLoop(loopContinuation)), diagnostics)
+        assertEquals(listOf<Diagnostic>(ControlFlowDiagnostic.Errors.ContinuationOutsideOfLoop(loopContinuation)), diagnostics)
     }
 
     // czynność f() {
@@ -550,7 +549,7 @@ class FunctionControlFlowTest {
 
         test(program)
 
-        assertContentEquals(listOf(ControlFlowDiagnostic.Warnings.UnreachableStatement(evaluation)), diagnostics)
+        assertEquals(listOf<Diagnostic>(ControlFlowDiagnostic.Warnings.UnreachableStatement(evaluation)), diagnostics)
     }
 
     // czynność f() {
@@ -574,7 +573,7 @@ class FunctionControlFlowTest {
 
         test(program)
 
-        assertContentEquals(listOf(ControlFlowDiagnostic.Warnings.UnreachableStatement(evaluation)), diagnostics)
+        assertEquals(listOf<Diagnostic>(ControlFlowDiagnostic.Warnings.UnreachableStatement(evaluation)), diagnostics)
     }
 
     // czynność f() {
@@ -598,6 +597,6 @@ class FunctionControlFlowTest {
 
         test(program)
 
-        assertContentEquals(listOf(ControlFlowDiagnostic.Warnings.UnreachableStatement(evaluation)), diagnostics)
+        assertEquals(listOf<Diagnostic>(ControlFlowDiagnostic.Warnings.UnreachableStatement(evaluation)), diagnostics)
     }
 }

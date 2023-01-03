@@ -15,12 +15,12 @@ import compiler.intermediate.generators.DefaultFunctionDetailsGenerator
 import compiler.intermediate.generators.FunctionDetailsGenerator
 import compiler.intermediate.generators.VariableLocationType
 import compiler.utils.Ref
-import compiler.utils.assertContentEquals
 import compiler.utils.keyRefMapOf
 import compiler.utils.refMapOf
 import compiler.utils.refSetOf
 import kotlin.test.Test
 import kotlin.test.assertContains
+import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
 class FunctionDependenciesAnalyzerTest {
@@ -35,7 +35,7 @@ class FunctionDependenciesAnalyzerTest {
         val program = Program(listOf(Program.Global.FunctionDefinition(noPolishSigns)))
         val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program, false)
         val expectedIdentifiers = keyRefMapOf(noPolishSigns to noPolishSignsIdentifier)
-        assertContentEquals(expectedIdentifiers, actualIdentifiers)
+        assertEquals(expectedIdentifiers, actualIdentifiers)
     }
 
     @Test fun `test create unique identifiers no polish signs`() {
@@ -49,7 +49,7 @@ class FunctionDependenciesAnalyzerTest {
         val program = Program(listOf(Program.Global.FunctionDefinition(polishSigns)))
         val actualIdentifiers = FunctionDependenciesAnalyzer.createUniqueIdentifiers(program, false)
         val expectedIdentifiers = keyRefMapOf(polishSigns to polishSignsIdentifier)
-        assertContentEquals(expectedIdentifiers, actualIdentifiers)
+        assertEquals(expectedIdentifiers, actualIdentifiers)
     }
 
     @Test fun `test create unique identifiers nested`() {
@@ -73,7 +73,7 @@ class FunctionDependenciesAnalyzerTest {
             noPolishSigns to noPolishSignsIdentifier,
             outerFunction to outerFunctionIdentifier
         )
-        assertContentEquals(expectedIdentifiers, actualIdentifiers)
+        assertEquals(expectedIdentifiers, actualIdentifiers)
     }
 
     @Test fun `test identical function names with accuracy to polish signs do not cause identifier conflict`() {
@@ -109,7 +109,7 @@ class FunctionDependenciesAnalyzerTest {
             inner3 to inner3Identifier,
             outerFunction to outerFunctionIdentifier
         )
-        assertContentEquals(expectedIdentifiers, actualIdentifiers)
+        assertEquals(expectedIdentifiers, actualIdentifiers)
     }
 
     @Test fun `test function with name in forbidden memory label list is not assigned forbidden identifier`() {
@@ -222,7 +222,7 @@ class FunctionDependenciesAnalyzerTest {
             functionCopy2 to functionCopy2Identifier,
             functionCopy3 to functionCopy3Identifier,
         )
-        assertContentEquals(expectedIdentifiers, actualIdentifiers)
+        assertEquals(expectedIdentifiers, actualIdentifiers)
     }
 
     @Test fun `test function details generator creation`() {
@@ -294,7 +294,7 @@ class FunctionDependenciesAnalyzerTest {
             )
         )
         val actualResult = FunctionDependenciesAnalyzer.createFunctionDetailsGenerators(program, variableProperties, keyRefMapOf())
-        assertContentEquals(expectedResult, actualResult)
+        assertEquals(expectedResult, actualResult)
     }
 
     @Test fun `test function details generator creation for function that returns variable`() {
@@ -341,7 +341,7 @@ class FunctionDependenciesAnalyzerTest {
             ) as FunctionDetailsGenerator
         )
         val actualResult = FunctionDependenciesAnalyzer.createFunctionDetailsGenerators(program, variableProperties, keyRefMapOf(functionF to returnVariable))
-        assertContentEquals(expectedResult, actualResult)
+        assertEquals(expectedResult, actualResult)
     }
 
     @Test fun `test a function that does not call`() {
@@ -366,7 +366,7 @@ class FunctionDependenciesAnalyzerTest {
             fFunction to refSetOf(),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test a function that calls another function`() {
@@ -399,7 +399,7 @@ class FunctionDependenciesAnalyzerTest {
             gFunction to refSetOf(fFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test inner functions`() {
@@ -441,7 +441,7 @@ class FunctionDependenciesAnalyzerTest {
             hFunction to refSetOf(gFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test recursion`() {
@@ -469,7 +469,7 @@ class FunctionDependenciesAnalyzerTest {
             fFunction to refSetOf(fFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test transitivity`() {
@@ -513,7 +513,7 @@ class FunctionDependenciesAnalyzerTest {
             hFunction to refSetOf(fFunction, gFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test a cycle`() {
@@ -572,7 +572,7 @@ class FunctionDependenciesAnalyzerTest {
             iFunction to refSetOf(fFunction, gFunction, hFunction, iFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test buried recursion`() {
@@ -643,7 +643,7 @@ class FunctionDependenciesAnalyzerTest {
             iFunction to refSetOf(fFunction, gFunction, hFunction, iFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test operators`() {
@@ -722,7 +722,7 @@ class FunctionDependenciesAnalyzerTest {
             testFunction to refSetOf(fFunction, gFunction, hFunction, iFunction, jFunction, kFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test variable definition and assignment`() {
@@ -782,7 +782,7 @@ class FunctionDependenciesAnalyzerTest {
             testFunction to refSetOf(fFunction, gFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test control flow`() {
@@ -882,7 +882,7 @@ class FunctionDependenciesAnalyzerTest {
             testFunction to refSetOf(fFunction, gFunction, hFunction, iFunction, jFunction, kFunction, lFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test arguments`() {
@@ -973,7 +973,7 @@ class FunctionDependenciesAnalyzerTest {
             testFunction to refSetOf(fFunction, gFunction, hFunction, iFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test default arguments`() {
@@ -1026,7 +1026,7 @@ class FunctionDependenciesAnalyzerTest {
             testFunction to refSetOf(fFunction),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test comparison by reference`() {
@@ -1085,7 +1085,7 @@ class FunctionDependenciesAnalyzerTest {
             pgFunction to refSetOf(),
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 
     @Test fun `test comparison by reference - sets`() {
@@ -1161,6 +1161,6 @@ class FunctionDependenciesAnalyzerTest {
             testFunction to refSetOf(fFunction, gFunction, pfFunction, pgFunction)
         )
 
-        assertContentEquals(expectedCallGraph, actualCallGraph)
+        assertEquals(expectedCallGraph, actualCallGraph)
     }
 }

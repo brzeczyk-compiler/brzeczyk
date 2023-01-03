@@ -9,7 +9,6 @@ import compiler.input.Location
 import compiler.input.LocationRange
 import kotlin.test.Test
 import kotlin.test.assertContains
-import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
@@ -72,9 +71,9 @@ class LexerTest {
         val input = TestInput("")
         val lexer = Lexer<Unit>(emptyList(), TestDiagnostics())
 
-        val result = lexer.process(input)
+        val result = lexer.process(input).toList()
 
-        assertContentEquals(emptySequence(), result)
+        assertEquals(emptyList(), result)
     }
 
     @Test fun `a single token is matched`() {
@@ -82,10 +81,10 @@ class LexerTest {
         val dfa = TestDfa("ab")
         val lexer = Lexer(listOf(Pair(dfa, Unit)), TestDiagnostics())
 
-        val result = lexer.process(input)
+        val result = lexer.process(input).toList()
 
         val token = Token(Unit, "ab", LocationRange(Location(1, 1), Location(1, 2)))
-        assertContentEquals(sequenceOf(token), result)
+        assertEquals(listOf(token), result)
     }
 
     @Test fun `multiple tokens are matched`() {
@@ -94,12 +93,12 @@ class LexerTest {
         val dfa2 = TestDfa("ab")
         val lexer = Lexer(listOf(Pair(dfa1, 1), Pair(dfa2, 2)), TestDiagnostics())
 
-        val result = lexer.process(input)
+        val result = lexer.process(input).toList()
 
         val token1 = Token(1, "aa", LocationRange(Location(1, 1), Location(1, 2)))
         val token2 = Token(2, "ab", LocationRange(Location(1, 3), Location(1, 4)))
         val token3 = Token(2, "ab", LocationRange(Location(1, 5), Location(1, 6)))
-        assertContentEquals(sequenceOf(token1, token2, token3), result)
+        assertEquals(listOf(token1, token2, token3), result)
     }
 
     @Test fun `the token matching is greedy`() {
@@ -108,11 +107,11 @@ class LexerTest {
         val dfa2 = TestDfa("aa")
         val lexer = Lexer(listOf(Pair(dfa1, 1), Pair(dfa2, 2)), TestDiagnostics())
 
-        val result = lexer.process(input)
+        val result = lexer.process(input).toList()
 
         val token1 = Token(2, "aa", LocationRange(Location(1, 1), Location(1, 2)))
         val token2 = Token(1, "a", LocationRange(Location(1, 3), Location(1, 3)))
-        assertContentEquals(sequenceOf(token1, token2), result)
+        assertEquals(listOf(token1, token2), result)
     }
 
     @Test fun `the lexer can correctly rewind input`() {
@@ -121,12 +120,12 @@ class LexerTest {
         val dfa2 = TestDfa("aab")
         val lexer = Lexer(listOf(Pair(dfa1, 1), Pair(dfa2, 2)), TestDiagnostics())
 
-        val result = lexer.process(input)
+        val result = lexer.process(input).toList()
 
         val token1 = Token(1, "a", LocationRange(Location(1, 1), Location(1, 1)))
         val token2 = Token(1, "a", LocationRange(Location(1, 2), Location(1, 2)))
         val token3 = Token(1, "a", LocationRange(Location(1, 3), Location(1, 3)))
-        assertContentEquals(sequenceOf(token1, token2, token3), result)
+        assertEquals(listOf(token1, token2, token3), result)
     }
 
     @Test fun `a token category earlier in the list has higher priority`() {
@@ -136,13 +135,13 @@ class LexerTest {
         val lexer1 = Lexer(listOf(Pair(dfa, 1), Pair(dfa, 2)), TestDiagnostics())
         val lexer2 = Lexer(listOf(Pair(dfa, 2), Pair(dfa, 1)), TestDiagnostics())
 
-        val result1 = lexer1.process(input1)
-        val result2 = lexer2.process(input2)
+        val result1 = lexer1.process(input1).toList()
+        val result2 = lexer2.process(input2).toList()
 
         val token1 = Token(1, "ab", LocationRange(Location(1, 1), Location(1, 2)))
         val token2 = Token(2, "ab", LocationRange(Location(1, 1), Location(1, 2)))
-        assertContentEquals(sequenceOf(token1), result1)
-        assertContentEquals(sequenceOf(token2), result2)
+        assertEquals(listOf(token1), result1)
+        assertEquals(listOf(token2), result2)
     }
 
     @Test fun `the lexer flushes the input after matching a token`() {
@@ -176,11 +175,11 @@ class LexerTest {
         val dfa2 = TestDfa("othertoken")
         val lexer = Lexer(listOf(Pair(dfa1, 1), Pair(dfa2, 2)), TestDiagnostics())
 
-        val result = lexer.process(input)
+        val result = lexer.process(input).toList()
 
         val token1 = Token(1, "token", LocationRange(Location(1, 2), Location(1, 6)))
         val token2 = Token(2, "othertoken", LocationRange(Location(1, 8), Location(1, 17)))
-        assertContentEquals(sequenceOf(token1, token2), result)
+        assertEquals(listOf(token1, token2), result)
     }
 
     @Test fun `multiple errors are reported`() {

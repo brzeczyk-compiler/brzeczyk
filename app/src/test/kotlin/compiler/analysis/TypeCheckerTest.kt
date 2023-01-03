@@ -13,12 +13,11 @@ import compiler.diagnostics.Diagnostic
 import compiler.diagnostics.Diagnostic.ResolutionDiagnostic.TypeCheckingError
 import compiler.diagnostics.Diagnostics
 import compiler.utils.Ref
-import compiler.utils.assertContentEquals
 import compiler.utils.keyRefMapOf
 import compiler.utils.mutableRefMapOf
 import java.lang.RuntimeException
 import kotlin.test.Test
-import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class TypeCheckerTest {
@@ -41,7 +40,7 @@ class TypeCheckerTest {
 
         TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // wart x: Liczba = 123
@@ -54,7 +53,7 @@ class TypeCheckerTest {
 
         TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // zm x: Liczba = 123
@@ -67,7 +66,7 @@ class TypeCheckerTest {
 
         TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // stała x: Liczba
@@ -81,7 +80,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.ConstantWithoutValue(variable)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.ConstantWithoutValue(variable)), diagnosticsList)
     }
 
     // wart x: Liczba
@@ -95,7 +94,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.UninitializedGlobalVariable(variable)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.UninitializedGlobalVariable(variable)), diagnosticsList)
     }
 
     // zm x: Liczba
@@ -109,7 +108,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.UninitializedGlobalVariable(variable)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.UninitializedGlobalVariable(variable)), diagnosticsList)
     }
 
     private fun dummyFunction(name: String): Function {
@@ -133,7 +132,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.NonConstantExpression(call)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.NonConstantExpression(call)), diagnosticsList)
     }
 
     // czynność f() -> Liczba { zwróć 123 }
@@ -151,7 +150,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.NonConstantExpression(call)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.NonConstantExpression(call)), diagnosticsList)
     }
 
     // czynność f() -> Liczba { zwróć 123 }
@@ -169,7 +168,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.NonConstantExpression(call)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.NonConstantExpression(call)), diagnosticsList)
     }
 
     // zm x: Liczba = prawda
@@ -184,7 +183,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.InvalidType(value, Type.Boolean, Type.Number)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.InvalidType(value, Type.Boolean, Type.Number)), diagnosticsList)
     }
 
     // czynność f(x: Liczba) { }
@@ -197,7 +196,7 @@ class TypeCheckerTest {
 
         TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność f(x: Liczba = 123) { }
@@ -211,7 +210,7 @@ class TypeCheckerTest {
 
         TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność g() -> Liczba { zwróć 123 }
@@ -230,7 +229,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.NonConstantExpression(call)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.NonConstantExpression(call)), diagnosticsList)
     }
 
     // czynność f(x: Liczba = prawda) { }
@@ -246,7 +245,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.InvalidType(value, Type.Boolean, Type.Number)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.InvalidType(value, Type.Boolean, Type.Number)), diagnosticsList)
     }
 
     private fun mainFunction(body: StatementBlock) = Function("główna", listOf(), Type.Unit, body)
@@ -265,7 +264,7 @@ class TypeCheckerTest {
 
         TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność główna() { stała x: Liczba = 123 }
@@ -279,7 +278,7 @@ class TypeCheckerTest {
 
         TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność główna() { wart x: Liczba = 123 }
@@ -293,7 +292,7 @@ class TypeCheckerTest {
 
         TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność główna() { zm x: Liczba = 123 }
@@ -307,7 +306,7 @@ class TypeCheckerTest {
 
         TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność główna() { stała x: Liczba }
@@ -322,7 +321,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.ConstantWithoutValue(variable)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.ConstantWithoutValue(variable)), diagnosticsList)
     }
 
     // czynność główna() { wart x: Liczba }
@@ -335,7 +334,7 @@ class TypeCheckerTest {
 
         TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność główna() { zm x: Liczba }
@@ -348,7 +347,7 @@ class TypeCheckerTest {
 
         TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność f() -> Liczba { zwróć 123 }
@@ -367,7 +366,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.NonConstantExpression(call)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.NonConstantExpression(call)), diagnosticsList)
     }
 
     // czynność f() -> Liczba { zwróć 123 }
@@ -384,7 +383,7 @@ class TypeCheckerTest {
 
         TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność f() -> Liczba { zwróć 123 }
@@ -401,7 +400,7 @@ class TypeCheckerTest {
 
         TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność główna() { zm x: Liczba = prawda }
@@ -417,7 +416,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.InvalidType(value, Type.Boolean, Type.Number)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.InvalidType(value, Type.Boolean, Type.Number)), diagnosticsList)
     }
 
     // czynność główna() { czynność f(x: Liczba) { } }
@@ -431,7 +430,7 @@ class TypeCheckerTest {
 
         TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność główna() { czynność f(x: Liczba = 123) { } }
@@ -446,7 +445,7 @@ class TypeCheckerTest {
 
         TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność g() -> Liczba { zwróć 123 }
@@ -464,7 +463,7 @@ class TypeCheckerTest {
 
         TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność główna() { czynność f(x: Liczba = prawda) { } }
@@ -481,7 +480,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.InvalidType(value, Type.Boolean, Type.Number)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.InvalidType(value, Type.Boolean, Type.Number)), diagnosticsList)
     }
 
     // czynność główna() {
@@ -501,7 +500,7 @@ class TypeCheckerTest {
 
         TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność główna() {
@@ -523,7 +522,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.ImmutableAssignment(assignment, variable)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.ImmutableAssignment(assignment, variable)), diagnosticsList)
     }
 
     // czynność główna() {
@@ -545,7 +544,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.ImmutableAssignment(assignment, variable)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.ImmutableAssignment(assignment, variable)), diagnosticsList)
     }
 
     // czynność f(x: Liczba) { x = 1 }
@@ -563,7 +562,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.ParameterAssignment(assignment, parameter)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.ParameterAssignment(assignment, parameter)), diagnosticsList)
     }
 
     // czynność f() { }
@@ -582,7 +581,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.FunctionAssignment(assignment, function)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.FunctionAssignment(assignment, function)), diagnosticsList)
     }
 
     // czynność główna() { { nic } }
@@ -596,7 +595,7 @@ class TypeCheckerTest {
 
         TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność główna() { jeśli (prawda) nic wpp nic }
@@ -611,7 +610,7 @@ class TypeCheckerTest {
 
         TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność główna() { jeśli (123) nic wpp nic }
@@ -628,7 +627,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.InvalidType(condition, Type.Number, Type.Boolean)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.InvalidType(condition, Type.Number, Type.Boolean)), diagnosticsList)
     }
 
     // czynność główna() { dopóki (prawda) nic }
@@ -643,7 +642,7 @@ class TypeCheckerTest {
 
         TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność główna() { dopóki (prawda) przerwij }
@@ -658,7 +657,7 @@ class TypeCheckerTest {
 
         TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność główna() { dopóki (prawda) pomiń }
@@ -673,7 +672,7 @@ class TypeCheckerTest {
 
         TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność główna() { dopóki (123) nic }
@@ -690,7 +689,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.InvalidType(condition, Type.Number, Type.Boolean)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.InvalidType(condition, Type.Number, Type.Boolean)), diagnosticsList)
     }
 
     // czynność f() -> Liczba { zwróć 123 }
@@ -704,7 +703,7 @@ class TypeCheckerTest {
 
         TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność f() -> Liczba { zwróć prawda }
@@ -720,7 +719,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.InvalidType(value, Type.Boolean, Type.Number)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.InvalidType(value, Type.Boolean, Type.Number)), diagnosticsList)
     }
 
     // czynność główna() { nic }
@@ -734,8 +733,8 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(keyRefMapOf(value to Type.Unit), types)
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(keyRefMapOf<Expression, Type>(value to Type.Unit), types)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność główna() { prawda }
@@ -749,8 +748,8 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(keyRefMapOf(value to Type.Boolean), types)
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(keyRefMapOf<Expression, Type>(value to Type.Boolean), types)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność główna() { 123 }
@@ -764,8 +763,8 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(keyRefMapOf(value to Type.Number), types)
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(keyRefMapOf<Expression, Type>(value to Type.Number), types)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność główna() {
@@ -785,8 +784,8 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(keyRefMapOf(value to Type.Number, variableExpression to Type.Number), types)
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(keyRefMapOf(value to Type.Number, variableExpression to Type.Number), types)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność f(x: Liczba) { x }
@@ -802,8 +801,8 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(keyRefMapOf(variableExpression to Type.Number), types)
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(keyRefMapOf<Expression, Type>(variableExpression to Type.Number), types)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność f() { }
@@ -822,7 +821,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.FunctionAsValue(variableExpression, function)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.FunctionAsValue(variableExpression, function)), diagnosticsList)
     }
 
     // czynność główna() {
@@ -844,7 +843,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.VariableCall(call, variable)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.VariableCall(call, variable)), diagnosticsList)
     }
 
     // czynność f(x: Liczba) {
@@ -864,7 +863,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.ParameterCall(call, parameter)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.ParameterCall(call, parameter)), diagnosticsList)
     }
 
     // czynność f(x: Liczba) { }
@@ -885,7 +884,7 @@ class TypeCheckerTest {
 
         TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność f(x: Liczba) { }
@@ -908,7 +907,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.InvalidType(value, Type.Boolean, Type.Number)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.InvalidType(value, Type.Boolean, Type.Number)), diagnosticsList)
     }
 
     // czynność f() -> Liczba { zwróć 123 }
@@ -927,8 +926,8 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(keyRefMapOf(value to Type.Number, call to Type.Number), types)
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(keyRefMapOf(value to Type.Number, call to Type.Number), types)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność główna() { nie prawda }
@@ -943,8 +942,8 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(keyRefMapOf(value to Type.Boolean, operation to Type.Boolean), types)
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(keyRefMapOf(value to Type.Boolean, operation to Type.Boolean), types)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność główna() { nie 123 }
@@ -961,7 +960,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.InvalidType(value, Type.Number, Type.Boolean)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.InvalidType(value, Type.Number, Type.Boolean)), diagnosticsList)
     }
 
     // czynność główna() { -123 }
@@ -976,8 +975,8 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(keyRefMapOf(value to Type.Number, operation to Type.Number), types)
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(keyRefMapOf(value to Type.Number, operation to Type.Number), types)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność główna() { -prawda }
@@ -994,7 +993,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.InvalidType(value, Type.Boolean, Type.Number)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.InvalidType(value, Type.Boolean, Type.Number)), diagnosticsList)
     }
 
     // czynność główna() { prawda oraz fałsz }
@@ -1010,8 +1009,8 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(keyRefMapOf(leftValue to Type.Boolean, rightValue to Type.Boolean, operation to Type.Boolean), types)
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(keyRefMapOf(leftValue to Type.Boolean, rightValue to Type.Boolean, operation to Type.Boolean), types)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność główna() { prawda oraz 123 }
@@ -1029,7 +1028,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.InvalidType(rightValue, Type.Number, Type.Boolean)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.InvalidType(rightValue, Type.Number, Type.Boolean)), diagnosticsList)
     }
 
     // czynność główna() { 2 + 2 }
@@ -1045,8 +1044,8 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(keyRefMapOf(leftValue to Type.Number, rightValue to Type.Number, operation to Type.Number), types)
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(keyRefMapOf(leftValue to Type.Number, rightValue to Type.Number, operation to Type.Number), types)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność główna() { prawda + 2 }
@@ -1064,7 +1063,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.InvalidType(leftValue, Type.Boolean, Type.Number)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.InvalidType(leftValue, Type.Boolean, Type.Number)), diagnosticsList)
     }
 
     // czynność główna() { 123 == 123 }
@@ -1080,8 +1079,8 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(keyRefMapOf(leftValue to Type.Number, rightValue to Type.Number, operation to Type.Boolean), types)
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(keyRefMapOf(leftValue to Type.Number, rightValue to Type.Number, operation to Type.Boolean), types)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność główna() { prawda == 1 }
@@ -1099,7 +1098,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.InvalidType(leftValue, Type.Boolean, Type.Number)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.InvalidType(leftValue, Type.Boolean, Type.Number)), diagnosticsList)
     }
 
     // czynność główna() { prawda ? 123 : 456 }
@@ -1116,7 +1115,7 @@ class TypeCheckerTest {
 
         val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
 
-        assertContentEquals(
+        assertEquals(
             keyRefMapOf(
                 condition to Type.Boolean,
                 valueWhenTrue to Type.Number,
@@ -1126,7 +1125,7 @@ class TypeCheckerTest {
             types
         )
 
-        assertContentEquals(listOf(), diagnosticsList)
+        assertEquals(listOf(), diagnosticsList)
     }
 
     // czynność główna() { 1 ? 123 : 456 }
@@ -1145,7 +1144,7 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.InvalidType(condition, Type.Number, Type.Boolean)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.InvalidType(condition, Type.Number, Type.Boolean)), diagnosticsList)
     }
 
     // czynność główna() { prawda ? 123 : fałsz }
@@ -1164,6 +1163,6 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        assertContentEquals(listOf(TypeCheckingError.ConditionalTypesMismatch(conditional, Type.Number, Type.Boolean)), diagnosticsList)
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.ConditionalTypesMismatch(conditional, Type.Number, Type.Boolean)), diagnosticsList)
     }
 }

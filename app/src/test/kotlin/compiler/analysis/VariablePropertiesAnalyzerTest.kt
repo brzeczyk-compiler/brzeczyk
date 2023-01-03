@@ -20,7 +20,6 @@ import compiler.utils.keyRefMapOf
 import compiler.utils.refMapOf
 import compiler.utils.refSetOf
 import kotlin.test.Test
-import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
@@ -73,7 +72,7 @@ class VariablePropertiesAnalyzerTest {
         else
             calculate()
 
-        assertContentEquals(expectedDiagnostics, actualDiagnostics.diagnostics.filterIsInstance<VariablePropertiesError>().toList())
+        assertEquals(expectedDiagnostics, actualDiagnostics.diagnostics.filterIsInstance<VariablePropertiesError>().toList())
     }
 
     // zm x: Liczba = 123

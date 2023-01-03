@@ -3,9 +3,7 @@ package compiler.lowlevel.dataflow
 import compiler.lowlevel.Asmable
 import compiler.lowlevel.Instruction
 import compiler.lowlevel.Label
-import compiler.utils.KeyRefMap
 import compiler.utils.Ref
-import compiler.utils.RefSet
 import compiler.utils.mutableKeyRefMapOf
 import compiler.utils.refSetOf
 
@@ -20,7 +18,7 @@ abstract class DataFlowAnalyzer<SL> {
 
     abstract fun transferFunction(instruction: Instruction, inValue: SL): SL
 
-    private fun getPredecessors(linearProgram: List<Asmable>): KeyRefMap<Instruction, List<Instruction>> {
+    private fun getPredecessors(linearProgram: List<Asmable>): Map<Ref<Instruction>, List<Instruction>> {
         val instructionList = linearProgram.filterIsInstance<Instruction>()
 
         // calculate label to instruction translation
@@ -62,14 +60,14 @@ abstract class DataFlowAnalyzer<SL> {
         return predecessors.map { it.toPair() }.toMap()
     }
 
-    private fun getEntryPoints(instructionList: List<Instruction>): RefSet<Instruction> {
+    private fun getEntryPoints(instructionList: List<Instruction>): Set<Ref<Instruction>> {
         return if (backward)
             instructionList.filterIsInstance<Instruction.RetInstruction>().map(::Ref).toSet()
         else
             refSetOf(instructionList.first())
     }
 
-    data class DataFlowResult<SL>(val inValues: KeyRefMap<Instruction, SL>, val outValues: KeyRefMap<Instruction, SL>)
+    data class DataFlowResult<SL>(val inValues: Map<Ref<Instruction>, SL>, val outValues: Map<Ref<Instruction>, SL>)
 
     fun analyze(linearProgram: List<Asmable>): DataFlowResult<SL> {
         val predecessors = getPredecessors(linearProgram)

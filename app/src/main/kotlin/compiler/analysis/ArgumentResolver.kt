@@ -11,31 +11,28 @@ import compiler.ast.StatementBlock
 import compiler.ast.Variable
 import compiler.diagnostics.Diagnostic
 import compiler.diagnostics.Diagnostics
-import compiler.utils.KeyRefMap
 import compiler.utils.Ref
-import compiler.utils.RefMap
-import compiler.utils.RefSet
 import compiler.utils.mutableKeyRefMapOf
 import compiler.utils.mutableRefMapOf
 
-typealias ArgumentResolutionResult = RefMap<Expression.FunctionCall.Argument, Function.Parameter>
+typealias ArgumentResolutionResult = Map<Ref<Expression.FunctionCall.Argument>, Ref<Function.Parameter>>
 
-class ArgumentResolver(private val nameResolution: RefMap<AstNode, NamedNode>, private val diagnostics: Diagnostics) {
+class ArgumentResolver(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>, private val diagnostics: Diagnostics) {
     data class ArgumentResolutionResult(
-        val argumentsToParametersMap: RefMap<Expression.FunctionCall.Argument, Function.Parameter>,
-        val accessedDefaultValues: KeyRefMap<Expression.FunctionCall, RefSet<Function.Parameter>>
+        val argumentsToParametersMap: Map<Ref<Expression.FunctionCall.Argument>, Ref<Function.Parameter>>,
+        val accessedDefaultValues: Map<Ref<Expression.FunctionCall>, Set<Ref<Function.Parameter>>>
     )
 
     class ResolutionFailed : CompilationFailed()
 
     private val argumentsToParametersMap = mutableRefMapOf<Expression.FunctionCall.Argument, Function.Parameter>()
-    private val accessedDefaultValues = mutableKeyRefMapOf<Expression.FunctionCall, RefSet<Function.Parameter>>()
+    private val accessedDefaultValues = mutableKeyRefMapOf<Expression.FunctionCall, Set<Ref<Function.Parameter>>>()
     private var failed = false
 
     companion object {
         fun calculateArgumentToParameterResolution(
             program: Program,
-            nameResolution: RefMap<AstNode, NamedNode>,
+            nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
             diagnostics: Diagnostics
         ): ArgumentResolutionResult {
             val resolver = ArgumentResolver(nameResolution, diagnostics)

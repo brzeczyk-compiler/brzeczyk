@@ -12,19 +12,17 @@ import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.diagnostics.Diagnostic.ResolutionDiagnostic.TypeCheckingError
 import compiler.diagnostics.Diagnostics
-import compiler.utils.KeyRefMap
 import compiler.utils.Ref
-import compiler.utils.RefMap
 import compiler.utils.mutableKeyRefMapOf
 
-class TypeChecker(private val nameResolution: RefMap<AstNode, NamedNode>, private val argumentResolution: ArgumentResolutionResult, private val diagnostics: Diagnostics) {
+class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>, private val argumentResolution: ArgumentResolutionResult, private val diagnostics: Diagnostics) {
     private val expressionTypes = mutableKeyRefMapOf<Expression, Type>()
     private var failed = false
 
     class TypeCheckingFailed : CompilationFailed()
 
     companion object {
-        fun calculateTypes(program: Program, nameResolution: RefMap<AstNode, NamedNode>, argumentResolution: ArgumentResolutionResult, diagnostics: Diagnostics): KeyRefMap<Expression, Type> {
+        fun calculateTypes(program: Program, nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>, argumentResolution: ArgumentResolutionResult, diagnostics: Diagnostics): Map<Ref<Expression>, Type> {
             val checker = TypeChecker(nameResolution, argumentResolution, diagnostics)
 
             checker.checkProgram(program)

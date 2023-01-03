@@ -11,7 +11,6 @@ import compiler.ast.Variable
 import compiler.diagnostics.Diagnostic
 import compiler.diagnostics.Diagnostic.ResolutionDiagnostic.ControlFlowDiagnostic
 import compiler.diagnostics.Diagnostics
-import compiler.utils.MutableRefMap
 import compiler.utils.Ref
 import compiler.utils.assertContentEquals
 import compiler.utils.keyRefMapOf
@@ -23,7 +22,7 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 
 class FunctionControlFlowTest {
-    private val expressionNodes = mutableKeyRefMapOf<Expression, MutableRefMap<Variable?, IFTNode>>()
+    private val expressionNodes = mutableKeyRefMapOf<Expression, MutableMap<Ref<Variable?>, Ref<IFTNode>>>()
     private val nameResolution = mutableRefMapOf<AstNode, NamedNode>()
     private val defaultParameterValues = mutableKeyRefMapOf<Function.Parameter, Variable>()
     private val functionReturnedValueVariables = mutableKeyRefMapOf<Function, Variable>()

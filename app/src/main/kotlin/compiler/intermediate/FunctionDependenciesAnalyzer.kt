@@ -17,15 +17,12 @@ import compiler.intermediate.generators.DefaultFunctionDetailsGenerator
 import compiler.intermediate.generators.ForeignFunctionDetailsGenerator
 import compiler.intermediate.generators.FunctionDetailsGenerator
 import compiler.intermediate.generators.VariableLocationType
-import compiler.utils.KeyRefMap
 import compiler.utils.Ref
-import compiler.utils.RefMap
-import compiler.utils.RefSet
 import compiler.utils.mutableKeyRefMapOf
 import compiler.utils.refSetOf
 
 object FunctionDependenciesAnalyzer {
-    fun createUniqueIdentifiers(program: Program, allowInconsistentNamingErrors: Boolean): KeyRefMap<Function, UniqueIdentifier> {
+    fun createUniqueIdentifiers(program: Program, allowInconsistentNamingErrors: Boolean): Map<Ref<Function>, UniqueIdentifier> {
         val uniqueIdentifiers = mutableKeyRefMapOf<Function, UniqueIdentifier>()
         val identifierFactory = UniqueIdentifierFactory()
         fun nameFunction(function: Function, pathSoFar: String?): String {
@@ -87,10 +84,10 @@ object FunctionDependenciesAnalyzer {
 
     fun createFunctionDetailsGenerators(
         program: Program,
-        variableProperties: KeyRefMap<AstNode, VariablePropertiesAnalyzer.VariableProperties>,
-        functionReturnedValueVariables: KeyRefMap<Function, Variable>,
+        variableProperties: Map<Ref<AstNode>, VariablePropertiesAnalyzer.VariableProperties>,
+        functionReturnedValueVariables: Map<Ref<Function>, Variable>,
         allowInconsistentNamingErrors: Boolean = false
-    ): KeyRefMap<Function, FunctionDetailsGenerator> {
+    ): Map<Ref<Function>, FunctionDetailsGenerator> {
         val result = mutableKeyRefMapOf<Function, FunctionDetailsGenerator>()
         val functionIdentifiers = createUniqueIdentifiers(program, allowInconsistentNamingErrors)
 
@@ -153,12 +150,12 @@ object FunctionDependenciesAnalyzer {
         return result
     }
 
-    fun createCallGraph(ast: Program, nameResolution: RefMap<AstNode, NamedNode>): KeyRefMap<Function, RefSet<Function>> {
+    fun createCallGraph(ast: Program, nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>): Map<Ref<Function>, Set<Ref<Function>>> {
 
-        val functionCalls = mutableKeyRefMapOf<Function, RefSet<Function>>()
+        val functionCalls = mutableKeyRefMapOf<Function, Set<Ref<Function>>>()
 
-        fun getCalledFunctions(global: Program.Global): RefSet<Function> {
-            fun getCalledFunctions(expression: Expression?): RefSet<Function> = when (expression) {
+        fun getCalledFunctions(global: Program.Global): Set<Ref<Function>> {
+            fun getCalledFunctions(expression: Expression?): Set<Ref<Function>> = when (expression) {
                 is Expression.BooleanLiteral -> refSetOf()
                 is Expression.NumberLiteral -> refSetOf()
                 is Expression.UnitLiteral -> refSetOf()
@@ -166,7 +163,7 @@ object FunctionDependenciesAnalyzer {
                 null -> refSetOf()
 
                 is Expression.FunctionCall -> refSetOf(nameResolution[Ref(expression)]!!.value as Function) +
-                    expression.arguments.map { getCalledFunctions(it.value) }.fold(emptySet(), RefSet<Function>::plus)
+                    expression.arguments.map { getCalledFunctions(it.value) }.fold(emptySet(), Set<Ref<Function>>::plus)
 
                 is Expression.UnaryOperation -> getCalledFunctions(expression.operand)
 
@@ -178,9 +175,9 @@ object FunctionDependenciesAnalyzer {
                     getCalledFunctions(expression.resultWhenFalse)
             }
 
-            fun getCalledFunctions(statement: Statement): RefSet<Function> {
-                fun getCalledFunctions(list: List<Statement>?): RefSet<Function> =
-                    if (list === null) refSetOf() else list.map { getCalledFunctions(it) }.fold(emptySet(), RefSet<Function>::plus)
+            fun getCalledFunctions(statement: Statement): Set<Ref<Function>> {
+                fun getCalledFunctions(list: List<Statement>?): Set<Ref<Function>> =
+                    if (list === null) refSetOf() else list.map { getCalledFunctions(it) }.fold(emptySet(), Set<Ref<Function>>::plus)
 
                 return when (statement) {
                     is Statement.LoopBreak -> refSetOf()
@@ -188,7 +185,7 @@ object FunctionDependenciesAnalyzer {
 
                     is Statement.FunctionDefinition -> {
                         functionCalls[Ref(statement.function)] = getCalledFunctions(statement.function.body)
-                        return statement.function.parameters.map { getCalledFunctions(it.defaultValue) }.fold(emptySet(), RefSet<Function>::plus)
+                        return statement.function.parameters.map { getCalledFunctions(it.defaultValue) }.fold(emptySet(), Set<Ref<Function>>::plus)
                     }
 
                     is Statement.Evaluation -> getCalledFunctions(statement.expression)
@@ -214,7 +211,7 @@ object FunctionDependenciesAnalyzer {
                 is Program.Global.VariableDefinition -> refSetOf()
 
                 is Program.Global.FunctionDefinition -> {
-                    functionCalls[Ref(global.function)] = global.function.body.map { getCalledFunctions(it) }.fold(emptySet(), RefSet<Function>::plus)
+                    functionCalls[Ref(global.function)] = global.function.body.map { getCalledFunctions(it) }.fold(emptySet(), Set<Ref<Function>>::plus)
                     return refSetOf()
                 }
             }
@@ -223,11 +220,11 @@ object FunctionDependenciesAnalyzer {
         ast.globals.forEach { getCalledFunctions(it) }
 
         val allFunctions = functionCalls.keys
-        var previousPartialTransitiveFunctionCalls: KeyRefMap<Function, RefSet<Function>>
+        var previousPartialTransitiveFunctionCalls: Map<Ref<Function>, Set<Ref<Function>>>
         var nextPartialTransitiveFunctionCalls = functionCalls
 
-        fun getAllCallsOfChildren(calls: KeyRefMap<Function, RefSet<Function>>, function: Function): RefSet<Function> =
-            calls[Ref(function)]!!.map { calls[it]!! }.fold(emptySet(), RefSet<Function>::plus)
+        fun getAllCallsOfChildren(calls: Map<Ref<Function>, Set<Ref<Function>>>, function: Function) =
+            calls[Ref(function)]!!.map { calls[it]!! }.fold(emptySet(), Set<Ref<Function>>::plus)
 
         repeat(allFunctions.size) {
             previousPartialTransitiveFunctionCalls = nextPartialTransitiveFunctionCalls

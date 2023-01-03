@@ -15,9 +15,7 @@ import compiler.ast.Variable
 import compiler.diagnostics.CompilerDiagnostics
 import compiler.diagnostics.Diagnostic.ResolutionDiagnostic.VariablePropertiesError
 import compiler.diagnostics.Diagnostic.ResolutionDiagnostic.VariablePropertiesError.AssignmentToFunctionParameter
-import compiler.utils.KeyRefMap
-import compiler.utils.RefMap
-import compiler.utils.RefSet
+import compiler.utils.Ref
 import compiler.utils.keyRefMapOf
 import compiler.utils.refMapOf
 import compiler.utils.refSetOf
@@ -30,15 +28,15 @@ class VariablePropertiesAnalyzerTest {
 
     private data class VariablePropertyInput(
         val program: Program,
-        val nameResolution: RefMap<AstNode, NamedNode>,
-        val defaultParameterMapping: KeyRefMap<Function.Parameter, Variable> = keyRefMapOf(),
-        val functionReturnedValueVariables: KeyRefMap<Function, Variable> = keyRefMapOf(),
-        val accessedDefaultValues: KeyRefMap<Expression.FunctionCall, RefSet<Function.Parameter>> = keyRefMapOf(),
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
+        val defaultParameterMapping: Map<Ref<Function.Parameter>, Variable> = keyRefMapOf(),
+        val functionReturnedValueVariables: Map<Ref<Function>, Variable> = keyRefMapOf(),
+        val accessedDefaultValues: Map<Ref<Expression.FunctionCall>, Set<Ref<Function.Parameter>>> = keyRefMapOf(),
     )
 
     private fun checkAnalysisResults(
         input: VariablePropertyInput,
-        expectedAnalysisResults: KeyRefMap<AstNode, VariableProperties>
+        expectedAnalysisResults: Map<Ref<AstNode>, VariableProperties>
     ) {
         val actualAnalysisResults = VariablePropertiesAnalyzer.calculateVariableProperties(
             input.program,
@@ -106,7 +104,7 @@ class VariablePropertiesAnalyzerTest {
         )
         val input = VariablePropertyInput(Program(listOf(FunctionDefinition(function))), refMapOf())
 
-        val expectedResults: KeyRefMap<AstNode, VariableProperties> = keyRefMapOf(
+        val expectedResults: Map<Ref<AstNode>, VariableProperties> = keyRefMapOf(
             variable to VariableProperties(function, refSetOf(), refSetOf()),
         )
 
@@ -154,7 +152,7 @@ class VariablePropertiesAnalyzerTest {
         val defaultParameterMapping = keyRefMapOf(parameterX to dummyVariableX)
         val input = VariablePropertyInput(Program(listOf(FunctionDefinition(function))), refMapOf(), defaultParameterMapping)
 
-        val expectedResults: KeyRefMap<AstNode, VariableProperties> = keyRefMapOf(
+        val expectedResults: Map<Ref<AstNode>, VariableProperties> = keyRefMapOf(
             parameterX to VariableProperties(innerFunction, refSetOf(), refSetOf()),
             dummyVariableX to VariableProperties(function, refSetOf(), refSetOf(function)),
         )
@@ -177,13 +175,13 @@ class VariablePropertiesAnalyzerTest {
             "zewnętrzna", listOf(), Type.Unit,
             listOf(Statement.VariableDefinition(variableX), Statement.VariableDefinition(variableY))
         )
-        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(readFromX to variableX)
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(readFromX to variableX)
         val input = VariablePropertyInput(
             Program(listOf(FunctionDefinition(outer))),
             nameResolution,
         )
 
-        val expectedResults: KeyRefMap<AstNode, VariableProperties> = keyRefMapOf(
+        val expectedResults: Map<Ref<AstNode>, VariableProperties> = keyRefMapOf(
             variableX to VariableProperties(outer, refSetOf(outer), refSetOf()),
             variableY to VariableProperties(outer, refSetOf(), refSetOf()),
         )
@@ -205,13 +203,13 @@ class VariablePropertiesAnalyzerTest {
             "zewnętrzna", listOf(), Type.Unit,
             listOf(Statement.VariableDefinition(variableX), assignmentToX)
         )
-        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(assignmentToX to variableX)
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(assignmentToX to variableX)
         val input = VariablePropertyInput(
             Program(listOf(FunctionDefinition(outer))),
             nameResolution,
         )
 
-        val expectedResults: KeyRefMap<AstNode, VariableProperties> = keyRefMapOf(
+        val expectedResults: Map<Ref<AstNode>, VariableProperties> = keyRefMapOf(
             variableX to VariableProperties(outer, refSetOf(), refSetOf(outer)),
         )
 
@@ -231,7 +229,7 @@ class VariablePropertiesAnalyzerTest {
             "zewnętrzna", listOf(parameterX), Type.Unit,
             listOf(assignmentToX)
         )
-        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(assignmentToX to parameterX)
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(assignmentToX to parameterX)
         val input = VariablePropertyInput(
             Program(listOf(FunctionDefinition(outer))),
             nameResolution,
@@ -263,13 +261,13 @@ class VariablePropertiesAnalyzerTest {
             "zewnętrzna", listOf(), Type.Unit,
             listOf(Statement.VariableDefinition(variableX), Statement.FunctionDefinition(inner))
         )
-        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(readFromX to variableX)
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(readFromX to variableX)
         val input = VariablePropertyInput(
             Program(listOf(FunctionDefinition(outer))),
             nameResolution,
         )
 
-        val expectedResults: KeyRefMap<AstNode, VariableProperties> = keyRefMapOf(
+        val expectedResults: Map<Ref<AstNode>, VariableProperties> = keyRefMapOf(
             variableX to VariableProperties(outer, refSetOf(inner), refSetOf()),
             variableY to VariableProperties(inner, refSetOf(), refSetOf()),
         )
@@ -297,13 +295,13 @@ class VariablePropertiesAnalyzerTest {
             "zewnętrzna", listOf(), Type.Unit,
             listOf(Statement.VariableDefinition(variableX), Statement.FunctionDefinition(inner))
         )
-        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(assignmentToX to variableX)
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(assignmentToX to variableX)
         val input = VariablePropertyInput(
             Program(listOf(FunctionDefinition(outer))),
             nameResolution,
         )
 
-        val expectedResults: KeyRefMap<AstNode, VariableProperties> = keyRefMapOf(
+        val expectedResults: Map<Ref<AstNode>, VariableProperties> = keyRefMapOf(
             variableX to VariableProperties(outer, refSetOf(), refSetOf(inner)),
         )
 
@@ -329,7 +327,7 @@ class VariablePropertiesAnalyzerTest {
             "zewnętrzna", listOf(parameterX), Type.Unit,
             listOf(Statement.FunctionDefinition(inner))
         )
-        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(assignmentToX to parameterX)
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(assignmentToX to parameterX)
         val input = VariablePropertyInput(
             Program(listOf(FunctionDefinition(outer))),
             nameResolution,
@@ -363,7 +361,7 @@ class VariablePropertiesAnalyzerTest {
             listOf(Statement.FunctionDefinition(inner))
         )
         val defaultParameterMapping = keyRefMapOf(parameterX to dummyVariableX)
-        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(readFromX to parameterX)
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(readFromX to parameterX)
         val input = VariablePropertyInput(
             Program(listOf(FunctionDefinition(outer))),
             nameResolution,
@@ -403,13 +401,13 @@ class VariablePropertiesAnalyzerTest {
             "zewnętrzna", listOf(), Type.Unit,
             listOf(Statement.VariableDefinition(variableX), Statement.FunctionDefinition(inner))
         )
-        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(readFromX to variableX)
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(readFromX to variableX)
         val input = VariablePropertyInput(
             Program(listOf(FunctionDefinition(outer))),
             nameResolution,
         )
 
-        val expectedResults: KeyRefMap<AstNode, VariableProperties> = keyRefMapOf(
+        val expectedResults: Map<Ref<AstNode>, VariableProperties> = keyRefMapOf(
             variableX to VariableProperties(outer, refSetOf(innerDeep), refSetOf()),
             variableY to VariableProperties(innerDeep, refSetOf(), refSetOf()),
         )
@@ -460,7 +458,7 @@ class VariablePropertiesAnalyzerTest {
                 Statement.FunctionDefinition(inner),
             )
         )
-        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(
             readFromX to variableX,
             assignmentToXOuter to variableX,
             assignmentToXInner to variableX,
@@ -471,7 +469,7 @@ class VariablePropertiesAnalyzerTest {
             nameResolution,
         )
 
-        val expectedResults: KeyRefMap<AstNode, VariableProperties> = keyRefMapOf(
+        val expectedResults: Map<Ref<AstNode>, VariableProperties> = keyRefMapOf(
             variableX to VariableProperties(outer, refSetOf(outer, inner, innerDeep), refSetOf(outer, inner, innerDeep)),
             variableYOuter to VariableProperties(outer, refSetOf(), refSetOf()),
             variableYInner to VariableProperties(inner, refSetOf(), refSetOf()),
@@ -500,13 +498,13 @@ class VariablePropertiesAnalyzerTest {
                 Statement.Evaluation(innerFunctionCall),
             )
         )
-        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(innerFunctionCall to innerFunction)
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(innerFunctionCall to innerFunction)
         val defaultParameterMapping = keyRefMapOf(parameterX to dummyVariableX)
         val functionReturnedValueVariables = keyRefMapOf<Function, Variable>()
-        val accessedDefaultValues: KeyRefMap<Expression.FunctionCall, RefSet<Function.Parameter>> = keyRefMapOf(innerFunctionCall to refSetOf())
+        val accessedDefaultValues: Map<Ref<Expression.FunctionCall>, Set<Ref<Function.Parameter>>> = keyRefMapOf(innerFunctionCall to refSetOf())
         val input = VariablePropertyInput(Program(listOf(FunctionDefinition(function))), nameResolution, defaultParameterMapping, functionReturnedValueVariables, accessedDefaultValues)
 
-        val expectedResults: KeyRefMap<AstNode, VariableProperties> = keyRefMapOf(
+        val expectedResults: Map<Ref<AstNode>, VariableProperties> = keyRefMapOf(
             parameterX to VariableProperties(innerFunction, refSetOf(), refSetOf()),
             dummyVariableX to VariableProperties(function, refSetOf(), refSetOf(function)),
         )
@@ -543,16 +541,16 @@ class VariablePropertiesAnalyzerTest {
                 Statement.FunctionDefinition(gFunction),
             )
         )
-        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(
             fInnerFunctionCall to innerFunction,
             gInnerFunctionCall to innerFunction,
         )
         val defaultParameterMapping = keyRefMapOf(parameterX to dummyVariableX)
         val functionReturnedValueVariables = keyRefMapOf<Function, Variable>()
-        val accessedDefaultValues: KeyRefMap<Expression.FunctionCall, RefSet<Function.Parameter>> = keyRefMapOf(fInnerFunctionCall to refSetOf(parameterX), gInnerFunctionCall to refSetOf())
+        val accessedDefaultValues: Map<Ref<Expression.FunctionCall>, Set<Ref<Function.Parameter>>> = keyRefMapOf(fInnerFunctionCall to refSetOf(parameterX), gInnerFunctionCall to refSetOf())
         val input = VariablePropertyInput(Program(listOf(FunctionDefinition(function))), nameResolution, defaultParameterMapping, functionReturnedValueVariables, accessedDefaultValues)
 
-        val expectedResults: KeyRefMap<AstNode, VariableProperties> = keyRefMapOf(
+        val expectedResults: Map<Ref<AstNode>, VariableProperties> = keyRefMapOf(
             parameterX to VariableProperties(innerFunction, refSetOf(), refSetOf()),
             dummyVariableX to VariableProperties(function, refSetOf(fFunction), refSetOf(function)),
         )

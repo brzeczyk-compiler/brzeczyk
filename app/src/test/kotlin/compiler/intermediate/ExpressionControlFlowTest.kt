@@ -9,10 +9,7 @@ import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.intermediate.generators.FunctionDetailsGenerator
 import compiler.intermediate.generators.VariableAccessGenerator
-import compiler.utils.MutableKeyRefMap
-import compiler.utils.MutableRefMap
 import compiler.utils.Ref
-import compiler.utils.RefSet
 import compiler.utils.keyRefMapOf
 import compiler.utils.mutableKeyRefMapOf
 import compiler.utils.mutableRefMapOf
@@ -60,15 +57,15 @@ class ExpressionControlFlowTest {
         val currentFunction: Function = Function("dummy", emptyList(), Type.Unit, emptyList()),
         val globals: Set<String> = emptySet()
     ) {
-        val nameResolution: MutableRefMap<AstNode, NamedNode> = mutableRefMapOf()
+        val nameResolution: MutableMap<Ref<AstNode>, Ref<NamedNode>> = mutableRefMapOf()
         var nameToVarMap: Map<String, Variable>
         var nameToParamMap: Map<String, Function.Parameter>
         var nameToFunMap: Map<String, Function>
 
         val functionDetailsGenerators = mutableKeyRefMapOf<Function, FunctionDetailsGenerator>()
         val variableProperties = mutableKeyRefMapOf<AstNode, VariablePropertiesAnalyzer.VariableProperties>()
-        val finalCallGraph = mutableKeyRefMapOf<Function, RefSet<Function>>()
-        val argumentResolution: MutableRefMap<Expression.FunctionCall.Argument, Function.Parameter> = mutableRefMapOf()
+        val finalCallGraph = mutableKeyRefMapOf<Function, Set<Ref<Function>>>()
+        val argumentResolution: MutableMap<Ref<Expression.FunctionCall.Argument>, Ref<Function.Parameter>> = mutableRefMapOf()
 
         init {
             val mutableVariableProperties = mutableKeyRefMapOf<AstNode, VariablePropertiesAnalyzer.MutableVariableProperties>()
@@ -191,7 +188,7 @@ class ExpressionControlFlowTest {
         val callResultsMap = mutableKeyRefMapOf<IFTNode.DummyCallResult, IFTNode.DummyCallResult>()
         val nodeMap = mutableKeyRefMapOf<IFTNode, IFTNode>()
 
-        fun <T> MutableKeyRefMap<T, T>.ensurePairSymmetrical(a: T, b: T): Boolean {
+        fun <T> MutableMap<Ref<T>, T>.ensurePairSymmetrical(a: T, b: T): Boolean {
             if (!this.containsKey(Ref(a))) {
                 this[Ref(a)] = b
                 return true

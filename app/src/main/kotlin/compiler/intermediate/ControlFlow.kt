@@ -18,10 +18,7 @@ import compiler.intermediate.FunctionDependenciesAnalyzer.createCallGraph
 import compiler.intermediate.generators.FunctionDetailsGenerator
 import compiler.intermediate.generators.GlobalVariableAccessGenerator
 import compiler.intermediate.generators.VariableAccessGenerator
-import compiler.utils.KeyRefMap
 import compiler.utils.Ref
-import compiler.utils.RefMap
-import compiler.utils.RefSet
 import compiler.utils.mutableKeyRefMapOf
 import compiler.utils.mutableRefSetOf
 import compiler.utils.refSetOf
@@ -32,9 +29,9 @@ object ControlFlow {
     fun createGraphForProgram(
         program: Program,
         programProperties: ProgramAnalyzer.ProgramProperties,
-        functionDetailsGenerators: KeyRefMap<Function, FunctionDetailsGenerator>,
+        functionDetailsGenerators: Map<Ref<Function>, FunctionDetailsGenerator>,
         diagnostics: Diagnostics,
-    ): KeyRefMap<Function, ControlFlowGraph> {
+    ): Map<Ref<Function>, ControlFlowGraph> {
         val globalVariableAccessGenerator = GlobalVariableAccessGenerator(programProperties.variableProperties)
         val callGraph = createCallGraph(program, programProperties.nameResolution)
 
@@ -95,22 +92,22 @@ object ControlFlow {
         expression: Expression,
         targetVariable: Variable?,
         currentFunction: Function,
-        nameResolution: RefMap<AstNode, NamedNode>,
-        variableProperties: KeyRefMap<AstNode, VariablePropertiesAnalyzer.VariableProperties>,
-        callGraph: KeyRefMap<Function, RefSet<Function>>,
-        functionDetailsGenerators: KeyRefMap<Function, FunctionDetailsGenerator>,
+        nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
+        variableProperties: Map<Ref<AstNode>, VariablePropertiesAnalyzer.VariableProperties>,
+        callGraph: Map<Ref<Function>, Set<Ref<Function>>>,
+        functionDetailsGenerators: Map<Ref<Function>, FunctionDetailsGenerator>,
         argumentResolution: ArgumentResolutionResult,
-        defaultParameterMapping: KeyRefMap<Function.Parameter, Variable>,
+        defaultParameterMapping: Map<Ref<Function.Parameter>, Variable>,
         globalVariablesAccessGenerator: VariableAccessGenerator
     ): ControlFlowGraph {
-        fun getVariablesModifiedBy(function: Function): RefSet<Variable> {
+        fun getVariablesModifiedBy(function: Function): Set<Ref<Variable>> {
             val possiblyCalledFunctions = callGraph[Ref(function)]!! + refSetOf(function)
             return variableProperties.asSequence()
                 .filter { (it.value.writtenIn intersect possiblyCalledFunctions).isNotEmpty() }
                 .map { Ref(it.key.value as Variable) }.toSet()
         }
 
-        val variableAccessGenerators: KeyRefMap<VariableOwner, VariableAccessGenerator> = run {
+        val variableAccessGenerators: Map<Ref<VariableOwner>, VariableAccessGenerator> = run {
             val result = mutableKeyRefMapOf<VariableOwner, VariableAccessGenerator>()
 
             result.putAll(functionDetailsGenerators)
@@ -121,9 +118,9 @@ object ControlFlow {
         // first stage is to decide which variable usages have to be realized via temporary registers
         // and which variables are invalidated by function calls / conditionals
         val usagesThatRequireTempRegisters = mutableRefSetOf<Expression.Variable>()
-        val invalidatedVariables = mutableKeyRefMapOf<Expression, RefSet<Variable>>()
+        val invalidatedVariables = mutableKeyRefMapOf<Expression, Set<Ref<Variable>>>()
 
-        fun gatherVariableUsageInfo(astNode: Expression, modifiedUnderCurrentBase: RefSet<Variable>): RefSet<Variable> {
+        fun gatherVariableUsageInfo(astNode: Expression, modifiedUnderCurrentBase: Set<Ref<Variable>>): Set<Ref<Variable>> {
             return when (astNode) {
                 is Expression.UnitLiteral,
                 is Expression.BooleanLiteral,
@@ -152,7 +149,7 @@ object ControlFlow {
                 }
 
                 is Expression.FunctionCall -> {
-                    var modifiedInArguments: RefSet<Variable> = refSetOf()
+                    var modifiedInArguments: Set<Ref<Variable>> = refSetOf()
                     astNode.arguments.reversed().forEach { argumentNode ->
                         modifiedInArguments = gatherVariableUsageInfo(argumentNode.value, modifiedInArguments)
                     }
@@ -349,11 +346,11 @@ object ControlFlow {
     fun createGraphForEachFunction(
         program: Program,
         createGraphForExpression: (Expression, Variable?, Function) -> ControlFlowGraph,
-        nameResolution: RefMap<AstNode, NamedNode>,
-        defaultParameterValues: KeyRefMap<Function.Parameter, Variable>,
-        functionReturnedValueVariables: KeyRefMap<Function, Variable>,
+        nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
+        defaultParameterValues: Map<Ref<Function.Parameter>, Variable>,
+        functionReturnedValueVariables: Map<Ref<Function>, Variable>,
         diagnostics: Diagnostics
-    ): KeyRefMap<Function, ControlFlowGraph> {
+    ): Map<Ref<Function>, ControlFlowGraph> {
         val controlFlowGraphs = mutableKeyRefMapOf<Function, ControlFlowGraph>()
 
         fun processFunction(function: Function) {

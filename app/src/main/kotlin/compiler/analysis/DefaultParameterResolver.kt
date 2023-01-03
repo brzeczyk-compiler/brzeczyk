@@ -4,15 +4,13 @@ import compiler.ast.Function
 import compiler.ast.Program
 import compiler.ast.Statement
 import compiler.ast.Variable
-import compiler.utils.KeyRefMap
-import compiler.utils.MutableKeyRefMap
 import compiler.utils.Ref
 import compiler.utils.mutableKeyRefMapOf
 
 object DefaultParameterResolver {
 
-    fun mapFunctionParametersToDummyVariables(ast: Program): KeyRefMap<Function.Parameter, Variable> {
-        val resultMapping: MutableKeyRefMap<Function.Parameter, Variable> = mutableKeyRefMapOf()
+    fun mapFunctionParametersToDummyVariables(ast: Program): Map<Ref<Function.Parameter>, Variable> {
+        val resultMapping: MutableMap<Ref<Function.Parameter>, Variable> = mutableKeyRefMapOf()
 
         fun process(statement: Statement) {
             fun process(vararg bunchOfBlocks: List<Statement>?) = bunchOfBlocks.toList().forEach { block -> block?.forEach { process(it) } }

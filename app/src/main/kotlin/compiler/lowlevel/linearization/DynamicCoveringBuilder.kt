@@ -3,11 +3,10 @@ package compiler.lowlevel.linearization
 import compiler.intermediate.IFTNode
 import compiler.intermediate.Register
 import compiler.lowlevel.Instruction
-import compiler.utils.KeyRefMap
 import compiler.utils.Ref
 import compiler.utils.mutableKeyRefMapOf
 
-typealias PatternChoices = KeyRefMap<IFTNode, Pattern>
+typealias PatternChoices = Map<Ref<IFTNode>, Pattern>
 val matchValue: (Pattern, IFTNode) -> Pattern.Result? = { pattern, iftNode -> pattern.matchValue(iftNode) }
 
 // Assumes that every possible IFTNode has at least one viable covering with the passed instruction set

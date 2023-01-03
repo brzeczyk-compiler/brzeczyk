@@ -8,17 +8,16 @@ import compiler.ast.Program
 import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.diagnostics.Diagnostics
-import compiler.utils.KeyRefMap
-import compiler.utils.RefMap
+import compiler.utils.Ref
 
 object ProgramAnalyzer {
     data class ProgramProperties(
-        val nameResolution: RefMap<AstNode, NamedNode>,
-        val argumentResolution: RefMap<Expression.FunctionCall.Argument, Function.Parameter>,
-        val expressionTypes: KeyRefMap<Expression, Type>,
-        val defaultParameterMapping: KeyRefMap<Function.Parameter, Variable>,
-        val functionReturnedValueVariables: KeyRefMap<Function, Variable>,
-        val variableProperties: KeyRefMap<AstNode, VariablePropertiesAnalyzer.VariableProperties>,
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
+        val argumentResolution: Map<Ref<Expression.FunctionCall.Argument>, Ref<Function.Parameter>>,
+        val expressionTypes: Map<Ref<Expression>, Type>,
+        val defaultParameterMapping: Map<Ref<Function.Parameter>, Variable>,
+        val functionReturnedValueVariables: Map<Ref<Function>, Variable>,
+        val variableProperties: Map<Ref<AstNode>, VariablePropertiesAnalyzer.VariableProperties>,
         val staticDepth: Int,
     )
 

@@ -8,25 +8,13 @@ class Ref<out T>(val value: T) {
     override fun toString(): String = value.toString()
 }
 
-typealias RefSet<E> = Set<Ref<E>>
+fun <E> refSetOf(vararg elements: E): Set<Ref<E>> = mutableRefSetOf(*elements)
 
-typealias RefMap<K, V> = Map<Ref<K>, Ref<V>>
+fun <K, V> refMapOf(vararg entries: Pair<K, V>): Map<Ref<K>, Ref<V>> = mutableRefMapOf(*entries)
 
-typealias KeyRefMap<K, V> = Map<Ref<K>, V>
+fun <K, V> keyRefMapOf(vararg entries: Pair<K, V>): Map<Ref<K>, V> = mutableKeyRefMapOf(*entries)
 
-typealias MutableRefSet<E> = MutableSet<Ref<E>>
-
-typealias MutableRefMap<K, V> = MutableMap<Ref<K>, Ref<V>>
-
-typealias MutableKeyRefMap<K, V> = MutableMap<Ref<K>, V>
-
-fun <E> refSetOf(vararg elements: E): RefSet<E> = mutableRefSetOf(*elements)
-
-fun <K, V> refMapOf(vararg entries: Pair<K, V>): RefMap<K, V> = mutableRefMapOf(*entries)
-
-fun <K, V> keyRefMapOf(vararg entries: Pair<K, V>): KeyRefMap<K, V> = mutableKeyRefMapOf(*entries)
-
-fun <E> mutableRefSetOf(vararg elements: E): MutableRefSet<E> {
+fun <E> mutableRefSetOf(vararg elements: E): MutableSet<Ref<E>> {
     val set = mutableSetOf<Ref<E>>()
 
     for (element in elements)
@@ -35,7 +23,7 @@ fun <E> mutableRefSetOf(vararg elements: E): MutableRefSet<E> {
     return set
 }
 
-fun <K, V> mutableRefMapOf(vararg entries: Pair<K, V>): MutableRefMap<K, V> {
+fun <K, V> mutableRefMapOf(vararg entries: Pair<K, V>): MutableMap<Ref<K>, Ref<V>> {
     val map = mutableMapOf<Ref<K>, Ref<V>>()
 
     for ((key, value) in entries) {
@@ -45,7 +33,7 @@ fun <K, V> mutableRefMapOf(vararg entries: Pair<K, V>): MutableRefMap<K, V> {
     return map
 }
 
-fun <K, V> mutableKeyRefMapOf(vararg entries: Pair<K, V>): MutableKeyRefMap<K, V> {
+fun <K, V> mutableKeyRefMapOf(vararg entries: Pair<K, V>): MutableMap<Ref<K>, V> {
     val map = mutableMapOf<Ref<K>, V>()
 
     for ((key, value) in entries) {

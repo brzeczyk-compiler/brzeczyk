@@ -10,9 +10,7 @@ import compiler.ast.Statement
 import compiler.ast.Variable
 import compiler.diagnostics.Diagnostic
 import compiler.diagnostics.Diagnostics
-import compiler.utils.MutableRefMap
 import compiler.utils.Ref
-import compiler.utils.RefMap
 import compiler.utils.mutableRefMapOf
 import java.util.Stack
 import kotlin.collections.HashMap
@@ -44,11 +42,11 @@ object NameResolver {
         fun onlyHasFunctions(): Boolean = functions.isNotEmpty() && variables.isEmpty()
     }
 
-    data class Result(val nameDefinitions: RefMap<AstNode, NamedNode>, val programStaticDepth: Int)
+    data class Result(val nameDefinitions: Map<Ref<AstNode>, Ref<NamedNode>>, val programStaticDepth: Int)
 
     fun calculateNameResolution(ast: Program, diagnostics: Diagnostics): Result {
 
-        val nameDefinitions: MutableRefMap<AstNode, NamedNode> = mutableRefMapOf()
+        val nameDefinitions: MutableMap<Ref<AstNode>, Ref<NamedNode>> = mutableRefMapOf()
 
         val visibleNames: MutableMap<String, NameOverloadState> = HashMap()
 

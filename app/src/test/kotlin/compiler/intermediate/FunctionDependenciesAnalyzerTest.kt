@@ -14,10 +14,7 @@ import compiler.intermediate.generators.DISPLAY_LABEL_IN_MEMORY
 import compiler.intermediate.generators.DefaultFunctionDetailsGenerator
 import compiler.intermediate.generators.FunctionDetailsGenerator
 import compiler.intermediate.generators.VariableLocationType
-import compiler.utils.KeyRefMap
 import compiler.utils.Ref
-import compiler.utils.RefMap
-import compiler.utils.RefSet
 import compiler.utils.assertContentEquals
 import compiler.utils.keyRefMapOf
 import compiler.utils.refMapOf
@@ -362,10 +359,10 @@ class FunctionDependenciesAnalyzerTest {
         )
 
         val program = Program(globals)
-        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf()
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf()
         val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
-        val expectedCallGraph: KeyRefMap<Function, RefSet<Function>> = keyRefMapOf(
+        val expectedCallGraph: Map<Ref<Function>, Set<Ref<Function>>> = keyRefMapOf(
             fFunction to refSetOf(),
         )
 
@@ -394,10 +391,10 @@ class FunctionDependenciesAnalyzerTest {
         )
 
         val program = Program(globals)
-        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(fFunctionCall to fFunction)
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(fFunctionCall to fFunction)
         val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
-        val expectedCallGraph: KeyRefMap<Function, RefSet<Function>> = keyRefMapOf(
+        val expectedCallGraph: Map<Ref<Function>, Set<Ref<Function>>> = keyRefMapOf(
             fFunction to refSetOf(),
             gFunction to refSetOf(fFunction),
         )
@@ -435,10 +432,10 @@ class FunctionDependenciesAnalyzerTest {
         )
 
         val program = Program(globals)
-        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(gFunctionCall to gFunction)
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(gFunctionCall to gFunction)
         val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
-        val expectedCallGraph: KeyRefMap<Function, RefSet<Function>> = keyRefMapOf(
+        val expectedCallGraph: Map<Ref<Function>, Set<Ref<Function>>> = keyRefMapOf(
             fFunction to refSetOf(),
             gFunction to refSetOf(),
             hFunction to refSetOf(gFunction),
@@ -465,10 +462,10 @@ class FunctionDependenciesAnalyzerTest {
         )
 
         val program = Program(globals)
-        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(fFunctionCall to fFunction)
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(fFunctionCall to fFunction)
         val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
-        val expectedCallGraph: KeyRefMap<Function, RefSet<Function>> = keyRefMapOf(
+        val expectedCallGraph: Map<Ref<Function>, Set<Ref<Function>>> = keyRefMapOf(
             fFunction to refSetOf(fFunction),
         )
 
@@ -504,13 +501,13 @@ class FunctionDependenciesAnalyzerTest {
         )
 
         val program = Program(globals)
-        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(
             fFunctionCall to fFunction,
             gFunctionCall to gFunction,
         )
         val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
-        val expectedCallGraph: KeyRefMap<Function, RefSet<Function>> = keyRefMapOf(
+        val expectedCallGraph: Map<Ref<Function>, Set<Ref<Function>>> = keyRefMapOf(
             fFunction to refSetOf(),
             gFunction to refSetOf(fFunction),
             hFunction to refSetOf(fFunction, gFunction),
@@ -560,7 +557,7 @@ class FunctionDependenciesAnalyzerTest {
         )
 
         val program = Program(globals)
-        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(
             fFunctionCall to fFunction,
             gFunctionCall to gFunction,
             hFunctionCall to hFunction,
@@ -568,7 +565,7 @@ class FunctionDependenciesAnalyzerTest {
         )
         val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
-        val expectedCallGraph: KeyRefMap<Function, RefSet<Function>> = keyRefMapOf(
+        val expectedCallGraph: Map<Ref<Function>, Set<Ref<Function>>> = keyRefMapOf(
             fFunction to refSetOf(fFunction, gFunction, hFunction, iFunction),
             gFunction to refSetOf(fFunction, gFunction, hFunction, iFunction),
             hFunction to refSetOf(fFunction, gFunction, hFunction, iFunction),
@@ -631,7 +628,7 @@ class FunctionDependenciesAnalyzerTest {
         )
 
         val program = Program(globals)
-        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(
             fFunctionCall to fFunction,
             gFunctionCall to gFunction,
             hFunctionCall to hFunction,
@@ -639,7 +636,7 @@ class FunctionDependenciesAnalyzerTest {
         )
         val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
-        val expectedCallGraph: KeyRefMap<Function, RefSet<Function>> = keyRefMapOf(
+        val expectedCallGraph: Map<Ref<Function>, Set<Ref<Function>>> = keyRefMapOf(
             fFunction to refSetOf(fFunction, gFunction, hFunction, iFunction),
             gFunction to refSetOf(fFunction, gFunction, hFunction, iFunction),
             hFunction to refSetOf(fFunction, gFunction, hFunction, iFunction),
@@ -705,7 +702,7 @@ class FunctionDependenciesAnalyzerTest {
         )
 
         val program = Program(globals)
-        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(
             fFunctionCall to fFunction,
             gFunctionCall to gFunction,
             hFunctionCall to hFunction,
@@ -715,7 +712,7 @@ class FunctionDependenciesAnalyzerTest {
         )
         val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
-        val expectedCallGraph: KeyRefMap<Function, RefSet<Function>> = keyRefMapOf(
+        val expectedCallGraph: Map<Ref<Function>, Set<Ref<Function>>> = keyRefMapOf(
             fFunction to refSetOf(),
             gFunction to refSetOf(),
             hFunction to refSetOf(),
@@ -772,14 +769,14 @@ class FunctionDependenciesAnalyzerTest {
         )
 
         val program = Program(globals)
-        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(
             fFunctionCall to fFunction,
             gFunctionCall to gFunction,
             yAssignment to yVariable,
         )
         val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
-        val expectedCallGraph: KeyRefMap<Function, RefSet<Function>> = keyRefMapOf(
+        val expectedCallGraph: Map<Ref<Function>, Set<Ref<Function>>> = keyRefMapOf(
             fFunction to refSetOf(),
             gFunction to refSetOf(),
             testFunction to refSetOf(fFunction, gFunction),
@@ -863,7 +860,7 @@ class FunctionDependenciesAnalyzerTest {
         )
 
         val program = Program(globals)
-        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(
             fFunctionCall to fFunction,
             gFunctionCall to gFunction,
             hFunctionCall to hFunction,
@@ -874,7 +871,7 @@ class FunctionDependenciesAnalyzerTest {
         )
         val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
-        val expectedCallGraph: KeyRefMap<Function, RefSet<Function>> = keyRefMapOf(
+        val expectedCallGraph: Map<Ref<Function>, Set<Ref<Function>>> = keyRefMapOf(
             fFunction to refSetOf(),
             gFunction to refSetOf(),
             hFunction to refSetOf(),
@@ -960,7 +957,7 @@ class FunctionDependenciesAnalyzerTest {
         )
 
         val program = Program(globals)
-        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(
             fFunctionCall to fFunction,
             gFunctionCall to gFunction,
             hFunctionCall to hFunction,
@@ -968,7 +965,7 @@ class FunctionDependenciesAnalyzerTest {
         )
         val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
-        val expectedCallGraph: KeyRefMap<Function, RefSet<Function>> = keyRefMapOf(
+        val expectedCallGraph: Map<Ref<Function>, Set<Ref<Function>>> = keyRefMapOf(
             fFunction to refSetOf(),
             gFunction to refSetOf(),
             hFunction to refSetOf(),
@@ -1018,12 +1015,12 @@ class FunctionDependenciesAnalyzerTest {
         )
 
         val program = Program(globals)
-        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(
             fFunctionCall to fFunction,
         )
         val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
-        val expectedCallGraph: KeyRefMap<Function, RefSet<Function>> = keyRefMapOf(
+        val expectedCallGraph: Map<Ref<Function>, Set<Ref<Function>>> = keyRefMapOf(
             fFunction to refSetOf(),
             gFunction to refSetOf(),
             testFunction to refSetOf(fFunction),
@@ -1075,13 +1072,13 @@ class FunctionDependenciesAnalyzerTest {
         )
 
         val program = Program(globals)
-        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(
             pfFunctionCall to pfFunction,
             pgFunctionCall to pgFunction,
         )
         val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
-        val expectedCallGraph: KeyRefMap<Function, RefSet<Function>> = keyRefMapOf(
+        val expectedCallGraph: Map<Ref<Function>, Set<Ref<Function>>> = keyRefMapOf(
             fFunction to refSetOf(pfFunction),
             gFunction to refSetOf(pgFunction),
             pfFunction to refSetOf(),
@@ -1148,7 +1145,7 @@ class FunctionDependenciesAnalyzerTest {
         )
 
         val program = Program(globals)
-        val nameResolution: RefMap<AstNode, NamedNode> = refMapOf(
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(
             pfFunctionCall to pfFunction,
             pgFunctionCall to pgFunction,
             fFunctionCall to fFunction,
@@ -1156,7 +1153,7 @@ class FunctionDependenciesAnalyzerTest {
         )
         val actualCallGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
 
-        val expectedCallGraph: KeyRefMap<Function, RefSet<Function>> = keyRefMapOf(
+        val expectedCallGraph: Map<Ref<Function>, Set<Ref<Function>>> = keyRefMapOf(
             fFunction to refSetOf(pfFunction),
             gFunction to refSetOf(pgFunction),
             pfFunction to refSetOf(),

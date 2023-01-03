@@ -6,11 +6,10 @@ import compiler.ast.Expression
 import compiler.ast.NamedNode
 import compiler.ast.Variable
 import compiler.intermediate.IFTNode
-import compiler.utils.KeyRefMap
 import compiler.utils.Ref
 import compiler.utils.mutableKeyRefMapOf
 
-class GlobalVariableAccessGenerator(variableProperties: KeyRefMap<AstNode, VariablePropertiesAnalyzer.VariableProperties>) : VariableAccessGenerator {
+class GlobalVariableAccessGenerator(variableProperties: Map<Ref<AstNode>, VariablePropertiesAnalyzer.VariableProperties>) : VariableAccessGenerator {
 
     companion object {
         const val VARIABLE_SIZE = 8L

@@ -10,8 +10,6 @@ import compiler.intermediate.ControlFlowGraphBuilder
 import compiler.intermediate.IFTNode
 import compiler.intermediate.Register
 import compiler.intermediate.SummedConstant
-import compiler.utils.KeyRefMap
-import compiler.utils.MutableKeyRefMap
 import compiler.utils.Ref
 import compiler.utils.mutableKeyRefMapOf
 
@@ -30,13 +28,13 @@ data class DefaultFunctionDetailsGenerator(
     val variableToStoreFunctionResult: Variable?,
     val functionLocationInCode: IFTNode.MemoryLabel,
     val depth: ULong,
-    val variablesLocationTypes: KeyRefMap<NamedNode, VariableLocationType>, // should contain parameters
+    val variablesLocationTypes: Map<Ref<NamedNode>, VariableLocationType>, // should contain parameters
     val displayAddress: IFTNode,
     val createRegisterFor: (NamedNode) -> Register = { Register() } // for testing
 ) : FunctionDetailsGenerator {
 
-    private val variablesStackOffsets: MutableKeyRefMap<NamedNode, ULong> = mutableKeyRefMapOf()
-    private val variablesRegisters: MutableKeyRefMap<NamedNode, Register> = mutableKeyRefMapOf()
+    private val variablesStackOffsets: MutableMap<Ref<NamedNode>, ULong> = mutableKeyRefMapOf()
+    private val variablesRegisters: MutableMap<Ref<NamedNode>, Register> = mutableKeyRefMapOf()
     private var variablesRegionSize: ULong = 0u
     private val previousDisplayEntryRegister = Register()
     private val calleeSavedBackupRegisters = calleeSavedRegistersWithoutRSPAndRBP.map { Register() }

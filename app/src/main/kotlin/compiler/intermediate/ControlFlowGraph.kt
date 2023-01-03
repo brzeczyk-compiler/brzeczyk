@@ -2,14 +2,13 @@ package compiler.intermediate
 
 import com.google.common.base.Objects
 import compiler.utils.Ref
-import compiler.utils.RefMap
 
 class ControlFlowGraph(
     val treeRoots: List<IFTNode>,
     val entryTreeRoot: IFTNode?,
-    val unconditionalLinks: RefMap<IFTNode, IFTNode>,
-    val conditionalTrueLinks: RefMap<IFTNode, IFTNode>,
-    val conditionalFalseLinks: RefMap<IFTNode, IFTNode>
+    val unconditionalLinks: Map<Ref<IFTNode>, Ref<IFTNode>>,
+    val conditionalTrueLinks: Map<Ref<IFTNode>, Ref<IFTNode>>,
+    val conditionalFalseLinks: Map<Ref<IFTNode>, Ref<IFTNode>>
 ) {
     val finalTreeRoots: List<Pair<IFTNode, CFGLinkType>> get() = treeRoots.filter {
         Ref(it) !in unconditionalLinks && (Ref(it) !in conditionalTrueLinks || Ref(it) !in conditionalFalseLinks)
@@ -45,7 +44,7 @@ class ControlFlowGraph(
 
         val translation = (other.treeRoots.map(::Ref) zip treeRoots.map(::Ref)).toMap()
 
-        fun translateMap(map: RefMap<IFTNode, IFTNode>) = map.map { translation[it.key]!! to translation[it.value]!! }.toMap()
+        fun translateMap(map: Map<Ref<IFTNode>, Ref<IFTNode>>) = map.map { translation[it.key]!! to translation[it.value]!! }.toMap()
 
         return ControlFlowGraph(
             treeRoots,

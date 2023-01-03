@@ -13,13 +13,7 @@ import compiler.ast.Variable
 import compiler.ast.VariableOwner
 import compiler.diagnostics.Diagnostic.ResolutionDiagnostic.VariablePropertiesError.AssignmentToFunctionParameter
 import compiler.diagnostics.Diagnostics
-import compiler.utils.KeyRefMap
-import compiler.utils.MutableKeyRefMap
-import compiler.utils.MutableRefMap
-import compiler.utils.MutableRefSet
 import compiler.utils.Ref
-import compiler.utils.RefMap
-import compiler.utils.RefSet
 import compiler.utils.mutableKeyRefMapOf
 import compiler.utils.mutableRefMapOf
 import compiler.utils.mutableRefSetOf
@@ -31,14 +25,14 @@ object VariablePropertiesAnalyzer {
 
     data class VariableProperties(
         var owner: VariableOwner = GlobalContext,
-        val accessedIn: RefSet<Function> = refSetOf(),
-        val writtenIn: RefSet<Function> = refSetOf(),
+        val accessedIn: Set<Ref<Function>> = refSetOf(),
+        val writtenIn: Set<Ref<Function>> = refSetOf(),
     )
 
     data class MutableVariableProperties(
         var owner: VariableOwner = GlobalContext,
-        val accessedIn: MutableRefSet<Function> = mutableRefSetOf(),
-        val writtenIn: MutableRefSet<Function> = mutableRefSetOf(),
+        val accessedIn: MutableSet<Ref<Function>> = mutableRefSetOf(),
+        val writtenIn: MutableSet<Ref<Function>> = mutableRefSetOf(),
     )
 
     class AnalysisFailed : CompilationFailed()
@@ -47,14 +41,14 @@ object VariablePropertiesAnalyzer {
 
     fun calculateVariableProperties(
         ast: Program,
-        nameResolution: RefMap<AstNode, NamedNode>,
-        defaultParameterMapping: KeyRefMap<Function.Parameter, Variable>,
-        functionReturnedValueVariables: KeyRefMap<Function, Variable>,
-        accessedDefaultValues: KeyRefMap<Expression.FunctionCall, RefSet<Function.Parameter>>,
+        nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
+        defaultParameterMapping: Map<Ref<Function.Parameter>, Variable>,
+        functionReturnedValueVariables: Map<Ref<Function>, Variable>,
+        accessedDefaultValues: Map<Ref<Expression.FunctionCall>, Set<Ref<Function.Parameter>>>,
         diagnostics: Diagnostics,
-    ): KeyRefMap<AstNode, VariableProperties> {
-        val mutableVariableProperties: MutableKeyRefMap<AstNode, MutableVariableProperties> = mutableKeyRefMapOf()
-        val functionCallsOwnership: MutableRefMap<Expression.FunctionCall, Function> = mutableRefMapOf()
+    ): Map<Ref<AstNode>, VariableProperties> {
+        val mutableVariableProperties: MutableMap<Ref<AstNode>, MutableVariableProperties> = mutableKeyRefMapOf()
+        val functionCallsOwnership: MutableMap<Ref<Expression.FunctionCall>, Ref<Function>> = mutableRefMapOf()
         var failed = false
 
         // AstNode = Expression | Statement

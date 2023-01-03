@@ -3,11 +3,7 @@ package compiler.lowlevel.dataflow
 import compiler.intermediate.Register
 import compiler.lowlevel.Asmable
 import compiler.lowlevel.Instruction
-import compiler.utils.ReferenceSet
-import compiler.utils.combineReferenceSets
-import compiler.utils.referenceHashMapOf
-import compiler.utils.referenceHashSetOf
-import compiler.utils.referenceMapOf
+import compiler.utils.Ref
 
 object Liveness {
     data class LivenessGraphs(
@@ -20,21 +16,21 @@ object Liveness {
             .filter { it.key in subset }
             .associate { it.key to it.value.filter { vertex -> vertex in subset }.toSet() }.toMap()
 
-    object LivenessDataFlowAnalyzer : DataFlowAnalyzer<ReferenceSet<Register>>() {
+    object LivenessDataFlowAnalyzer : DataFlowAnalyzer<Set<Register>>() {
         override val backward = true
 
-        override val entryPointValue: ReferenceSet<Register> = referenceHashSetOf()
+        override val entryPointValue: Set<Register> = setOf()
 
-        override val latticeMaxElement: ReferenceSet<Register> = referenceHashSetOf()
+        override val latticeMaxElement: Set<Register> = setOf()
 
-        override fun latticeMeetFunction(elements: Collection<ReferenceSet<Register>>): ReferenceSet<Register> {
-            return combineReferenceSets(elements.toList())
+        override fun latticeMeetFunction(elements: Collection<Set<Register>>): Set<Register> {
+            return elements.fold(emptySet(), Set<Register>::plus)
         }
 
-        override fun transferFunction(instruction: Instruction, inValue: ReferenceSet<Register>): ReferenceSet<Register> {
+        override fun transferFunction(instruction: Instruction, inValue: Set<Register>): Set<Register> {
             val gen = instruction.regsUsed
             val kill = instruction.regsDefined
-            return combineReferenceSets(referenceHashSetOf(gen.toList()), referenceHashSetOf(inValue.filter { it !in kill }))
+            return gen.toSet() + inValue.filter { it !in kill }.toSet()
         }
     }
 
@@ -42,30 +38,30 @@ object Liveness {
         val instructionList = linearProgram.filterIsInstance<Instruction>()
 
         // find all registers, prepare empty graphs
-        val allRegisters = referenceHashSetOf<Register>()
+        val allRegisters = mutableSetOf<Register>()
         instructionList.forEach {
             allRegisters.addAll(it.regsDefined)
             allRegisters.addAll(it.regsUsed)
         }
 
-        val interferenceGraph = referenceHashMapOf(allRegisters.map { it to referenceHashSetOf<Register>() })
-        val copyGraph = referenceHashMapOf(allRegisters.map { it to referenceHashSetOf<Register>() })
+        val interferenceGraph = mutableMapOf(*allRegisters.map { it to mutableSetOf<Register>() }.toTypedArray())
+        val copyGraph = mutableMapOf(*allRegisters.map { it to mutableSetOf<Register>() }.toTypedArray())
 
         // run analysis and fill the graphs
         val dataFlowResult = LivenessDataFlowAnalyzer.analyze(linearProgram)
-        val outLiveRegisters = referenceMapOf(dataFlowResult.outValues.map { (instr, regs) -> instr to combineReferenceSets(regs, referenceHashSetOf(instr.regsDefined.toList())) })
+        val outLiveRegisters = mutableMapOf(*dataFlowResult.outValues.map { (instr, regs) -> instr to (regs + instr.value.regsDefined.toSet()) }.toTypedArray())
 
         instructionList.forEach {
             for (definedReg in it.regsDefined)
-                for (regLiveOnOutput in outLiveRegisters[it]!!)
-                    if (definedReg !== regLiveOnOutput && !(it is Instruction.InPlaceInstruction.MoveRR && it.reg_dest === definedReg && it.reg_src === regLiveOnOutput)) {
+                for (regLiveOnOutput in outLiveRegisters[Ref(it)]!!)
+                    if (definedReg !== regLiveOnOutput && !(it is Instruction.InPlaceInstruction.MoveRR && it.regDest === definedReg && it.regSrc === regLiveOnOutput)) {
                         interferenceGraph[definedReg]!!.add(regLiveOnOutput)
                         interferenceGraph[regLiveOnOutput]!!.add(definedReg)
                     }
 
             if (it is Instruction.InPlaceInstruction.MoveRR) {
-                copyGraph[it.reg_dest]!!.add(it.reg_src)
-                copyGraph[it.reg_src]!!.add(it.reg_dest)
+                copyGraph[it.regDest]!!.add(it.regSrc)
+                copyGraph[it.regSrc]!!.add(it.regDest)
             }
         }
 

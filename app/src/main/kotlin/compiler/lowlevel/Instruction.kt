@@ -48,7 +48,7 @@ sealed class Instruction : Asmable {
         data class JmpGtEq(override val targetLabel: String) : ConditionalJumpInstruction() // JGE  targetLabel
         data class JmpZ(override val targetLabel: String) : ConditionalJumpInstruction() //    JZ   targetLabel
         data class JmpNZ(override val targetLabel: String) : ConditionalJumpInstruction() //   JNZ  targetLabel
-        class Dummy(override val targetLabel: String) : ConditionalJumpInstruction()
+        data class Dummy(override val targetLabel: String) : ConditionalJumpInstruction()
     }
 
     sealed class UnconditionalJumpInstruction : Instruction() {
@@ -60,7 +60,7 @@ sealed class Instruction : Asmable {
         } + " $targetLabel"
 
         data class Jmp(override val targetLabel: String) : UnconditionalJumpInstruction() //   JMP  targetLabel
-        class Dummy(override val targetLabel: String) : UnconditionalJumpInstruction()
+        data class Dummy(override val targetLabel: String) : UnconditionalJumpInstruction()
     }
 
     sealed class RetInstruction : Instruction() {
@@ -70,35 +70,35 @@ sealed class Instruction : Asmable {
             is Dummy -> throw DummyInstructionIsNotAsmable()
         }
 
-        class Ret(override val regsUsed: Collection<Register>) : RetInstruction() // RET
-        class Dummy : RetInstruction()
+        data class Ret(override val regsUsed: Collection<Register>) : RetInstruction() // RET
+        data class Dummy(val dummy: Unit = Unit) : RetInstruction()
     }
 
     sealed class InPlaceInstruction : Instruction() {
 
         // Move instructions
-        data class MoveRR(val reg_dest: Register, val reg_src: Register) : InPlaceInstruction() { //   MOV  reg_dest, reg_src
-            override val regsDefined: Collection<Register> = setOf(reg_dest)
-            override val regsUsed: Collection<Register> = setOf(reg_src)
+        data class MoveRR(val regDest: Register, val regSrc: Register) : InPlaceInstruction() { //   MOV  reg_dest, reg_src
+            override val regsDefined: Collection<Register> = setOf(regDest)
+            override val regsUsed: Collection<Register> = setOf(regSrc)
 
-            override fun toAsm(registers: Map<Register, Register>) = "mov ${registers[reg_dest]!!.toAsm()}, ${registers[reg_src]!!.toAsm()}"
+            override fun toAsm(registers: Map<Register, Register>) = "mov ${registers[regDest]!!.toAsm()}, ${registers[regSrc]!!.toAsm()}"
         }
-        data class MoveRM(val reg_dest: Register, val mem_src: Addressing) : InPlaceInstruction() { // MOV  reg_dest, mem_src
-            override val regsDefined: Collection<Register> = setOf(reg_dest)
-            override val regsUsed: Collection<Register> = regsUsedInAddress(mem_src)
+        data class MoveRM(val regDest: Register, val memSrc: Addressing) : InPlaceInstruction() { // MOV  reg_dest, mem_src
+            override val regsDefined: Collection<Register> = setOf(regDest)
+            override val regsUsed: Collection<Register> = regsUsedInAddress(memSrc)
 
-            override fun toAsm(registers: Map<Register, Register>) = "mov ${registers[reg_dest]!!.toAsm()}, ${mem_src.toAsm(registers)}"
+            override fun toAsm(registers: Map<Register, Register>) = "mov ${registers[regDest]!!.toAsm()}, ${memSrc.toAsm(registers)}"
         }
-        data class MoveMR(val mem_dest: Addressing, val reg_src: Register) : InPlaceInstruction() { // MOV  mem_dest, reg_src
-            override val regsUsed: Collection<Register> = setOf(reg_src) union regsUsedInAddress(mem_dest)
+        data class MoveMR(val memDest: Addressing, val regSrc: Register) : InPlaceInstruction() { // MOV  mem_dest, reg_src
+            override val regsUsed: Collection<Register> = setOf(regSrc) union regsUsedInAddress(memDest)
 
-            override fun toAsm(registers: Map<Register, Register>) = "mov ${mem_dest.toAsm(registers)}, ${registers[reg_src]!!.toAsm()}"
+            override fun toAsm(registers: Map<Register, Register>) = "mov ${memDest.toAsm(registers)}, ${registers[regSrc]!!.toAsm()}"
         }
-        data class MoveRI(val reg_dest: Register, val constant: Constant) : InPlaceInstruction() { //      MOV  reg_dest, constant
-            constructor(reg_dest: Register, constant: Long) : this(reg_dest, FixedConstant(constant))
-            override val regsDefined: Collection<Register> = setOf(reg_dest)
+        data class MoveRI(val regDest: Register, val constant: Constant) : InPlaceInstruction() { //      MOV  reg_dest, constant
+            constructor(regDest: Register, constant: Long) : this(regDest, FixedConstant(constant))
+            override val regsDefined: Collection<Register> = setOf(regDest)
 
-            override fun toAsm(registers: Map<Register, Register>) = "mov ${registers[reg_dest]!!.toAsm()}, ${constant.value}"
+            override fun toAsm(registers: Map<Register, Register>) = "mov ${registers[regDest]!!.toAsm()}, ${constant.value}"
         }
 
         // The LEA instruction
@@ -193,7 +193,7 @@ sealed class Instruction : Asmable {
             override fun toAsm(registers: Map<Register, Register>) = "idiv ${registers[reg]!!.toAsm()}"
         }
         // CQO - copies the sign bit in RAX to all bits in RDX
-        class Cqo() : InPlaceInstruction() {
+        data class Cqo(val dummy: Unit = Unit) : InPlaceInstruction() {
             override val regsDefined: Collection<Register> = setOf(Register.RDX)
             override val regsUsed: Collection<Register> = setOf(Register.RAX)
 
@@ -252,7 +252,7 @@ sealed class Instruction : Asmable {
         data class SetGtR(override val reg: Register) : SetInstruction() //   SETG  reg8
         data class SetGtEqR(override val reg: Register) : SetInstruction() // SETGE reg8
 
-        class Dummy(override val regsUsed: List<Register> = listOf(), override val regsDefined: List<Register> = listOf()) : InPlaceInstruction() {
+        data class Dummy(override val regsUsed: List<Register> = listOf(), override val regsDefined: List<Register> = listOf()) : InPlaceInstruction() {
             override fun toAsm(registers: Map<Register, Register>) = throw DummyInstructionIsNotAsmable()
         }
     }

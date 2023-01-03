@@ -3,11 +3,9 @@ package compiler.lowlevel.dataflow
 import compiler.lowlevel.Asmable
 import compiler.lowlevel.Instruction
 import compiler.lowlevel.Label
-import compiler.utils.ReferenceMap
-import compiler.utils.ReferenceSet
-import compiler.utils.referenceHashMapOf
-import compiler.utils.referenceHashSetOf
-import compiler.utils.referenceMapOf
+import compiler.utils.Ref
+import compiler.utils.mutableKeyRefMapOf
+import compiler.utils.refSetOf
 
 abstract class DataFlowAnalyzer<SL> {
     abstract val backward: Boolean
@@ -20,7 +18,7 @@ abstract class DataFlowAnalyzer<SL> {
 
     abstract fun transferFunction(instruction: Instruction, inValue: SL): SL
 
-    private fun getPredecessors(linearProgram: List<Asmable>): ReferenceMap<Instruction, List<Instruction>> {
+    private fun getPredecessors(linearProgram: List<Asmable>): Map<Ref<Instruction>, List<Instruction>> {
         val instructionList = linearProgram.filterIsInstance<Instruction>()
 
         // calculate label to instruction translation
@@ -35,11 +33,11 @@ abstract class DataFlowAnalyzer<SL> {
                 }
 
         // calculate the predecessors map (forward direction)
-        val predecessors = referenceHashMapOf<Instruction, MutableList<Instruction>>()
-        instructionList.forEach { predecessors[it] = mutableListOf() }
+        val predecessors = mutableKeyRefMapOf<Instruction, MutableList<Instruction>>()
+        instructionList.forEach { predecessors[Ref(it)] = mutableListOf() }
         fun addPredecessor(from: Instruction, to: Instruction) {
-            if (backward) predecessors[from]!!.add(to)
-            else predecessors[to]!!.add(from)
+            if (backward) predecessors[Ref(from)]!!.add(to)
+            else predecessors[Ref(to)]!!.add(from)
         }
 
         instructionList.forEachIndexed { index, it ->
@@ -59,29 +57,29 @@ abstract class DataFlowAnalyzer<SL> {
             }
         }
 
-        return referenceMapOf(predecessors.map { it.toPair() })
+        return predecessors.map { it.toPair() }.toMap()
     }
 
-    private fun getEntryPoints(instructionList: List<Instruction>): ReferenceSet<Instruction> {
+    private fun getEntryPoints(instructionList: List<Instruction>): Set<Ref<Instruction>> {
         return if (backward)
-            referenceHashSetOf(instructionList.filterIsInstance<Instruction.RetInstruction>())
+            instructionList.filterIsInstance<Instruction.RetInstruction>().map(::Ref).toSet()
         else
-            referenceHashSetOf(instructionList.first())
+            refSetOf(instructionList.first())
     }
 
-    data class DataFlowResult<SL>(val inValues: ReferenceMap<Instruction, SL>, val outValues: ReferenceMap<Instruction, SL>)
+    data class DataFlowResult<SL>(val inValues: Map<Ref<Instruction>, SL>, val outValues: Map<Ref<Instruction>, SL>)
 
     fun analyze(linearProgram: List<Asmable>): DataFlowResult<SL> {
         val predecessors = getPredecessors(linearProgram)
         val instructionList = linearProgram.filterIsInstance<Instruction>()
         val entryPoints = getEntryPoints(instructionList)
 
-        val inStates = referenceHashMapOf<Instruction, SL>() // actually output states for backward mode
-        val outStates = referenceHashMapOf<Instruction, SL>() // actually input states for backward mode
+        val inStates = mutableKeyRefMapOf<Instruction, SL>() // actually output states for backward mode
+        val outStates = mutableKeyRefMapOf<Instruction, SL>() // actually input states for backward mode
 
         // initialize input states
         instructionList.forEach {
-            inStates[it] = if (it in entryPoints) entryPointValue else latticeMaxElement
+            inStates[Ref(it)] = if (Ref(it) in entryPoints) entryPointValue else latticeMaxElement
         }
 
         // iterate until you reach fixed point
@@ -90,15 +88,15 @@ abstract class DataFlowAnalyzer<SL> {
 
             // apply transfer function
             instructionList.forEach {
-                outStates[it] = transferFunction(it, inStates[it]!!)
+                outStates[Ref(it)] = transferFunction(it, inStates[Ref(it)]!!)
             }
 
             // collect outputs into inputs
-            instructionList.filter { predecessors[it]!!.isNotEmpty() }.forEach {
-                val newInState = latticeMeetFunction(predecessors[it]!!.map { predecessor -> outStates[predecessor]!! })
-                if (newInState != inStates[it]!!)
+            instructionList.filter { predecessors[Ref(it)]!!.isNotEmpty() }.forEach {
+                val newInState = latticeMeetFunction(predecessors[Ref(it)]!!.map { predecessor -> outStates[Ref(predecessor)]!! })
+                if (newInState != inStates[Ref(it)]!!)
                     inStatesChanged = true
-                inStates[it] = newInState
+                inStates[Ref(it)] = newInState
             }
 
             if (!inStatesChanged)

@@ -93,7 +93,7 @@ abstract class AbstractRegexParser<T> {
         var didTokenEndInPrevStep = false
         for (next in SymbolSeq(string)) {
             val c = next[0]
-            val isNewTokenStarting = !(c in listOf('|', '*', ')', '?'))
+            val isNewTokenStarting = c !in listOf('|', '*', ')', '?')
             if (didTokenEndInPrevStep && isNewTokenStarting) putOperatorOnStack('¿') // concat
             didTokenEndInPrevStep = false
             when (c) {

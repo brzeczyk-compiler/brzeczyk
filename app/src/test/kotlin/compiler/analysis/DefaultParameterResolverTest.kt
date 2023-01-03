@@ -6,32 +6,15 @@ import compiler.ast.Program
 import compiler.ast.Statement
 import compiler.ast.Type
 import compiler.ast.Variable
-import compiler.utils.ReferenceMap
-import compiler.utils.referenceEntries
-import compiler.utils.referenceHashMapOf
-import compiler.utils.referenceKeys
+import compiler.utils.Ref
+import compiler.utils.keyRefMapOf
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotSame
-import kotlin.test.assertTrue
 
 class DefaultParameterResolverTest {
-
-    private fun assertEqualsIgnoreName(expected: Variable, actual: Variable) {
-        assertEquals(expected.kind, actual.kind)
-        assertEquals(expected.type, actual.type)
-        assertEquals(expected.value, actual.value)
-    }
-
-    private fun compareMappings(
-        expectedMappingSimplified: ReferenceMap<Function.Parameter, Variable>,
-        actualMapping: ReferenceMap<Function.Parameter, Variable>
-    ) {
-        assertEquals(expectedMappingSimplified.referenceEntries.size, actualMapping.referenceEntries.size)
-        actualMapping.referenceEntries.forEach {
-            assertTrue(it.key in expectedMappingSimplified.referenceKeys)
-            assertEqualsIgnoreName(expectedMappingSimplified[it.key]!!, it.value)
-        }
+    private data class UnnamedVariable(val kind: Variable.Kind, val type: Type, val value: Expression?) {
+        constructor(variable: Variable) : this(variable.kind, variable.type, variable.value)
     }
 
     @Test fun `test default parameters mapping in a global function`() {
@@ -71,14 +54,14 @@ class DefaultParameterResolverTest {
         )
 
         val program = Program(globals)
-        val actualMapping = DefaultParameterResolver.mapFunctionParametersToDummyVariables(program)
+        val actualMappingSimplified = DefaultParameterResolver.mapFunctionParametersToDummyVariables(program).mapValues { UnnamedVariable(it.value) }
 
-        val expectedMappingSimplified = referenceHashMapOf(
-            cParameter to Variable(Variable.Kind.CONSTANT, "test", Type.Number, cValue),
-            dParameter to Variable(Variable.Kind.CONSTANT, "test", Type.Boolean, dValue),
+        val expectedMappingSimplified = keyRefMapOf(
+            cParameter to UnnamedVariable(Variable.Kind.CONSTANT, Type.Number, cValue),
+            dParameter to UnnamedVariable(Variable.Kind.CONSTANT, Type.Boolean, dValue),
         )
 
-        compareMappings(expectedMappingSimplified, actualMapping)
+        assertEquals(expectedMappingSimplified, actualMappingSimplified)
     }
 
     @Test fun `test default parameters mapping in a local function`() {
@@ -121,14 +104,14 @@ class DefaultParameterResolverTest {
         )
 
         val program = Program(globals)
-        val actualMapping = DefaultParameterResolver.mapFunctionParametersToDummyVariables(program)
+        val actualMappingSimplified = DefaultParameterResolver.mapFunctionParametersToDummyVariables(program).mapValues { UnnamedVariable(it.value) }
 
-        val expectedMappingSimplified = referenceHashMapOf(
-            cParameter to Variable(Variable.Kind.VALUE, "test", Type.Number, cValue),
-            dParameter to Variable(Variable.Kind.VALUE, "test", Type.Boolean, dValue),
+        val expectedMappingSimplified = keyRefMapOf(
+            cParameter to UnnamedVariable(Variable.Kind.VALUE, Type.Number, cValue),
+            dParameter to UnnamedVariable(Variable.Kind.VALUE, Type.Boolean, dValue),
         )
 
-        compareMappings(expectedMappingSimplified, actualMapping)
+        assertEquals(expectedMappingSimplified, actualMappingSimplified)
     }
 
     @Test fun `test default parameters mapping in functions defined in various places`() {
@@ -185,17 +168,17 @@ class DefaultParameterResolverTest {
         )
 
         val program = Program(globals)
-        val actualMapping = DefaultParameterResolver.mapFunctionParametersToDummyVariables(program)
+        val actualMappingSimplified = DefaultParameterResolver.mapFunctionParametersToDummyVariables(program).mapValues { UnnamedVariable(it.value) }
 
-        val expectedMappingSimplified = referenceHashMapOf(
-            aParameter to Variable(Variable.Kind.VALUE, "test", Type.Number, aValue),
-            bParameter to Variable(Variable.Kind.VALUE, "test", Type.Number, bValue),
-            cParameter to Variable(Variable.Kind.VALUE, "test", Type.Number, cValue),
-            dParameter to Variable(Variable.Kind.VALUE, "test", Type.Number, dValue),
-            eParameter to Variable(Variable.Kind.VALUE, "test", Type.Number, eValue),
+        val expectedMappingSimplified = keyRefMapOf(
+            aParameter to UnnamedVariable(Variable.Kind.VALUE, Type.Number, aValue),
+            bParameter to UnnamedVariable(Variable.Kind.VALUE, Type.Number, bValue),
+            cParameter to UnnamedVariable(Variable.Kind.VALUE, Type.Number, cValue),
+            dParameter to UnnamedVariable(Variable.Kind.VALUE, Type.Number, dValue),
+            eParameter to UnnamedVariable(Variable.Kind.VALUE, Type.Number, eValue),
         )
 
-        compareMappings(expectedMappingSimplified, actualMapping)
+        assertEquals(expectedMappingSimplified, actualMappingSimplified)
     }
 
     @Test fun `test reference comparison`() {
@@ -238,14 +221,15 @@ class DefaultParameterResolverTest {
 
         val program = Program(globals)
         val actualMapping = DefaultParameterResolver.mapFunctionParametersToDummyVariables(program)
+        val actualMappingSimplified = actualMapping.mapValues { UnnamedVariable(it.value) }
 
-        val expectedMappingSimplified = referenceHashMapOf(
-            afParameter to Variable(Variable.Kind.VALUE, "test", Type.Number, afValue),
-            agParameter to Variable(Variable.Kind.VALUE, "test", Type.Number, agValue),
+        val expectedMappingSimplified = keyRefMapOf(
+            afParameter to UnnamedVariable(Variable.Kind.VALUE, Type.Number, afValue),
+            agParameter to UnnamedVariable(Variable.Kind.VALUE, Type.Number, agValue),
         )
 
-        compareMappings(expectedMappingSimplified, actualMapping)
+        assertEquals(expectedMappingSimplified, actualMappingSimplified)
 
-        assertNotSame(actualMapping[afParameter]!!, actualMapping[agParameter]!!)
+        assertNotSame(actualMapping[Ref(afParameter)]!!, actualMapping[Ref(agParameter)]!!)
     }
 }

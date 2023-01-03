@@ -1,5 +1,6 @@
 package compiler.diagnostics
 
+import com.google.common.base.Objects
 import compiler.ast.AstNode
 import compiler.ast.Expression
 import compiler.ast.Function
@@ -9,9 +10,11 @@ import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.input.Location
 import compiler.input.LocationRange
+import compiler.utils.Ref
 
 sealed interface Diagnostic {
-    fun isError(): Boolean
+    val isError: Boolean
+    val message: String
 
     data class LexerError(
         val start: Location,
@@ -19,9 +22,9 @@ sealed interface Diagnostic {
         val context: List<String>,
         val errorSegment: String,
     ) : Diagnostic {
-        override fun isError() = true
+        override val isError get() = true
 
-        override fun toString() = StringBuilder().apply {
+        override val message get() = StringBuilder().apply {
             append("Lexer Error\n")
             append("The token at location $start - ${end ?: "eof"} is unexpected.\n")
             append("Context: \t\t${context.joinToString("")}-->$errorSegment<---\n")
@@ -29,18 +32,18 @@ sealed interface Diagnostic {
     }
 
     sealed class ParserError : Diagnostic {
-        override fun isError() = true
+        override val isError get() = true
 
         abstract val errorMessage: String
 
-        override fun toString(): String = "Parser Error\n${errorMessage}\n"
+        override val message get(): String = "Parser Error\n${errorMessage}\n"
 
-        class UnexpectedToken(
-            symbol: Any?,
-            location: LocationRange,
-            expectedSymbols: List<Any?>,
+        data class UnexpectedToken(
+            val symbol: Any?,
+            val location: LocationRange,
+            val expectedSymbols: List<Any?>,
         ) : ParserError() {
-            override val errorMessage = StringBuilder().apply {
+            override val errorMessage get() = StringBuilder().apply {
                 if (symbol != null) append("The symbol <<$symbol>> is unexpected at location $location.")
                 else append("The end of file is unexpected.")
                 append("\n")
@@ -48,43 +51,49 @@ sealed interface Diagnostic {
             }.toString()
         }
 
-        class InvalidNumberLiteral(
-            number: String,
-            location: LocationRange,
+        data class InvalidNumberLiteral(
+            val number: String,
+            val location: LocationRange,
         ) : ParserError() {
-            override val errorMessage = "The literal <<$number>> at location $location is an invalid number literal."
+            override val errorMessage get() = "The literal <<$number>> at location $location is an invalid number literal."
         }
 
-        class ForeignNameAsInvalidIdentifier(
-            foreignName: String,
-            location: LocationRange
+        data class ForeignNameAsInvalidIdentifier(
+            val foreignName: String,
+            val location: LocationRange
         ) : ParserError() {
-            override val errorMessage = "Foreign name <<$foreignName>> at location $location is not a valid identifier."
+            override val errorMessage get() = "Foreign name <<$foreignName>> at location $location is not a valid identifier."
         }
     }
 
-    class MainFunctionNotFound() : Diagnostic {
-        override fun isError(): Boolean = true
-        override fun toString(): String = "Main function 'główna' not found"
+    object MainFunctionNotFound : Diagnostic {
+        override val isError get() = true
+        override val message get() = "Main function 'główna' not found"
     }
 
-    sealed class ResolutionDiagnostic(astNodes: List<AstNode>) : Diagnostic {
+    sealed class ResolutionDiagnostic(private val astNodes: List<AstNode>) : Diagnostic {
 
         data class ObjectAssociatedToError(val message: String, val location: LocationRange?)
 
-        val associatedObjects = astNodes.map { ObjectAssociatedToError(it.toExtendedString(), it.location) }
+        private val associatedObjects get() = astNodes.map { ObjectAssociatedToError(it.toExtendedString(), it.location) }
 
         abstract val errorMessage: String
 
-        override fun toString(): String = StringBuilder().apply {
-            if (isError()) append("Resolver Error") else append("Resolver Warning")
+        override val message get() = StringBuilder().apply {
+            if (isError) append("Resolution Error") else append("Resolution Warning")
             append("\n")
             associatedObjects.forEach { append(it.message).append("\n") }
             append(errorMessage).append("\n")
         }.toString()
 
+        override fun equals(other: Any?): Boolean = other is ResolutionDiagnostic &&
+            other.javaClass == javaClass &&
+            other.astNodes.map(::Ref) == astNodes.map(::Ref)
+
+        override fun hashCode(): Int = Objects.hashCode(javaClass, astNodes.map(::Ref))
+
         sealed class NameResolutionError(astNodes: List<AstNode>) : ResolutionDiagnostic(astNodes) {
-            override fun isError() = true
+            override val isError get() = true
 
             class UndefinedVariable(
                 variable: Expression.Variable,
@@ -133,7 +142,7 @@ sealed interface Diagnostic {
         }
 
         sealed class ArgumentResolutionError(astNodes: List<AstNode>) : ResolutionDiagnostic(astNodes) {
-            override fun isError(): Boolean = true
+            override val isError get() = true
 
             class DefaultParametersNotLast(
                 function: Function,
@@ -179,7 +188,7 @@ sealed interface Diagnostic {
         }
 
         sealed class TypeCheckingError(astNodes: List<AstNode>) : ResolutionDiagnostic(astNodes) {
-            override fun isError() = true
+            override val isError get() = true
 
             class ConstantWithoutValue(
                 variable: Variable,
@@ -265,7 +274,7 @@ sealed interface Diagnostic {
         }
 
         sealed class VariablePropertiesError(astNodes: List<AstNode>) : ResolutionDiagnostic(astNodes) {
-            override fun isError() = true
+            override val isError get() = true
 
             class AssignmentToFunctionParameter(
                 parameter: Function.Parameter,
@@ -279,7 +288,7 @@ sealed interface Diagnostic {
         sealed class ControlFlowDiagnostic(astNodes: List<AstNode>) : ResolutionDiagnostic(astNodes) {
 
             sealed class Warnings(astNodes: List<AstNode>) : ControlFlowDiagnostic(astNodes) {
-                override fun isError() = false
+                override val isError get() = false
 
                 class UnreachableStatement(
                     statement: Statement,
@@ -289,7 +298,7 @@ sealed interface Diagnostic {
             }
 
             sealed class Errors(astNodes: List<AstNode>) : ControlFlowDiagnostic(astNodes) {
-                override fun isError() = true
+                override val isError get() = true
 
                 class BreakOutsideOfLoop(
                     loopBreak: Statement.LoopBreak,

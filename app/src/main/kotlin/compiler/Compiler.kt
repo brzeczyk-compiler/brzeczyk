@@ -26,6 +26,7 @@ import compiler.syntax.LanguageGrammar
 import compiler.syntax.LanguageTokens
 import compiler.syntax.Symbol
 import compiler.syntax.TokenType
+import compiler.utils.Ref
 import java.io.PrintWriter
 import java.io.Reader
 import java.io.Writer
@@ -90,10 +91,10 @@ class Compiler(val diagnostics: Diagnostics) {
                 DisplayStorage(programProperties.staticDepth)::writeAsm,
                 GlobalVariableStorage(ast)::writeAsm,
                 CodeSection(
-                    functionDetailsGenerators[mainFunction]!!.identifier,
+                    functionDetailsGenerators[Ref(mainFunction)]!!.identifier,
                     mainFunction!!.returnType != Type.Number,
                     functionDetailsGenerators
-                        .filter { it.key.implementation is Function.Implementation.Foreign }
+                        .filter { it.key.value.implementation is Function.Implementation.Foreign }
                         .map { it.value.identifier },
                     finalCode.map { functionCode ->
                         functionDetailsGenerators[functionCode.key]!!.identifier to

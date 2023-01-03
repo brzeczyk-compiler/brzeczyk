@@ -1,6 +1,7 @@
 package compiler.intermediate
 
 import compiler.analysis.VariablePropertiesAnalyzer
+import compiler.ast.AstNode
 import compiler.ast.Expression
 import compiler.ast.Function
 import compiler.ast.NamedNode
@@ -16,33 +17,29 @@ import compiler.intermediate.generators.DefaultFunctionDetailsGenerator
 import compiler.intermediate.generators.ForeignFunctionDetailsGenerator
 import compiler.intermediate.generators.FunctionDetailsGenerator
 import compiler.intermediate.generators.VariableLocationType
-import compiler.utils.ReferenceHashMap
-import compiler.utils.ReferenceMap
-import compiler.utils.ReferenceSet
-import compiler.utils.combineReferenceSets
-import compiler.utils.referenceHashMapOf
-import compiler.utils.referenceHashSetOf
-import compiler.utils.referenceKeys
+import compiler.utils.Ref
+import compiler.utils.mutableKeyRefMapOf
+import compiler.utils.refSetOf
 
 object FunctionDependenciesAnalyzer {
-    fun createUniqueIdentifiers(program: Program, allowInconsistentNamingErrors: Boolean): ReferenceMap<Function, UniqueIdentifier> {
-        val uniqueIdentifiers = referenceHashMapOf<Function, UniqueIdentifier>()
+    fun createUniqueIdentifiers(program: Program, allowInconsistentNamingErrors: Boolean): Map<Ref<Function>, UniqueIdentifier> {
+        val uniqueIdentifiers = mutableKeyRefMapOf<Function, UniqueIdentifier>()
         val identifierFactory = UniqueIdentifierFactory()
         fun nameFunction(function: Function, pathSoFar: String?): String {
             try {
-                uniqueIdentifiers[function] = identifierFactory.build(pathSoFar, function.name)
+                uniqueIdentifiers[Ref(function)] = identifierFactory.build(pathSoFar, function.name)
             } catch (error: InconsistentFunctionNamingConvention) {
                 // Such errors should occur only as a consequence of skipped NameConflict error in name resolution.
                 // Hence, if `allowInconsistentNamingErrors`, which is only set when there were already some errors
                 // in diagnostics, we can safely ignore such errors, cause the compilation would be failed later anyway.
                 if (!allowInconsistentNamingErrors)
                     throw error
-                uniqueIdentifiers[function] = UniqueIdentifier("\$INVALID")
+                uniqueIdentifiers[Ref(function)] = UniqueIdentifier("\$INVALID")
             }
-            return uniqueIdentifiers[function]!!.value
+            return uniqueIdentifiers[Ref(function)]!!.value
         }
 
-        fun analyze(node: Any, pathSoFar: String? = null) {
+        fun analyze(node: AstNode, pathSoFar: String? = null) {
             when (node) {
                 is Program.Global.FunctionDefinition -> { analyze(node.function, pathSoFar) }
                 is Statement.FunctionDefinition -> { analyze(node.function, pathSoFar) }
@@ -80,22 +77,22 @@ object FunctionDependenciesAnalyzer {
             } as Program.Global.FunctionDefinition?
             )?.function
         if (mainFunction == null) {
-            diagnostics.report(Diagnostic.MainFunctionNotFound())
+            diagnostics.report(Diagnostic.MainFunctionNotFound)
         }
         return mainFunction
     }
 
     fun createFunctionDetailsGenerators(
         program: Program,
-        variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>,
-        functionReturnedValueVariables: ReferenceMap<Function, Variable>,
+        variableProperties: Map<Ref<AstNode>, VariablePropertiesAnalyzer.VariableProperties>,
+        functionReturnedValueVariables: Map<Ref<Function>, Variable>,
         allowInconsistentNamingErrors: Boolean = false
-    ): ReferenceMap<Function, FunctionDetailsGenerator> {
-        val result = referenceHashMapOf<Function, FunctionDetailsGenerator>()
+    ): Map<Ref<Function>, FunctionDetailsGenerator> {
+        val result = mutableKeyRefMapOf<Function, FunctionDetailsGenerator>()
         val functionIdentifiers = createUniqueIdentifiers(program, allowInconsistentNamingErrors)
 
         fun createDetailsGenerator(function: Function, depth: ULong) {
-            result[function] = when (function.implementation) {
+            result[Ref(function)] = when (function.implementation) {
 
                 is Function.Implementation.Foreign -> {
                     ForeignFunctionDetailsGenerator(
@@ -105,20 +102,20 @@ object FunctionDependenciesAnalyzer {
                 }
 
                 is Function.Implementation.Local -> {
-                    val variablesLocationTypes = referenceHashMapOf<NamedNode, VariableLocationType>()
+                    val variablesLocationTypes = mutableKeyRefMapOf<NamedNode, VariableLocationType>()
                     variableProperties
                         .filter { (_, properties) -> properties.owner === function }
                         .forEach { (variable, properties) ->
-                            variablesLocationTypes[variable as NamedNode] =
-                                if (properties.accessedIn.any { it != function } || properties.writtenIn.any { it != function })
+                            variablesLocationTypes[Ref(variable.value as NamedNode)] =
+                                if (properties.accessedIn.any { it != Ref(function) } || properties.writtenIn.any { it != Ref(function) })
                                     VariableLocationType.MEMORY
                                 else VariableLocationType.REGISTER
                         }
 
                     DefaultFunctionDetailsGenerator(
                         function.parameters,
-                        functionReturnedValueVariables[function],
-                        IFTNode.MemoryLabel(functionIdentifiers[function]!!.value),
+                        functionReturnedValueVariables[Ref(function)],
+                        IFTNode.MemoryLabel(functionIdentifiers[Ref(function)]!!.value),
                         depth,
                         variablesLocationTypes,
                         IFTNode.MemoryLabel(DISPLAY_LABEL_IN_MEMORY)
@@ -153,48 +150,42 @@ object FunctionDependenciesAnalyzer {
         return result
     }
 
-    fun createCallGraph(ast: Program, nameResolution: ReferenceMap<Any, NamedNode>): ReferenceMap<Function, ReferenceSet<Function>> {
+    fun createCallGraph(ast: Program, nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>): Map<Ref<Function>, Set<Ref<Function>>> {
 
-        val functionCalls = referenceHashMapOf<Function, ReferenceSet<Function>>()
+        val functionCalls = mutableKeyRefMapOf<Function, Set<Ref<Function>>>()
 
-        fun getCalledFunctions(global: Program.Global): ReferenceSet<Function> {
-            fun getCalledFunctions(expression: Expression?): ReferenceSet<Function> = when (expression) {
-                is Expression.BooleanLiteral -> referenceHashSetOf()
-                is Expression.NumberLiteral -> referenceHashSetOf()
-                is Expression.UnitLiteral -> referenceHashSetOf()
-                is Expression.Variable -> referenceHashSetOf()
-                null -> referenceHashSetOf()
+        fun getCalledFunctions(global: Program.Global): Set<Ref<Function>> {
+            fun getCalledFunctions(expression: Expression?): Set<Ref<Function>> = when (expression) {
+                is Expression.BooleanLiteral -> refSetOf()
+                is Expression.NumberLiteral -> refSetOf()
+                is Expression.UnitLiteral -> refSetOf()
+                is Expression.Variable -> refSetOf()
+                null -> refSetOf()
 
-                is Expression.FunctionCall -> combineReferenceSets(
-                    referenceHashSetOf(nameResolution[expression] as Function),
-                    combineReferenceSets(expression.arguments.map { getCalledFunctions(it.value) }),
-                )
+                is Expression.FunctionCall -> refSetOf(nameResolution[Ref(expression)]!!.value as Function) +
+                    expression.arguments.map { getCalledFunctions(it.value) }.fold(emptySet(), Set<Ref<Function>>::plus)
 
                 is Expression.UnaryOperation -> getCalledFunctions(expression.operand)
 
-                is Expression.BinaryOperation -> combineReferenceSets(
-                    getCalledFunctions(expression.leftOperand),
-                    getCalledFunctions(expression.rightOperand),
-                )
+                is Expression.BinaryOperation -> getCalledFunctions(expression.leftOperand) +
+                    getCalledFunctions(expression.rightOperand)
 
-                is Expression.Conditional -> combineReferenceSets(
-                    getCalledFunctions(expression.condition),
-                    getCalledFunctions(expression.resultWhenTrue),
-                    getCalledFunctions(expression.resultWhenFalse),
-                )
+                is Expression.Conditional -> getCalledFunctions(expression.condition) +
+                    getCalledFunctions(expression.resultWhenTrue) +
+                    getCalledFunctions(expression.resultWhenFalse)
             }
 
-            fun getCalledFunctions(statement: Statement): ReferenceSet<Function> {
-                fun getCalledFunctions(list: List<Statement>?): ReferenceSet<Function> =
-                    if (list === null) referenceHashSetOf() else combineReferenceSets(list.map { getCalledFunctions(it) })
+            fun getCalledFunctions(statement: Statement): Set<Ref<Function>> {
+                fun getCalledFunctions(list: List<Statement>?): Set<Ref<Function>> =
+                    if (list === null) refSetOf() else list.map { getCalledFunctions(it) }.fold(emptySet(), Set<Ref<Function>>::plus)
 
                 return when (statement) {
-                    is Statement.LoopBreak -> referenceHashSetOf()
-                    is Statement.LoopContinuation -> referenceHashSetOf()
+                    is Statement.LoopBreak -> refSetOf()
+                    is Statement.LoopContinuation -> refSetOf()
 
                     is Statement.FunctionDefinition -> {
-                        functionCalls[statement.function] = getCalledFunctions(statement.function.body)
-                        return combineReferenceSets(statement.function.parameters.map { getCalledFunctions(it.defaultValue) })
+                        functionCalls[Ref(statement.function)] = getCalledFunctions(statement.function.body)
+                        return statement.function.parameters.map { getCalledFunctions(it.defaultValue) }.fold(emptySet(), Set<Ref<Function>>::plus)
                     }
 
                     is Statement.Evaluation -> getCalledFunctions(statement.expression)
@@ -207,46 +198,41 @@ object FunctionDependenciesAnalyzer {
 
                     is Statement.FunctionReturn -> getCalledFunctions(statement.value)
 
-                    is Statement.Conditional -> combineReferenceSets(
-                        getCalledFunctions(statement.condition),
-                        getCalledFunctions(statement.actionWhenTrue),
-                        getCalledFunctions(statement.actionWhenFalse),
-                    )
+                    is Statement.Conditional -> getCalledFunctions(statement.condition) +
+                        getCalledFunctions(statement.actionWhenTrue) +
+                        getCalledFunctions(statement.actionWhenFalse)
 
-                    is Statement.Loop -> combineReferenceSets(
-                        getCalledFunctions(statement.condition),
-                        getCalledFunctions(statement.action),
-                    )
+                    is Statement.Loop -> getCalledFunctions(statement.condition) +
+                        getCalledFunctions(statement.action)
                 }
             }
 
             return when (global) {
-                is Program.Global.VariableDefinition -> referenceHashSetOf()
+                is Program.Global.VariableDefinition -> refSetOf()
 
                 is Program.Global.FunctionDefinition -> {
-                    functionCalls[global.function] = combineReferenceSets(global.function.body.map { getCalledFunctions(it) })
-                    return referenceHashSetOf()
+                    functionCalls[Ref(global.function)] = global.function.body.map { getCalledFunctions(it) }.fold(emptySet(), Set<Ref<Function>>::plus)
+                    return refSetOf()
                 }
             }
         }
 
         ast.globals.forEach { getCalledFunctions(it) }
 
-        val allFunctions = functionCalls.referenceKeys
-        var previousPartialTransitiveFunctionCalls: ReferenceHashMap<Function, ReferenceSet<Function>>
+        val allFunctions = functionCalls.keys
+        var previousPartialTransitiveFunctionCalls: Map<Ref<Function>, Set<Ref<Function>>>
         var nextPartialTransitiveFunctionCalls = functionCalls
 
-        fun getAllCallsOfChildren(calls: ReferenceHashMap<Function, ReferenceSet<Function>>, function: Function): ReferenceSet<Function> =
-            combineReferenceSets(calls[function]!!.map { calls[it]!! })
+        fun getAllCallsOfChildren(calls: Map<Ref<Function>, Set<Ref<Function>>>, function: Function) =
+            calls[Ref(function)]!!.map { calls[it]!! }.fold(emptySet(), Set<Ref<Function>>::plus)
 
         repeat(allFunctions.size) {
             previousPartialTransitiveFunctionCalls = nextPartialTransitiveFunctionCalls
-            nextPartialTransitiveFunctionCalls = referenceHashMapOf()
+            nextPartialTransitiveFunctionCalls = mutableKeyRefMapOf()
             allFunctions.forEach {
-                nextPartialTransitiveFunctionCalls[it] = combineReferenceSets(
-                    previousPartialTransitiveFunctionCalls[it]!!,
-                    getAllCallsOfChildren(previousPartialTransitiveFunctionCalls, it),
-                )
+                nextPartialTransitiveFunctionCalls[it] =
+                    previousPartialTransitiveFunctionCalls[it]!! +
+                    getAllCallsOfChildren(previousPartialTransitiveFunctionCalls, it.value)
             }
         }
 

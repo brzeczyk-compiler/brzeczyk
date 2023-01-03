@@ -8,12 +8,12 @@ class InconsistentFunctionNamingConvention(message: String) : RuntimeException(m
 
 const val MAIN_FUNCTION_IDENTIFIER = "główna"
 
-class UniqueIdentifierFactory() {
+class UniqueIdentifierFactory {
     companion object {
         // it might be handy to change these values with ease
-        val functionPrefix = "fun"
-        val levelSeparator = '$'
-        val polishSignSymbol = '#' // added after polish signs are converted to allowed characters
+        const val functionPrefix = "fun"
+        const val levelSeparator = '$'
+        const val polishSignSymbol = '#' // added after polish signs are converted to allowed characters
         val charactersAllowedByNasm = listOf('a'..'z', 'A'..'Z', '0'..'9').flatten() +
             listOf('_', '$', '#', '@', '~', '.', '?')
         val knownConversionsToAllowedCharacters = mapOf(

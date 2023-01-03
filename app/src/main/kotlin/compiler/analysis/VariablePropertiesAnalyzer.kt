@@ -1,6 +1,7 @@
 package compiler.analysis
 
 import compiler.Compiler.CompilationFailed
+import compiler.ast.AstNode
 import compiler.ast.Expression
 import compiler.ast.Function
 import compiler.ast.NamedNode
@@ -12,13 +13,11 @@ import compiler.ast.Variable
 import compiler.ast.VariableOwner
 import compiler.diagnostics.Diagnostic.ResolutionDiagnostic.VariablePropertiesError.AssignmentToFunctionParameter
 import compiler.diagnostics.Diagnostics
-import compiler.utils.MutableReferenceMap
-import compiler.utils.MutableReferenceSet
-import compiler.utils.ReferenceMap
-import compiler.utils.ReferenceSet
-import compiler.utils.referenceEntries
-import compiler.utils.referenceHashMapOf
-import compiler.utils.referenceHashSetOf
+import compiler.utils.Ref
+import compiler.utils.mutableKeyRefMapOf
+import compiler.utils.mutableRefMapOf
+import compiler.utils.mutableRefSetOf
+import compiler.utils.refSetOf
 
 object VariablePropertiesAnalyzer {
 
@@ -26,14 +25,14 @@ object VariablePropertiesAnalyzer {
 
     data class VariableProperties(
         var owner: VariableOwner = GlobalContext,
-        val accessedIn: ReferenceSet<Function> = referenceHashSetOf(),
-        val writtenIn: ReferenceSet<Function> = referenceHashSetOf(),
+        val accessedIn: Set<Ref<Function>> = refSetOf(),
+        val writtenIn: Set<Ref<Function>> = refSetOf(),
     )
 
     data class MutableVariableProperties(
         var owner: VariableOwner = GlobalContext,
-        val accessedIn: MutableReferenceSet<Function> = referenceHashSetOf(),
-        val writtenIn: MutableReferenceSet<Function> = referenceHashSetOf(),
+        val accessedIn: MutableSet<Ref<Function>> = mutableRefSetOf(),
+        val writtenIn: MutableSet<Ref<Function>> = mutableRefSetOf(),
     )
 
     class AnalysisFailed : CompilationFailed()
@@ -42,38 +41,38 @@ object VariablePropertiesAnalyzer {
 
     fun calculateVariableProperties(
         ast: Program,
-        nameResolution: ReferenceMap<Any, NamedNode>,
-        defaultParameterMapping: ReferenceMap<Function.Parameter, Variable>,
-        functionReturnedValueVariables: ReferenceMap<Function, Variable>,
-        accessedDefaultValues: ReferenceMap<Expression.FunctionCall, ReferenceSet<Function.Parameter>>,
+        nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
+        defaultParameterMapping: Map<Ref<Function.Parameter>, Variable>,
+        functionReturnedValueVariables: Map<Ref<Function>, Variable>,
+        accessedDefaultValues: Map<Ref<Expression.FunctionCall>, Set<Ref<Function.Parameter>>>,
         diagnostics: Diagnostics,
-    ): ReferenceMap<Any, VariableProperties> {
-        val mutableVariableProperties: MutableReferenceMap<Any, MutableVariableProperties> = referenceHashMapOf()
-        val functionCallsOwnership: MutableReferenceMap<Expression.FunctionCall, Function> = referenceHashMapOf()
+    ): Map<Ref<AstNode>, VariableProperties> {
+        val mutableVariableProperties: MutableMap<Ref<AstNode>, MutableVariableProperties> = mutableKeyRefMapOf()
+        val functionCallsOwnership: MutableMap<Ref<Expression.FunctionCall>, Ref<Function>> = mutableRefMapOf()
         var failed = false
 
-        // Any = Expression | Statement
-        fun analyzeVariables(node: Any, currentFunction: Function?) {
+        // AstNode = Expression | Statement
+        fun analyzeVariables(node: AstNode, currentFunction: Function?) {
             when (node) {
                 is Statement.Evaluation -> analyzeVariables(node.expression, currentFunction)
                 is Statement.VariableDefinition -> {
-                    mutableVariableProperties[node.variable] = MutableVariableProperties(currentFunction ?: GlobalContext)
+                    mutableVariableProperties[Ref(node.variable)] = MutableVariableProperties(currentFunction ?: GlobalContext)
                     analyzeVariables(node.variable, currentFunction)
                 }
                 is Global.VariableDefinition -> {
-                    mutableVariableProperties[node.variable] = MutableVariableProperties(currentFunction ?: GlobalContext)
+                    mutableVariableProperties[Ref(node.variable)] = MutableVariableProperties(currentFunction ?: GlobalContext)
                     analyzeVariables(node.variable, currentFunction)
                 }
                 is Statement.FunctionDefinition -> analyzeVariables(node.function, currentFunction)
                 is Global.FunctionDefinition -> analyzeVariables(node.function, currentFunction)
                 is Statement.Assignment -> {
-                    val resolvedVariable: NamedNode = nameResolution[node]!!
-                    mutableVariableProperties[resolvedVariable]!!.writtenIn.add(currentFunction!!)
+                    val resolvedVariable: NamedNode = nameResolution[Ref(node)]!!.value
+                    mutableVariableProperties[Ref(resolvedVariable)]!!.writtenIn.add(Ref(currentFunction!!))
                     if (resolvedVariable is Function.Parameter) {
                         diagnostics.report( // FIXME: this is also reported by the type checker
                             AssignmentToFunctionParameter(
                                 resolvedVariable,
-                                mutableVariableProperties[resolvedVariable]!!.owner as Function,
+                                mutableVariableProperties[Ref(resolvedVariable)]!!.owner as Function,
                                 currentFunction
                             )
                         )
@@ -90,12 +89,12 @@ object VariablePropertiesAnalyzer {
                     .forEach { analyzeVariables(it, currentFunction) }
                 is Statement.FunctionReturn -> analyzeVariables(node.value, currentFunction)
                 is Expression.Variable -> {
-                    val resolvedVariable: NamedNode = nameResolution[node]!!
-                    mutableVariableProperties[resolvedVariable]!!.accessedIn.add(currentFunction!!)
+                    val resolvedVariable: NamedNode = nameResolution[Ref(node)]!!.value
+                    mutableVariableProperties[Ref(resolvedVariable)]!!.accessedIn.add(Ref(currentFunction!!))
                 }
                 is Expression.FunctionCall -> {
                     node.arguments.forEach { analyzeVariables(it, currentFunction) }
-                    functionCallsOwnership[node] = currentFunction!!
+                    functionCallsOwnership[Ref(node)] = Ref(currentFunction!!)
                 }
                 is Expression.FunctionCall.Argument -> analyzeVariables(node.value, currentFunction)
                 is Expression.UnaryOperation -> analyzeVariables(node.operand, currentFunction)
@@ -105,11 +104,11 @@ object VariablePropertiesAnalyzer {
                     .forEach { analyzeVariables(it, currentFunction) }
                 is Function -> {
                     node.parameters.forEach {
-                        mutableVariableProperties[it] = MutableVariableProperties(node)
+                        mutableVariableProperties[Ref(it)] = MutableVariableProperties(node)
                         if (it.defaultValue != null) {
                             // scope of the inner function has not begun yet
                             analyzeVariables(it.defaultValue, currentFunction)
-                            mutableVariableProperties[defaultParameterMapping[it]!!] = MutableVariableProperties(currentFunction ?: GlobalContext)
+                            mutableVariableProperties[Ref(defaultParameterMapping[Ref(it)]!!)] = MutableVariableProperties(currentFunction ?: GlobalContext)
                         }
                     }
                     node.body.forEach { analyzeVariables(it, node) }
@@ -117,25 +116,26 @@ object VariablePropertiesAnalyzer {
                         // Accessed set consists of only the owner function, cause the variable's value is moved to
                         // appropriate Register in the ControlFlowGraph of epilogue of this function, and the Variable
                         // is never accessed anymore (including both outer & inner functions).
-                        mutableVariableProperties[functionReturnedValueVariables[node]!!] = MutableVariableProperties(
+                        mutableVariableProperties[Ref(functionReturnedValueVariables[Ref(node)]!!)] = MutableVariableProperties(
                             node,
-                            referenceHashSetOf(node),
-                            referenceHashSetOf(node)
+                            mutableRefSetOf(node),
+                            mutableRefSetOf(node)
                         )
                     }
                 }
                 is Variable -> node.value?.let { analyzeVariables(it, currentFunction) }
+                else -> {}
             }
         }
 
         ast.globals.forEach { analyzeVariables(it, null) }
         val fixedVariableProperties = mutableVariableProperties.map { it.key to fixVariableProperties(it.value) }.toMutableList()
 
-        val defaultParametersDummyVariablesProperties = defaultParameterMapping.referenceEntries.map { paramToVariable ->
-            val accessedIn = referenceHashSetOf(accessedDefaultValues.referenceEntries.filter { paramToVariable.key in it.value }.map { functionCallsOwnership[it.key]!! }.toList())
-            val owner = mutableVariableProperties[paramToVariable.value]!!.owner
-            val writtenIn = if (owner != GlobalContext) referenceHashSetOf(owner as Function) else referenceHashSetOf()
-            paramToVariable.value to VariableProperties(owner, accessedIn, writtenIn)
+        val defaultParametersDummyVariablesProperties = defaultParameterMapping.map { paramToVariable ->
+            val accessedIn = accessedDefaultValues.filter { paramToVariable.key in it.value }.map { functionCallsOwnership[it.key]!! }.toSet()
+            val owner = mutableVariableProperties[Ref(paramToVariable.value)]!!.owner
+            val writtenIn = if (owner != GlobalContext) refSetOf(owner as Function) else refSetOf()
+            Ref(paramToVariable.value) to VariableProperties(owner, accessedIn, writtenIn)
         }.toList()
 
         fixedVariableProperties.addAll(defaultParametersDummyVariablesProperties)
@@ -143,6 +143,6 @@ object VariablePropertiesAnalyzer {
         if (failed)
             throw AnalysisFailed()
 
-        return referenceHashMapOf(fixedVariableProperties)
+        return fixedVariableProperties.toMap()
     }
 }

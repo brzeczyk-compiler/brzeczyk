@@ -1,11 +1,13 @@
 package compiler.intermediate.generators
 
 import compiler.analysis.VariablePropertiesAnalyzer
+import compiler.ast.AstNode
 import compiler.ast.Expression
 import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.intermediate.IFTNode
-import compiler.utils.referenceHashMapOf
+import compiler.utils.Ref
+import compiler.utils.mutableKeyRefMapOf
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -13,10 +15,10 @@ import kotlin.test.assertTrue
 class GlobalVariableAccessGeneratorTest {
 
     private fun createGlobalVariablesAccessGeneratorForVariables(varList: List<Variable>): GlobalVariableAccessGenerator =
-        referenceHashMapOf<Any, VariablePropertiesAnalyzer.VariableProperties>().apply {
+        mutableKeyRefMapOf<AstNode, VariablePropertiesAnalyzer.VariableProperties>().apply {
             putAll(
-                varList.associateWith {
-                    VariablePropertiesAnalyzer.VariableProperties(
+                varList.associate {
+                    Ref(it) to VariablePropertiesAnalyzer.VariableProperties(
                         owner = VariablePropertiesAnalyzer.GlobalContext
                     )
                 }

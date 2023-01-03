@@ -339,9 +339,8 @@ object AstFactory {
         val elseSegment = if (it < children.size) processMaybeBlock(children[it + 1], diagnostics) else null
 
         return segments.slice(0 until segments.lastIndex).foldRight(
-            Statement.Conditional(segments.last().first, segments.last().second, elseSegment, combineLocations(children)),
-            { segment, elseBranch -> Statement.Conditional(segment.first, segment.second, listOf(elseBranch), combineLocations(children)) }
-        )
+            Statement.Conditional(segments.last().first, segments.last().second, elseSegment, combineLocations(children))
+        ) { segment, elseBranch -> Statement.Conditional(segment.first, segment.second, listOf(elseBranch), combineLocations(children)) }
     }
 
     private fun processStatement(parseTree: ParseTree<Symbol>, diagnostics: Diagnostics): Statement {

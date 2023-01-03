@@ -7,6 +7,7 @@ import compiler.ast.Statement
 import compiler.ast.StatementBlock
 import compiler.ast.Type
 import compiler.ast.Variable
+import compiler.utils.Ref
 import io.mockk.mockk
 import kotlin.test.Test
 import kotlin.test.assertContains
@@ -86,19 +87,19 @@ internal class NameResolverTest {
 
         // Check the result mapping
 
-        assertContains(nameDefinitions, fCall1)
-        assertContains(nameDefinitions, fCall2)
-        assertContains(nameDefinitions, xUseInF)
-        assertContains(nameDefinitions, xUseInG)
-        assertContains(nameDefinitions, yUseInG)
+        assertContains(nameDefinitions, Ref(fCall1))
+        assertContains(nameDefinitions, Ref(fCall2))
+        assertContains(nameDefinitions, Ref(xUseInF))
+        assertContains(nameDefinitions, Ref(xUseInG))
+        assertContains(nameDefinitions, Ref(yUseInG))
 
         assertEquals(nameDefinitions.size, 5)
 
-        assertEquals(nameDefinitions[fCall1], fFunction)
-        assertEquals(nameDefinitions[fCall2], fFunction)
-        assertEquals(nameDefinitions[xUseInF], xParam)
-        assertEquals(nameDefinitions[xUseInG], xVar)
-        assertEquals(nameDefinitions[yUseInG], yParam)
+        assertEquals(nameDefinitions[Ref(fCall1)], Ref(fFunction))
+        assertEquals(nameDefinitions[Ref(fCall2)], Ref(fFunction))
+        assertEquals(nameDefinitions[Ref(xUseInF)], Ref(xParam))
+        assertEquals(nameDefinitions[Ref(xUseInG)], Ref(xVar))
+        assertEquals(nameDefinitions[Ref(yUseInG)], Ref(yParam))
 
         assertEquals(1, result.programStaticDepth)
     }

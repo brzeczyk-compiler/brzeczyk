@@ -1,41 +1,53 @@
 package compiler.intermediate
 
-import compiler.utils.referenceHashMapOf
-import compiler.utils.referenceHashSetOf
+import compiler.utils.Ref
+import compiler.utils.mutableRefMapOf
+import compiler.utils.mutableRefSetOf
+import compiler.utils.refMapOf
 
 class IncorrectControlFlowGraphError(message: String) : Exception(message)
 
 class ControlFlowGraphBuilder(@JvmField var entryTreeRoot: IFTNode? = null) {
-    private var unconditionalLinks = referenceHashMapOf<IFTNode, IFTNode>()
-    private var conditionalTrueLinks = referenceHashMapOf<IFTNode, IFTNode>()
-    private var conditionalFalseLinks = referenceHashMapOf<IFTNode, IFTNode>()
-    private var treeRoots = referenceHashSetOf<IFTNode>()
+    private var unconditionalLinks = mutableRefMapOf<IFTNode, IFTNode>()
+    private var conditionalTrueLinks = mutableRefMapOf<IFTNode, IFTNode>()
+    private var conditionalFalseLinks = mutableRefMapOf<IFTNode, IFTNode>()
+    private var treeRoots = mutableListOf<IFTNode>()
+    private var treeRootsSet = mutableRefSetOf<IFTNode>()
 
     init {
-        entryTreeRoot?.let { treeRoots.add(it) }
+        entryTreeRoot?.let {
+            treeRoots.add(it)
+            treeRootsSet.add(Ref(it))
+        }
     }
 
     fun setEntryTreeRoot(root: IFTNode) {
         if (entryTreeRoot != null)
             throw IncorrectControlFlowGraphError("Tried to create second entryTreeRoot in CFGBuilder")
         entryTreeRoot = root
-        if (!treeRoots.contains(root))
+        if (Ref(root) !in treeRootsSet) {
             treeRoots.add(root)
+            treeRootsSet.add(Ref(root))
+        }
     }
 
     fun addLink(from: Pair<IFTNode, CFGLinkType>?, to: IFTNode, addDestination: Boolean = true) {
-        if (addDestination && !treeRoots.contains(to))
+        if (addDestination && Ref(to) !in treeRootsSet) {
             treeRoots.add(to)
+            treeRootsSet.add(Ref(to))
+        }
         if (from != null) {
-            if (!treeRoots.contains(from.first))
+            if (Ref(from.first) !in treeRootsSet) {
                 treeRoots.add(from.first)
+                treeRootsSet.add(Ref(from.first))
+            }
 
             val links = when (from.second) {
                 CFGLinkType.UNCONDITIONAL -> unconditionalLinks
                 CFGLinkType.CONDITIONAL_TRUE -> conditionalTrueLinks
                 CFGLinkType.CONDITIONAL_FALSE -> conditionalFalseLinks
             }
-            links[from.first] = to
+            links[Ref(from.first)] = Ref(to)
         }
         if (entryTreeRoot == null && addDestination) setEntryTreeRoot(to)
     }
@@ -57,9 +69,12 @@ class ControlFlowGraphBuilder(@JvmField var entryTreeRoot: IFTNode? = null) {
     fun addAllFrom(cfg: ControlFlowGraph) {
         if (entryTreeRoot == null)
             entryTreeRoot = cfg.entryTreeRoot
-        for (treeRoot in cfg.treeRoots)
-            if (treeRoot !in treeRoots)
+        for (treeRoot in cfg.treeRoots) {
+            if (Ref(treeRoot) !in treeRootsSet) {
                 treeRoots.add(treeRoot)
+                treeRootsSet.add(Ref(treeRoot))
+            }
+        }
 
         unconditionalLinks.putAll(cfg.unconditionalLinks)
         conditionalTrueLinks.putAll(cfg.conditionalTrueLinks)
@@ -90,8 +105,8 @@ class ControlFlowGraphBuilder(@JvmField var entryTreeRoot: IFTNode? = null) {
     fun addSingleTree(iftNode: IFTNode): ControlFlowGraphBuilder {
         mergeUnconditionally(
             ControlFlowGraph(
-                referenceHashSetOf(iftNode),
-                iftNode, referenceHashMapOf(), referenceHashMapOf(), referenceHashMapOf()
+                listOf(iftNode),
+                iftNode, refMapOf(), refMapOf(), refMapOf()
             )
         )
         return this

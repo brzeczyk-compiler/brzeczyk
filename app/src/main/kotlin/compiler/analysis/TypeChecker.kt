@@ -1,6 +1,7 @@
 package compiler.analysis
 
 import compiler.Compiler.CompilationFailed
+import compiler.ast.AstNode
 import compiler.ast.Expression
 import compiler.ast.Function
 import compiler.ast.NamedNode
@@ -11,17 +12,17 @@ import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.diagnostics.Diagnostic.ResolutionDiagnostic.TypeCheckingError
 import compiler.diagnostics.Diagnostics
-import compiler.utils.ReferenceMap
-import compiler.utils.referenceHashMapOf
+import compiler.utils.Ref
+import compiler.utils.mutableKeyRefMapOf
 
-class TypeChecker(private val nameResolution: ReferenceMap<Any, NamedNode>, private val argumentResolution: ArgumentResolutionResult, private val diagnostics: Diagnostics) {
-    private val expressionTypes = referenceHashMapOf<Expression, Type>()
+class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>, private val argumentResolution: ArgumentResolutionResult, private val diagnostics: Diagnostics) {
+    private val expressionTypes = mutableKeyRefMapOf<Expression, Type>()
     private var failed = false
 
     class TypeCheckingFailed : CompilationFailed()
 
     companion object {
-        fun calculateTypes(program: Program, nameResolution: ReferenceMap<Any, NamedNode>, argumentResolution: ArgumentResolutionResult, diagnostics: Diagnostics): ReferenceMap<Expression, Type> {
+        fun calculateTypes(program: Program, nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>, argumentResolution: ArgumentResolutionResult, diagnostics: Diagnostics): Map<Ref<Expression>, Type> {
             val checker = TypeChecker(nameResolution, argumentResolution, diagnostics)
 
             checker.checkProgram(program)
@@ -79,7 +80,7 @@ class TypeChecker(private val nameResolution: ReferenceMap<Any, NamedNode>, priv
                     is Statement.FunctionDefinition -> checkFunction(statement.function, false)
 
                     is Statement.Assignment -> {
-                        when (val node = nameResolution[statement]!!) {
+                        when (val node = nameResolution[Ref(statement)]!!.value) {
                             is Variable -> {
                                 if (node.kind != Variable.Kind.VARIABLE)
                                     report(TypeCheckingError.ImmutableAssignment(statement, node))
@@ -148,7 +149,7 @@ class TypeChecker(private val nameResolution: ReferenceMap<Any, NamedNode>, priv
                 is Expression.NumberLiteral -> return Type.Number
 
                 is Expression.Variable -> {
-                    when (val node = nameResolution[expression]!!) {
+                    when (val node = nameResolution[Ref(expression)]!!.value) {
                         is Variable -> return node.type // TODO: check if the variable has been initialized
 
                         is Function.Parameter -> return node.type
@@ -158,14 +159,14 @@ class TypeChecker(private val nameResolution: ReferenceMap<Any, NamedNode>, priv
                 }
 
                 is Expression.FunctionCall -> {
-                    when (val node = nameResolution[expression]!!) {
+                    when (val node = nameResolution[Ref(expression)]!!.value) {
                         is Variable -> report(TypeCheckingError.VariableCall(expression, node))
 
                         is Function.Parameter -> report(TypeCheckingError.ParameterCall(expression, node))
 
                         is Function -> {
                             for (argument in expression.arguments) {
-                                val parameter = argumentResolution[argument]!!
+                                val parameter = argumentResolution[Ref(argument)]!!.value
                                 checkExpression(argument.value, parameter.type)
                             }
 
@@ -245,7 +246,7 @@ class TypeChecker(private val nameResolution: ReferenceMap<Any, NamedNode>, priv
             return null
         }
 
-        return check()?.also { expressionTypes[expression] = it }
+        return check()?.also { expressionTypes[Ref(expression)] = it }
     }
 
     private fun checkExpression(expression: Expression, expectedType: Type) {
@@ -269,7 +270,7 @@ class TypeChecker(private val nameResolution: ReferenceMap<Any, NamedNode>, priv
                 is Expression.BinaryOperation,
                 is Expression.Conditional -> {
                     // TODO: some of these could be considered as constant
-                    // in case of change, update GlobalVariableStorage as well
+                    // in case of change, update Expression.getValueOfLiteral as well
                     report(TypeCheckingError.NonConstantExpression(expression))
                 }
             }
@@ -277,7 +278,7 @@ class TypeChecker(private val nameResolution: ReferenceMap<Any, NamedNode>, priv
             return null
         }
 
-        return check()?.also { expressionTypes[expression] = it }
+        return check()?.also { expressionTypes[Ref(expression)] = it }
     }
 
     private fun checkConstantExpression(expression: Expression, expectedType: Type) {

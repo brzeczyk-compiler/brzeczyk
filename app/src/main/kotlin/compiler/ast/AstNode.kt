@@ -10,6 +10,7 @@ sealed interface AstNode {
 
         stringBuilder.append(
             when (this) {
+                is Program -> "<<the entire program>>"
                 is Program.Global -> "<<global definition>>"
                 is Statement -> "<<statement>>"
 
@@ -47,6 +48,8 @@ sealed interface AstNode {
 
         stringBuilder.append(
             when (this) {
+                is Program -> "the entire program"
+
                 is Program.Global -> when (this) {
                     is Program.Global.FunctionDefinition -> "definition of << ${this.function.toSimpleString()} >>"
                     is Program.Global.VariableDefinition -> "definition of << ${this.variable.toSimpleString()} >>"

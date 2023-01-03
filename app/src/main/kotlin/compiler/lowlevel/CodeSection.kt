@@ -4,9 +4,9 @@ import compiler.intermediate.Register
 import java.io.PrintWriter
 
 class CodeSection(
-    val mainFunctionLabel: String,
-    val ignoreMainReturnValue: Boolean,
-    val foreignFunctionIdentifiers: List<String>,
+    private val mainFunctionLabel: String,
+    private val ignoreMainReturnValue: Boolean,
+    private val foreignFunctionIdentifiers: List<String>,
     val functions: Map<String, FunctionCode>
 ) {
     data class FunctionCode(val instructions: List<Asmable>, val registerAllocation: Map<Register, Register>)

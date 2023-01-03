@@ -37,7 +37,7 @@ class Cli : CliktCommand() {
                 File(assemblyFile).writer().use { output ->
                     if (!compiler.process(input, output)) {
                         println("Compilation failed")
-                        diagnostics.diagnostics.forEach { println(it) }
+                        diagnostics.diagnostics.forEach { println(it.message) }
                         exitProcess(1)
                     }
                 }

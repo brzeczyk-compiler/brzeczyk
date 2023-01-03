@@ -3,6 +3,7 @@ package compiler.intermediate
 import compiler.analysis.ArgumentResolutionResult
 import compiler.analysis.ProgramAnalyzer
 import compiler.analysis.VariablePropertiesAnalyzer
+import compiler.ast.AstNode
 import compiler.ast.Expression
 import compiler.ast.Function
 import compiler.ast.NamedNode
@@ -17,12 +18,10 @@ import compiler.intermediate.FunctionDependenciesAnalyzer.createCallGraph
 import compiler.intermediate.generators.FunctionDetailsGenerator
 import compiler.intermediate.generators.GlobalVariableAccessGenerator
 import compiler.intermediate.generators.VariableAccessGenerator
-import compiler.utils.ReferenceMap
-import compiler.utils.ReferenceSet
-import compiler.utils.combineReferenceSets
-import compiler.utils.copy
-import compiler.utils.referenceHashMapOf
-import compiler.utils.referenceHashSetOf
+import compiler.utils.Ref
+import compiler.utils.mutableKeyRefMapOf
+import compiler.utils.mutableRefSetOf
+import compiler.utils.refSetOf
 
 object ControlFlow {
     private fun mapLinkType(list: List<Pair<IFTNode, CFGLinkType>?>, type: CFGLinkType) = list.map { it?.copy(second = type) }
@@ -30,9 +29,9 @@ object ControlFlow {
     fun createGraphForProgram(
         program: Program,
         programProperties: ProgramAnalyzer.ProgramProperties,
-        functionDetailsGenerators: ReferenceMap<Function, FunctionDetailsGenerator>,
+        functionDetailsGenerators: Map<Ref<Function>, FunctionDetailsGenerator>,
         diagnostics: Diagnostics,
-    ): ReferenceMap<Function, ControlFlowGraph> {
+    ): Map<Ref<Function>, ControlFlowGraph> {
         val globalVariableAccessGenerator = GlobalVariableAccessGenerator(programProperties.variableProperties)
         val callGraph = createCallGraph(program, programProperties.nameResolution)
 
@@ -60,19 +59,13 @@ object ControlFlow {
             diagnostics
         )
 
-        return referenceHashMapOf(
-            cfgForEachFunction.entries.map {
-                (function, bodyCFG) ->
-                Pair(
-                    function,
-                    attachPrologueAndEpilogue(
-                        bodyCFG,
-                        functionDetailsGenerators[function]!!.genPrologue(),
-                        functionDetailsGenerators[function]!!.genEpilogue()
-                    )
-                )
-            }
-        )
+        return cfgForEachFunction.mapValues { (function, bodyCFG) ->
+            attachPrologueAndEpilogue(
+                bodyCFG,
+                functionDetailsGenerators[function]!!.genPrologue(),
+                functionDetailsGenerators[function]!!.genEpilogue()
+            )
+        }
     }
 
     fun attachPrologueAndEpilogue(body: ControlFlowGraph, prologue: ControlFlowGraph, epilogue: ControlFlowGraph): ControlFlowGraph {
@@ -84,9 +77,9 @@ object ControlFlow {
             builder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, epilogue.entryTreeRoot!!)
 
             for (node in body.treeRoots) {
-                if (body.conditionalFalseLinks.containsKey(node) && !body.conditionalTrueLinks.containsKey(node))
+                if (body.conditionalFalseLinks.containsKey(Ref(node)) && !body.conditionalTrueLinks.containsKey(Ref(node)))
                     builder.addLink(Pair(node, CFGLinkType.CONDITIONAL_TRUE), epilogue.entryTreeRoot)
-                if (!body.conditionalFalseLinks.containsKey(node) && body.conditionalTrueLinks.containsKey(node))
+                if (!body.conditionalFalseLinks.containsKey(Ref(node)) && body.conditionalTrueLinks.containsKey(Ref(node)))
                     builder.addLink(Pair(node, CFGLinkType.CONDITIONAL_FALSE), epilogue.entryTreeRoot)
             }
         } else
@@ -99,45 +92,43 @@ object ControlFlow {
         expression: Expression,
         targetVariable: Variable?,
         currentFunction: Function,
-        nameResolution: ReferenceMap<Any, NamedNode>,
-        variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>,
-        callGraph: ReferenceMap<Function, ReferenceSet<Function>>,
-        functionDetailsGenerators: ReferenceMap<Function, FunctionDetailsGenerator>,
+        nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
+        variableProperties: Map<Ref<AstNode>, VariablePropertiesAnalyzer.VariableProperties>,
+        callGraph: Map<Ref<Function>, Set<Ref<Function>>>,
+        functionDetailsGenerators: Map<Ref<Function>, FunctionDetailsGenerator>,
         argumentResolution: ArgumentResolutionResult,
-        defaultParameterMapping: ReferenceMap<Function.Parameter, Variable>,
+        defaultParameterMapping: Map<Ref<Function.Parameter>, Variable>,
         globalVariablesAccessGenerator: VariableAccessGenerator
     ): ControlFlowGraph {
-        fun getVariablesModifiedBy(function: Function): ReferenceSet<Variable> {
-            val possiblyCalledFunctions = combineReferenceSets(callGraph[function]!!, referenceHashSetOf(function))
-            return referenceHashSetOf(
-                variableProperties.asSequence()
-                    .filter { (it.value.writtenIn intersect possiblyCalledFunctions).isNotEmpty() }
-                    .map { it.key as Variable }.toList()
-            )
+        fun getVariablesModifiedBy(function: Function): Set<Ref<Variable>> {
+            val possiblyCalledFunctions = callGraph[Ref(function)]!! + refSetOf(function)
+            return variableProperties.asSequence()
+                .filter { (it.value.writtenIn intersect possiblyCalledFunctions).isNotEmpty() }
+                .map { Ref(it.key.value as Variable) }.toSet()
         }
 
-        val variableAccessGenerators: ReferenceMap<VariableOwner, VariableAccessGenerator> = run {
-            val result = referenceHashMapOf<VariableOwner, VariableAccessGenerator>()
+        val variableAccessGenerators: Map<Ref<VariableOwner>, VariableAccessGenerator> = run {
+            val result = mutableKeyRefMapOf<VariableOwner, VariableAccessGenerator>()
 
             result.putAll(functionDetailsGenerators)
-            result[VariablePropertiesAnalyzer.GlobalContext] = globalVariablesAccessGenerator
+            result[Ref(VariablePropertiesAnalyzer.GlobalContext)] = globalVariablesAccessGenerator
             result
         }
 
         // first stage is to decide which variable usages have to be realized via temporary registers
         // and which variables are invalidated by function calls / conditionals
-        val usagesThatRequireTempRegisters = referenceHashSetOf<Expression.Variable>()
-        val invalidatedVariables = referenceHashMapOf<Expression, ReferenceSet<Variable>>()
+        val usagesThatRequireTempRegisters = mutableRefSetOf<Expression.Variable>()
+        val invalidatedVariables = mutableKeyRefMapOf<Expression, Set<Ref<Variable>>>()
 
-        fun gatherVariableUsageInfo(astNode: Expression, modifiedUnderCurrentBase: ReferenceSet<Variable>): ReferenceSet<Variable> {
+        fun gatherVariableUsageInfo(astNode: Expression, modifiedUnderCurrentBase: Set<Ref<Variable>>): Set<Ref<Variable>> {
             return when (astNode) {
                 is Expression.UnitLiteral,
                 is Expression.BooleanLiteral,
                 is Expression.NumberLiteral -> modifiedUnderCurrentBase
 
                 is Expression.Variable -> {
-                    if (nameResolution[astNode] in modifiedUnderCurrentBase)
-                        usagesThatRequireTempRegisters.add(astNode)
+                    if (nameResolution[Ref(astNode)] in modifiedUnderCurrentBase)
+                        usagesThatRequireTempRegisters.add(Ref(astNode))
                     modifiedUnderCurrentBase
                 }
 
@@ -146,11 +137,11 @@ object ControlFlow {
 
                 is Expression.BinaryOperation -> {
                     if (astNode.kind in listOf(Expression.BinaryOperation.Kind.OR, Expression.BinaryOperation.Kind.AND)) {
-                        val leftModifiedVariables = gatherVariableUsageInfo(astNode.leftOperand, referenceHashSetOf())
-                        val rightModifiedVariables = gatherVariableUsageInfo(astNode.rightOperand, referenceHashSetOf())
+                        val leftModifiedVariables = gatherVariableUsageInfo(astNode.leftOperand, refSetOf())
+                        val rightModifiedVariables = gatherVariableUsageInfo(astNode.rightOperand, refSetOf())
 
-                        invalidatedVariables[astNode] = rightModifiedVariables
-                        combineReferenceSets(modifiedUnderCurrentBase, leftModifiedVariables, rightModifiedVariables)
+                        invalidatedVariables[Ref(astNode)] = rightModifiedVariables
+                        modifiedUnderCurrentBase + leftModifiedVariables + rightModifiedVariables
                     } else {
                         val modifiedAfterRight = gatherVariableUsageInfo(astNode.rightOperand, modifiedUnderCurrentBase)
                         gatherVariableUsageInfo(astNode.leftOperand, modifiedAfterRight)
@@ -158,33 +149,33 @@ object ControlFlow {
                 }
 
                 is Expression.FunctionCall -> {
-                    var modifiedInArguments: ReferenceSet<Variable> = referenceHashSetOf()
+                    var modifiedInArguments: Set<Ref<Variable>> = refSetOf()
                     astNode.arguments.reversed().forEach { argumentNode ->
                         modifiedInArguments = gatherVariableUsageInfo(argumentNode.value, modifiedInArguments)
                     }
 
-                    val modifiedByCall = getVariablesModifiedBy(nameResolution[astNode] as Function)
-                    invalidatedVariables[astNode] = modifiedByCall
-                    combineReferenceSets(modifiedUnderCurrentBase, modifiedInArguments, modifiedByCall)
+                    val modifiedByCall = getVariablesModifiedBy(nameResolution[Ref(astNode)]!!.value as Function)
+                    invalidatedVariables[Ref(astNode)] = modifiedByCall
+                    modifiedUnderCurrentBase + modifiedInArguments + modifiedByCall
                 }
 
                 is Expression.Conditional -> {
-                    val modifiedInCondition = gatherVariableUsageInfo(astNode.condition, referenceHashSetOf())
-                    val modifiedInTrueBranch = gatherVariableUsageInfo(astNode.resultWhenTrue, referenceHashSetOf())
-                    val modifiedInFalseBranch = gatherVariableUsageInfo(astNode.resultWhenFalse, referenceHashSetOf())
+                    val modifiedInCondition = gatherVariableUsageInfo(astNode.condition, refSetOf())
+                    val modifiedInTrueBranch = gatherVariableUsageInfo(astNode.resultWhenTrue, refSetOf())
+                    val modifiedInFalseBranch = gatherVariableUsageInfo(astNode.resultWhenFalse, refSetOf())
 
-                    invalidatedVariables[astNode] = combineReferenceSets(modifiedInTrueBranch, modifiedInFalseBranch)
-                    combineReferenceSets(modifiedUnderCurrentBase, modifiedInCondition, modifiedInTrueBranch, modifiedInFalseBranch)
+                    invalidatedVariables[Ref(astNode)] = modifiedInTrueBranch + modifiedInFalseBranch
+                    modifiedUnderCurrentBase + modifiedInCondition + modifiedInTrueBranch + modifiedInFalseBranch
                 }
             }
         }
 
-        gatherVariableUsageInfo(expression, referenceHashSetOf())
+        gatherVariableUsageInfo(expression, refSetOf())
 
         // second stage is to actually produce CFG
         val cfgBuilder = ControlFlowGraphBuilder()
         var last = listOf<Pair<IFTNode, CFGLinkType>?>(null)
-        var currentTemporaryRegisters = referenceHashMapOf<NamedNode, Register>()
+        var currentTemporaryRegisters = mutableKeyRefMapOf<NamedNode, Register>()
 
         fun ControlFlowGraphBuilder.addNextCFG(nextCFG: ControlFlowGraph) {
             if (nextCFG.entryTreeRoot != null) {
@@ -199,8 +190,8 @@ object ControlFlow {
         }
         fun makeReadNode(readableNode: NamedNode): IFTNode {
             // readableNode must be Variable or Function.Parameter
-            val owner = variableProperties[readableNode]!!.owner
-            return variableAccessGenerators[owner]!!.genRead(readableNode, owner === currentFunction)
+            val owner = variableProperties[Ref(readableNode)]!!.owner
+            return variableAccessGenerators[Ref(owner)]!!.genRead(readableNode, owner === currentFunction)
         }
 
         fun makeCFGForSubtree(astNode: Expression): IFTNode {
@@ -212,18 +203,18 @@ object ControlFlow {
                 is Expression.NumberLiteral -> IFTNode.Const(astNode.value)
 
                 is Expression.Variable -> {
-                    val readableNode = nameResolution[astNode]!!
-                    if (astNode !in usagesThatRequireTempRegisters) {
+                    val readableNode = nameResolution[Ref(astNode)]!!.value
+                    if (Ref(astNode) !in usagesThatRequireTempRegisters) {
                         makeReadNode(readableNode)
                     } else {
-                        if (readableNode !in currentTemporaryRegisters) {
+                        if (Ref(readableNode) !in currentTemporaryRegisters) {
                             val valueNode = makeReadNode(readableNode)
                             val temporaryRegister = Register()
                             val assignmentNode = IFTNode.RegisterWrite(temporaryRegister, valueNode)
-                            currentTemporaryRegisters[readableNode] = temporaryRegister
+                            currentTemporaryRegisters[Ref(readableNode)] = temporaryRegister
                             cfgBuilder.addNextTree(assignmentNode)
                         }
-                        IFTNode.RegisterRead(currentTemporaryRegisters[readableNode]!!)
+                        IFTNode.RegisterRead(currentTemporaryRegisters[Ref(readableNode)]!!)
                     }
                 }
 
@@ -259,7 +250,7 @@ object ControlFlow {
                         cfgBuilder.addNextTree(IFTNode.RegisterWrite(resultTemporaryRegister, shortCircuitResultNode))
                         val lastAfterShortCircuit = last
 
-                        invalidatedVariables[astNode]!!.forEach { currentTemporaryRegisters.remove(it) }
+                        invalidatedVariables[Ref(astNode)]!!.forEach { currentTemporaryRegisters.remove(it) }
                         last = lastAfterRight + lastAfterShortCircuit
                         IFTNode.RegisterRead(resultTemporaryRegister)
                     }
@@ -293,18 +284,18 @@ object ControlFlow {
                 }
 
                 is Expression.FunctionCall -> {
-                    val function = nameResolution[astNode] as Function
+                    val function = nameResolution[Ref(astNode)]!!.value as Function
                     val parameterValues = Array<IFTNode?>(function.parameters.size) { null }
 
                     val explicitArgumentsResultNodes = astNode.arguments.map { makeCFGForSubtree(it.value) }
                     for ((argument, resultNode) in astNode.arguments zip explicitArgumentsResultNodes) // explicit arguments
-                        parameterValues[function.parameters.indexOfFirst { it === argumentResolution[argument] }] = resultNode
+                        parameterValues[function.parameters.indexOfFirst { Ref(it) == argumentResolution[Ref(argument)] }] = resultNode
                     function.parameters.withIndex().filter { parameterValues[it.index] == null }.forEach { // default arguments
-                        parameterValues[it.index] = makeReadNode(defaultParameterMapping[it.value]!!)
+                        parameterValues[it.index] = makeReadNode(defaultParameterMapping[Ref(it.value)]!!)
                     }
-                    val callIntermediateForm = functionDetailsGenerators[function]!!.genCall(parameterValues.map { it!! }.toList())
+                    val callIntermediateForm = functionDetailsGenerators[Ref(function)]!!.genCall(parameterValues.map { it!! }.toList())
                     cfgBuilder.addNextCFG(callIntermediateForm.callGraph)
-                    invalidatedVariables[astNode]!!.forEach { currentTemporaryRegisters.remove(it) }
+                    invalidatedVariables[Ref(astNode)]!!.forEach { currentTemporaryRegisters.remove(it) }
 
                     if (callIntermediateForm.result != null) {
                         val temporaryResultRegister = Register()
@@ -318,7 +309,7 @@ object ControlFlow {
                 is Expression.Conditional -> {
                     cfgBuilder.addNextTree(makeCFGForSubtree(astNode.condition))
                     val lastAfterCondition = last
-                    val savedTemporaryRegisters = currentTemporaryRegisters.copy()
+                    val savedTemporaryRegisters = currentTemporaryRegisters.toMutableMap()
                     val resultTemporaryRegister = Register()
 
                     last = mapLinkType(lastAfterCondition, CFGLinkType.CONDITIONAL_TRUE)
@@ -332,7 +323,7 @@ object ControlFlow {
                     cfgBuilder.addNextTree(IFTNode.RegisterWrite(resultTemporaryRegister, falseBranchResultNode))
                     val lastAfterFalseBranch = last
 
-                    invalidatedVariables[astNode]!!.forEach { currentTemporaryRegisters.remove(it) }
+                    invalidatedVariables[Ref(astNode)]!!.forEach { currentTemporaryRegisters.remove(it) }
                     last = lastAfterTrueBranch + lastAfterFalseBranch
                     IFTNode.RegisterRead(resultTemporaryRegister)
                 }
@@ -343,8 +334,8 @@ object ControlFlow {
 
         // build last tree into CFG, possibly wrapped in variable write operation
         if (targetVariable != null) {
-            val owner = variableProperties[targetVariable]!!.owner
-            cfgBuilder.addNextTree(variableAccessGenerators[owner]!!.genWrite(targetVariable, result, owner === currentFunction))
+            val owner = variableProperties[Ref(targetVariable)]!!.owner
+            cfgBuilder.addNextTree(variableAccessGenerators[Ref(owner)]!!.genWrite(targetVariable, result, owner === currentFunction))
         } else {
             cfgBuilder.addNextTree(result)
         }
@@ -355,12 +346,12 @@ object ControlFlow {
     fun createGraphForEachFunction(
         program: Program,
         createGraphForExpression: (Expression, Variable?, Function) -> ControlFlowGraph,
-        nameResolution: ReferenceMap<Any, NamedNode>,
-        defaultParameterValues: ReferenceMap<Function.Parameter, Variable>,
-        functionReturnedValueVariables: ReferenceMap<Function, Variable>,
+        nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
+        defaultParameterValues: Map<Ref<Function.Parameter>, Variable>,
+        functionReturnedValueVariables: Map<Ref<Function>, Variable>,
         diagnostics: Diagnostics
-    ): ReferenceMap<Function, ControlFlowGraph> {
-        val controlFlowGraphs = referenceHashMapOf<Function, ControlFlowGraph>()
+    ): Map<Ref<Function>, ControlFlowGraph> {
+        val controlFlowGraphs = mutableKeyRefMapOf<Function, ControlFlowGraph>()
 
         fun processFunction(function: Function) {
             val cfgBuilder = ControlFlowGraphBuilder()
@@ -405,14 +396,14 @@ object ControlFlow {
 
                             for (parameter in nestedFunction.parameters) {
                                 if (parameter.defaultValue != null)
-                                    addExpression(parameter.defaultValue, defaultParameterValues[parameter])
+                                    addExpression(parameter.defaultValue, defaultParameterValues[Ref(parameter)])
                             }
 
                             if (nestedFunction.implementation is Function.Implementation.Local)
                                 processFunction(nestedFunction)
                         }
 
-                        is Statement.Assignment -> addExpression(statement.value, nameResolution[statement] as Variable)
+                        is Statement.Assignment -> addExpression(statement.value, nameResolution[Ref(statement)]!!.value as Variable)
 
                         is Statement.Block -> processStatementBlock(statement.block)
 
@@ -474,7 +465,7 @@ object ControlFlow {
                         }
 
                         is Statement.FunctionReturn -> {
-                            addExpression(statement.value, functionReturnedValueVariables[function])
+                            addExpression(statement.value, functionReturnedValueVariables[Ref(function)])
                             last = emptyList()
                         }
                     }
@@ -483,7 +474,7 @@ object ControlFlow {
 
             processStatementBlock(function.body)
 
-            controlFlowGraphs[function] = cfgBuilder.build()
+            controlFlowGraphs[Ref(function)] = cfgBuilder.build()
         }
 
         program.globals

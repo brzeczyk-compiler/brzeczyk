@@ -14,6 +14,6 @@ class LanguageGrammarTest {
         val grammar = LanguageGrammar.getGrammar()
         val dummyDiagnostics = mockk<Diagnostics>()
 
-        Parser<Symbol>(grammar, dummyDiagnostics)
+        Parser(grammar, dummyDiagnostics)
     }
 }

@@ -1,5 +1,6 @@
 package compiler.analysis
 
+import compiler.ast.AstNode
 import compiler.ast.Expression
 import compiler.ast.Function
 import compiler.ast.NamedNode
@@ -7,16 +8,16 @@ import compiler.ast.Program
 import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.diagnostics.Diagnostics
-import compiler.utils.ReferenceMap
+import compiler.utils.Ref
 
 object ProgramAnalyzer {
     data class ProgramProperties(
-        val nameResolution: ReferenceMap<Any, NamedNode>,
-        val argumentResolution: ReferenceMap<Expression.FunctionCall.Argument, Function.Parameter>,
-        val expressionTypes: ReferenceMap<Expression, Type>,
-        val defaultParameterMapping: ReferenceMap<Function.Parameter, Variable>,
-        val functionReturnedValueVariables: ReferenceMap<Function, Variable>,
-        val variableProperties: ReferenceMap<Any, VariablePropertiesAnalyzer.VariableProperties>,
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
+        val argumentResolution: Map<Ref<Expression.FunctionCall.Argument>, Ref<Function.Parameter>>,
+        val expressionTypes: Map<Ref<Expression>, Type>,
+        val defaultParameterMapping: Map<Ref<Function.Parameter>, Variable>,
+        val functionReturnedValueVariables: Map<Ref<Function>, Variable>,
+        val variableProperties: Map<Ref<AstNode>, VariablePropertiesAnalyzer.VariableProperties>,
         val staticDepth: Int,
     )
 

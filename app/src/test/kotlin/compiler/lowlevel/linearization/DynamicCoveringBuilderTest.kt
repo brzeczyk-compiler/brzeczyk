@@ -10,9 +10,9 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFails
 
 class DynamicCoveringBuilderTest {
-    private val noOpNode1 = IFTNode.NoOp()
-    private val noOpNode2 = IFTNode.NoOp()
-    private val xorNode1 = IFTNode.BitXor(noOpNode1, noOpNode2)
+    private val dummyNode1 = IFTNode.Dummy()
+    private val dummyNode2 = IFTNode.Dummy()
+    private val xorNode1 = IFTNode.BitXor(dummyNode1, dummyNode2)
 
     private fun instructionSetOf(vararg patterns: Pattern): List<Pattern> {
         return patterns.asList()
@@ -35,31 +35,31 @@ class DynamicCoveringBuilderTest {
     }
 
     @Test fun `test basic`() {
-        val covering = Pattern.Result(listOf(), 1, { _, _ -> listOf() })
-        val pattern = matchNodesToPattern({ it is IFTNode.NoOp }, covering)
+        val covering = Pattern.Result(listOf(), 1) { _, _ -> listOf() }
+        val pattern = matchNodesToPattern({ it is IFTNode.Dummy }, covering)
         val coveringBuilder = DynamicCoveringBuilder(instructionSetOf(pattern))
 
-        assertEquals(listOf(), coveringBuilder.coverUnconditional(noOpNode1))
-        assertEquals(listOf(), coveringBuilder.coverConditional(noOpNode1, "label", true))
+        assertEquals(listOf(), coveringBuilder.coverUnconditional(dummyNode1))
+        assertEquals(listOf(), coveringBuilder.coverConditional(dummyNode1, "label", true))
     }
 
     @Test fun `test builder fails when covering is impossible`() {
         val pattern = matchNodesToPattern({ true }, null)
         val coveringBuilder = DynamicCoveringBuilder(instructionSetOf(pattern))
 
-        assertFails { coveringBuilder.coverUnconditional(noOpNode1) }
-        assertFails { coveringBuilder.coverConditional(noOpNode1, "label", true) }
+        assertFails { coveringBuilder.coverUnconditional(dummyNode1) }
+        assertFails { coveringBuilder.coverConditional(dummyNode1, "label", true) }
     }
 
     @Test fun `test builder covers node with multiple children`() {
-        val ret1Covering = Pattern.Result(listOf(), 1, { _, _ -> listOf() })
-        val ret2Covering = Pattern.Result(listOf(), 1, { _, _ -> listOf() })
-        val ret3Covering = Pattern.Result(listOf(noOpNode1, noOpNode2), 1, { _, _ -> listOf() })
+        val ret1Covering = Pattern.Result(listOf(), 1) { _, _ -> listOf() }
+        val ret2Covering = Pattern.Result(listOf(), 1) { _, _ -> listOf() }
+        val ret3Covering = Pattern.Result(listOf(dummyNode1, dummyNode2), 1) { _, _ -> listOf() }
 
         val coveringBuilder = DynamicCoveringBuilder(
             instructionSetOf(
-                matchNodesToPattern({ it == noOpNode1 }, ret1Covering),
-                matchNodesToPattern({ it == noOpNode2 }, ret2Covering),
+                matchNodesToPattern({ it == dummyNode1 }, ret1Covering),
+                matchNodesToPattern({ it == dummyNode2 }, ret2Covering),
                 matchNodesToPattern({ it == xorNode1 }, ret3Covering)
             )
         )
@@ -73,14 +73,14 @@ class DynamicCoveringBuilderTest {
         val retInstruction1 = Instruction.RetInstruction.Dummy()
         val retInstruction2 = Instruction.RetInstruction.Dummy()
         val retInstruction3 = Instruction.RetInstruction.Dummy()
-        val ret1Covering = Pattern.Result(listOf(), 1, { _, _ -> listOf(retInstruction1) })
-        val ret2Covering = Pattern.Result(listOf(), 1, { _, _ -> listOf(retInstruction2) })
-        val ret3Covering = Pattern.Result(listOf(noOpNode1, noOpNode2), 1, { _, _ -> listOf(retInstruction3) })
+        val ret1Covering = Pattern.Result(listOf(), 1) { _, _ -> listOf(retInstruction1) }
+        val ret2Covering = Pattern.Result(listOf(), 1) { _, _ -> listOf(retInstruction2) }
+        val ret3Covering = Pattern.Result(listOf(dummyNode1, dummyNode2), 1) { _, _ -> listOf(retInstruction3) }
 
         val coveringBuilder = DynamicCoveringBuilder(
             instructionSetOf(
-                matchNodesToPattern({ it == noOpNode1 }, ret1Covering),
-                matchNodesToPattern({ it == noOpNode2 }, ret2Covering),
+                matchNodesToPattern({ it == dummyNode1 }, ret1Covering),
+                matchNodesToPattern({ it == dummyNode2 }, ret2Covering),
                 matchNodesToPattern({ it == xorNode1 }, ret3Covering)
             )
         )
@@ -96,15 +96,15 @@ class DynamicCoveringBuilderTest {
         val retInstruction2 = Instruction.RetInstruction.Dummy()
         val retInstruction3 = Instruction.RetInstruction.Dummy()
         val retInstruction4 = Instruction.RetInstruction.Dummy()
-        val ret1Covering = Pattern.Result(listOf(), 100, { _, _ -> listOf(retInstruction1) })
-        val ret2Covering = Pattern.Result(listOf(), 100, { _, _ -> listOf(retInstruction2) })
-        val ret3Covering = Pattern.Result(listOf(noOpNode1, noOpNode2), 10, { _, _ -> listOf(retInstruction3) })
-        val ret4Covering = Pattern.Result(listOf(), 100, { _, _ -> listOf(retInstruction4) })
+        val ret1Covering = Pattern.Result(listOf(), 100) { _, _ -> listOf(retInstruction1) }
+        val ret2Covering = Pattern.Result(listOf(), 100) { _, _ -> listOf(retInstruction2) }
+        val ret3Covering = Pattern.Result(listOf(dummyNode1, dummyNode2), 10) { _, _ -> listOf(retInstruction3) }
+        val ret4Covering = Pattern.Result(listOf(), 100) { _, _ -> listOf(retInstruction4) }
 
         val coveringBuilder = DynamicCoveringBuilder(
             instructionSetOf(
-                matchNodesToPattern({ it == noOpNode1 }, ret1Covering),
-                matchNodesToPattern({ it == noOpNode2 }, ret2Covering),
+                matchNodesToPattern({ it == dummyNode1 }, ret1Covering),
+                matchNodesToPattern({ it == dummyNode2 }, ret2Covering),
                 matchNodesToPattern({ it == xorNode1 }, ret4Covering),
                 matchNodesToPattern({ it == xorNode1 }, ret3Covering)
             )
@@ -121,15 +121,15 @@ class DynamicCoveringBuilderTest {
         val retInstruction2 = Instruction.RetInstruction.Dummy()
         val retInstruction3 = Instruction.RetInstruction.Dummy()
         val retInstruction4 = Instruction.RetInstruction.Dummy()
-        val ret1Covering = Pattern.Result(listOf(), 1, { _, _ -> listOf(retInstruction1) })
-        val ret2Covering = Pattern.Result(listOf(), 1, { _, _ -> listOf(retInstruction2) })
-        val ret3Covering = Pattern.Result(listOf(noOpNode1, noOpNode2), 1, { _, _ -> listOf(retInstruction3) })
-        val ret4Covering = Pattern.Result(listOf(), 1000, { _, _ -> listOf(retInstruction4) })
+        val ret1Covering = Pattern.Result(listOf(), 1) { _, _ -> listOf(retInstruction1) }
+        val ret2Covering = Pattern.Result(listOf(), 1) { _, _ -> listOf(retInstruction2) }
+        val ret3Covering = Pattern.Result(listOf(dummyNode1, dummyNode2), 1) { _, _ -> listOf(retInstruction3) }
+        val ret4Covering = Pattern.Result(listOf(), 1000) { _, _ -> listOf(retInstruction4) }
 
         val coveringBuilder = DynamicCoveringBuilder(
             instructionSetOf(
-                matchNodesToPattern({ it == noOpNode1 }, ret1Covering),
-                matchNodesToPattern({ it == noOpNode2 }, ret2Covering),
+                matchNodesToPattern({ it == dummyNode1 }, ret1Covering),
+                matchNodesToPattern({ it == dummyNode2 }, ret2Covering),
                 matchNodesToPattern({ it == xorNode1 }, ret4Covering),
                 matchNodesToPattern({ it == xorNode1 }, ret3Covering)
             )
@@ -142,28 +142,28 @@ class DynamicCoveringBuilderTest {
 
     @Test fun `test input registers of parent are the output registers of children`() {
         var outRegisterChildLeft: Register? = null
-        val matchResultLeftChild: Pattern.Result = Pattern.Result(listOf(), 1, { _, outRegister ->
+        val matchResultLeftChild: Pattern.Result = Pattern.Result(listOf(), 1) { _, outRegister ->
             outRegisterChildLeft = outRegister
             listOf()
-        })
+        }
         var outRegisterChildRight: Register? = null
-        val matchResultRightChild: Pattern.Result = Pattern.Result(listOf(), 1, { _, outRegister ->
+        val matchResultRightChild: Pattern.Result = Pattern.Result(listOf(), 1) { _, outRegister ->
             outRegisterChildRight = outRegister
             listOf()
-        })
+        }
         var inRegisterParentFirst: Register? = null
         var inRegisterParentSecond: Register? = null
-        val matchResultParent: Pattern.Result = Pattern.Result(listOf(noOpNode1, noOpNode2), 1, { inRegisters, _ ->
+        val matchResultParent: Pattern.Result = Pattern.Result(listOf(dummyNode1, dummyNode2), 1) { inRegisters, _ ->
             inRegisterParentFirst = inRegisters[0]
             inRegisterParentSecond = inRegisters[1]
             listOf()
-        })
+        }
 
         val coveringBuilder = DynamicCoveringBuilder(
             instructionSetOf(
-                matchNodesToPattern({ it == noOpNode1 }, matchResultLeftChild),
-                matchNodesToPattern({ it == noOpNode2 }, matchResultRightChild),
-                matchNodesToPattern({ it == xorNode1 }, matchResultParent)
+                matchNodesToPattern({ it === dummyNode1 }, matchResultLeftChild),
+                matchNodesToPattern({ it === dummyNode2 }, matchResultRightChild),
+                matchNodesToPattern({ it === xorNode1 }, matchResultParent)
             )
         )
 

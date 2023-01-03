@@ -10,6 +10,7 @@ sealed interface AstNode {
 
         stringBuilder.append(
             when (this) {
+                is Program -> "<<the entire program>>"
                 is Program.Global -> "<<global definition>>"
                 is Statement -> "<<statement>>"
 
@@ -28,8 +29,6 @@ sealed interface AstNode {
                 is Function -> "czynność ${this.name}(${this.parameters.joinToString { it.toSimpleString() }}) -> ${this.returnType}"
                 is Function.Parameter -> "${this.name}: ${this.type}${if (this.defaultValue != null) " = ${this.defaultValue.toSimpleString()}" else ""}"
                 is Expression.FunctionCall.Argument -> "${if (this.name != null) "${this.name} = " else ""}${this.value.toSimpleString()}"
-
-                else -> {}
             }
         )
 
@@ -49,6 +48,8 @@ sealed interface AstNode {
 
         stringBuilder.append(
             when (this) {
+                is Program -> "the entire program"
+
                 is Program.Global -> when (this) {
                     is Program.Global.FunctionDefinition -> "definition of << ${this.function.toSimpleString()} >>"
                     is Program.Global.VariableDefinition -> "definition of << ${this.variable.toSimpleString()} >>"
@@ -73,8 +74,6 @@ sealed interface AstNode {
                 is Function -> "function << ${this.toSimpleString()} >>"
                 is Function.Parameter -> "function parameter << ${this.toSimpleString()} >>"
                 is Expression.FunctionCall.Argument -> "function argument << ${this.toSimpleString()} >>"
-
-                else -> {}
             }
         )
 

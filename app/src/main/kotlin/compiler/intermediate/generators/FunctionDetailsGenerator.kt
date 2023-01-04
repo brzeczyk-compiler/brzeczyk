@@ -7,20 +7,20 @@ import compiler.intermediate.IFTNode
 interface FunctionDetailsGenerator : VariableAccessGenerator {
     data class FunctionCallIntermediateForm(
         val callGraph: ControlFlowGraph,
-        val result: IFTNode?
+        val result: IFTNode?,
+        val furtherContinuation: IFTNode? // only relevant for generators
     )
 
     // both normal and generator functions, caller-side
     fun genCall(args: List<IFTNode>): FunctionCallIntermediateForm
 
-    // normal functions, callee-side
+    // normal functions for ordinary calls and generators for resuming, callee-side
     fun genPrologue(): ControlFlowGraph
     fun genEpilogue(): ControlFlowGraph
 
     // generators, callee-side
     fun genInit(): ControlFlowGraph
-    fun genResume(): ControlFlowGraph
-    fun genStop(): ControlFlowGraph
+    fun genFinalize(): ControlFlowGraph
 
     val spilledRegistersRegionOffset: ULong
 

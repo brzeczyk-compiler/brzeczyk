@@ -192,8 +192,7 @@ data class DefaultFunctionDetailsGenerator(
     }
 
     override fun genInit(): ControlFlowGraph = TODO()
-    override fun genResume(): ControlFlowGraph = TODO()
-    override fun genStop(): ControlFlowGraph = TODO()
+    override fun genFinalize(): ControlFlowGraph = TODO()
 
     private fun genAccess(namedNode: NamedNode, isDirect: Boolean, regAccessGenerator: (Register) -> IFTNode, memAccessGenerator: (IFTNode) -> IFTNode): IFTNode {
         // requires correct value for RBP register

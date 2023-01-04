@@ -10,13 +10,15 @@ object BuiltinFunctions {
             "napisz",
             listOf(Function.Parameter("wartość", Type.Number, null)),
             Type.Unit,
-            Function.Implementation.Foreign("print_int64")
+            Function.Implementation.Foreign("print_int64"),
+            false
         ),
         "wczytaj" to Function(
             "wczytaj",
             emptyList(),
             Type.Number,
-            Function.Implementation.Foreign("read_int64")
+            Function.Implementation.Foreign("read_int64"),
+            false
         )
     )
 

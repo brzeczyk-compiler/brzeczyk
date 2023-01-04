@@ -44,6 +44,8 @@ object ReturnValueVariableCreator {
                     createReturnVariableFor(statement.function)
                     process(statement.function.body)
                 }
+
+                is Statement.ForeachLoop -> TODO()
             }
         }
 

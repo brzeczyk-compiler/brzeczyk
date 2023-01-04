@@ -468,6 +468,8 @@ object ControlFlow {
                             addExpression(statement.value, functionReturnedValueVariables[Ref(function)])
                             last = emptyList()
                         }
+
+                        is Statement.ForeachLoop -> TODO()
                     }
                 }
             }

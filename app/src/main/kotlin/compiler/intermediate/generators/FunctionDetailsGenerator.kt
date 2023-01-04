@@ -10,11 +10,17 @@ interface FunctionDetailsGenerator : VariableAccessGenerator {
         val result: IFTNode?
     )
 
+    // both normal and generator functions, caller-side
     fun genCall(args: List<IFTNode>): FunctionCallIntermediateForm
 
+    // normal functions, callee-side
     fun genPrologue(): ControlFlowGraph
-
     fun genEpilogue(): ControlFlowGraph
+
+    // generators, callee-side
+    fun genInit(): ControlFlowGraph
+    fun genResume(): ControlFlowGraph
+    fun genStop(): ControlFlowGraph
 
     val spilledRegistersRegionOffset: ULong
 

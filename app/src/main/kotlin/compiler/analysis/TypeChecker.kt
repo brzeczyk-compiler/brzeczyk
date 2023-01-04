@@ -110,6 +110,7 @@ class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
                     is Statement.LoopContinuation -> { } // TODO: check if inside a loop
 
                     is Statement.FunctionReturn -> checkExpression(statement.value, function.returnType)
+                    is Statement.ForeachLoop -> TODO()
                 }
             }
         }

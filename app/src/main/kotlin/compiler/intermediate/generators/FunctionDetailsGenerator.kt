@@ -22,6 +22,9 @@ interface FunctionDetailsGenerator : VariableAccessGenerator {
     fun genInit(): ControlFlowGraph
     fun genFinalize(): ControlFlowGraph
 
+    // generators, caller-side
+    fun genYield(value: IFTNode): ControlFlowGraph
+
     val spilledRegistersRegionOffset: ULong
 
     val spilledRegistersRegionSize: ConstantPlaceholder

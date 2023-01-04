@@ -46,6 +46,10 @@ class ExpressionControlFlowTest {
             throw NotImplementedError()
         }
 
+        override fun genYield(value: IFTNode): ControlFlowGraph {
+            throw NotImplementedError()
+        }
+
         override val spilledRegistersRegionOffset get() = throw NotImplementedError()
         override val spilledRegistersRegionSize get() = throw NotImplementedError()
         override val identifier: String get() = throw NotImplementedError()

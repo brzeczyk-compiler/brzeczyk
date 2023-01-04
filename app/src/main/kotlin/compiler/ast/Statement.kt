@@ -63,4 +63,9 @@ sealed class Statement : AstNode {
         val value: Expression,
         override val location: LocationRange? = null,
     ) : Statement()
+
+    data class GeneratorYield(
+        val value: Expression,
+        override val location: LocationRange? = null,
+    ) : Statement()
 }

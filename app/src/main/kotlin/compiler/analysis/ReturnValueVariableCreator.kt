@@ -46,6 +46,7 @@ object ReturnValueVariableCreator {
                 }
 
                 is Statement.ForeachLoop -> TODO()
+                is Statement.GeneratorYield -> TODO()
             }
         }
 

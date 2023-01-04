@@ -111,6 +111,7 @@ class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
 
                     is Statement.FunctionReturn -> checkExpression(statement.value, function.returnType)
                     is Statement.ForeachLoop -> TODO()
+                    is Statement.GeneratorYield -> TODO()
                 }
             }
         }

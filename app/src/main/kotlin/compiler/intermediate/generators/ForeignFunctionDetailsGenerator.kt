@@ -15,6 +15,10 @@ class ForeignFunctionDetailsGenerator(
 
     override fun genEpilogue() = throw NotImplementedError()
 
+    override fun genInit() = throw NotImplementedError()
+    override fun genFinalize() = throw NotImplementedError()
+    override fun genYield(value: IFTNode) = throw NotImplementedError()
+
     override val spilledRegistersRegionOffset get() = throw NotImplementedError()
 
     override val spilledRegistersRegionSize get() = throw NotImplementedError()

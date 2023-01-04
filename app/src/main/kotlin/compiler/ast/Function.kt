@@ -7,6 +7,7 @@ data class Function(
     val parameters: List<Parameter>,
     val returnType: Type,
     val implementation: Implementation,
+    val isGenerator: Boolean,
     override val location: LocationRange? = null,
 ) : NamedNode, AstNode, VariableOwner {
     data class Parameter(
@@ -28,6 +29,7 @@ data class Function(
         parameters: List<Parameter>,
         returnType: Type,
         body: StatementBlock,
+        isGenerator: Boolean = false,
         location: LocationRange? = null
-    ) : this(name, parameters, returnType, Implementation.Local(body), location)
+    ) : this(name, parameters, returnType, Implementation.Local(body), isGenerator, location)
 }

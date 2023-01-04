@@ -52,7 +52,19 @@ sealed class Statement : AstNode {
         override val location: LocationRange? = null,
     ) : Statement()
 
+    data class ForeachLoop(
+        val receivingVariable: Variable,
+        val generatorCall: Expression.FunctionCall,
+        val action: StatementBlock,
+        override val location: LocationRange? = null,
+    ) : Statement()
+
     data class FunctionReturn(
+        val value: Expression,
+        override val location: LocationRange? = null,
+    ) : Statement()
+
+    data class GeneratorYield(
         val value: Expression,
         override val location: LocationRange? = null,
     ) : Statement()

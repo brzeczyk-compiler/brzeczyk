@@ -71,6 +71,8 @@ object SysV64CallingConvention {
         val readResultNode: IFTNode? =
             if (returnsValue) IFTNode.RegisterRead(Register.RAX)
             else null
-        return FunctionDetailsGenerator.FunctionCallIntermediateForm(cfgBuilder.build(), readResultNode)
+
+        val furtherContinuationNode = null // TODO()
+        return FunctionDetailsGenerator.FunctionCallIntermediateForm(cfgBuilder.build(), readResultNode, furtherContinuationNode)
     }
 }

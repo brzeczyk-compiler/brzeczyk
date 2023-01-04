@@ -204,6 +204,9 @@ object FunctionDependenciesAnalyzer {
 
                     is Statement.Loop -> getCalledFunctions(statement.condition) +
                         getCalledFunctions(statement.action)
+
+                    is Statement.ForeachLoop -> TODO()
+                    is Statement.GeneratorYield -> TODO()
                 }
             }
 

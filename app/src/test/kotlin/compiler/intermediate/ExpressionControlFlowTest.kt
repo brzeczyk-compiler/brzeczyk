@@ -25,7 +25,8 @@ class ExpressionControlFlowTest {
             val callResult = IFTNode.DummyCallResult()
             return FunctionDetailsGenerator.FunctionCallIntermediateForm(
                 ControlFlowGraphBuilder().addSingleTree(IFTNode.DummyCall(function, args, callResult)).build(),
-                callResult
+                callResult,
+                null
             )
         }
 
@@ -34,6 +35,18 @@ class ExpressionControlFlowTest {
         }
 
         override fun genEpilogue(): ControlFlowGraph {
+            throw NotImplementedError()
+        }
+
+        override fun genInit(): ControlFlowGraph {
+            throw NotImplementedError()
+        }
+
+        override fun genFinalize(): ControlFlowGraph {
+            throw NotImplementedError()
+        }
+
+        override fun genYield(value: IFTNode): ControlFlowGraph {
             throw NotImplementedError()
         }
 

@@ -157,8 +157,9 @@ class AstFactoryTest {
                             Function.Parameter("x", Type.Boolean, null, dummyLocationRange),
                             Function.Parameter("y", Type.Number, null, dummyLocationRange),
                         ),
-                        Type.Number, listOf(), dummyLocationRange
+                        Type.Number, listOf(), false, dummyLocationRange
                     ),
+
                     dummyLocationRange
                 )
             )
@@ -236,6 +237,7 @@ class AstFactoryTest {
                         listOf(Function.Parameter("x", Type.Number, null, dummyLocationRange)),
                         Type.Unit,
                         Function.Implementation.Foreign("poboczna0"),
+                        false,
                         dummyLocationRange
                     ),
                     dummyLocationRange
@@ -246,6 +248,7 @@ class AstFactoryTest {
                         listOf(),
                         Type.Number,
                         Function.Implementation.Foreign("poboczna1"),
+                        false,
                         dummyLocationRange
                     ),
                     dummyLocationRange
@@ -256,6 +259,7 @@ class AstFactoryTest {
                         listOf(),
                         Type.Unit,
                         Function.Implementation.Foreign("_Poboczna2"),
+                        false,
                         dummyLocationRange
                     ),
                     dummyLocationRange
@@ -266,6 +270,7 @@ class AstFactoryTest {
                         listOf(),
                         Type.Boolean,
                         Function.Implementation.Foreign("Poboczna3"),
+                        false,
                         dummyLocationRange
                     ),
                     dummyLocationRange
@@ -320,6 +325,7 @@ class AstFactoryTest {
                             Statement.Evaluation(Expression.NumberLiteral(42, dummyLocationRange), dummyLocationRange),
                             Statement.Evaluation(Expression.BooleanLiteral(true, dummyLocationRange), dummyLocationRange)
                         ),
+                        false,
                         dummyLocationRange
                     ),
                     dummyLocationRange
@@ -376,6 +382,7 @@ class AstFactoryTest {
                                 dummyLocationRange,
                             )
                         ),
+                        false,
                         dummyLocationRange
                     ),
                     dummyLocationRange
@@ -425,6 +432,7 @@ class AstFactoryTest {
                                 dummyLocationRange
                             )
                         ),
+                        false,
                         dummyLocationRange
                     ),
                     dummyLocationRange
@@ -465,6 +473,7 @@ class AstFactoryTest {
                                 dummyLocationRange
                             )
                         ),
+                        false,
                         dummyLocationRange
                     ),
                     dummyLocationRange
@@ -540,6 +549,7 @@ class AstFactoryTest {
                                 dummyLocationRange
                             )
                         ),
+                        false,
                         dummyLocationRange
                     ),
                     dummyLocationRange
@@ -611,6 +621,7 @@ class AstFactoryTest {
                                 dummyLocationRange,
                             )
                         ),
+                        false,
                         dummyLocationRange
                     ),
                     dummyLocationRange
@@ -727,6 +738,7 @@ class AstFactoryTest {
                                 dummyLocationRange
                             )
                         ),
+                        false,
                         dummyLocationRange
                     ),
                     dummyLocationRange

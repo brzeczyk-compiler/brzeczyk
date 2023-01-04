@@ -270,7 +270,6 @@ object NameResolver {
                 is Statement.FunctionReturn -> {
                     analyzeNode(node.value, currentScope)
                 }
-
                 else -> {}
             }
         }

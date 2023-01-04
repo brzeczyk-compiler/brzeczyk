@@ -8,7 +8,7 @@ interface FunctionDetailsGenerator : VariableAccessGenerator {
     data class FunctionCallIntermediateForm(
         val callGraph: ControlFlowGraph,
         val result: IFTNode?,
-        val stateForResumingGenerator: IFTNode?
+        val secondResult: IFTNode? // eg. for storing state for further resuming generator functions
     )
 
     // both normal and generator functions, caller-side

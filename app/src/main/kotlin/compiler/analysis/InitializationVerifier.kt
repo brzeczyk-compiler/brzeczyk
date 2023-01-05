@@ -70,21 +70,15 @@ object InitializationVerifier {
                 is Statement.Evaluation -> verifyInitialization(node.expression, initializedVariables, traversedFunctions)
                 is Statement.VariableDefinition -> verifyInitialization(node.variable, initializedVariables, traversedFunctions)
                 is Global.VariableDefinition -> verifyInitialization(node.variable, initializedVariables, traversedFunctions)
-                is Statement.FunctionDefinition -> {
-                    verifyInitialization(node.function, initializedVariables, traversedFunctions)
-                }
+                is Statement.FunctionDefinition -> verifyInitialization(node.function, initializedVariables, traversedFunctions)
                 is Global.FunctionDefinition -> verifyInitialization(node.function, initializedVariables, traversedFunctions)
                 is Statement.Assignment -> {
                     verifyInitialization(node.value, initializedVariables, traversedFunctions)
                     // the variable will be initialized after assignment, not before
                     initializedVariables.add(nameResolution[Ref(node)]!!)
                 }
-                is Statement.Block -> {
-                    node.block.forEach { verifyInitialization(it, initializedVariables, traversedFunctions) }
-                }
-                is Statement.Conditional -> {
-                    handleConditional(node.condition, node.actionWhenTrue, node.actionWhenFalse)
-                }
+                is Statement.Block -> node.block.forEach { verifyInitialization(it, initializedVariables, traversedFunctions) }
+                is Statement.Conditional -> handleConditional(node.condition, node.actionWhenTrue, node.actionWhenFalse)
                 is Statement.Loop -> {
                     verifyInitialization(node.condition, initializedVariables, traversedFunctions)
                     handleIsolatedStatementBlock(node.action)
@@ -95,12 +89,8 @@ object InitializationVerifier {
                     initializedVariables.add(Ref(node.receivingVariable))
                     handleIsolatedStatementBlock(node.action)
                 }
-                is Statement.FunctionReturn -> {
-                    verifyInitialization(node.value, initializedVariables, traversedFunctions)
-                }
-                is Statement.GeneratorYield -> {
-                    verifyInitialization(node.value, initializedVariables, traversedFunctions)
-                }
+                is Statement.FunctionReturn -> verifyInitialization(node.value, initializedVariables, traversedFunctions)
+                is Statement.GeneratorYield -> verifyInitialization(node.value, initializedVariables, traversedFunctions)
                 is Expression.Variable -> {
                     val resolvedVariable: NamedNode = nameResolution[Ref(node)]!!.value
                     if (Ref(resolvedVariable) !in initializedVariables) {
@@ -127,12 +117,8 @@ object InitializationVerifier {
                         else -> verifyInitialization(node.rightOperand, initializedVariables, traversedFunctions)
                     }
                 }
-                is Expression.Conditional -> {
-                    handleConditional(node.condition, listOf(node.resultWhenTrue), listOf(node.resultWhenFalse))
-                }
-                is Function -> {
-                    node.parameters.forEach { verifyInitialization(it, initializedVariables, traversedFunctions) }
-                }
+                is Expression.Conditional -> handleConditional(node.condition, listOf(node.resultWhenTrue), listOf(node.resultWhenFalse))
+                is Function -> node.parameters.forEach { verifyInitialization(it, initializedVariables, traversedFunctions) }
                 is Function.Parameter -> {
                     initializedVariables.add(Ref(node))
                     defaultParameterMapping[Ref(node)]?.let { initializedVariables.add(Ref(it)) }

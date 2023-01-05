@@ -53,6 +53,19 @@ object InitializationVerifier {
                 traversedFunctions.addAll(traversedFunctionsWhenBoth)
             }
 
+            // most likely to appear in loop
+            fun handleIsolatedStatementBlock(statements: List<AstNode>) {
+                val initializedVariablesInBlock = initializedVariables.toMutableSet()
+                val traversedFunctionsInBlock = traversedFunctions.toMutableSet()
+                // loop body might never execute
+                statements.forEach {
+                    verifyInitialization(
+                        it, initializedVariablesInBlock,
+                        traversedFunctionsInBlock
+                    )
+                }
+            }
+
             when (node) {
                 is Statement.Evaluation -> verifyInitialization(node.expression, initializedVariables, traversedFunctions)
                 is Statement.VariableDefinition -> verifyInitialization(node.variable, initializedVariables, traversedFunctions)
@@ -74,17 +87,18 @@ object InitializationVerifier {
                 }
                 is Statement.Loop -> {
                     verifyInitialization(node.condition, initializedVariables, traversedFunctions)
-                    val initializedVariablesInBody = initializedVariables.toMutableSet()
-                    val traversedFunctionsInBody = traversedFunctions.toMutableSet()
-                    // loop body might never execute
-                    node.action.forEach {
-                        verifyInitialization(
-                            it, initializedVariablesInBody,
-                            traversedFunctionsInBody
-                        )
-                    }
+                    handleIsolatedStatementBlock(node.action)
+                }
+                is Statement.ForeachLoop -> {
+                    verifyInitialization(node.generatorCall, initializedVariables, traversedFunctions)
+                    // this variable should be very basic, so there is no need to traverse it
+                    initializedVariables.add(Ref(node.receivingVariable))
+                    handleIsolatedStatementBlock(node.action)
                 }
                 is Statement.FunctionReturn -> {
+                    verifyInitialization(node.value, initializedVariables, traversedFunctions)
+                }
+                is Statement.GeneratorYield -> {
                     verifyInitialization(node.value, initializedVariables, traversedFunctions)
                 }
                 is Expression.Variable -> {

@@ -282,6 +282,48 @@ class InitializationVerifierTest {
 
     // czynność zewnętrzna() {
     //     zm x: Liczba
+    //     przekaźnik wewnętrzny() -> Liczba {
+    //          zakończ
+    //     }
+    //     dostając z: Liczba od wewnętrzny() {
+    //          x = 123
+    //     }
+    //     zm y: Liczba = x
+    // }
+    @Test
+    fun `test initialization in foreach body is incorrect`() {
+        val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
+        val xDefinition = Statement.VariableDefinition(x)
+        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
+        val readFromX = Expression.Variable("x")
+
+        val innerGenerator = Function(
+            "wewnętrzny", listOf(), Type.Number,
+            listOf(Statement.FunctionReturn(Expression.UnitLiteral()))
+        )
+        val innerGeneratorCall = Expression.FunctionCall("wewnętrzny", listOf())
+        val z = Variable(Variable.Kind.VALUE, "z", Type.Number, null)
+        val assignmentInForEach = Statement.ForeachLoop(z, innerGeneratorCall, listOf(assignmentToX))
+
+        val y = Variable(Variable.Kind.VALUE, "y", Type.Number, readFromX)
+        val yDefinition = Statement.VariableDefinition(y)
+        val function = Function(
+            "zewnętrzna", listOf(), Type.Unit,
+            listOf(xDefinition, Statement.FunctionDefinition(innerGenerator), assignmentInForEach, yDefinition)
+        )
+
+        val program = Program(listOf(FunctionDefinition(function)))
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(
+            assignmentToX to x,
+            innerGeneratorCall to innerGenerator,
+            readFromX to x
+        )
+
+        checkDiagnostics(program, nameResolution, listOf(ReferenceToUninitializedVariable(x)))
+    }
+
+    // czynność zewnętrzna() {
+    //     zm x: Liczba
     //     czynność wewnętrzna() -> Liczba {
     //          x = 123
     //          zwróć 124

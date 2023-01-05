@@ -27,6 +27,32 @@ object InitializationVerifier {
             initializedVariables: MutableSet<Ref<NamedNode>>,
             traversedFunctions: MutableSet<Ref<Function>> // so that we don't analyze calls of the same function multiple times
         ) {
+            fun handleConditional(condition: AstNode, actionsWhenTrue: List<AstNode>, actionsWhenFalse: List<AstNode>?) {
+                verifyInitialization(condition, initializedVariables, traversedFunctions)
+                val initializedVariablesWhenTrue = initializedVariables.toMutableSet()
+                val traversedFunctionsWhenTrue = traversedFunctions.toMutableSet()
+                actionsWhenTrue.forEach {
+                    verifyInitialization(
+                        it, initializedVariablesWhenTrue,
+                        traversedFunctionsWhenTrue
+                    )
+                }
+
+                val initializedVariablesWhenFalse = initializedVariables.toMutableSet()
+                val traversedFunctionsWhenFalse = traversedFunctions.toMutableSet()
+                actionsWhenFalse?.forEach {
+                    verifyInitialization(
+                        it, initializedVariablesWhenFalse,
+                        traversedFunctionsWhenFalse
+                    )
+                }
+
+                val initializedVariablesWhenBoth = initializedVariablesWhenTrue intersect initializedVariablesWhenFalse
+                val traversedFunctionsWhenBoth = traversedFunctionsWhenTrue intersect traversedFunctionsWhenFalse
+                initializedVariables.addAll(initializedVariablesWhenBoth)
+                traversedFunctions.addAll(traversedFunctionsWhenBoth)
+            }
+
             when (node) {
                 is Statement.Evaluation -> verifyInitialization(node.expression, initializedVariables, traversedFunctions)
                 is Statement.VariableDefinition -> verifyInitialization(node.variable, initializedVariables, traversedFunctions)
@@ -44,31 +70,7 @@ object InitializationVerifier {
                     node.block.forEach { verifyInitialization(it, initializedVariables, traversedFunctions) }
                 }
                 is Statement.Conditional -> {
-                    verifyInitialization(node.condition, initializedVariables, traversedFunctions)
-                    val initializedVariablesWhenTrue = initializedVariables.toMutableSet()
-                    val traversedFunctionsWhenTrue = traversedFunctions.toMutableSet()
-                    node.actionWhenTrue.forEach {
-                        verifyInitialization(
-                            it, initializedVariablesWhenTrue,
-                            traversedFunctionsWhenTrue
-                        )
-                    }
-
-                    val initializedVariablesWhenFalse = initializedVariables.toMutableSet()
-                    val traversedFunctionsWhenFalse = traversedFunctions.toMutableSet()
-                    node.actionWhenFalse?.forEach {
-                        verifyInitialization(
-                            it, initializedVariablesWhenFalse,
-                            traversedFunctionsWhenFalse
-                        )
-                    }
-
-                    val initializedVariablesWhenBoth = initializedVariablesWhenTrue intersect initializedVariablesWhenFalse
-                    val traversedFunctionsWhenBoth = traversedFunctionsWhenTrue intersect traversedFunctionsWhenFalse
-                    initializedVariables.clear()
-                    initializedVariables.addAll(initializedVariablesWhenBoth)
-                    traversedFunctions.clear()
-                    traversedFunctions.addAll(traversedFunctionsWhenBoth)
+                    handleConditional(node.condition, node.actionWhenTrue, node.actionWhenFalse)
                 }
                 is Statement.Loop -> {
                     verifyInitialization(node.condition, initializedVariables, traversedFunctions)
@@ -112,21 +114,7 @@ object InitializationVerifier {
                     }
                 }
                 is Expression.Conditional -> {
-                    verifyInitialization(node.condition, initializedVariables, traversedFunctions)
-                    val initializedVariablesWhenTrue = initializedVariables.toMutableSet()
-                    val traversedFunctionsWhenTrue = traversedFunctions.toMutableSet()
-                    verifyInitialization(node.resultWhenTrue, initializedVariablesWhenTrue, traversedFunctionsWhenTrue)
-
-                    val initializedVariablesWhenFalse = initializedVariables.toMutableSet()
-                    val traversedFunctionsWhenFalse = traversedFunctions.toMutableSet()
-                    verifyInitialization(node.resultWhenFalse, initializedVariablesWhenFalse, traversedFunctionsWhenFalse)
-
-                    val initializedVariablesWhenBoth = initializedVariablesWhenTrue intersect initializedVariablesWhenFalse
-                    val traversedFunctionsWhenBoth = traversedFunctionsWhenTrue intersect traversedFunctionsWhenFalse
-                    initializedVariables.clear()
-                    initializedVariables.addAll(initializedVariablesWhenBoth)
-                    traversedFunctions.clear()
-                    traversedFunctions.addAll(traversedFunctionsWhenBoth)
+                    handleConditional(node.condition, listOf(node.resultWhenTrue), listOf(node.resultWhenFalse))
                 }
                 is Function -> {
                     node.parameters.forEach { verifyInitialization(it, initializedVariables, traversedFunctions) }

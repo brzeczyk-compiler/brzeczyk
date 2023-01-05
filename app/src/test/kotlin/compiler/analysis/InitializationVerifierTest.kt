@@ -324,7 +324,7 @@ class InitializationVerifierTest {
 
     // czynność zewnętrzna() {
     //     zm x: Liczba
-    //     czynność wewnętrzna(): Liczba {
+    //     czynność wewnętrzna() -> Liczba {
     //          x = 123
     //          zwróć 124
     //     }
@@ -360,7 +360,7 @@ class InitializationVerifierTest {
 
     // czynność zewnętrzna() {
     //     zm x: Liczba
-    //     czynność wewnętrzna(): Liczba {
+    //     czynność wewnętrzna() -> Liczba {
     //          x = 123
     //          zwróć 124
     //     }
@@ -404,7 +404,7 @@ class InitializationVerifierTest {
 
     // czynność zewnętrzna() {
     //     zm x: Liczba
-    //     czynność wewnętrzna(): Liczba {
+    //     czynność wewnętrzna() -> Liczba {
     //          x = 123
     //          zwróć 124
     //     }
@@ -535,11 +535,11 @@ class InitializationVerifierTest {
 
     // czynność zewnętrzna() {
     //     zm x: Liczba
-    //     czynność wewnętrzna(): Liczba {
+    //     czynność wewnętrzna() -> Liczba {
     //          x = 123
     //          zwróć 124
     //     }
-    //     czynność wewnętrzna2(): Liczba {
+    //     czynność wewnętrzna2() -> Liczba {
     //          zwróć wewnętrzna()
     //     }
     //     wewnętrzna2()
@@ -587,11 +587,11 @@ class InitializationVerifierTest {
 
     // czynność zewnętrzna() {
     //     zm x: Liczba
-    //     czynność wewnętrzna(): Liczba {
+    //     czynność wewnętrzna() -> Liczba {
     //          x = 123
     //          zwróć 124
     //     }
-    //     czynność wewnętrzna2(z: Liczba = wewnętrzna()): Liczba {
+    //     czynność wewnętrzna2(z: Liczba = wewnętrzna()) -> Liczba {
     //          zwróć 124
     //     }
     //     zm y: Liczba = x

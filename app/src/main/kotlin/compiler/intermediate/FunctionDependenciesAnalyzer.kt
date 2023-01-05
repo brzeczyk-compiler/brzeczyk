@@ -97,7 +97,7 @@ object FunctionDependenciesAnalyzer {
                 is Function.Implementation.Foreign -> {
                     ForeignFunctionDetailsGenerator(
                         IFTNode.MemoryLabel(function.implementation.foreignName),
-                        function.returnType !is Type.Unit
+                        if (function.returnType !is Type.Unit) 1 else 0
                     )
                 }
 

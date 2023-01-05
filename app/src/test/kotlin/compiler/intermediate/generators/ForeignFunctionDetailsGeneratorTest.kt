@@ -15,7 +15,7 @@ class ForeignFunctionDetailsGeneratorTest {
 
     @Test
     fun `test genCall for zero argument, Unit function`() {
-        val fdg = ForeignFunctionDetailsGenerator(foreignLabel, false)
+        val fdg = ForeignFunctionDetailsGenerator(foreignLabel, 0)
         val expected = ControlFlowGraphBuilder(IFTNode.Call(foreignLabel, emptyList(), callerSavedRegisters)).build()
         val result = fdg.genCall(listOf())
 
@@ -25,7 +25,7 @@ class ForeignFunctionDetailsGeneratorTest {
 
     @Test
     fun `test genCall for two argument, Unit return function`() {
-        val fdg = ForeignFunctionDetailsGenerator(foreignLabel, false)
+        val fdg = ForeignFunctionDetailsGenerator(foreignLabel, 0)
 
         val arg1 = IFTNode.Dummy()
         val arg2 = IFTNode.Dummy()
@@ -49,7 +49,7 @@ class ForeignFunctionDetailsGeneratorTest {
 
     @Test
     fun `test genCall for zero argument, Number returning function`() {
-        val fdg = ForeignFunctionDetailsGenerator(foreignLabel, true)
+        val fdg = ForeignFunctionDetailsGenerator(foreignLabel, 1)
 
         val expectedCFGBuilder = ControlFlowGraphBuilder(IFTNode.Call(foreignLabel, emptyList(), callerSavedRegisters))
 
@@ -62,7 +62,7 @@ class ForeignFunctionDetailsGeneratorTest {
 
     @Test
     fun `test genCall for 8 argument, Number return function`() {
-        val fdg = ForeignFunctionDetailsGenerator(foreignLabel, true)
+        val fdg = ForeignFunctionDetailsGenerator(foreignLabel, 1)
 
         val args = (0..7).map { IFTNode.Const(it.toLong()) }.toList()
         val result = fdg.genCall(args)

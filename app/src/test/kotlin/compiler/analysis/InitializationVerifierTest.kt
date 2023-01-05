@@ -282,7 +282,7 @@ class InitializationVerifierTest {
 
     // czynność zewnętrzna() {
     //     zm x: Liczba
-    //     czynność wewnętrzna(): Liczba {
+    //     czynność wewnętrzna() -> Liczba {
     //          x = 123
     //          zwróć 124
     //     }
@@ -419,14 +419,101 @@ class InitializationVerifierTest {
         val readFromX = Expression.Variable("x")
 
         val innerFunction = Function(
-            "wewnętrzna", listOf(), Type.Number,
-            listOf(assignmentToX, Statement.FunctionReturn(Expression.NumberLiteral(124)))
+            "wewnętrzna", listOf(), Type.Number, listOf(assignmentToX, Statement.FunctionReturn(Expression.NumberLiteral(124)))
         )
         val innerFunctionCall = Expression.FunctionCall("wewnętrzna", listOf())
 
         val z = Variable(
             Variable.Kind.VALUE, "z", Type.Number,
             Expression.Conditional(Expression.BooleanLiteral(true), innerFunctionCall, innerFunctionCall)
+        )
+
+        val y = Variable(Variable.Kind.VALUE, "y", Type.Number, readFromX)
+        val yDefinition = Statement.VariableDefinition(y)
+        val function = Function(
+            "zewnętrzna", listOf(), Type.Unit,
+            listOf(xDefinition, Statement.FunctionDefinition(innerFunction), Statement.VariableDefinition(z), yDefinition)
+        )
+
+        val program = Program(listOf(FunctionDefinition(function)))
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(
+            assignmentToX to x,
+            readFromX to x,
+            innerFunctionCall to innerFunction,
+        )
+
+        checkDiagnostics(program, nameResolution, listOf())
+    }
+
+    // czynność zewnętrzna() {
+    //     zm x: Liczba
+    //     czynność wewnętrzna() -> Czy  {
+    //          x = 123
+    //          zwróć fałsz
+    //     }
+    //     zm z: Czy = fałsz oraz wewnętrzna()
+    //     zm y: Liczba = x
+    // }
+    @Test
+    fun `test initialization in right side of short circuit is incorrect`() {
+        val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
+        val xDefinition = Statement.VariableDefinition(x)
+        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
+        val readFromX = Expression.Variable("x")
+
+        val innerFunction = Function(
+            "wewnętrzna", listOf(), Type.Boolean,
+            listOf(assignmentToX, Statement.FunctionReturn(Expression.BooleanLiteral(false)))
+        )
+        val innerFunctionCall = Expression.FunctionCall("wewnętrzna", listOf())
+
+        val z = Variable(
+            Variable.Kind.VALUE, "z", Type.Boolean,
+            Expression.BinaryOperation(Expression.BinaryOperation.Kind.OR, Expression.BooleanLiteral(false), innerFunctionCall)
+        )
+
+        val y = Variable(Variable.Kind.VALUE, "y", Type.Number, readFromX)
+        val yDefinition = Statement.VariableDefinition(y)
+        val function = Function(
+            "zewnętrzna", listOf(), Type.Unit,
+            listOf(xDefinition, Statement.FunctionDefinition(innerFunction), Statement.VariableDefinition(z), yDefinition)
+        )
+
+        val program = Program(listOf(FunctionDefinition(function)))
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(
+            assignmentToX to x,
+            readFromX to x,
+            innerFunctionCall to innerFunction,
+        )
+
+        checkDiagnostics(program, nameResolution, listOf(ReferenceToUninitializedVariable(x)))
+    }
+
+    // czynność zewnętrzna() {
+    //     zm x: Liczba
+    //     czynność wewnętrzna() -> Czy  {
+    //          x = 123
+    //          zwróć fałsz
+    //     }
+    //     zm z: Czy = wewnętrzna() oraz fałsz
+    //     zm y: Liczba = x
+    // }
+    @Test
+    fun `test initialization in left side of short circuit is correct`() {
+        val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
+        val xDefinition = Statement.VariableDefinition(x)
+        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
+        val readFromX = Expression.Variable("x")
+
+        val innerFunction = Function(
+            "wewnętrzna", listOf(), Type.Boolean,
+            listOf(assignmentToX, Statement.FunctionReturn(Expression.BooleanLiteral(false)))
+        )
+        val innerFunctionCall = Expression.FunctionCall("wewnętrzna", listOf())
+
+        val z = Variable(
+            Variable.Kind.VALUE, "z", Type.Boolean,
+            Expression.BinaryOperation(Expression.BinaryOperation.Kind.OR, innerFunctionCall, Expression.BooleanLiteral(false))
         )
 
         val y = Variable(Variable.Kind.VALUE, "y", Type.Number, readFromX)

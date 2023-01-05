@@ -2,6 +2,8 @@ package compiler.analysis
 
 import compiler.ast.AstNode
 import compiler.ast.Expression
+import compiler.ast.Expression.BinaryOperation.Kind.AND
+import compiler.ast.Expression.BinaryOperation.Kind.OR
 import compiler.ast.Function
 import compiler.ast.NamedNode
 import compiler.ast.Program
@@ -99,8 +101,16 @@ object InitializationVerifier {
                 }
                 is Expression.FunctionCall.Argument -> verifyInitialization(node.value, initializedVariables, traversedFunctions)
                 is Expression.UnaryOperation -> verifyInitialization(node.operand, initializedVariables, traversedFunctions)
-                is Expression.BinaryOperation -> sequenceOf(node.leftOperand, node.rightOperand)
-                    .forEach { verifyInitialization(it, initializedVariables, traversedFunctions) }
+                is Expression.BinaryOperation -> {
+                    verifyInitialization(node.leftOperand, initializedVariables, traversedFunctions)
+                    when (node.kind) {
+                        in listOf(AND, OR) -> verifyInitialization(
+                            node.rightOperand,
+                            initializedVariables.toMutableSet(), traversedFunctions.toMutableSet()
+                        )
+                        else -> verifyInitialization(node.rightOperand, initializedVariables, traversedFunctions)
+                    }
+                }
                 is Expression.Conditional -> {
                     verifyInitialization(node.condition, initializedVariables, traversedFunctions)
                     val initializedVariablesWhenTrue = initializedVariables.toMutableSet()

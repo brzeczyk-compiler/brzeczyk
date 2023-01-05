@@ -139,7 +139,7 @@ class InitializationVerifierTest {
 
     // czynność zewnętrzna() {
     //     zm x: Liczba
-    //     jeżeli (fałsz) {
+    //     jeśli (fałsz) {
     //          x = 123
     //     }
     //     zm y: Liczba = x
@@ -208,12 +208,12 @@ class InitializationVerifierTest {
 
     // czynność zewnętrzna() {
     //     zm x: Liczba
-    //     czynność wewnętrzna(): Czy {
+    //     czynność wewnętrzna() -> Czy {
     //          x = 123
     //          zwróć fałsz
     //     }
     //     jeżeli (wewnętrzna()) {
-    //          przerwij
+    //          zwróć x
     //     }
     //     zm y: Liczba = x
     // }
@@ -230,7 +230,7 @@ class InitializationVerifierTest {
         )
         val innerFunctionCall = Expression.FunctionCall("wewnętrzna", listOf())
 
-        val trickyAssignmentToX = Statement.Conditional(innerFunctionCall, listOf(Statement.LoopBreak()), null)
+        val trickyAssignmentToX = Statement.Conditional(innerFunctionCall, listOf(Statement.FunctionReturn(readFromX)), null)
 
         val y = Variable(Variable.Kind.VALUE, "y", Type.Number, readFromX)
         val yDefinition = Statement.VariableDefinition(y)

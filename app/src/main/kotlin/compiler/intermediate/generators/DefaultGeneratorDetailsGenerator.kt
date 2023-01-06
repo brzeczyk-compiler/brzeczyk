@@ -2,6 +2,7 @@ package compiler.intermediate.generators
 
 import compiler.ast.Function
 import compiler.ast.NamedNode
+import compiler.ast.Statement
 import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.intermediate.CFGLinkType
@@ -9,6 +10,7 @@ import compiler.intermediate.ControlFlowGraph
 import compiler.intermediate.ControlFlowGraphBuilder
 import compiler.intermediate.IFTNode
 import compiler.intermediate.Register
+import compiler.intermediate.SummedConstant
 import compiler.utils.Ref
 
 class DefaultGeneratorDetailsGenerator(
@@ -18,8 +20,10 @@ class DefaultGeneratorDetailsGenerator(
     finalizeLabel: IFTNode.MemoryLabel,
     depth: ULong,
     variablesLocationTypes: Map<Ref<NamedNode>, VariableLocationType>,
-    displayAddress: IFTNode
+    displayAddress: IFTNode,
+    private val nestedForeachLoops: List<Ref<Statement.ForeachLoop>>
 ) : GeneratorDetailsGenerator {
+
     override fun genInitCall(args: List<IFTNode>): FunctionDetailsGenerator.FunctionCallIntermediateForm {
         return initFDG.genCall(args)
     }
@@ -39,7 +43,7 @@ class DefaultGeneratorDetailsGenerator(
         cfgBuilder.mergeUnconditionally(initFDG.genPrologue())
 
         // Allocate "stack frame" on heap
-        val mallocCall = mallocFDG.genCall(listOf(IFTNode.Const(innerFDG.requiredMemoryBelowRBP)))
+        val mallocCall = mallocFDG.genCall(listOf(IFTNode.Const(frameSize)))
         cfgBuilder.mergeUnconditionally(mallocCall.callGraph)
         cfgBuilder.addSingleTree(initFDG.genWrite(initResultVariable, mallocCall.result!!, true))
         // TODO: check whether allocation was successful
@@ -51,20 +55,26 @@ class DefaultGeneratorDetailsGenerator(
                 customBaseRegister,
                 IFTNode.Add(
                     initFDG.genRead(initResultVariable, true),
-                    IFTNode.Const(innerFDG.requiredMemoryBelowRBP)
+                    IFTNode.Const(frameSize)
                 )
             )
         )
 
         // copy arguments
-        for (parameter in parameters)
+        parameters.forEach {
             cfgBuilder.addSingleTree(
                 innerFDG.genDirectWriteWithCustomBase(
-                    parameter,
-                    initFDG.genRead(parameter, true),
+                    it,
+                    initFDG.genRead(it, true),
                     customBaseRegister
                 )
             )
+        }
+
+        // clear nested loops registers
+        nestedForeachLoops.forEach {
+            cfgBuilder.addSingleTree(IFTNode.MemoryWrite(getNestedForeachFramePointerAddress(it.value)!!, IFTNode.Const(0)))
+        }
 
         // generate the epilogue
         cfgBuilder.mergeUnconditionally(initFDG.genEpilogue())
@@ -86,7 +96,7 @@ class DefaultGeneratorDetailsGenerator(
                 Register.RBP,
                 IFTNode.Add(
                     IFTNode.RegisterRead(framePointerRegister),
-                    IFTNode.Const(innerFDG.requiredMemoryBelowRBP)
+                    IFTNode.Const(frameSize)
                 )
             )
         )
@@ -149,11 +159,33 @@ class DefaultGeneratorDetailsGenerator(
         return cfgBuilder.build()
     }
 
+    override fun getNestedForeachFramePointerAddress(foreachLoop: Statement.ForeachLoop): IFTNode? {
+        val index = nestedForeachLoops.indexOf(Ref(foreachLoop))
+        return if (index != -1)
+            IFTNode.Subtract(
+                IFTNode.RegisterRead(Register.RBP),
+                IFTNode.Const(SummedConstant((index + 1) * memoryUnitSize.toLong(), innerFDG.requiredMemoryBelowRBP))
+            )
+        else null
+    }
+
     override fun genFinalize(): ControlFlowGraph {
         val cfgBuilder = ControlFlowGraphBuilder()
 
         // generate the prologue
         cfgBuilder.mergeUnconditionally(finalizeFDG.genPrologue())
+
+        // recursively finalize all active nested foreach loops
+        nestedForeachLoops.forEach {
+            val checkNode = IFTNode.Equals(
+                IFTNode.MemoryRead(getNestedForeachFramePointerAddress(it.value)!!),
+                IFTNode.Const(0)
+            )
+            cfgBuilder.addSingleTree(checkNode)
+            val callCFG = this.genFinalizeCall(IFTNode.MemoryRead(getNestedForeachFramePointerAddress(it.value)!!)).callGraph // FIXME: supply different GDG object than this
+            cfgBuilder.addAllFrom(callCFG)
+            cfgBuilder.addLink(Pair(checkNode, CFGLinkType.CONDITIONAL_FALSE), callCFG.entryTreeRoot!!)
+        }
 
         // free the frame
         cfgBuilder.mergeUnconditionally(
@@ -207,4 +239,7 @@ class DefaultGeneratorDetailsGenerator(
         mapOf(Ref(finalizeFramePointerParameter) to VariableLocationType.REGISTER),
         displayAddress
     )
+
+    // other values
+    private val frameSize = SummedConstant(nestedForeachLoops.size * memoryUnitSize.toLong(), innerFDG.requiredMemoryBelowRBP)
 }

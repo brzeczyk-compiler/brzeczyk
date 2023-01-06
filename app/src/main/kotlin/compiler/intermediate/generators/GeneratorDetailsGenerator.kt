@@ -1,5 +1,6 @@
 package compiler.intermediate.generators
 
+import compiler.ast.Statement
 import compiler.intermediate.ControlFlowGraph
 import compiler.intermediate.IFTNode
 
@@ -15,6 +16,8 @@ interface GeneratorDetailsGenerator : VariableAccessGenerator {
     fun genResume(mainBody: ControlFlowGraph): ControlFlowGraph
 
     fun genYield(value: IFTNode): ControlFlowGraph
+
+    fun getNestedForeachFramePointerAddress(foreachLoop: Statement.ForeachLoop): IFTNode?
 
     fun genFinalize(): ControlFlowGraph
 }

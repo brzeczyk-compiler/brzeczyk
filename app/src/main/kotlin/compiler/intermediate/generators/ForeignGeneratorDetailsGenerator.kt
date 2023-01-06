@@ -1,6 +1,7 @@
 package compiler.intermediate.generators
 
 import compiler.ast.NamedNode
+import compiler.ast.Statement
 import compiler.intermediate.ControlFlowGraph
 import compiler.intermediate.IFTNode
 
@@ -29,6 +30,8 @@ class ForeignGeneratorDetailsGenerator(
     override fun genResume(mainBody: ControlFlowGraph) = throw NotImplementedError()
 
     override fun genYield(value: IFTNode) = throw NotImplementedError()
+
+    override fun getNestedForeachFramePointerAddress(foreachLoop: Statement.ForeachLoop): IFTNode? = throw NotImplementedError()
 
     override fun genFinalize() = throw NotImplementedError()
 

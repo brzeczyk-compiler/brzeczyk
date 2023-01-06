@@ -41,7 +41,7 @@ data class DefaultFunctionDetailsGenerator(
 
     override val spilledRegistersRegionOffset: ULong get() = variablesRegionSize
     override val spilledRegistersRegionSize: ConstantPlaceholder = ConstantPlaceholder()
-    val requiredMemoryBelowRBP = SummedConstant(variablesRegionSize.toLong(), spilledRegistersRegionSize)
+    val requiredMemoryBelowRBP get() = SummedConstant(variablesRegionSize.toLong(), spilledRegistersRegionSize)
     override val identifier: String = functionLocationInCode.label
     init {
         for ((variable, locationType) in variablesLocationTypes.entries) {
@@ -223,10 +223,6 @@ data class DefaultFunctionDetailsGenerator(
 
         return cfgBuilder.build()
     }
-
-    override fun genInit(): ControlFlowGraph = TODO()
-    override fun genFinalize(): ControlFlowGraph = TODO()
-    override fun genYield(value: IFTNode): ControlFlowGraph = TODO()
 
     private fun genAccess(
         namedNode: NamedNode,

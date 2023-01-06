@@ -10,9 +10,10 @@ class ForeignGeneratorDetailsGenerator(
     resumeLabel: IFTNode.MemoryLabel,
     finalizeLabel: IFTNode.MemoryLabel
 ) : GeneratorDetailsGenerator {
-    private val initFDG = ForeignFunctionDetailsGenerator(initLabel, 1)
-    private val resumeFDG = ForeignFunctionDetailsGenerator(resumeLabel, 2)
-    private val finalizeFDG = ForeignFunctionDetailsGenerator(finalizeLabel, 0)
+    override val initFDG = ForeignFunctionDetailsGenerator(initLabel, 1)
+    override val resumeFDG = ForeignFunctionDetailsGenerator(resumeLabel, 2)
+    override val finalizeFDG = ForeignFunctionDetailsGenerator(finalizeLabel, 0)
+
     override fun genInitCall(args: List<IFTNode>): FunctionDetailsGenerator.FunctionCallIntermediateForm {
         return initFDG.genCall(args)
     }
@@ -31,7 +32,7 @@ class ForeignGeneratorDetailsGenerator(
 
     override fun genYield(value: IFTNode) = throw NotImplementedError()
 
-    override fun getNestedForeachFramePointerAddress(foreachLoop: Statement.ForeachLoop): IFTNode? = throw NotImplementedError()
+    override fun getNestedForeachFramePointerAddress(foreachLoop: Statement.ForeachLoop) = throw NotImplementedError()
 
     override fun genFinalize() = throw NotImplementedError()
 

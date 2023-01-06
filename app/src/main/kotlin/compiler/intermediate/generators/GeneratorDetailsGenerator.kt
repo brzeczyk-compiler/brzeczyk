@@ -20,4 +20,10 @@ interface GeneratorDetailsGenerator : VariableAccessGenerator {
     fun getNestedForeachFramePointerAddress(foreachLoop: Statement.ForeachLoop): IFTNode?
 
     fun genFinalize(): ControlFlowGraph
+
+    val initFDG: FunctionDetailsGenerator
+
+    val resumeFDG: FunctionDetailsGenerator
+
+    val finalizeFDG: FunctionDetailsGenerator
 }

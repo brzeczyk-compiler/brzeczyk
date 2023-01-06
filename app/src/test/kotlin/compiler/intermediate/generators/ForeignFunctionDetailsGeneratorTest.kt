@@ -61,6 +61,21 @@ class ForeignFunctionDetailsGeneratorTest {
     }
 
     @Test
+    fun `test genCall for zero argument, two Numbers returning function`() {
+        val fdg = ForeignFunctionDetailsGenerator(foreignLabel, 2)
+
+        val expectedCFGBuilder = ControlFlowGraphBuilder(IFTNode.Call(foreignLabel, emptyList(), callerSavedRegisters))
+
+        val expectedResult = IFTNode.RegisterRead(Register.RAX)
+        val expectedSecondResult = IFTNode.RegisterRead(Register.RDX)
+        val expected = expectedCFGBuilder.build()
+        val result = fdg.genCall(listOf())
+        assert(expected.isIsomorphicTo(result.callGraph))
+        assertEquals(expectedResult, result.result)
+        assertEquals(expectedSecondResult, result.secondResult)
+    }
+
+    @Test
     fun `test genCall for 8 argument, Number return function`() {
         val fdg = ForeignFunctionDetailsGenerator(foreignLabel, 1)
 

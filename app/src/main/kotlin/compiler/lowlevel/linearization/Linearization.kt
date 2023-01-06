@@ -32,17 +32,18 @@ object Linearization {
 
         fun dfs(node: IFTNode, nextLabel: String) {
             addLabel(labels[Ref(node)] ?: assignLabel(node))
-            if (node is IFTNode.LabeledNode) {
-                usedLabels.add(node.label)
-                return dfs(node.node, nextLabel)
-            }
+            val actualNode =
+                if (node is IFTNode.LabeledNode) {
+                    usedLabels.add(node.label)
+                    node.node
+                } else node
 
             fun addUnconditional() {
-                instructions.addAll(covering.coverUnconditional(node))
+                instructions.addAll(covering.coverUnconditional(actualNode))
             }
 
             fun addConditional(whenTrue: Boolean, targetLabel: String) {
-                instructions.addAll(covering.coverConditional(node, targetLabel, !whenTrue))
+                instructions.addAll(covering.coverConditional(actualNode, targetLabel, !whenTrue))
                 usedLabels.add(targetLabel)
             }
 

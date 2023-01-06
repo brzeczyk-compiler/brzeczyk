@@ -73,7 +73,7 @@ class DefaultGeneratorDetailsGenerator(
 
         // clear nested loops registers
         nestedForeachLoops.forEach {
-            cfgBuilder.addSingleTree(IFTNode.MemoryWrite(getNestedForeachFramePointerAddress(it.value)!!, IFTNode.Const(0)))
+            cfgBuilder.addSingleTree(IFTNode.MemoryWrite(getNestedForeachFramePointerAddressWithCustomBase(it.value, customBaseRegister)!!, IFTNode.Const(0)))
         }
 
         // generate the epilogue
@@ -159,15 +159,18 @@ class DefaultGeneratorDetailsGenerator(
         return cfgBuilder.build()
     }
 
-    override fun getNestedForeachFramePointerAddress(foreachLoop: Statement.ForeachLoop): IFTNode? {
+    private fun getNestedForeachFramePointerAddressWithCustomBase(foreachLoop: Statement.ForeachLoop, base: Register): IFTNode? {
         val index = nestedForeachLoops.indexOf(Ref(foreachLoop))
         return if (index != -1)
             IFTNode.Subtract(
-                IFTNode.RegisterRead(Register.RBP),
+                IFTNode.RegisterRead(base),
                 IFTNode.Const(SummedConstant((index + 1) * memoryUnitSize.toLong(), innerFDG.requiredMemoryBelowRBP))
             )
         else null
     }
+
+    override fun getNestedForeachFramePointerAddress(foreachLoop: Statement.ForeachLoop): IFTNode? =
+        getNestedForeachFramePointerAddressWithCustomBase(foreachLoop, Register.RBP)
 
     override fun genFinalize(): ControlFlowGraph {
         val cfgBuilder = ControlFlowGraphBuilder()
@@ -221,7 +224,7 @@ class DefaultGeneratorDetailsGenerator(
     )
 
     private val initResultVariable = Variable(Variable.Kind.VARIABLE, "dummy", Type.Number, null, null)
-    private val initFDG = DefaultFunctionDetailsGenerator(
+    override val initFDG = DefaultFunctionDetailsGenerator(
         parameters,
         initResultVariable,
         initLabel,
@@ -230,8 +233,10 @@ class DefaultGeneratorDetailsGenerator(
         displayAddress
     )
 
+    override val resumeFDG get() = innerFDG
+
     private val finalizeFramePointerParameter = Function.Parameter("framePointer", Type.Number, null, null)
-    private val finalizeFDG = DefaultFunctionDetailsGenerator(
+    override val finalizeFDG = DefaultFunctionDetailsGenerator(
         listOf(finalizeFramePointerParameter),
         null,
         finalizeLabel,

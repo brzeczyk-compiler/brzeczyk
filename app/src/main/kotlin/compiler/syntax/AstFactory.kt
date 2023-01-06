@@ -165,6 +165,7 @@ object AstFactory {
     private fun processForeignFunctionDeclaration(parseTree: ParseTree<Symbol>, diagnostics: Diagnostics): Function {
         val children = (parseTree as ParseTree.Branch).getFilteredChildren()
 
+        val isGenerator = children[1].token() == TokenType.GENERATOR
         val foreignName = extractForeignName(children[2] as ParseTree.Leaf<Symbol>, diagnostics, false)
         val parameters = processFunctionDefinitionParameters(children[4], diagnostics)
         val returnType = if (children.size > 6 && children[6].token() == TokenType.ARROW) processType(children[7]) else Type.Unit
@@ -172,7 +173,6 @@ object AstFactory {
             (children[children.size - 1] as ParseTree.Leaf).content
         else
             extractForeignName(children[2] as ParseTree.Leaf<Symbol>, diagnostics, true)
-        val isGenerator = false // TODO
         return Function(localName, parameters, returnType, Function.Implementation.Foreign(foreignName), isGenerator, parseTree.location)
     }
 

@@ -281,6 +281,28 @@ class AstFactoryTest {
                 makeTNode(TokenType.IDENTIFIER, "poboczna3")
             ),
             makeTNode(TokenType.NEWLINE, "\n"),
+            makeNTNode(
+                NonTerminalType.FOREIGN_DECL, Productions.foreignDecl,
+                makeTNode(TokenType.FOREIGN, "zewnętrzna"),
+                makeTNode(TokenType.GENERATOR, "przekaźnik"),
+                makeTNode(TokenType.IDENTIFIER, "zew_generator"),
+                makeTNode(TokenType.LEFT_PAREN, "("),
+                makeNTNode(
+                    NonTerminalType.DEF_ARGS, Productions.defArgs1,
+                    makeNTNode(
+                        NonTerminalType.DEF_ARG, Productions.defArg,
+                        makeTNode(TokenType.IDENTIFIER, "x"),
+                        makeTNode(TokenType.COLON, ":"),
+                        makeNTNode(NonTerminalType.TYPE, Productions.type, makeTNode(TokenType.TYPE_INTEGER, "Liczba"))
+                    )
+                ),
+                makeTNode(TokenType.RIGHT_PAREN, ")"),
+                makeTNode(TokenType.ARROW, "->"),
+                makeNTNode(NonTerminalType.TYPE, Productions.type, makeTNode(TokenType.TYPE_BOOLEAN, "Czy")),
+                makeTNode(TokenType.AS, "jako"),
+                makeTNode(TokenType.IDENTIFIER, "mój_generator")
+            ),
+            makeTNode(TokenType.NEWLINE, "\n"),
         )
         val expectedAst = Program(
             listOf(
@@ -327,7 +349,18 @@ class AstFactoryTest {
                         dummyLocationRange
                     ),
                     dummyLocationRange
-                )
+                ),
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "mój_generator",
+                        listOf(Function.Parameter("x", Type.Number, null, dummyLocationRange)),
+                        Type.Boolean,
+                        Function.Implementation.Foreign("zew_generator"),
+                        true,
+                        dummyLocationRange
+                    ),
+                    dummyLocationRange
+                ),
             )
         )
 

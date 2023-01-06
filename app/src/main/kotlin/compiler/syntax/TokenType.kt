@@ -11,6 +11,8 @@ enum class TokenType {
     WHILE, BREAK, CONTINUE,
     // Function related keywords
     RETURN, RETURN_UNIT, FUNCTION, FOREIGN, AS,
+    // Generators related keywords
+    GENERATOR, YIELD, FOR_EACH, FROM,
     // Special characters
     COLON, SEMICOLON, QUESTION_MARK, COMMA, ARROW, NEWLINE,
     // Arithmetic operators

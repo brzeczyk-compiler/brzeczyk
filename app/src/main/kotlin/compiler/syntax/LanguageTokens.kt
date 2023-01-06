@@ -33,6 +33,12 @@ object LanguageTokens {
             Pair(TokenType.FOREIGN, "zewnętrzna"),
             Pair(TokenType.AS, "jako"),
 
+            // Generators related keywords
+            Pair(TokenType.GENERATOR, "przekaźnik"),
+            Pair(TokenType.YIELD, "przekaż"),
+            Pair(TokenType.FOR_EACH, "otrzymując"),
+            Pair(TokenType.FROM, "od"),
+
             // Special characters
             Pair(TokenType.COLON, ":"),
             Pair(TokenType.SEMICOLON, ";"),

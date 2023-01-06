@@ -3,7 +3,7 @@ package compiler.lowlevel.linearization
 import compiler.intermediate.ControlFlowGraph
 import compiler.intermediate.IFTNode
 import compiler.lowlevel.Asmable
-import compiler.lowlevel.Instruction.UnconditionalJumpInstruction.Jmp
+import compiler.lowlevel.Instruction.UnconditionalJumpInstruction.JmpL
 import compiler.lowlevel.Label
 import compiler.utils.Ref
 import compiler.utils.mutableKeyRefMapOf
@@ -21,7 +21,7 @@ object Linearization {
         val usedLabels = mutableSetOf<String>()
 
         fun assignLabel(node: IFTNode): String {
-            val label = "._" + labels.size
+            val label = if (node is IFTNode.LabeledNode) node.label else "._" + labels.size
             labels[Ref(node)] = label
             return label
         }
@@ -32,6 +32,10 @@ object Linearization {
 
         fun dfs(node: IFTNode, nextLabel: String) {
             addLabel(labels[Ref(node)] ?: assignLabel(node))
+            if (node is IFTNode.LabeledNode) {
+                usedLabels.add(node.label)
+                return dfs(node.node, nextLabel)
+            }
 
             fun addUnconditional() {
                 instructions.addAll(covering.coverUnconditional(node))
@@ -44,7 +48,7 @@ object Linearization {
 
             fun addJump(targetLabel: String) {
                 if (targetLabel != nextLabel) {
-                    instructions.add(Jmp(targetLabel))
+                    instructions.add(JmpL(targetLabel))
                     usedLabels.add(targetLabel)
                 }
             }
@@ -80,11 +84,14 @@ object Linearization {
             } else if (Ref(node) in cfg.conditionalTrueLinks || Ref(node) in cfg.conditionalFalseLinks) {
                 throw IllegalArgumentException() // unreachable state
             } else {
-                addUnconditional() // this must be RET, so no jump is needed
+                addUnconditional() // this must be terminal node, so no jump is needed
             }
         }
 
         dfs(cfg.entryTreeRoot, "")
+        cfg.treeRoots
+            .filterIsInstance<IFTNode.LabeledNode>()
+            .forEach { if (Ref(it) !in labels) dfs(it, "") }
 
         return instructions.filter { it !is Label || it.label in usedLabels }
     }

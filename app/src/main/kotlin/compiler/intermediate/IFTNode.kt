@@ -8,6 +8,9 @@ sealed class IFTNode {
         const val UNIT_VALUE: Long = 0
     }
 
+    // valid only as root, used to pass label information to linearization phase
+    data class LabeledNode(val label: String, val node: IFTNode) : IFTNode()
+
     data class MemoryRead(val address: IFTNode) : IFTNode()
     data class MemoryLabel(val label: String) : IFTNode()
     data class RegisterRead(val register: Register) : IFTNode()
@@ -51,6 +54,7 @@ sealed class IFTNode {
     data class StackPush(val node: IFTNode) : IFTNode()
     data class StackPop(val dummy: Unit = Unit) : IFTNode()
 
+    data class JumpToRegister(val targetRegister: Register) : IFTNode()
     data class Call(val address: IFTNode, val usedRegisters: Collection<Register>, val definedRegisters: Collection<Register>) : IFTNode()
     data class Return(val usedRegisters: Collection<Register>) : IFTNode()
 

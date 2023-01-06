@@ -31,4 +31,6 @@ object BuiltinFunctions {
         }.toSet()
         return Program(builtinFunctions.filter { it.key !in globalNames }.map { Program.Global.FunctionDefinition(it.value) } + program.globals)
     }
+
+    val internallyUsedExternalSymbols: List<String> = listOf("malloc", "free")
 }

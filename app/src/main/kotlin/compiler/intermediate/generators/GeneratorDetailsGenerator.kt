@@ -12,9 +12,9 @@ interface GeneratorDetailsGenerator : VariableAccessGenerator {
 
     fun genInit(): ControlFlowGraph
 
-    fun genResume(mainBody: ControlFlowGraph)
+    fun genResume(mainBody: ControlFlowGraph): ControlFlowGraph
 
-    fun genYield(): ControlFlowGraph
+    fun genYield(value: IFTNode): ControlFlowGraph
 
     fun genFinalize(): ControlFlowGraph
 }

@@ -4,7 +4,7 @@ import compiler.intermediate.ControlFlowGraph
 import compiler.intermediate.IFTNode
 import compiler.lowlevel.Asmable
 import compiler.lowlevel.Instruction
-import compiler.lowlevel.Instruction.UnconditionalJumpInstruction.Jmp
+import compiler.lowlevel.Instruction.UnconditionalJumpInstruction.JmpL
 import compiler.lowlevel.Label
 import compiler.utils.Ref
 import compiler.utils.mutableKeyRefMapOf
@@ -74,7 +74,7 @@ class LinearizationTest {
                 }
 
                 is Jump -> {
-                    assertIs<Jmp>(actualItem)
+                    assertIs<JmpL>(actualItem)
                     assertEquals(expectedItem.targetLabelNumber, labelNumbers[actualItem.targetLabel])
                 }
             }

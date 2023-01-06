@@ -28,7 +28,7 @@ class ForeignGeneratorDetailsGenerator(
 
     override fun genResume(mainBody: ControlFlowGraph) = throw NotImplementedError()
 
-    override fun genYield() = throw NotImplementedError()
+    override fun genYield(value: IFTNode) = throw NotImplementedError()
 
     override fun genFinalize() = throw NotImplementedError()
 

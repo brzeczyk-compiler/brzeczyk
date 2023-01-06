@@ -55,23 +55,27 @@ sealed class Instruction : Asmable {
         abstract val targetLabel: String
 
         override fun toAsm(registers: Map<Register, Register>) = when (this) {
-            is Jmp -> "jmp"
+            is JmpL -> "jmp"
             is Dummy -> throw DummyInstructionIsNotAsmable()
         } + " $targetLabel"
 
-        data class Jmp(override val targetLabel: String) : UnconditionalJumpInstruction() //   JMP  targetLabel
+        data class JmpL(override val targetLabel: String) : UnconditionalJumpInstruction() //   JMP  targetLabel
         data class Dummy(override val targetLabel: String) : UnconditionalJumpInstruction()
     }
 
-    sealed class RetInstruction : Instruction() {
+    sealed class TerminalInstruction : Instruction() {
 
         override fun toAsm(registers: Map<Register, Register>) = when (this) {
             is Ret -> "ret"
+            is JmpR -> "jmp ${registers[targetRegister]!!.toAsm()}"
             is Dummy -> throw DummyInstructionIsNotAsmable()
         }
 
-        data class Ret(override val regsUsed: Collection<Register>) : RetInstruction() // RET
-        data class Dummy(val dummy: Unit = Unit) : RetInstruction()
+        data class Ret(override val regsUsed: Collection<Register>) : TerminalInstruction() // RET
+        data class JmpR(val targetRegister: Register) : TerminalInstruction() { // JMP targetRegister
+            override val regsUsed: Collection<Register> = listOf(targetRegister)
+        }
+        data class Dummy(val dummy: Unit = Unit) : TerminalInstruction()
     }
 
     sealed class InPlaceInstruction : Instruction() {

@@ -95,7 +95,8 @@ class Compiler(val diagnostics: Diagnostics) {
                     mainFunction!!.returnType != Type.Number,
                     functionDetailsGenerators
                         .filter { it.key.value.implementation is Function.Implementation.Foreign }
-                        .map { it.value.identifier },
+                        .map { it.value.identifier } +
+                        BuiltinFunctions.internallyUsedExternalSymbols,
                     finalCode.map { functionCode ->
                         functionDetailsGenerators[functionCode.key]!!.identifier to
                             CodeSection.FunctionCode(

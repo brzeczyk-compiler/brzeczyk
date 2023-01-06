@@ -14,7 +14,7 @@ class LivenessTest {
     @Test
     fun `trivial program`() {
         val linearProgram = listOf(
-            Instruction.RetInstruction.Dummy()
+            Instruction.TerminalInstruction.Dummy()
         )
         val expectedLivenessGraphs = Liveness.LivenessGraphs(
             mapOf(),
@@ -30,7 +30,7 @@ class LivenessTest {
         val linearProgram = listOf(
             Instruction.InPlaceInstruction.Dummy(regsDefined = listOf(reg1)),
             Instruction.InPlaceInstruction.Dummy(regsDefined = listOf(reg2)),
-            Instruction.RetInstruction.Dummy()
+            Instruction.TerminalInstruction.Dummy()
         )
         val expectedLivenessGraphs = Liveness.LivenessGraphs(
             mapOf(reg1 to setOf(), reg2 to setOf()),
@@ -46,7 +46,7 @@ class LivenessTest {
         val linearProgram = listOf(
             Instruction.InPlaceInstruction.Dummy(regsUsed = listOf(reg1)),
             Instruction.InPlaceInstruction.Dummy(regsUsed = listOf(reg2)),
-            Instruction.RetInstruction.Dummy()
+            Instruction.TerminalInstruction.Dummy()
         )
         val expectedLivenessGraphs = Liveness.LivenessGraphs(
             mapOf(reg1 to setOf(), reg2 to setOf()),
@@ -64,7 +64,7 @@ class LivenessTest {
             Instruction.InPlaceInstruction.Dummy(regsUsed = listOf(reg1)),
             Instruction.InPlaceInstruction.Dummy(regsDefined = listOf(reg2)),
             Instruction.InPlaceInstruction.Dummy(regsUsed = listOf(reg2)),
-            Instruction.RetInstruction.Dummy()
+            Instruction.TerminalInstruction.Dummy()
         )
         val expectedLivenessGraphs = Liveness.LivenessGraphs(
             mapOf(reg1 to setOf(), reg2 to setOf()),
@@ -82,7 +82,7 @@ class LivenessTest {
             Instruction.InPlaceInstruction.Dummy(regsDefined = listOf(reg2)),
             Instruction.InPlaceInstruction.Dummy(regsUsed = listOf(reg1)),
             Instruction.InPlaceInstruction.Dummy(regsUsed = listOf(reg2)),
-            Instruction.RetInstruction.Dummy()
+            Instruction.TerminalInstruction.Dummy()
         )
         val expectedLivenessGraphs = Liveness.LivenessGraphs(
             mapOf(reg1 to setOf(reg2), reg2 to setOf(reg1)),
@@ -97,7 +97,7 @@ class LivenessTest {
     fun `multiple registers defined at one`() {
         val linearProgram = listOf(
             Instruction.InPlaceInstruction.Dummy(regsDefined = listOf(reg1, reg2, reg3)),
-            Instruction.RetInstruction.Dummy()
+            Instruction.TerminalInstruction.Dummy()
         )
         val expectedLivenessGraphs = Liveness.LivenessGraphs(
             mapOf(reg1 to setOf(reg2, reg3), reg2 to setOf(reg1, reg3), reg3 to setOf(reg1, reg2)),
@@ -112,7 +112,7 @@ class LivenessTest {
     fun `multiple registers used at one`() {
         val linearProgram = listOf(
             Instruction.InPlaceInstruction.Dummy(regsUsed = listOf(reg1, reg2, reg3)),
-            Instruction.RetInstruction.Dummy()
+            Instruction.TerminalInstruction.Dummy()
         )
         val expectedLivenessGraphs = Liveness.LivenessGraphs(
             mapOf(reg1 to setOf(), reg2 to setOf(), reg3 to setOf()),
@@ -129,7 +129,7 @@ class LivenessTest {
             Instruction.InPlaceInstruction.Dummy(regsDefined = listOf(reg1)),
             Instruction.InPlaceInstruction.Dummy(regsUsed = listOf(reg1), regsDefined = listOf(reg1)),
             Instruction.InPlaceInstruction.Dummy(regsUsed = listOf(reg1)),
-            Instruction.RetInstruction.Dummy()
+            Instruction.TerminalInstruction.Dummy()
         )
         val expectedLivenessGraphs = Liveness.LivenessGraphs(
             mapOf(reg1 to setOf()),
@@ -146,7 +146,7 @@ class LivenessTest {
             Instruction.InPlaceInstruction.Dummy(regsDefined = listOf(reg1)),
             Instruction.InPlaceInstruction.Dummy(regsUsed = listOf(reg1), regsDefined = listOf(reg2)),
             Instruction.InPlaceInstruction.Dummy(regsUsed = listOf(reg2)),
-            Instruction.RetInstruction.Dummy()
+            Instruction.TerminalInstruction.Dummy()
         )
         val expectedLivenessGraphs = Liveness.LivenessGraphs(
             mapOf(reg1 to setOf(), reg2 to setOf()),
@@ -164,7 +164,7 @@ class LivenessTest {
             Instruction.UnconditionalJumpInstruction.Dummy("label2"),
             Label("label1"),
             Instruction.InPlaceInstruction.Dummy(regsUsed = listOf(reg2)),
-            Instruction.RetInstruction.Dummy(),
+            Instruction.TerminalInstruction.Dummy(),
             Label("label2"),
             Instruction.InPlaceInstruction.Dummy(regsUsed = listOf(reg1)),
             Instruction.InPlaceInstruction.Dummy(regsDefined = listOf(reg2)),
@@ -186,7 +186,7 @@ class LivenessTest {
             Instruction.ConditionalJumpInstruction.Dummy("label2"),
             Label("label1"),
             Instruction.InPlaceInstruction.Dummy(regsUsed = listOf(reg2)),
-            Instruction.RetInstruction.Dummy(),
+            Instruction.TerminalInstruction.Dummy(),
             Label("label2"),
             Instruction.InPlaceInstruction.Dummy(regsUsed = listOf(reg1)),
             Instruction.InPlaceInstruction.Dummy(regsDefined = listOf(reg2)),
@@ -211,7 +211,7 @@ class LivenessTest {
             Instruction.InPlaceInstruction.Dummy(regsDefined = listOf(reg2)),
             Instruction.UnconditionalJumpInstruction.Dummy("loop_start"),
             Label("end_of_loop"),
-            Instruction.RetInstruction.Dummy(),
+            Instruction.TerminalInstruction.Dummy(),
         )
         val expectedLivenessGraphs = Liveness.LivenessGraphs(
             mapOf(reg1 to setOf(reg2), reg2 to setOf(reg1)),
@@ -228,7 +228,7 @@ class LivenessTest {
             Instruction.InPlaceInstruction.Dummy(regsDefined = listOf(reg1, reg3)),
             Instruction.InPlaceInstruction.MoveRR(reg2, reg1),
             Instruction.InPlaceInstruction.Dummy(regsUsed = listOf(reg1, reg2, reg3)),
-            Instruction.RetInstruction.Dummy()
+            Instruction.TerminalInstruction.Dummy()
         )
         val expectedLivenessGraphs = Liveness.LivenessGraphs(
             mapOf(reg1 to setOf(reg3), reg2 to setOf(reg3), reg3 to setOf(reg1, reg2)),
@@ -245,7 +245,7 @@ class LivenessTest {
             Instruction.InPlaceInstruction.Dummy(regsDefined = listOf(reg1, reg3)),
             Instruction.InPlaceInstruction.MoveRR(reg2, reg1),
             Instruction.InPlaceInstruction.Dummy(regsUsed = listOf(reg2, reg3)),
-            Instruction.RetInstruction.Dummy()
+            Instruction.TerminalInstruction.Dummy()
         )
         val expectedLivenessGraphs = Liveness.LivenessGraphs(
             mapOf(reg1 to setOf(reg3), reg2 to setOf(reg3), reg3 to setOf(reg1, reg2)),
@@ -262,7 +262,7 @@ class LivenessTest {
             Instruction.InPlaceInstruction.Dummy(regsDefined = listOf(reg1, reg2, reg3)),
             Instruction.InPlaceInstruction.MoveRR(reg2, reg1),
             Instruction.InPlaceInstruction.Dummy(regsUsed = listOf(reg1, reg2, reg3)),
-            Instruction.RetInstruction.Dummy()
+            Instruction.TerminalInstruction.Dummy()
         )
         val expectedLivenessGraphs = Liveness.LivenessGraphs(
             mapOf(reg1 to setOf(reg2, reg3), reg2 to setOf(reg1, reg3), reg3 to setOf(reg1, reg2)),
@@ -279,10 +279,10 @@ class LivenessTest {
             Instruction.InPlaceInstruction.Dummy(regsDefined = listOf(reg1)),
             Instruction.ConditionalJumpInstruction.Dummy("alternative_ending"),
             Instruction.InPlaceInstruction.Dummy(regsUsed = listOf(reg2)),
-            Instruction.RetInstruction.Dummy(),
+            Instruction.TerminalInstruction.Dummy(),
             Label("alternative_ending"),
             Instruction.InPlaceInstruction.Dummy(regsUsed = listOf(reg3)),
-            Instruction.RetInstruction.Dummy()
+            Instruction.TerminalInstruction.Dummy()
         )
         val expectedLivenessGraphs = Liveness.LivenessGraphs(
             mapOf(reg1 to setOf(reg2, reg3), reg2 to setOf(reg1), reg3 to setOf(reg1)),

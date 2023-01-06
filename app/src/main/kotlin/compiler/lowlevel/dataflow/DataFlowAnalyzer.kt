@@ -50,7 +50,7 @@ abstract class DataFlowAnalyzer<SL> {
                 is Instruction.UnconditionalJumpInstruction ->
                     addPredecessor(it, labelToInstruction[it.targetLabel]!!)
 
-                is Instruction.RetInstruction -> {}
+                is Instruction.TerminalInstruction -> {}
 
                 is Instruction.InPlaceInstruction ->
                     addPredecessor(it, instructionList[index + 1])
@@ -62,7 +62,7 @@ abstract class DataFlowAnalyzer<SL> {
 
     private fun getEntryPoints(instructionList: List<Instruction>): Set<Ref<Instruction>> {
         return if (backward)
-            instructionList.filterIsInstance<Instruction.RetInstruction>().map(::Ref).toSet()
+            instructionList.filterIsInstance<Instruction.TerminalInstruction>().map(::Ref).toSet()
         else
             refSetOf(instructionList.first())
     }

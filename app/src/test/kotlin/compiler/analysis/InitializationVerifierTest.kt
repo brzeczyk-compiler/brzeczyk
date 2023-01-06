@@ -168,6 +168,37 @@ class InitializationVerifierTest {
         checkDiagnostics(program, nameResolution, listOf(ReferenceToUninitializedVariable(x)))
     }
 
+// czynność zewnętrzna() {
+    //     zm x: Liczba
+    //     jeśli (fałsz) zwróć
+    //     zm y: Liczba = x
+    // }
+    @Test
+    fun `test reference to uninitialized variable after a potential return is incorrect`() {
+        val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
+        val xDefinition = Statement.VariableDefinition(x)
+        val readFromX = Expression.Variable("x")
+
+        val returningIf = Statement.Conditional(
+            Expression.BooleanLiteral(false),
+            listOf(Statement.FunctionReturn(Expression.UnitLiteral())), null
+        )
+
+        val y = Variable(Variable.Kind.VALUE, "y", Type.Number, readFromX)
+        val yDefinition = Statement.VariableDefinition(y)
+        val function = Function(
+            "zewnętrzna", listOf(), Type.Unit,
+            listOf(xDefinition, returningIf, yDefinition)
+        )
+
+        val program = Program(listOf(FunctionDefinition(function)))
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(
+            readFromX to x
+        )
+
+        checkDiagnostics(program, nameResolution, listOf(ReferenceToUninitializedVariable(x)))
+    }
+
     // czynność zewnętrzna() {
     //     zm x: Liczba
     //     jeżeli (fałsz) {
@@ -674,5 +705,230 @@ class InitializationVerifierTest {
         )
 
         checkDiagnostics(program, nameResolution, listOf())
+    }
+
+    // czynność zewnętrzna() {
+    //     zm x: Liczba
+    //     czynność wewnętrzna() {
+    //          jeśli (fałsz) zwróć
+    //          x = 123
+    //     }
+    //     wewnętrzna()
+    //     zm y: Liczba = x
+    // }
+    @Test
+    fun `test initialization after a potential return in nested function call is incorrect`() {
+        val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
+        val xDefinition = Statement.VariableDefinition(x)
+        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
+        val readFromX = Expression.Variable("x")
+
+        val returningIf = Statement.Conditional(
+            Expression.BooleanLiteral(false),
+            listOf(Statement.FunctionReturn(Expression.UnitLiteral())), null
+        )
+        val innerFunction = Function(
+            "wewnętrzna", listOf(), Type.Unit,
+            listOf(returningIf, assignmentToX)
+        )
+        val innerFunctionCall = Expression.FunctionCall("wewnętrzna", listOf())
+
+        val y = Variable(Variable.Kind.VALUE, "y", Type.Number, readFromX)
+        val yDefinition = Statement.VariableDefinition(y)
+        val function = Function(
+            "zewnętrzna", listOf(), Type.Unit,
+            listOf(xDefinition, Statement.FunctionDefinition(innerFunction), Statement.Evaluation(innerFunctionCall), yDefinition)
+        )
+
+        val program = Program(listOf(FunctionDefinition(function)))
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(
+            assignmentToX to x,
+            innerFunctionCall to innerFunction,
+            readFromX to x
+        )
+
+        checkDiagnostics(program, nameResolution, listOf(ReferenceToUninitializedVariable(x)))
+    }
+
+    // czynność zewnętrzna() {
+    //     zm x: Liczba
+    //     czynność wewnętrzna() {
+    //          dopóki (fałsz) zwróć
+    //          x = 123
+    //     }
+    //     wewnętrzna()
+    //     zm y: Liczba = x
+    // }
+    @Test
+    fun `test initialization after a potential return in a loop in a nested function call is incorrect`() {
+        val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
+        val xDefinition = Statement.VariableDefinition(x)
+        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
+        val readFromX = Expression.Variable("x")
+
+        val returningLoop = Statement.Loop(
+            Expression.BooleanLiteral(false),
+            listOf(Statement.FunctionReturn(Expression.UnitLiteral()))
+        )
+        val innerFunction = Function(
+            "wewnętrzna", listOf(), Type.Unit,
+            listOf(returningLoop, assignmentToX)
+        )
+        val innerFunctionCall = Expression.FunctionCall("wewnętrzna", listOf())
+
+        val y = Variable(Variable.Kind.VALUE, "y", Type.Number, readFromX)
+        val yDefinition = Statement.VariableDefinition(y)
+        val function = Function(
+            "zewnętrzna", listOf(), Type.Unit,
+            listOf(xDefinition, Statement.FunctionDefinition(innerFunction), Statement.Evaluation(innerFunctionCall), yDefinition)
+        )
+
+        val program = Program(listOf(FunctionDefinition(function)))
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(
+            assignmentToX to x,
+            innerFunctionCall to innerFunction,
+            readFromX to x
+        )
+
+        checkDiagnostics(program, nameResolution, listOf(ReferenceToUninitializedVariable(x)))
+    }
+
+    // czynność zewnętrzna() {
+    //     zm x: Liczba
+    //     czynność wewnętrzna() {
+    //          x = 123
+    //          jeśli (fałsz) zwróć
+    //     }
+    //     wewnętrzna()
+    //     zm y: Liczba = x
+    // }
+    @Test
+    fun `test potential return after initialization is correct`() {
+        val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
+        val xDefinition = Statement.VariableDefinition(x)
+        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
+        val readFromX = Expression.Variable("x")
+
+        val returningIf = Statement.Conditional(
+            Expression.BooleanLiteral(false),
+            listOf(Statement.FunctionReturn(Expression.UnitLiteral())), null
+        )
+        val innerFunction = Function(
+            "wewnętrzna", listOf(), Type.Unit,
+            listOf(assignmentToX, returningIf)
+        )
+        val innerFunctionCall = Expression.FunctionCall("wewnętrzna", listOf())
+
+        val y = Variable(Variable.Kind.VALUE, "y", Type.Number, readFromX)
+        val yDefinition = Statement.VariableDefinition(y)
+        val function = Function(
+            "zewnętrzna", listOf(), Type.Unit,
+            listOf(xDefinition, Statement.FunctionDefinition(innerFunction), Statement.Evaluation(innerFunctionCall), yDefinition)
+        )
+
+        val program = Program(listOf(FunctionDefinition(function)))
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(
+            assignmentToX to x,
+            innerFunctionCall to innerFunction,
+            readFromX to x
+        )
+
+        checkDiagnostics(program, nameResolution, listOf())
+    }
+
+    // czynność zewnętrzna() {
+    //     zm x: Liczba
+    //     jeśli (fałsz) {
+    //         dopóki (fałsz) zwróć
+    //         x = 123
+    //     } wpp {
+    //         x = 123
+    //     }
+    //     zm y: Liczba = x
+    // }
+    @Test
+    fun `test return in if at same level does not matter`() {
+        val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
+        val xDefinition = Statement.VariableDefinition(x)
+        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
+        val readFromX = Expression.Variable("x")
+
+        val returningLoop = Statement.Loop(
+            Expression.BooleanLiteral(false),
+            listOf(Statement.FunctionReturn(Expression.UnitLiteral()))
+        )
+        val trickyIf = Statement.Conditional(
+            Expression.BooleanLiteral(false),
+            listOf(returningLoop, assignmentToX), listOf(assignmentToX)
+        )
+
+        val y = Variable(Variable.Kind.VALUE, "y", Type.Number, readFromX)
+        val yDefinition = Statement.VariableDefinition(y)
+        val function = Function(
+            "zewnętrzna", listOf(), Type.Unit,
+            listOf(xDefinition, trickyIf, yDefinition)
+        )
+
+        val program = Program(listOf(FunctionDefinition(function)))
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(
+            assignmentToX to x,
+            readFromX to x
+        )
+
+        checkDiagnostics(program, nameResolution, listOf())
+    }
+
+    // czynność zewnętrzna() {
+    //     zm x: Liczba
+    //     czynność wewnętrzna() {
+    //          jeśli (fałsz) {
+    //              dopóki (fałsz) zwróć
+    //              x = 123
+    //          } wpp {
+    //              x = 123
+    //          }
+    //     }
+    //     wewnętrzna()
+    //     zm y: Liczba = x
+    // }
+    @Test
+    fun `test return in if in nested function does matter`() {
+        val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
+        val xDefinition = Statement.VariableDefinition(x)
+        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
+        val readFromX = Expression.Variable("x")
+
+        val returningLoop = Statement.Loop(
+            Expression.BooleanLiteral(false),
+            listOf(Statement.FunctionReturn(Expression.UnitLiteral()))
+        )
+        val trickyIf = Statement.Conditional(
+            Expression.BooleanLiteral(false),
+            listOf(returningLoop, assignmentToX), listOf(assignmentToX)
+        )
+        val innerFunction = Function(
+            "wewnętrzna", listOf(), Type.Unit,
+            listOf(trickyIf)
+        )
+        val innerFunctionCall = Expression.FunctionCall("wewnętrzna", listOf())
+
+        val y = Variable(Variable.Kind.VALUE, "y", Type.Number, readFromX)
+        val yDefinition = Statement.VariableDefinition(y)
+        val function = Function(
+            "zewnętrzna", listOf(), Type.Unit,
+            listOf(
+                xDefinition, Statement.FunctionDefinition(innerFunction),
+                Statement.Evaluation(innerFunctionCall), yDefinition
+            )
+        )
+
+        val program = Program(listOf(FunctionDefinition(function)))
+        val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>> = refMapOf(
+            assignmentToX to x,
+            innerFunctionCall to innerFunction,
+            readFromX to x
+        )
+
+        checkDiagnostics(program, nameResolution, listOf(ReferenceToUninitializedVariable(x)))
     }
 }

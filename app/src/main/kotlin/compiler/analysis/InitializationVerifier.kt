@@ -16,6 +16,27 @@ import compiler.utils.Ref
 import compiler.utils.mutableRefSetOf
 
 object InitializationVerifier {
+    data class VerificationState(
+        val initializedVariables: MutableSet<Ref<NamedNode>> = mutableRefSetOf(),
+        val traversedFunctions: MutableSet<Ref<Function>> = mutableRefSetOf()
+    ) {
+        fun copy(): VerificationState = VerificationState(initializedVariables.toMutableSet(), traversedFunctions.toMutableSet())
+        fun add(other: VerificationState) {
+            initializedVariables.addAll(other.initializedVariables)
+            traversedFunctions.addAll(other.traversedFunctions)
+        }
+        fun restore(state: VerificationState) {
+            initializedVariables.clear()
+            initializedVariables.addAll(state.initializedVariables)
+            traversedFunctions.clear()
+            traversedFunctions.addAll(state.traversedFunctions)
+        }
+        infix fun intersect(other: VerificationState) = VerificationState(
+            (initializedVariables intersect other.initializedVariables).toMutableSet(),
+            (traversedFunctions intersect other.traversedFunctions).toMutableSet()
+        )
+    }
+
     fun verifyAccessedVariablesAreInitialized(
         ast: Program,
         nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
@@ -24,130 +45,156 @@ object InitializationVerifier {
     ) {
         fun verifyInitialization(
             node: AstNode,
-            initializedVariables: MutableSet<Ref<NamedNode>>,
-            traversedFunctions: MutableSet<Ref<Function>> // so that we don't analyze calls of the same function multiple times
-        ) {
-            fun handleConditional(condition: AstNode, actionsWhenTrue: List<AstNode>, actionsWhenFalse: List<AstNode>?) {
-                verifyInitialization(condition, initializedVariables, traversedFunctions)
-                val initializedVariablesWhenTrue = initializedVariables.toMutableSet()
-                val traversedFunctionsWhenTrue = traversedFunctions.toMutableSet()
-                actionsWhenTrue.forEach {
-                    verifyInitialization(
-                        it, initializedVariablesWhenTrue,
-                        traversedFunctionsWhenTrue
-                    )
-                }
+            state: VerificationState
+        ): VerificationState? {
+            // Consider a function f, which performs g(). g might contain conditional returns.
+            // From f's point of view, the only variables which will for sure get initialized in g
+            // are the ones which will be initialized before first *potentially* returning instruction
+            // However, to verify correctness of g we need to check what happens if the conditional returns do not happen
+            // That's why when traversing g() we have to analyze all instructions, but in f we want to use state from g()
+            // which was the last possible state before first potentially returning instruction.
+            // The returned value of this function indicates the state we reach before first potentially returning instruction in
+            // the Ast subtree that we are now verifying. If it is null, it means there were no potential top-level returns.
 
-                val initializedVariablesWhenFalse = initializedVariables.toMutableSet()
-                val traversedFunctionsWhenFalse = traversedFunctions.toMutableSet()
-                actionsWhenFalse?.forEach {
-                    verifyInitialization(
-                        it, initializedVariablesWhenFalse,
-                        traversedFunctionsWhenFalse
-                    )
+            fun handleInstructionBlock(
+                statements: List<AstNode>,
+                state: VerificationState
+            ): VerificationState? {
+                var stateBeforeFirstReturn: VerificationState? = null
+                statements.forEach { statement ->
+                    verifyInitialization(statement, state)?.let { stateBeforeFirstReturn = stateBeforeFirstReturn ?: it }
                 }
-
-                val initializedVariablesWhenBoth = initializedVariablesWhenTrue intersect initializedVariablesWhenFalse
-                val traversedFunctionsWhenBoth = traversedFunctionsWhenTrue intersect traversedFunctionsWhenFalse
-                initializedVariables.addAll(initializedVariablesWhenBoth)
-                traversedFunctions.addAll(traversedFunctionsWhenBoth)
+                return stateBeforeFirstReturn
             }
 
-            // most likely to appear in loop
-            fun handleIsolatedStatementBlock(statements: List<AstNode>) {
-                val initializedVariablesInBlock = initializedVariables.toMutableSet()
-                val traversedFunctionsInBlock = traversedFunctions.toMutableSet()
-                // loop body might never execute
-                statements.forEach {
-                    verifyInitialization(
-                        it, initializedVariablesInBlock,
-                        traversedFunctionsInBlock
-                    )
-                }
+            fun handleLoopBody(body: List<AstNode>): VerificationState? {
+                // loop might never execute
+                // even if we made some progress until first return we want to discard it,
+                // but we still need to notify of potential return
+                return if (handleInstructionBlock(body, state.copy()) != null) state.copy() else null
             }
 
-            when (node) {
-                is Statement.Evaluation -> verifyInitialization(node.expression, initializedVariables, traversedFunctions)
-                is Statement.VariableDefinition -> verifyInitialization(node.variable, initializedVariables, traversedFunctions)
-                is Global.VariableDefinition -> verifyInitialization(node.variable, initializedVariables, traversedFunctions)
-                is Statement.FunctionDefinition -> verifyInitialization(node.function, initializedVariables, traversedFunctions)
-                is Global.FunctionDefinition -> verifyInitialization(node.function, initializedVariables, traversedFunctions)
+            fun handleConditional(
+                condition: AstNode,
+                actionsWhenTrue: List<AstNode>,
+                actionsWhenFalse: List<AstNode>,
+                state: VerificationState
+            ): VerificationState? {
+                // no top-level returns in condition
+                verifyInitialization(condition, state)
+                val stateAfterTrue = state.copy()
+                val stateBeforeFirstReturnInTrue = handleInstructionBlock(actionsWhenTrue, stateAfterTrue)
+                val stateAfterFalse = state.copy()
+                val stateBeforeFirstReturnInFalse = handleInstructionBlock(actionsWhenFalse, stateAfterFalse)
+                state.add(stateAfterTrue intersect stateAfterFalse)
+                if (stateBeforeFirstReturnInTrue != null && stateBeforeFirstReturnInFalse != null) {
+                    return stateBeforeFirstReturnInTrue intersect stateBeforeFirstReturnInFalse
+                }
+                // even when only one side is potentially returning it makes the whole conditional potentially returning
+                if (stateBeforeFirstReturnInTrue != null) return stateBeforeFirstReturnInTrue intersect stateAfterFalse
+                if (stateBeforeFirstReturnInFalse != null) return stateBeforeFirstReturnInFalse intersect stateAfterTrue
+                return null
+            }
+
+            return when (node) {
+                is Statement.Evaluation -> verifyInitialization(node.expression, state)
+                is Statement.VariableDefinition -> verifyInitialization(node.variable, state)
+                is Global.VariableDefinition -> verifyInitialization(node.variable, state)
+                is Statement.FunctionDefinition -> verifyInitialization(node.function, state)
+                is Global.FunctionDefinition -> verifyInitialization(node.function, state)
                 is Statement.Assignment -> {
-                    verifyInitialization(node.value, initializedVariables, traversedFunctions)
+                    verifyInitialization(node.value, state)
                     // the variable will be initialized after assignment, not before
-                    initializedVariables.add(nameResolution[Ref(node)]!!)
+                    state.initializedVariables.add(nameResolution[Ref(node)]!!)
+                    null
                 }
-                is Statement.Block -> node.block.forEach { verifyInitialization(it, initializedVariables, traversedFunctions) }
-                is Statement.Conditional -> handleConditional(node.condition, node.actionWhenTrue, node.actionWhenFalse)
+                is Statement.Block -> handleInstructionBlock(node.block, state)
+                is Statement.Conditional -> {
+                    handleConditional(
+                        node.condition,
+                        node.actionWhenTrue, node.actionWhenFalse ?: listOf(), state
+                    )
+                }
                 is Statement.Loop -> {
-                    verifyInitialization(node.condition, initializedVariables, traversedFunctions)
-                    handleIsolatedStatementBlock(node.action)
+                    verifyInitialization(node.condition, state)
+                    handleLoopBody(node.action)
                 }
                 is Statement.ForeachLoop -> {
-                    verifyInitialization(node.generatorCall, initializedVariables, traversedFunctions)
+                    verifyInitialization(node.generatorCall, state)
                     // this variable should be very basic, so there is no need to traverse it
-                    initializedVariables.add(Ref(node.receivingVariable))
-                    handleIsolatedStatementBlock(node.action)
+                    state.initializedVariables.add(Ref(node.receivingVariable))
+                    handleLoopBody(node.action)
                 }
-                is Statement.FunctionReturn -> verifyInitialization(node.value, initializedVariables, traversedFunctions)
-                is Statement.GeneratorYield -> verifyInitialization(node.value, initializedVariables, traversedFunctions)
+                is Statement.FunctionReturn -> {
+                    // the return value itself cannot contain a top-level return
+                    verifyInitialization(node.value, state)
+                    return state.copy()
+                }
+                is Statement.GeneratorYield -> verifyInitialization(node.value, state)
                 is Expression.Variable -> {
                     val resolvedVariable: NamedNode = nameResolution[Ref(node)]!!.value
-                    if (Ref(resolvedVariable) !in initializedVariables) {
+                    if (Ref(resolvedVariable) !in state.initializedVariables) {
                         diagnostics.report(ReferenceToUninitializedVariable(resolvedVariable))
                     }
+                    null
                 }
                 is Expression.FunctionCall -> {
-                    node.arguments.forEach { verifyInitialization(it, initializedVariables, traversedFunctions) }
+                    // arguments will not contain top-level returns
+                    node.arguments.forEach { verifyInitialization(it, state) }
                     val resolvedFunction: Function = nameResolution[Ref(node)]!!.value as Function
-                    if (Ref(resolvedFunction) !in traversedFunctions) {
-                        traversedFunctions.add(Ref(resolvedFunction))
-                        resolvedFunction.body.forEach { verifyInitialization(it, initializedVariables, traversedFunctions) }
+                    var stateBeforeFirstReturn: VerificationState? = null
+                    if (Ref(resolvedFunction) !in state.traversedFunctions) {
+                        state.traversedFunctions.add(Ref(resolvedFunction))
+                        stateBeforeFirstReturn = handleInstructionBlock(resolvedFunction.body, state)
                     }
+                    stateBeforeFirstReturn?.let { state.restore(it) }
+                    null
                 }
-                is Expression.FunctionCall.Argument -> verifyInitialization(node.value, initializedVariables, traversedFunctions)
-                is Expression.UnaryOperation -> verifyInitialization(node.operand, initializedVariables, traversedFunctions)
+                is Expression.FunctionCall.Argument -> verifyInitialization(node.value, state)
+                is Expression.UnaryOperation -> verifyInitialization(node.operand, state)
                 is Expression.BinaryOperation -> {
-                    verifyInitialization(node.leftOperand, initializedVariables, traversedFunctions)
+                    verifyInitialization(node.leftOperand, state)
                     when (node.kind) {
-                        in listOf(AND, OR) -> verifyInitialization(
-                            node.rightOperand,
-                            initializedVariables.toMutableSet(), traversedFunctions.toMutableSet()
-                        )
-                        else -> verifyInitialization(node.rightOperand, initializedVariables, traversedFunctions)
+                        in listOf(AND, OR) -> verifyInitialization(node.rightOperand, state.copy())
+                        else -> verifyInitialization(node.rightOperand, state)
                     }
+                    // no top-level return in binary operation
+                    null
                 }
-                is Expression.Conditional -> handleConditional(node.condition, listOf(node.resultWhenTrue), listOf(node.resultWhenFalse))
-                is Function -> node.parameters.forEach { verifyInitialization(it, initializedVariables, traversedFunctions) }
+                is Expression.Conditional -> handleConditional(
+                    node.condition, listOf(node.resultWhenTrue), listOf(node.resultWhenFalse),
+                    state
+                )
+                is Function -> {
+                    node.parameters.forEach { verifyInitialization(it, state) }
+                    // no top-level return in parameters
+                    null
+                }
                 is Function.Parameter -> {
-                    initializedVariables.add(Ref(node))
-                    defaultParameterMapping[Ref(node)]?.let { initializedVariables.add(Ref(it)) }
-                    node.defaultValue?.let { verifyInitialization(it, initializedVariables, traversedFunctions) }
+                    state.initializedVariables.add(Ref(node))
+                    defaultParameterMapping[Ref(node)]?.let { state.initializedVariables.add(Ref(it)) }
+                    node.defaultValue?.let { verifyInitialization(it, state) }
+                    null
                 }
                 is Variable -> {
                     if (node.value != null) {
-                        verifyInitialization(node.value, initializedVariables, traversedFunctions)
-                        initializedVariables.add(Ref(node))
+                        verifyInitialization(node.value, state)
+                        state.initializedVariables.add(Ref(node))
                     }
+                    null
                 }
-                else -> {}
+                else -> null
             }
         }
-        val initializedVariables: MutableSet<Ref<NamedNode>> = mutableRefSetOf()
-        val traversedFunctions: MutableSet<Ref<Function>> = mutableRefSetOf()
-        ast.globals.forEach { verifyInitialization(it, initializedVariables, traversedFunctions) }
+        val state = VerificationState()
+        ast.globals.forEach { verifyInitialization(it, state) }
         // we now need to simulate the execution of top level functions to verify their correctness
         ast.globals.filterIsInstance<Global.FunctionDefinition>().forEach {
-            val initializedVariablesLocal = initializedVariables.toMutableSet()
-            val traversedFunctionsLocal = traversedFunctions.toMutableSet()
+            val stateLocal = state.copy()
             // don't traverse this function, we're doing this now
-            traversedFunctionsLocal.add(Ref(it.function))
-            it.function.body.forEach { instruction ->
-                verifyInitialization(
-                    instruction,
-                    initializedVariablesLocal, traversedFunctionsLocal
-                )
-            }
+            stateLocal.traversedFunctions.add(Ref(it.function))
+            // don't care about returns, there is no parent function in global context
+            it.function.body.forEach { instruction -> verifyInitialization(instruction, stateLocal) }
         }
     }
 }

@@ -1,6 +1,5 @@
 package compiler.e2e
 
-import javax.tools.Diagnostic
 import kotlin.test.Test
 
 class CorrectProgramsE2eTest {

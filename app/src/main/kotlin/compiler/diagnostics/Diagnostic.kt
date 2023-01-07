@@ -267,6 +267,12 @@ sealed interface Diagnostic {
             ) : TypeCheckingError(listOf(function)) {
                 override val errorMessage = "The function neither returns unit, nor has a 'return' statement."
             }
+
+            class ReturnWithValueInGenerator(
+                returnStatement: Statement.FunctionReturn,
+            ) : TypeCheckingError(listOf(returnStatement)) {
+                override val errorMessage = "The generator returns with value."
+            }
         }
 
         sealed class VariablePropertiesError(astNodes: List<AstNode>) : ResolutionDiagnostic(astNodes) {

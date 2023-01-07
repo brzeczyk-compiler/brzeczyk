@@ -1166,9 +1166,9 @@ class TypeCheckerTest {
         assertEquals(listOf<Diagnostic>(TypeCheckingError.ConditionalTypesMismatch(conditional, Type.Number, Type.Boolean)), diagnosticsList)
     }
 
-    // przekaz f() -> Liczba {}
+    // przekaźnik f() -> Liczba {}
     // czynność główna() {
-    //     dostając x: Czy od f() { }
+    //     otrzymując x: Czy od f() { }
     // }
 
     @Test
@@ -1192,7 +1192,7 @@ class TypeCheckerTest {
         assertEquals(listOf<Diagnostic>(TypeCheckingError.InvalidType(generatorCall, Type.Number, Type.Boolean)), diagnosticsList)
     }
 
-    // przekaz f() -> Czy {
+    // przekaźnik f() -> Czy {
     //    przekaż 12
     // }
 
@@ -1207,5 +1207,22 @@ class TypeCheckerTest {
         }
 
         assertEquals(listOf<Diagnostic>(TypeCheckingError.InvalidType(generatorYield.value, Type.Number, Type.Boolean)), diagnosticsList)
+    }
+
+    // przekaźnik f() -> Liczba {
+    //     zwróć 12
+    // }
+
+    @Test
+    fun `test generator return with value`() {
+        val generatorReturn = Statement.FunctionReturn(Expression.NumberLiteral(12))
+        val generator = Function("f", emptyList(), Type.Boolean, listOf(generatorReturn), true)
+        val program = Program(listOf(Program.Global.FunctionDefinition(generator)))
+
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
+        }
+
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.ReturnWithValueInGenerator(generatorReturn)), diagnosticsList)
     }
 }

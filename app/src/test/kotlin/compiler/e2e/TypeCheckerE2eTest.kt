@@ -31,6 +31,10 @@ class TypeCheckerE2eTest {
         assertErrorOfType(program, Diagnostic.ResolutionDiagnostic.TypeCheckingError.MissingReturnStatement::class)
     }
 
+    private fun assertReturnWithValueInGenerator(program: String) {
+        assertErrorOfType(program, Diagnostic.ResolutionDiagnostic.TypeCheckingError.ReturnWithValueInGenerator::class)
+    }
+
     @Test
     fun `test instantiate variable with wrong type`() {
         assertInvalidTypeError("zm a: Liczba = prawda;")
@@ -89,49 +93,49 @@ class TypeCheckerE2eTest {
     fun `test receiving variables with incorrect types`() {
         assertInvalidTypeError(
             """
-                przekaz f() -> Liczba {}
+                przekaźnik f() -> Liczba {}
                 czynność główna() {
-                    dostając x: Czy od f() { }
+                    otrzymując x: Czy od f() { }
                 }
             """
         )
         assertInvalidTypeError(
             """
-                przekaz f() -> Liczba {}
+                przekaźnik f() -> Liczba {}
                 czynność główna() {
-                    dostając x: Nic od f() { }
+                    otrzymując x: Nic od f() { }
                 }
             """
         )
         assertInvalidTypeError(
             """
-                przekaz f() -> Czy {}
+                przekaźnik f() -> Czy {}
                 czynność główna() {
-                    dostając x: Liczba od f() { }
+                    otrzymując x: Liczba od f() { }
                 }
             """
         )
         assertInvalidTypeError(
             """
-                przekaz f() -> Czy {}
+                przekaźnik f() -> Czy {}
                 czynność główna() {
-                    dostając x: Nic od f() { }
+                    otrzymując x: Nic od f() { }
                 }
             """
         )
         assertInvalidTypeError(
             """
-                przekaz f() -> Nic {}
+                przekaźnik f() -> Nic {}
                 czynność główna() {
-                    dostając x: Liczba od f() { }
+                    otrzymując x: Liczba od f() { }
                 }
             """
         )
         assertInvalidTypeError(
             """
-                przekaz f() -> Nic {}
+                przekaźnik f() -> Nic {}
                 czynność główna() {
-                    dostając x: Czy od f() { }
+                    otrzymując x: Czy od f() { }
                 }
             """
         )
@@ -731,43 +735,90 @@ class TypeCheckerE2eTest {
     fun `test wrong yield type`() {
         assertInvalidTypeError(
             """
-                przekaz f() -> Liczba {
+                przekaźnik f() -> Liczba {
                     przekaż fałsz
                 }
             """
         )
         assertInvalidTypeError(
             """
-                przekaz f() -> Liczba {
+                przekaźnik f() -> Liczba {
                     przekaż nic
                 }
             """
         )
         assertInvalidTypeError(
             """
-                przekaz f() -> Czy {
+                przekaźnik f() -> Czy {
                     przekaż 123
                 }
             """
         )
         assertInvalidTypeError(
             """
-                przekaz f() -> Czy {
+                przekaźnik f() -> Czy {
                     przekaż nic
                 }
             """
         )
         assertInvalidTypeError(
             """
-                przekaz f() -> Nic {
+                przekaźnik f() -> Nic {
                     przekaż 123
                 }
             """
         )
         assertInvalidTypeError(
             """
-                przekaz f() -> Nic {
+                przekaźnik f() -> Nic {
                     przekaż prawda
+                }
+            """
+        )
+    }
+
+    @Ignore
+    @Test
+    fun `test return with value in a generator`() {
+        assertReturnWithValueInGenerator(
+            """
+                przekaźnik f() -> Liczba {
+                    zwróć 123
+                }
+            """
+        )
+        assertReturnWithValueInGenerator(
+            """
+                przekaźnik f() -> Liczba {
+                    zwróć fałsz
+                }
+            """
+        )
+        assertReturnWithValueInGenerator(
+            """
+                przekaźnik f() -> Czy {
+                    zwróć prawda
+                }
+            """
+        )
+        assertReturnWithValueInGenerator(
+            """
+                przekaźnik f() -> Czy {
+                    zwróć 17
+                }
+            """
+        )
+        assertProgramCorrect(
+            """
+                przekaźnik f() -> Liczba {
+                    zakończ
+                }
+            """
+        )
+        assertProgramCorrect(
+            """
+                przekaźnik f() -> Czy {
+                    zakończ
                 }
             """
         )

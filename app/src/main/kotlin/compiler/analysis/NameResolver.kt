@@ -27,19 +27,23 @@ object NameResolver {
          */
         private val variables: Stack<NamedNode> = Stack() // will only contain Variable and Function.Parameter
         private val functions: Stack<Function> = Stack()
+        private val generators: Stack<Function> = Stack()
 
         fun addVariable(variable: NamedNode) = variables.add(variable)
         fun addFunction(function: Function) = functions.add(function)
+        fun addGenerator(function: Function) = generators.add(function)
 
         fun topVariable(): NamedNode = variables.peek()
         fun topFunction(): Function = functions.peek()
+        fun topGenerator(): Function = generators.peek()
 
         fun popVariable(): NamedNode = variables.pop()
         fun popFunction(): Function = functions.pop()
+        fun popGenerator(): Function = generators.pop()
 
         fun isEmpty(): Boolean = variables.isEmpty() && functions.isEmpty()
-        fun onlyHasVariables(): Boolean = variables.isNotEmpty() && functions.isEmpty()
-        fun onlyHasFunctions(): Boolean = functions.isNotEmpty() && variables.isEmpty()
+        fun onlyHasVariables(): Boolean = variables.isNotEmpty() && functions.isEmpty() && generators.isEmpty()
+        fun onlyHasCallables(): Boolean = (functions.isNotEmpty() || generators.isNotEmpty()) && variables.isEmpty()
     }
 
     data class Result(val nameDefinitions: Map<Ref<AstNode>, Ref<NamedNode>>, val programStaticDepth: Int)
@@ -69,7 +73,7 @@ object NameResolver {
                     diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.UndefinedVariable(astNode))
                 if (astNode is Statement.Assignment)
                     diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.AssignmentToUndefinedVariable(astNode))
-            } else if (visibleNames[name]!!.onlyHasFunctions()) {
+            } else if (visibleNames[name]!!.onlyHasCallables()) {
                 if (astNode is Expression.Variable)
                     diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.FunctionIsNotVariable(visibleNames[name]!!.topFunction(), astNode))
                 if (astNode is Statement.Assignment)
@@ -105,8 +109,10 @@ object NameResolver {
                 visibleNames[name] = NameOverloadState()
             if (node is Variable || node is Function.Parameter)
                 visibleNames[name]!!.addVariable(node)
-            if (node is Function)
+            else if (node is Function && !node.isGenerator)
                 visibleNames[name]!!.addFunction(node)
+            else if (node is Function)
+                visibleNames[name]!!.addGenerator(node)
         }
 
         fun destroyScope(scope: MutableMap<String, NamedNode>) {
@@ -114,8 +120,10 @@ object NameResolver {
                 // if (name, node) exists in scope then the node has to be on top of the corresponding NameOverloadState stack
                 if (node is Variable || node is Function.Parameter)
                     visibleNames[name]!!.popVariable()
-                if (node is Function)
+                else if (node is Function && !node.isGenerator)
                     visibleNames[name]!!.popFunction()
+                else if (node is Function)
+                    visibleNames[name]!!.popGenerator()
 
                 // invariant: no node of a particular name exists <==> visibleNames[name] does not exist
                 if (visibleNames[name]!!.isEmpty())
@@ -196,7 +204,9 @@ object NameResolver {
 
                 is Expression.FunctionCall -> {
                     if (!checkFunctionUsage(node)) {
-                        nameDefinitions[Ref(node)] = Ref(visibleNames[node.name]!!.topFunction())
+                        // if this is a generator call then analysis of Statement.ForEachLoop has already resolved this name
+                        if (!nameDefinitions.containsKey(Ref(node)))
+                            nameDefinitions[Ref(node)] = Ref(visibleNames[node.name]!!.topFunction())
                         node.arguments.forEach { analyzeNode(it, currentScope) }
                     }
                 }
@@ -270,6 +280,28 @@ object NameResolver {
                 is Statement.FunctionReturn -> {
                     analyzeNode(node.value, currentScope)
                 }
+
+                is Statement.ForeachLoop -> {
+                    val newScope = makeScope() // foreach body introduces a new scope
+
+                    // receiving variable and generator call are treated as they belonged to the new scope
+                    analyzeNode(node.receivingVariable, newScope)
+
+                    // resolve name for generator call. The subsequent analyzeNode won't update the name resolution for this call
+                    if (!checkFunctionUsage(node.generatorCall)) {
+                        nameDefinitions[Ref(node.generatorCall)] =
+                            Ref(visibleNames[node.generatorCall.name]!!.topGenerator())
+                    }
+                    analyzeNode(node.generatorCall, newScope)
+
+                    node.action.forEach { analyzeNode(it, newScope) }
+                    destroyScope(newScope)
+                }
+
+                is Statement.GeneratorYield -> {
+                    analyzeNode(node.value, currentScope)
+                }
+
                 else -> {}
             }
         }

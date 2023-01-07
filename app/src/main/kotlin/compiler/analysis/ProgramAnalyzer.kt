@@ -27,6 +27,7 @@ object ProgramAnalyzer {
         val argumentResolution = ArgumentResolver.calculateArgumentToParameterResolution(ast, nameResolution, diagnostics)
         val expressionTypes = TypeChecker.calculateTypes(ast, nameResolution, argumentResolution.argumentsToParametersMap, diagnostics)
         val defaultParameterMapping = DefaultParameterResolver.mapFunctionParametersToDummyVariables(ast)
+        InitializationVerifier.verifyAccessedVariablesAreInitialized(ast, nameResolution, defaultParameterMapping, diagnostics)
         val functionReturnedValueVariables = ReturnValueVariableCreator.createDummyVariablesForFunctionReturnValue(ast)
         val variableProperties = VariablePropertiesAnalyzer.calculateVariableProperties(ast, nameResolution, defaultParameterMapping, functionReturnedValueVariables, argumentResolution.accessedDefaultValues, diagnostics)
 

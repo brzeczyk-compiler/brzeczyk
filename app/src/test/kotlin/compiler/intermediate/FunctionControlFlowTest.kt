@@ -34,7 +34,7 @@ class FunctionControlFlowTest {
         return node
     }
 
-    private fun getExpressionCFG(expression: Expression, variable: Variable?, function: Function): ControlFlowGraph {
+    private fun getExpressionCFG(expression: Expression, variable: Variable?, function: Function, accessNodeConsumer: ((ControlFlowGraph, IFTNode) -> Unit)?): ControlFlowGraph {
         val node = expressionNodes[Ref(expression)]?.get(Ref(variable))
         val nodeList = node?.let { listOf(it.value) } ?: emptyList()
         return ControlFlowGraph(nodeList, node?.value, refMapOf(), refMapOf(), refMapOf())

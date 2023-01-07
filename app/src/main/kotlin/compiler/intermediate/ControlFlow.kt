@@ -37,7 +37,7 @@ object ControlFlow {
         val globalVariableAccessGenerator = GlobalVariableAccessGenerator(programProperties.variableProperties)
         val callGraph = createCallGraph(program, programProperties.nameResolution)
 
-        fun partiallyAppliedCreateGraphForExpression(expression: Expression, targetVariable: Variable?, currentFunction: Function): ControlFlowGraph {
+        fun partiallyAppliedCreateGraphForExpression(expression: Expression, targetVariable: Variable?, currentFunction: Function, accessNodeConsumer: ((ControlFlowGraph, IFTNode) -> Unit)?): ControlFlowGraph {
             return createGraphForExpression(
                 expression,
                 targetVariable,
@@ -49,7 +49,8 @@ object ControlFlow {
                 generatorDetailsGenerators,
                 programProperties.argumentResolution,
                 programProperties.defaultParameterMapping,
-                globalVariableAccessGenerator
+                globalVariableAccessGenerator,
+                accessNodeConsumer
             )
         }
 
@@ -127,7 +128,8 @@ object ControlFlow {
         generatorDetailsGenerators: Map<Ref<Function>, GeneratorDetailsGenerator>,
         argumentResolution: ArgumentResolutionResult,
         defaultParameterMapping: Map<Ref<Function.Parameter>, Variable>,
-        globalVariablesAccessGenerator: VariableAccessGenerator
+        globalVariablesAccessGenerator: VariableAccessGenerator,
+        accessNodeConsumer: ((ControlFlowGraph, IFTNode) -> Unit)? = null // if not provided, access node will be added at the end of cfg
     ): ControlFlowGraph {
         fun getVariablesModifiedBy(function: Function): Set<Ref<Variable>> {
             val possiblyCalledFunctions = callGraph[Ref(function)]!! + refSetOf(function)
@@ -367,16 +369,20 @@ object ControlFlow {
         if (targetVariable != null) {
             val owner = variableProperties[Ref(targetVariable)]!!.owner
             cfgBuilder.addNextTree(variableAccessGenerators[Ref(owner)]!!.genWrite(targetVariable, result, owner === currentFunction))
-        } else {
+        } else if (accessNodeConsumer == null) {
             cfgBuilder.addNextTree(result)
         }
 
-        return cfgBuilder.build()
+        return cfgBuilder.build().also {
+            if (accessNodeConsumer != null) {
+                accessNodeConsumer(it, result)
+            }
+        }
     }
 
     fun createGraphForEachFunction(
         program: Program,
-        createGraphForExpression: (Expression, Variable?, Function) -> ControlFlowGraph,
+        createGraphForExpression: (Expression, Variable?, Function, ((ControlFlowGraph, IFTNode) -> Unit)?) -> ControlFlowGraph,
         nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
         defaultParameterValues: Map<Ref<Function.Parameter>, Variable>,
         functionReturnedValueVariables: Map<Ref<Function>, Variable>,
@@ -392,8 +398,9 @@ object ControlFlow {
             var last = listOf<Pair<IFTNode, CFGLinkType>?>(null)
             var breaking: MutableList<Pair<IFTNode, CFGLinkType>?>? = null
             var continuing: MutableList<Pair<IFTNode, CFGLinkType>?>? = null
+            var returning: MutableList<Pair<IFTNode, CFGLinkType>?> = mutableListOf()
 
-            fun processStatementBlock(block: StatementBlock) {
+            fun processStatementBlock(block: StatementBlock, returnCleanup: (() -> Unit)? = null) { // returnCleanup asserts that all returning nodes are in "last"
                 fun addCfg(cfg: ControlFlowGraph): IFTNode? {
                     val entry = cfg.entryTreeRoot
                     if (entry != null) {
@@ -411,8 +418,17 @@ object ControlFlow {
                     addCfg(ControlFlowGraphBuilder().addSingleTree(node).build())
                 }
 
-                fun addExpression(expression: Expression, variable: Variable?): IFTNode? {
-                    return addCfg(createGraphForExpression(expression, variable, function))
+                fun addExpression(expression: Expression, variable: Variable?, accessNodeConsumer: ((ControlFlowGraph, IFTNode) -> Unit)? = null): IFTNode? {
+                    return if (accessNodeConsumer == null)
+                        addCfg(createGraphForExpression(expression, variable, function, null))
+                    else run {
+                        var result: IFTNode? = null
+                        createGraphForExpression(expression, variable, function) { cfg, node ->
+                            result = addCfg(cfg)
+                            accessNodeConsumer(cfg, node)
+                        }
+                        result
+                    }
                 }
 
                 fun addLoop(conditionEntry: IFTNode, generateLoopBody: () -> Unit) {
@@ -436,6 +452,9 @@ object ControlFlow {
                     breaking = outerBreaking
                     continuing = outerContinuing
                 }
+
+                val outerReturning = returning
+                returning = mutableListOf()
 
                 for (statement in block) {
                     if (last.isEmpty())
@@ -507,34 +526,41 @@ object ControlFlow {
 
                         is Statement.FunctionReturn -> {
                             addExpression(statement.value, functionReturnedValueVariables[Ref(function)])
+                            returning.addAll(last)
                             last = emptyList()
                         }
 
                         is Statement.ForeachLoop -> {
-                            val genName = statement.generatorCall.name
-                            val gdg = getGeneratorDetailsGenerator(genName)
-                            addExpression(statement.generatorCall, null) // initialization
-                            val generatorId = last.first()!!.first
-                            val stateMemoryAddress = gdg.getNestedForeachFramePointerAddress(statement)
+                            val gdg = getGeneratorDetailsGenerator(statement.generatorCall.name)
+                            val frameMemoryAddress = getGeneratorDetailsGenerator(function.name).getNestedForeachFramePointerAddress(statement)
 
-                            // generator state, initially 0
-                            val (readState, writeState) = run {
-                                if (stateMemoryAddress == null) {
-                                    val lastPosition = Register()
-                                    addNode(IFTNode.RegisterWrite(lastPosition, IFTNode.Const(0)))
-                                    Pair(
-                                        { IFTNode.RegisterRead(lastPosition) },
-                                        { node: IFTNode -> IFTNode.RegisterWrite(lastPosition, node) }
-                                    )
-                                } else { // we need to use provided address
-                                    Pair(
-                                        { IFTNode.MemoryRead(stateMemoryAddress) },
-                                        { node: IFTNode -> IFTNode.MemoryWrite(stateMemoryAddress, node) }
-                                    )
+                            val generatorId = run {
+                                var result: IFTNode? = null
+                                addExpression(statement.generatorCall, null) { _, node -> // initialization
+                                    result = if (frameMemoryAddress == null) {
+                                        val idReg = Register()
+                                        addNode(IFTNode.RegisterWrite(idReg, node))
+                                        IFTNode.RegisterRead(idReg)
+                                    } else {
+                                        addNode(IFTNode.MemoryWrite(frameMemoryAddress, node))
+                                        IFTNode.MemoryRead(frameMemoryAddress)
+                                    }
                                 }
+                                result!!
                             }
 
-                            val resume = gdg.genResumeCall(generatorId, readState())
+                            // generator state, initially 0
+                            val lastPosition = Register()
+                            addNode(IFTNode.RegisterWrite(lastPosition, IFTNode.Const(0)))
+
+                            fun finalize() {
+                                frameMemoryAddress?.let {
+                                    addNode(IFTNode.MemoryWrite(frameMemoryAddress, IFTNode.Const(0)))
+                                }
+                                addCfg(gdg.genFinalizeCall(generatorId).callGraph)
+                            }
+
+                            val resume = gdg.genResumeCall(generatorId, IFTNode.RegisterRead(lastPosition))
                             val resumeEntry = addCfg(resume.callGraph)!!
 
                             addNode(
@@ -543,27 +569,34 @@ object ControlFlow {
                                 )
                             )
                             addLoop(resumeEntry) {
-                                addNode(writeState(resume.secondResult))
+                                addNode(IFTNode.RegisterWrite(lastPosition, resume.secondResult))
                                 addNode(createWriteToVariable(resume.result!!, statement.receivingVariable, function))
-                                processStatementBlock(statement.action)
+                                processStatementBlock(statement.action, ::finalize)
                             }
 
-                            stateMemoryAddress?.let {
-                                addNode(writeState(IFTNode.Const(0)))
-                            }
-                            addCfg(gdg.genFinalizeCall(generatorId).callGraph)
+                            finalize()
                         }
 
-                        is Statement.GeneratorYield -> addCfg(
-                            getGeneratorDetailsGenerator(function.name).genYield(
-                                run {
-                                    addExpression(statement.value, null)
-                                    last.first()!!.first
-                                }
-                            )
-                        )
+                        is Statement.GeneratorYield -> {
+                            addExpression(statement.value, null) { _, node ->
+                                addCfg(getGeneratorDetailsGenerator(function.name).genYield(node))
+                            }
+                        }
                     }
                 }
+
+                returnCleanup?.let {
+                    val prevLast = last
+                    last = returning
+
+                    returnCleanup()
+
+                    returning = last.toMutableList()
+                    last = prevLast
+                }
+
+                outerReturning.addAll(returning)
+                returning = outerReturning
             }
 
             processStatementBlock(function.body)

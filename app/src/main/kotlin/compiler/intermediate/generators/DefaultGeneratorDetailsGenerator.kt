@@ -36,6 +36,15 @@ class DefaultGeneratorDetailsGenerator(
         return finalizeFDG.genCall(listOf(framePointer))
     }
 
+    private fun setupBasePointer(framePointer: IFTNode, newBaseRegister: Register) =
+        IFTNode.RegisterWrite(
+            newBaseRegister,
+            IFTNode.Add(
+                framePointer,
+                IFTNode.Const(frameSize)
+            )
+        )
+
     override fun genInit(): ControlFlowGraph {
         val cfgBuilder = ControlFlowGraphBuilder()
 
@@ -50,15 +59,7 @@ class DefaultGeneratorDetailsGenerator(
 
         // prepare custom base
         val customBaseRegister = Register.RCX // FIXME: consider using a virtual register here
-        cfgBuilder.addSingleTree(
-            IFTNode.RegisterWrite(
-                customBaseRegister,
-                IFTNode.Add(
-                    initFDG.genRead(initResultVariable, true),
-                    IFTNode.Const(frameSize)
-                )
-            )
-        )
+        cfgBuilder.addSingleTree(setupBasePointer(initFDG.genRead(initResultVariable, true), customBaseRegister))
 
         // copy arguments
         parameters.forEach {
@@ -91,15 +92,7 @@ class DefaultGeneratorDetailsGenerator(
 
         // setup base pointer
         cfgBuilder.addSingleTree(IFTNode.StackPush(IFTNode.RegisterRead(Register.RBP)))
-        cfgBuilder.addSingleTree(
-            IFTNode.RegisterWrite(
-                Register.RBP,
-                IFTNode.Add(
-                    IFTNode.RegisterRead(framePointerRegister),
-                    IFTNode.Const(frameSize)
-                )
-            )
-        )
+        cfgBuilder.addSingleTree(setupBasePointer(IFTNode.RegisterRead(framePointerRegister), Register.RBP))
 
         // update display entry
         cfgBuilder.mergeUnconditionally(innerFDG.genDisplayUpdate())
@@ -178,14 +171,18 @@ class DefaultGeneratorDetailsGenerator(
         // generate the prologue
         cfgBuilder.mergeUnconditionally(finalizeFDG.genPrologue())
 
+        // prepare custom base
+        val customBaseRegister = Register.R15 // R15 is callee-saved FIXME: consider using a virtual register here
+        cfgBuilder.addSingleTree(setupBasePointer(finalizeFDG.genRead(finalizeFramePointerParameter, true), customBaseRegister))
+
         // recursively finalize all active nested foreach loops
         nestedForeachLoops.forEach {
             val checkNode = IFTNode.Equals(
-                IFTNode.MemoryRead(getNestedForeachFramePointerAddress(it.value)!!),
+                IFTNode.MemoryRead(getNestedForeachFramePointerAddressWithCustomBase(it.value, customBaseRegister)!!),
                 IFTNode.Const(0)
             )
             cfgBuilder.addSingleTree(checkNode)
-            val callCFG = this.genFinalizeCall(IFTNode.MemoryRead(getNestedForeachFramePointerAddress(it.value)!!)).callGraph // FIXME: supply different GDG object than this
+            val callCFG = this.genFinalizeCall(IFTNode.MemoryRead(getNestedForeachFramePointerAddressWithCustomBase(it.value, customBaseRegister)!!)).callGraph // FIXME: supply different GDG object than this
             cfgBuilder.addAllFrom(callCFG)
             cfgBuilder.addLink(Pair(checkNode, CFGLinkType.CONDITIONAL_FALSE), callCFG.entryTreeRoot!!)
         }

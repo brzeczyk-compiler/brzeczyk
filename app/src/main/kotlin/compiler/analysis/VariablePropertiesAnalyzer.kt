@@ -88,6 +88,14 @@ object VariablePropertiesAnalyzer {
                 is Statement.Loop -> (sequenceOf(node.condition) + node.action.asSequence())
                     .forEach { analyzeVariables(it, currentFunction) }
                 is Statement.FunctionReturn -> analyzeVariables(node.value, currentFunction)
+                is Statement.ForeachLoop -> {
+                    mutableVariableProperties[Ref(node.receivingVariable)] = MutableVariableProperties(currentFunction ?: GlobalContext)
+                    analyzeVariables(node.generatorCall, currentFunction)
+                    node.action.forEach { analyzeVariables(it, currentFunction) }
+                }
+                is Statement.GeneratorYield -> {
+                    analyzeVariables(node.value, currentFunction)
+                }
                 is Expression.Variable -> {
                     val resolvedVariable: NamedNode = nameResolution[Ref(node)]!!.value
                     mutableVariableProperties[Ref(resolvedVariable)]!!.accessedIn.add(Ref(currentFunction!!))

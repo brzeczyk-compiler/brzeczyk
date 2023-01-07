@@ -3,6 +3,7 @@ package compiler.e2e
 import compiler.diagnostics.Diagnostic
 import compiler.e2e.E2eTestUtils.assertErrorOfType
 import compiler.e2e.E2eTestUtils.assertProgramCorrect
+import org.junit.Ignore
 import kotlin.test.Test
 
 class TypeCheckerE2eTest {
@@ -78,6 +79,59 @@ class TypeCheckerE2eTest {
                 }
                 czynność g() {
                     zm a: Czy = f()
+                }
+            """
+        )
+    }
+
+    @Ignore
+    @Test
+    fun `test receiving variables with incorrect types`() {
+        assertInvalidTypeError(
+            """
+                przekaz f() -> Liczba {}
+                czynność główna() {
+                    dostając x: Czy od f() { }
+                }
+            """
+        )
+        assertInvalidTypeError(
+            """
+                przekaz f() -> Liczba {}
+                czynność główna() {
+                    dostając x: Nic od f() { }
+                }
+            """
+        )
+        assertInvalidTypeError(
+            """
+                przekaz f() -> Czy {}
+                czynność główna() {
+                    dostając x: Liczba od f() { }
+                }
+            """
+        )
+        assertInvalidTypeError(
+            """
+                przekaz f() -> Czy {}
+                czynność główna() {
+                    dostając x: Nic od f() { }
+                }
+            """
+        )
+        assertInvalidTypeError(
+            """
+                przekaz f() -> Nic {}
+                czynność główna() {
+                    dostając x: Liczba od f() { }
+                }
+            """
+        )
+        assertInvalidTypeError(
+            """
+                przekaz f() -> Nic {}
+                czynność główna() {
+                    dostając x: Czy od f() { }
                 }
             """
         )
@@ -667,6 +721,53 @@ class TypeCheckerE2eTest {
             """
                 czynność f() -> Czy {
                     zwróć 654
+                }
+            """
+        )
+    }
+
+    @Ignore
+    @Test
+    fun `test wrong yield type`() {
+        assertInvalidTypeError(
+            """
+                przekaz f() -> Liczba {
+                    przekaż fałsz
+                }
+            """
+        )
+        assertInvalidTypeError(
+            """
+                przekaz f() -> Liczba {
+                    przekaż nic
+                }
+            """
+        )
+        assertInvalidTypeError(
+            """
+                przekaz f() -> Czy {
+                    przekaż 123
+                }
+            """
+        )
+        assertInvalidTypeError(
+            """
+                przekaz f() -> Czy {
+                    przekaż nic
+                }
+            """
+        )
+        assertInvalidTypeError(
+            """
+                przekaz f() -> Nic {
+                    przekaż 123
+                }
+            """
+        )
+        assertInvalidTypeError(
+            """
+                przekaz f() -> Nic {
+                    przekaż prawda
                 }
             """
         )

@@ -96,6 +96,7 @@ class Compiler(val diagnostics: Diagnostics) {
                     functionDetailsGenerators
                         .filter { it.key.value.implementation is Function.Implementation.Foreign }
                         .map { it.value.identifier },
+                    // TODO: add identifiers of foreign generators
                     finalCode.map { functionCode ->
                         functionDetailsGenerators[functionCode.key]!!.identifier to
                             CodeSection.FunctionCode(

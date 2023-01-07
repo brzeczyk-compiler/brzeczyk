@@ -63,7 +63,13 @@ class Compiler(val diagnostics: Diagnostics) {
                 diagnostics.hasAnyError()
             )
 
-            val functionCFGs = createGraphForProgram(astWithBuiltinFunctions, programProperties, functionDetailsGenerators, diagnostics)
+            val functionCFGs = createGraphForProgram(
+                astWithBuiltinFunctions,
+                programProperties,
+                functionDetailsGenerators,
+                emptyMap(), // TODO: provide generator details generators
+                diagnostics
+            )
 
             val mainFunction = FunctionDependenciesAnalyzer.extractMainFunction(ast, diagnostics)
 

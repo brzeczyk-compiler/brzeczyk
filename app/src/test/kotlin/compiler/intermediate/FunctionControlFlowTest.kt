@@ -49,7 +49,9 @@ class FunctionControlFlowTest {
         object : Diagnostics {
             override fun report(diagnostic: Diagnostic) { diagnostics.add(diagnostic) }
             override fun hasAnyError(): Boolean { throw RuntimeException("This method shouldn't be called") }
-        }
+        },
+        { _, _, _ -> throw NotImplementedError() }, // TODO: write some tests for yield and foreach
+        { throw NotImplementedError() }
     )
 
     // czynność f() { }

@@ -114,6 +114,7 @@ class ExpressionControlFlowTest {
                 variableProperties,
                 finalCallGraph,
                 functionDetailsGenerators,
+                emptyMap(),
                 argumentResolution,
                 keyRefMapOf(),
                 object : VariableAccessGenerator {

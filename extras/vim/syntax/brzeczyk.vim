@@ -23,9 +23,9 @@ syn keyword nnKeywordBoolLiteral fałsz prawda
 syn keyword nnKeywordOtherLiteral nic
 syn keyword nnKeywordCondition jeśli wpp
 syn match   nnKeywordElif '\<zaś gdy\>'
-syn keyword nnKeywordLoop dopóki
+syn keyword nnKeywordLoop dopóki otrzymując od
 syn keyword nnKeywordOperator nie lub oraz wtw albo
-syn keyword nnKeywordOther zm wart stała przerwij pomiń zwróć zakończ czynność zewnętrzna jako
+syn keyword nnKeywordOther zm wart stała przerwij pomiń zwróć zakończ czynność zew jako przekaźnik przekaż
 
 " Ranges
 syn match nnParenthesisError ')'

@@ -204,7 +204,7 @@ class CorrectProgramsE2eTest {
         E2eTestUtils.assertProgramCorrect(
             """
             czynność napisz(wartość: Liczba = 0) {
-                zewnętrzna czynność print_int64(wartość: Liczba) jako napisz
+                zew czynność print_int64(wartość: Liczba) jako napisz
                 napisz(-wartość)
             }
             
@@ -229,9 +229,10 @@ class CorrectProgramsE2eTest {
                 
                         x = x + 1
                 
-                        if (x == 42)
-                            zakończ // możliwa tylko forma bez wartości
+                        if (x % 2 == 0)
+                            przekaż (100 + x/2)
                     }
+                    zakończ // możliwa tylko forma bez wartości
                 }
                 
                 otrzymując x: Liczba od f(25) { 

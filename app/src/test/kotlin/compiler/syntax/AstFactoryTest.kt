@@ -227,7 +227,7 @@ class AstFactoryTest {
             NonTerminalType.PROGRAM, Productions.program,
             makeNTNode(
                 NonTerminalType.FOREIGN_DECL, Productions.foreignDecl,
-                makeTNode(TokenType.FOREIGN, "zewnętrzna"),
+                makeTNode(TokenType.FOREIGN, "zew"),
                 makeTNode(TokenType.FUNCTION, "czynność"),
                 makeTNode(TokenType.IDENTIFIER, "poboczna0"),
                 makeTNode(TokenType.LEFT_PAREN, "("),
@@ -245,7 +245,7 @@ class AstFactoryTest {
             makeTNode(TokenType.NEWLINE, "\n"),
             makeNTNode(
                 NonTerminalType.FOREIGN_DECL, Productions.foreignDecl,
-                makeTNode(TokenType.FOREIGN, "zewnętrzna"),
+                makeTNode(TokenType.FOREIGN, "zew"),
                 makeTNode(TokenType.FUNCTION, "czynność"),
                 makeTNode(TokenType.IDENTIFIER, "poboczna1"),
                 makeTNode(TokenType.LEFT_PAREN, "("),
@@ -257,7 +257,7 @@ class AstFactoryTest {
             makeTNode(TokenType.NEWLINE, "\n"),
             makeNTNode(
                 NonTerminalType.FOREIGN_DECL, Productions.foreignDecl,
-                makeTNode(TokenType.FOREIGN, "zewnętrzna"),
+                makeTNode(TokenType.FOREIGN, "zew"),
                 makeTNode(TokenType.FUNCTION, "czynność"),
                 makeTNode(TokenType.FOREIGN_NAME, "`_Poboczna2`"),
                 makeTNode(TokenType.LEFT_PAREN, "("),
@@ -269,7 +269,7 @@ class AstFactoryTest {
             makeTNode(TokenType.SEMICOLON, ";"),
             makeNTNode(
                 NonTerminalType.FOREIGN_DECL, Productions.foreignDecl,
-                makeTNode(TokenType.FOREIGN, "zewnętrzna"),
+                makeTNode(TokenType.FOREIGN, "zew"),
                 makeTNode(TokenType.FUNCTION, "czynność"),
                 makeTNode(TokenType.FOREIGN_NAME, "`Poboczna3`"),
                 makeTNode(TokenType.LEFT_PAREN, "("),
@@ -283,7 +283,7 @@ class AstFactoryTest {
             makeTNode(TokenType.NEWLINE, "\n"),
             makeNTNode(
                 NonTerminalType.FOREIGN_DECL, Productions.foreignDecl,
-                makeTNode(TokenType.FOREIGN, "zewnętrzna"),
+                makeTNode(TokenType.FOREIGN, "zew"),
                 makeTNode(TokenType.GENERATOR, "przekaźnik"),
                 makeTNode(TokenType.IDENTIFIER, "zew_generator"),
                 makeTNode(TokenType.LEFT_PAREN, "("),
@@ -373,7 +373,7 @@ class AstFactoryTest {
             NonTerminalType.PROGRAM, Productions.program,
             makeNTNode(
                 NonTerminalType.FOREIGN_DECL, Productions.foreignDecl,
-                makeTNode(TokenType.FOREIGN, "zewnętrzna"),
+                makeTNode(TokenType.FOREIGN, "zew"),
                 makeTNode(TokenType.FUNCTION, "czynność"),
                 makeTNode(TokenType.FOREIGN_NAME, "`Poboczna`"),
                 makeTNode(TokenType.LEFT_PAREN, "("),

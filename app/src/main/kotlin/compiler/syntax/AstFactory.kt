@@ -366,12 +366,12 @@ object AstFactory {
                     (children[1] as ParseTree.Leaf).content,
                     processType(children[3]),
                     null,
-                    combineLocations(children.subList(1, 3)),
+                    combineLocations(children.subList(1, 4)),
                 )
                 val generatorCall = Expression.FunctionCall(
                     (children[5] as ParseTree.Leaf).content,
                     processFunctionCallArguments(children[7], diagnostics),
-                    combineLocations(children.subList(5, 7)),
+                    combineLocations(children.subList(5, 9)),
                 )
                 val action = processMaybeBlock(children[9], diagnostics)
                 Statement.ForeachLoop(receivingVariable, generatorCall, action, combineLocations(children))

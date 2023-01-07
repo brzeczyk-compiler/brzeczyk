@@ -61,8 +61,8 @@ object ControlFlow {
             return variableAccessGenerators[Ref(owner)]!!.genWrite(variable, iftNode, owner === currentFunction)
         }
 
-        fun getGeneratorDetailsGenerator(generatorName: String) =
-            generatorDetailsGenerators.filter { it.key.value.name == generatorName }.toList().first().second
+        fun getGeneratorDetailsGenerator(generator: Function) =
+            generatorDetailsGenerators[Ref(generator)]!!
 
         val cfgForEachFunction = createGraphForEachFunction(
             program,
@@ -388,7 +388,7 @@ object ControlFlow {
         functionReturnedValueVariables: Map<Ref<Function>, Variable>,
         diagnostics: Diagnostics,
         createWriteToVariable: (IFTNode, Variable, Function) -> IFTNode,
-        getGeneratorDetailsGenerator: (String) -> GeneratorDetailsGenerator
+        getGeneratorDetailsGenerator: (Function) -> GeneratorDetailsGenerator
     ): Map<Ref<Function>, ControlFlowGraph> {
         val controlFlowGraphs = mutableKeyRefMapOf<Function, ControlFlowGraph>()
 
@@ -531,8 +531,10 @@ object ControlFlow {
                         }
 
                         is Statement.ForeachLoop -> {
-                            val gdg = getGeneratorDetailsGenerator(statement.generatorCall.name)
-                            val frameMemoryAddress = getGeneratorDetailsGenerator(function.name).getNestedForeachFramePointerAddress(statement)
+                            val gdg = getGeneratorDetailsGenerator(nameResolution[Ref(statement.generatorCall)]!!.value as Function)
+                            val frameMemoryAddress = if (function.isGenerator)
+                                getGeneratorDetailsGenerator(function).getNestedForeachFramePointerAddress(statement)
+                            else null
 
                             val generatorId = run {
                                 var result: IFTNode? = null
@@ -554,19 +556,17 @@ object ControlFlow {
                             addNode(IFTNode.RegisterWrite(lastPosition, IFTNode.Const(0)))
 
                             fun finalize() {
+                                addCfg(gdg.genFinalizeCall(generatorId).callGraph)
                                 frameMemoryAddress?.let {
                                     addNode(IFTNode.MemoryWrite(frameMemoryAddress, IFTNode.Const(0)))
                                 }
-                                addCfg(gdg.genFinalizeCall(generatorId).callGraph)
                             }
 
                             val resume = gdg.genResumeCall(generatorId, IFTNode.RegisterRead(lastPosition))
                             val resumeEntry = addCfg(resume.callGraph)!!
 
                             addNode(
-                                IFTNode.Negation(
-                                    IFTNode.Equals(resume.secondResult!!, IFTNode.Const(0))
-                                )
+                                IFTNode.NotEquals(resume.secondResult!!, IFTNode.Const(0))
                             )
                             addLoop(resumeEntry) {
                                 addNode(IFTNode.RegisterWrite(lastPosition, resume.secondResult))
@@ -579,7 +579,7 @@ object ControlFlow {
 
                         is Statement.GeneratorYield -> {
                             addExpression(statement.value, null) { _, node ->
-                                addCfg(getGeneratorDetailsGenerator(function.name).genYield(node))
+                                addCfg(getGeneratorDetailsGenerator(function).genYield(node))
                             }
                         }
                     }

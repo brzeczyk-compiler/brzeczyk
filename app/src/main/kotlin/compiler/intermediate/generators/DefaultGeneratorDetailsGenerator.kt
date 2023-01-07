@@ -55,7 +55,6 @@ class DefaultGeneratorDetailsGenerator(
         val mallocCall = mallocFDG.genCall(listOf(IFTNode.Const(frameSize)))
         cfgBuilder.mergeUnconditionally(mallocCall.callGraph)
         cfgBuilder.addSingleTree(initFDG.genWrite(initResultVariable, mallocCall.result!!, true))
-        // TODO: check whether allocation was successful
 
         // prepare custom base
         val customBaseRegister = Register.RCX // FIXME: consider using a virtual register here
@@ -206,7 +205,7 @@ class DefaultGeneratorDetailsGenerator(
 
     // Function details generators
     private companion object {
-        val mallocFDG = ForeignFunctionDetailsGenerator(IFTNode.MemoryLabel("malloc"), 1)
+        val mallocFDG = ForeignFunctionDetailsGenerator(IFTNode.MemoryLabel("\$checked_malloc"), 1)
         val freeFDG = ForeignFunctionDetailsGenerator(IFTNode.MemoryLabel("free"), 0)
     }
 

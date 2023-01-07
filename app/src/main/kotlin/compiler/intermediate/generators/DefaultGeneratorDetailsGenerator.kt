@@ -1,5 +1,6 @@
 package compiler.intermediate.generators
 
+import compiler.ast.AstNode
 import compiler.ast.Function
 import compiler.ast.NamedNode
 import compiler.ast.Statement
@@ -21,7 +22,9 @@ class DefaultGeneratorDetailsGenerator(
     depth: ULong,
     variablesLocationTypes: Map<Ref<NamedNode>, VariableLocationType>,
     displayAddress: IFTNode,
-    private val nestedForeachLoops: List<Ref<Statement.ForeachLoop>>
+    private val nestedForeachLoops: List<Ref<Statement.ForeachLoop>>,
+    private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>, // constructor doesn't use this argument, thus incomplete map can be passed
+    private val generatorDetailsGenerators: Map<Ref<Function>, GeneratorDetailsGenerator> // constructor doesn't use this argument, thus incomplete map can be passed
 ) : GeneratorDetailsGenerator {
 
     override fun genInitCall(args: List<IFTNode>): FunctionDetailsGenerator.FunctionCallIntermediateForm {
@@ -176,12 +179,13 @@ class DefaultGeneratorDetailsGenerator(
 
         // recursively finalize all active nested foreach loops
         nestedForeachLoops.forEach {
-            val checkNode = IFTNode.Equals(
-                IFTNode.MemoryRead(getNestedForeachFramePointerAddressWithCustomBase(it.value, customBaseRegister)!!),
-                IFTNode.Const(0)
-            )
+            val getFramePointerReadNode = { IFTNode.MemoryRead(getNestedForeachFramePointerAddressWithCustomBase(it.value, customBaseRegister)!!) }
+
+            val checkNode = IFTNode.Equals(getFramePointerReadNode(), IFTNode.Const(0))
             cfgBuilder.addSingleTree(checkNode)
-            val callCFG = this.genFinalizeCall(IFTNode.MemoryRead(getNestedForeachFramePointerAddressWithCustomBase(it.value, customBaseRegister)!!)).callGraph // FIXME: supply different GDG object than this
+
+            val targetGDG = generatorDetailsGenerators[nameResolution[Ref(it.value.generatorCall)]!!]!!
+            val callCFG = targetGDG.genFinalizeCall(getFramePointerReadNode()).callGraph
             cfgBuilder.addAllFrom(callCFG)
             cfgBuilder.addLink(Pair(checkNode, CFGLinkType.CONDITIONAL_FALSE), callCFG.entryTreeRoot!!)
         }

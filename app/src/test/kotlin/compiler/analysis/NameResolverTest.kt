@@ -86,6 +86,7 @@ internal class NameResolverTest {
         val nameDefinitions = result.nameDefinitions
 
         // Check the result mapping
+        assertEquals(5, nameDefinitions.size)
 
         assertContains(nameDefinitions, Ref(fCall1))
         assertContains(nameDefinitions, Ref(fCall2))
@@ -100,6 +101,124 @@ internal class NameResolverTest {
         assertEquals(nameDefinitions[Ref(xUseInF)], Ref(xParam))
         assertEquals(nameDefinitions[Ref(xUseInG)], Ref(xVar))
         assertEquals(nameDefinitions[Ref(yUseInG)], Ref(yParam))
+
+        assertEquals(1, result.programStaticDepth)
+    }
+
+    @Test fun `test name resolution with generator`() {
+        /*
+        Create AST for program:
+        ---------------------------------
+        zew czynność f(a: Liczba) -> Liczba {
+            zm x: Liczba = 1
+            dopóki (x <= a) {
+                przekaż x
+                x = x + 1
+                if (x >= 42)
+                    zakończ
+            }
+        }
+
+        czynność główna() {
+            otrzymując x: Liczba od f(5) {
+                x = 5
+            }
+        }
+        */
+
+        val fUse = Expression.FunctionCall(
+            "f",
+            listOf(Expression.FunctionCall.Argument(null, Expression.NumberLiteral(5)))
+        )
+        val xMain = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
+        val xMainAssignment = Statement.Assignment("x", Expression.NumberLiteral(5))
+
+        val aF = Function.Parameter("a", Type.Number, null)
+        val xF = Variable(Variable.Kind.VARIABLE, "x", Type.Number, Expression.NumberLiteral(1))
+
+        val xFYield = Expression.Variable("x")
+        val xFCmp1 = Expression.Variable("x")
+        val aFCmp = Expression.Variable("a")
+        val fCmp1 = Expression.BinaryOperation(Expression.BinaryOperation.Kind.LESS_THAN_OR_EQUALS, xFCmp1, aFCmp)
+        val xFRead = Expression.Variable("x")
+        val xFAssign = Statement.Assignment(
+            "x",
+            Expression.BinaryOperation(
+                Expression.BinaryOperation.Kind.ADD,
+                xFRead,
+                Expression.NumberLiteral(1)
+            )
+        )
+        val xFCmp2 = Expression.Variable("x")
+        val fCmp2 = Expression.BinaryOperation(
+            Expression.BinaryOperation.Kind.LESS_THAN_OR_EQUALS,
+            xFCmp2,
+            Expression.NumberLiteral(42)
+        )
+
+        val fGenerator = Function(
+            "f",
+            listOf(aF),
+            Type.Number,
+            listOf(
+                Statement.VariableDefinition(xF),
+                Statement.Loop(
+                    fCmp1,
+                    listOf(
+                        Statement.GeneratorYield(xFYield),
+                        xFAssign,
+                        Statement.Conditional(
+                            fCmp2,
+                            listOf(
+                                Statement.FunctionReturn(
+                                    Expression.UnitLiteral()
+                                )
+                            ),
+                            null
+                        )
+                    )
+                )
+            ),
+            true
+        )
+
+        val program = Program(
+            listOf(
+                Program.Global.FunctionDefinition(fGenerator),
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "główna",
+                        listOf(),
+                        Type.Unit,
+                        listOf(Statement.ForeachLoop(xMain, fUse, listOf(xMainAssignment))),
+                        false
+                    )
+                )
+            )
+        )
+
+        val result = NameResolver.calculateNameResolution(program, mockk())
+        val nameDefinitions = result.nameDefinitions
+
+        assertEquals(8, nameDefinitions.size)
+
+        assertContains(nameDefinitions, Ref(xFCmp1))
+        assertContains(nameDefinitions, Ref(aFCmp))
+        assertContains(nameDefinitions, Ref(xFYield))
+        assertContains(nameDefinitions, Ref(xFRead))
+        assertContains(nameDefinitions, Ref(xFAssign))
+        assertContains(nameDefinitions, Ref(xFCmp2))
+        assertContains(nameDefinitions, Ref(fUse))
+        assertContains(nameDefinitions, Ref(xMainAssignment))
+
+        assertEquals(nameDefinitions[Ref(xFCmp1)], Ref(xF))
+        assertEquals(nameDefinitions[Ref(aFCmp)], Ref(aF))
+        assertEquals(nameDefinitions[Ref(xFYield)], Ref(xF))
+        assertEquals(nameDefinitions[Ref(xFRead)], Ref(xF))
+        assertEquals(nameDefinitions[Ref(xFAssign)], Ref(xF))
+        assertEquals(nameDefinitions[Ref(xFCmp2)], Ref(xF))
+        assertEquals(nameDefinitions[Ref(fUse)], Ref(fGenerator))
+        assertEquals(nameDefinitions[Ref(xMainAssignment)], Ref(xMain))
 
         assertEquals(1, result.programStaticDepth)
     }

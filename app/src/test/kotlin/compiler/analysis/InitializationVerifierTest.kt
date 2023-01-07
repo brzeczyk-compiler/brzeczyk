@@ -168,7 +168,7 @@ class InitializationVerifierTest {
         checkDiagnostics(program, nameResolution, listOf(ReferenceToUninitializedVariable(x)))
     }
 
-// czynność zewnętrzna() {
+    // czynność zewnętrzna() {
     //     zm x: Liczba
     //     jeśli (fałsz) zwróć
     //     zm y: Liczba = x
@@ -201,7 +201,7 @@ class InitializationVerifierTest {
 
     // czynność zewnętrzna() {
     //     zm x: Liczba
-    //     jeżeli (fałsz) {
+    //     jeśli (fałsz) {
     //          x = 123
     //     } wpp {
     //          x = 124
@@ -243,7 +243,7 @@ class InitializationVerifierTest {
     //          x = 123
     //          zwróć fałsz
     //     }
-    //     jeżeli (wewnętrzna()) {
+    //     jeśli (wewnętrzna()) {
     //          zwróć x
     //     }
     //     zm y: Liczba = x

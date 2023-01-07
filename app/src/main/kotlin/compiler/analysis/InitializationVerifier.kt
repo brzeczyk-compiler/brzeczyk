@@ -130,7 +130,12 @@ object InitializationVerifier {
                     verifyInitialization(node.value, state)
                     return state.copy()
                 }
-                is Statement.GeneratorYield -> verifyInitialization(node.value, state)
+                is Statement.GeneratorYield -> {
+                    // yield itself will not contain a top-level return
+                    verifyInitialization(node.value, state)
+                    // we might never come back if the calling for each loop breaks
+                    return state.copy()
+                }
                 is Expression.Variable -> {
                     val resolvedVariable: NamedNode = nameResolution[Ref(node)]!!.value
                     if (Ref(resolvedVariable) !in state.initializedVariables) {

@@ -10,7 +10,7 @@ enum class TokenType {
     IF, ELSE_IF, ELSE,
     WHILE, BREAK, CONTINUE,
     // Function related keywords
-    RETURN, RETURN_UNIT, FUNCTION, FOREIGN, AS,
+    RETURN, RETURN_UNIT, FUNCTION, FOREIGN1, FOREIGN2, AS,
     // Generators related keywords
     GENERATOR, YIELD, FOR_EACH, FROM,
     // Special characters

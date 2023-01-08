@@ -30,7 +30,8 @@ object LanguageTokens {
             Pair(TokenType.RETURN, "zwróć"),
             Pair(TokenType.RETURN_UNIT, "zakończ"),
             Pair(TokenType.FUNCTION, "czynność"),
-            Pair(TokenType.FOREIGN, "zew"),
+            Pair(TokenType.FOREIGN1, "zewnętrzna"),
+            Pair(TokenType.FOREIGN2, "zewnętrzny"),
             Pair(TokenType.AS, "jako"),
 
             // Generators related keywords

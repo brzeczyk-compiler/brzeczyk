@@ -227,7 +227,7 @@ class AstFactoryTest {
             NonTerminalType.PROGRAM, Productions.program,
             makeNTNode(
                 NonTerminalType.FOREIGN_DECL, Productions.foreignDecl,
-                makeTNode(TokenType.FOREIGN, "zew"),
+                makeTNode(TokenType.FOREIGN1, "zewnętrzna"),
                 makeTNode(TokenType.FUNCTION, "czynność"),
                 makeTNode(TokenType.IDENTIFIER, "poboczna0"),
                 makeTNode(TokenType.LEFT_PAREN, "("),
@@ -245,7 +245,7 @@ class AstFactoryTest {
             makeTNode(TokenType.NEWLINE, "\n"),
             makeNTNode(
                 NonTerminalType.FOREIGN_DECL, Productions.foreignDecl,
-                makeTNode(TokenType.FOREIGN, "zew"),
+                makeTNode(TokenType.FOREIGN1, "zewnętrzna"),
                 makeTNode(TokenType.FUNCTION, "czynność"),
                 makeTNode(TokenType.IDENTIFIER, "poboczna1"),
                 makeTNode(TokenType.LEFT_PAREN, "("),
@@ -257,7 +257,7 @@ class AstFactoryTest {
             makeTNode(TokenType.NEWLINE, "\n"),
             makeNTNode(
                 NonTerminalType.FOREIGN_DECL, Productions.foreignDecl,
-                makeTNode(TokenType.FOREIGN, "zew"),
+                makeTNode(TokenType.FOREIGN1, "zewnętrzna"),
                 makeTNode(TokenType.FUNCTION, "czynność"),
                 makeTNode(TokenType.FOREIGN_NAME, "`_Poboczna2`"),
                 makeTNode(TokenType.LEFT_PAREN, "("),
@@ -269,7 +269,7 @@ class AstFactoryTest {
             makeTNode(TokenType.SEMICOLON, ";"),
             makeNTNode(
                 NonTerminalType.FOREIGN_DECL, Productions.foreignDecl,
-                makeTNode(TokenType.FOREIGN, "zew"),
+                makeTNode(TokenType.FOREIGN1, "zewnętrzna"),
                 makeTNode(TokenType.FUNCTION, "czynność"),
                 makeTNode(TokenType.FOREIGN_NAME, "`Poboczna3`"),
                 makeTNode(TokenType.LEFT_PAREN, "("),
@@ -283,7 +283,7 @@ class AstFactoryTest {
             makeTNode(TokenType.NEWLINE, "\n"),
             makeNTNode(
                 NonTerminalType.FOREIGN_DECL, Productions.foreignDecl,
-                makeTNode(TokenType.FOREIGN, "zew"),
+                makeTNode(TokenType.FOREIGN2, "zewnętrzny"),
                 makeTNode(TokenType.GENERATOR, "przekaźnik"),
                 makeTNode(TokenType.IDENTIFIER, "zew_generator"),
                 makeTNode(TokenType.LEFT_PAREN, "("),
@@ -303,6 +303,29 @@ class AstFactoryTest {
                 makeTNode(TokenType.IDENTIFIER, "mój_generator")
             ),
             makeTNode(TokenType.NEWLINE, "\n"),
+            makeNTNode(
+                NonTerminalType.FOREIGN_DECL, Productions.foreignDecl,
+                makeTNode(TokenType.FOREIGN1, "zewnętrzny"),
+                makeTNode(TokenType.FUNCTION, "czynność"),
+                makeTNode(TokenType.IDENTIFIER, "odmieniony"),
+                makeTNode(TokenType.LEFT_PAREN, "("),
+                makeNTNode(NonTerminalType.DEF_ARGS, Productions.defArgs1),
+                makeTNode(TokenType.RIGHT_PAREN, ")"),
+                makeTNode(TokenType.ARROW, "->"),
+                makeNTNode(NonTerminalType.TYPE, Productions.type, makeTNode(TokenType.TYPE_INTEGER, "Liczba")),
+            ),
+            makeTNode(TokenType.NEWLINE, "\n"),
+            makeNTNode(
+                NonTerminalType.FOREIGN_DECL, Productions.foreignDecl,
+                makeTNode(TokenType.FOREIGN2, "zewnętrzna"),
+                makeTNode(TokenType.GENERATOR, "przekaźnik"),
+                makeTNode(TokenType.IDENTIFIER, "odmieniona"),
+                makeTNode(TokenType.LEFT_PAREN, "("),
+                makeNTNode(NonTerminalType.DEF_ARGS, Productions.defArgs1),
+                makeTNode(TokenType.RIGHT_PAREN, ")"),
+                makeTNode(TokenType.ARROW, "->"),
+                makeNTNode(NonTerminalType.TYPE, Productions.type, makeTNode(TokenType.TYPE_INTEGER, "Liczba")),
+            ),
         )
         val expectedAst = Program(
             listOf(
@@ -361,6 +384,28 @@ class AstFactoryTest {
                     ),
                     dummyLocationRange
                 ),
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "odmieniony",
+                        listOf(),
+                        Type.Number,
+                        Function.Implementation.Foreign("odmieniony"),
+                        false,
+                        dummyLocationRange
+                    ),
+                    dummyLocationRange
+                ),
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "odmieniona",
+                        listOf(),
+                        Type.Number,
+                        Function.Implementation.Foreign("odmieniona"),
+                        true,
+                        dummyLocationRange
+                    ),
+                    dummyLocationRange
+                ),
             )
         )
 
@@ -373,7 +418,7 @@ class AstFactoryTest {
             NonTerminalType.PROGRAM, Productions.program,
             makeNTNode(
                 NonTerminalType.FOREIGN_DECL, Productions.foreignDecl,
-                makeTNode(TokenType.FOREIGN, "zew"),
+                makeTNode(TokenType.FOREIGN1, "zewnętrzna"),
                 makeTNode(TokenType.FUNCTION, "czynność"),
                 makeTNode(TokenType.FOREIGN_NAME, "`Poboczna`"),
                 makeTNode(TokenType.LEFT_PAREN, "("),

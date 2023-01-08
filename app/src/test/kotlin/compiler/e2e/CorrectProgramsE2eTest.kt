@@ -215,4 +215,38 @@ class CorrectProgramsE2eTest {
             """
         )
     }
+
+    @Test
+    fun `test generators`() {
+        // TODO: exchange to "assertProgramCorrect" after the next phases are implemented
+        E2eTestUtils.assertNoDiagnosticsOfType(
+            """
+            czynność główna() {
+                przekaźnik mój_generator(a: Liczba = 17) -> Liczba {
+                    zm x: Liczba = 1
+                    dopóki (x <= a) {
+                        przekaż x
+                
+                        x = x + 1
+                
+                        if (x % 2 == 0)
+                            przekaż (100 + x/2)
+                    }
+                    zakończ // możliwa tylko forma bez wartości
+                }
+                
+                otrzymując x: Liczba od f(25) { 
+                    if (x == 10)
+                        pomiń
+            
+                    napisz(x)
+            
+                    if (x == 20)
+                        przerwij
+                }
+            }
+            """,
+            compiler.diagnostics.Diagnostic.ParserError::class,
+        )
+    }
 }

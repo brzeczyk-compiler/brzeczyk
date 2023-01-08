@@ -22,8 +22,8 @@ object LanguageGrammar {
         val const = getProduction("CONST", "{tINTEGER}|{tTRUE_CONSTANT}|{tFALSE_CONSTANT}|{tUNIT_CONSTANT}")
 
         val varDecl = getProduction("VAR_DECL", "({tVARIABLE}|{tVALUE}|{tCONSTANT})$NLS{tIDENTIFIER}$NLS{tCOLON}$NLS{nTYPE}({tASSIGNMENT}$NLS{nEXPR})?")
-        val funcDef = getProduction("FUNC_DEF", "{tFUNCTION}$NLS{tIDENTIFIER}$NLS{tLEFT_PAREN}$NLS{nDEF_ARGS}{tRIGHT_PAREN}($NLS{tARROW}$NLS{nTYPE})?{tLEFT_BRACE}{nMANY_STATEMENTS}{tRIGHT_BRACE}")
-        val foreignDecl = getProduction("FOREIGN_DECL", "{tFOREIGN}$NLS{tFUNCTION}$NLS({tIDENTIFIER}|{tFOREIGN_NAME})$NLS{tLEFT_PAREN}$NLS{nDEF_ARGS}{tRIGHT_PAREN}({tARROW}$NLS{nTYPE})?({tAS}$NLS{tIDENTIFIER})?")
+        val funcDef = getProduction("FUNC_DEF", "({tFUNCTION}|{tGENERATOR})$NLS{tIDENTIFIER}$NLS{tLEFT_PAREN}$NLS{nDEF_ARGS}{tRIGHT_PAREN}($NLS{tARROW}$NLS{nTYPE})?{tLEFT_BRACE}{nMANY_STATEMENTS}{tRIGHT_BRACE}")
+        val foreignDecl = getProduction("FOREIGN_DECL", "({tFOREIGN1}|{tFOREIGN2})$NLS({tFUNCTION}|{tGENERATOR})$NLS({tIDENTIFIER}|{tFOREIGN_NAME})$NLS{tLEFT_PAREN}$NLS{nDEF_ARGS}{tRIGHT_PAREN}({tARROW}$NLS{nTYPE})?({tAS}$NLS{tIDENTIFIER})?")
 
         val defArgs1 = getProduction("DEF_ARGS", "({nDEF_ARG}($NLS{tCOMMA}$NLS{nDEF_ARG})*$NLS({tCOMMA}$NLS{nDEF_ARG}$NLS{tASSIGNMENT}$NLS{nE_EXPR})*)?")
         val defArgs2 = getProduction("DEF_ARGS", "{nDEF_ARG}$NLS{tASSIGNMENT}$NLS{nE_EXPR}({tCOMMA}$NLS{nDEF_ARG}$NLS{tASSIGNMENT}$NLS{nE_EXPR})*")
@@ -152,10 +152,12 @@ object LanguageGrammar {
         val nonBraceStatementAtomic = getProduction("NON_BRACE_STATEMENT", "{nATOMIC_STATEMENT}({tNEWLINE}|{tSEMICOLON})$NLS")
         val nonBraceStatementIf = getProduction("NON_BRACE_STATEMENT", "{tIF}$NLS{tLEFT_PAREN}$NLS{nE_EXPR}{tRIGHT_PAREN}{nNON_IF_MAYBE_BLOCK}({tELSE_IF}$NLS{tLEFT_PAREN}$NLS{nE_EXPR}{tRIGHT_PAREN}{nNON_IF_MAYBE_BLOCK})*({tELSE}{nMAYBE_BLOCK})?")
         val nonBraceStatementWhile = getProduction("NON_BRACE_STATEMENT", "{tWHILE}$NLS{tLEFT_PAREN}$NLS{nE_EXPR}{tRIGHT_PAREN}{nMAYBE_BLOCK}")
+        val nonBraceStatementForEach = getProduction("NON_BRACE_STATEMENT", "{tFOR_EACH}$NLS{tIDENTIFIER}$NLS{tCOLON}$NLS{nTYPE}$NLS{tFROM}$NLS{tIDENTIFIER}{tLEFT_PAREN}$NLS{nCALL_ARGS}{tRIGHT_PAREN}{nMAYBE_BLOCK}")
         val nonBraceStatementFuncDef = getProduction("NON_BRACE_STATEMENT", "{nFUNC_DEF}$NLS")
 
         val nonIfNonBraceStatementAtomic = getProduction("NON_IF_NON_BRACE_STATEMENT", "{nATOMIC_STATEMENT}({tNEWLINE}|{tSEMICOLON})$NLS")
         val nonIfNonBraceStatementWhile = getProduction("NON_IF_NON_BRACE_STATEMENT", "{tWHILE}$NLS{tLEFT_PAREN}$NLS{nE_EXPR}{tRIGHT_PAREN}{nNON_IF_MAYBE_BLOCK}")
+        val nonIfNonBraceStatementForEach = getProduction("NON_IF_NON_BRACE_STATEMENT", "{tFOR_EACH}$NLS{tIDENTIFIER}$NLS{tCOLON}$NLS{nTYPE}$NLS{tFROM}$NLS{tIDENTIFIER}{tLEFT_PAREN}$NLS{nCALL_ARGS}{tRIGHT_PAREN}{nNON_IF_MAYBE_BLOCK}")
         val nonIfNonBraceStatementFuncDef = getProduction("NON_IF_NON_BRACE_STATEMENT", "{nFUNC_DEF}$NLS")
 
         val atomicExpr = getProduction("ATOMIC_STATEMENT", "{nEXPR}")
@@ -164,6 +166,7 @@ object LanguageGrammar {
         val atomicContinue = getProduction("ATOMIC_STATEMENT", "{tCONTINUE}")
         val atomicReturnUnit = getProduction("ATOMIC_STATEMENT", "{tRETURN_UNIT}")
         val atomicReturn = getProduction("ATOMIC_STATEMENT", "{tRETURN}$NLS{nEXPR}")
+        val atomicYield = getProduction("ATOMIC_STATEMENT", "{tYIELD}$NLS{nEXPR}")
         val atomicVarDef = getProduction("ATOMIC_STATEMENT", "{nVAR_DECL}")
         val atomicForeignDecl = getProduction("ATOMIC_STATEMENT", "{nFOREIGN_DECL}")
 
@@ -206,9 +209,9 @@ object LanguageGrammar {
                 maybeBlockNonBrace, maybeBlockBraces,
                 nonIfMaybeBlockNonBrace, nonIfMaybeBlockBraces,
                 statementNonBrace, statementBraces,
-                nonBraceStatementAtomic, nonBraceStatementIf, nonBraceStatementWhile, nonBraceStatementFuncDef,
-                nonIfNonBraceStatementAtomic, nonIfNonBraceStatementWhile, nonIfNonBraceStatementFuncDef,
-                atomicExpr, atomicAssignment, atomicBreak, atomicContinue, atomicReturnUnit, atomicReturn, atomicVarDef, atomicForeignDecl
+                nonBraceStatementAtomic, nonBraceStatementIf, nonBraceStatementWhile, nonBraceStatementForEach, nonBraceStatementFuncDef,
+                nonIfNonBraceStatementAtomic, nonIfNonBraceStatementWhile, nonIfNonBraceStatementForEach, nonIfNonBraceStatementFuncDef,
+                atomicExpr, atomicAssignment, atomicBreak, atomicContinue, atomicReturnUnit, atomicReturn, atomicYield, atomicVarDef, atomicForeignDecl
             )
         }
     }

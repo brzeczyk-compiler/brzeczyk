@@ -1225,4 +1225,19 @@ class TypeCheckerTest {
 
         assertEquals(listOf<Diagnostic>(TypeCheckingError.ReturnWithValueInGenerator(generatorReturn)), diagnosticsList)
     }
+
+    // przekaźnik f() -> Liczba {
+    //     zakończ
+    // }
+
+    @Test
+    fun `test generator return`() {
+        val generatorReturn = Statement.FunctionReturn(Expression.UnitLiteral(), true)
+        val generator = Function("f", emptyList(), Type.Boolean, listOf(generatorReturn), true)
+        val program = Program(listOf(Program.Global.FunctionDefinition(generator)))
+
+        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
+
+        assertEquals(emptyList(), diagnosticsList)
+    }
 }

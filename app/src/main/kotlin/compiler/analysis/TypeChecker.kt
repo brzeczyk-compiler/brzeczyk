@@ -110,9 +110,9 @@ class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
                     is Statement.LoopContinuation -> { } // TODO: check if inside a loop
 
                     is Statement.FunctionReturn -> {
-                        if (function.isGenerator)
+                        if (function.isGenerator && !statement.isNonValue)
                             report(TypeCheckingError.ReturnWithValueInGenerator(statement))
-                        else
+                        else if (!function.isGenerator)
                             checkExpression(statement.value, function.returnType)
                     }
                     is Statement.ForeachLoop -> {

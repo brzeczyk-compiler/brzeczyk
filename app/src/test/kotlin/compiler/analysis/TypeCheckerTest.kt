@@ -1192,36 +1192,6 @@ class TypeCheckerTest {
         assertEquals(listOf<Diagnostic>(TypeCheckingError.InvalidType(generatorCall, Type.Number, Type.Boolean)), diagnosticsList)
     }
 
-    // czynność f() -> Liczba {
-    //     zwróć 12
-    // }
-    // czynność główna() {
-    //     otrzymując x: Czy od f() { }
-    // }
-
-    @Test
-    fun `test foreach loop with non-generator function`() {
-        val returnStatement = Statement.FunctionReturn(Expression.NumberLiteral(12))
-        val function = Function("f", emptyList(), Type.Number, listOf(returnStatement))
-        val receivingVariable = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
-        val functionCall = Expression.FunctionCall("f", emptyList())
-        nameResolution[Ref(functionCall)] = Ref(function)
-        val loop = Statement.ForeachLoop(receivingVariable, functionCall, emptyList())
-        val main = mainFunction(listOf(loop))
-        val program = Program(
-            listOf(
-                Program.Global.FunctionDefinition(function),
-                Program.Global.FunctionDefinition(main)
-            )
-        )
-
-        assertFailsWith<TypeChecker.TypeCheckingFailed> {
-            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
-        }
-
-        assertEquals(listOf<Diagnostic>(TypeCheckingError.ForEachLoopOverNonGeneratorFunction(functionCall)), diagnosticsList)
-    }
-
     // przekaźnik f() -> Czy {
     //    przekaż 12
     // }

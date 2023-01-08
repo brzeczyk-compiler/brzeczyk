@@ -116,9 +116,6 @@ class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
                             checkExpression(statement.value, function.returnType)
                     }
                     is Statement.ForeachLoop -> {
-                        val calledFunction = nameResolution[Ref(statement.generatorCall)]!!.value
-                        if (calledFunction is Function && !calledFunction.isGenerator)
-                            report(TypeCheckingError.ForEachLoopOverNonGeneratorFunction(statement.generatorCall))
                         checkVariable(statement.receivingVariable, false)
                         checkExpression(statement.generatorCall, statement.receivingVariable.type)
                         checkBlock(statement.action)

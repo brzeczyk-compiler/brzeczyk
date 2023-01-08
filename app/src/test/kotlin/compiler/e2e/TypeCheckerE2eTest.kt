@@ -879,51 +879,6 @@ class TypeCheckerE2eTest {
         )
     }
 
-    @Ignore
-    @Test
-    fun `test for each loop over non-generator function`() {
-        assertForEachLoopOverNonGeneratorFunctionError(
-            """
-                czynność f() -> Liczba {
-                    zwróć 10
-                }
-                czynność główna() {
-                    otrzymując x: Liczba od f() { }
-                }
-            """
-        )
-        assertForEachLoopOverNonGeneratorFunctionError(
-            """
-                czynność f() -> Czy {
-                    zwróć fałsz
-                }
-                czynność główna() {
-                    otrzymując x: Czy od f() { }
-                }
-            """
-        )
-        assertForEachLoopOverNonGeneratorFunctionError(
-            """
-                czynność f(a: Liczba) -> Liczba {
-                    zwróć a + 2
-                }
-                czynność główna() {
-                    otrzymując x: Liczba od f(10) { }
-                }
-            """
-        )
-        assertForEachLoopOverNonGeneratorFunctionError(
-            """
-                czynność f(a: Liczba) -> Czy {
-                    zwróć a > 10
-                }
-                czynność główna() {
-                    otrzymując x: Czy od f(13) { }
-                }
-            """
-        )
-    }
-
     @Test
     fun `test wrong default parameter type`() {
         assertInvalidTypeError(

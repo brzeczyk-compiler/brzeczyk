@@ -26,6 +26,7 @@ class DefaultGeneratorDetailsGeneratorTest {
 
     private val depth: ULong = 3U
     private val displayAddress = IFTNode.Dummy()
+    private val dummyLoopToGDG: (Statement.ForeachLoop) -> GeneratorDetailsGenerator = { throw NotImplementedError() }
 
     private val argumentNode1 = IFTNode.Dummy()
     private val argumentNode2 = IFTNode.Dummy()
@@ -45,8 +46,7 @@ class DefaultGeneratorDetailsGeneratorTest {
             params.associate { Ref(it) to VariableLocationType.MEMORY },
             displayAddress,
             emptyList(),
-            emptyMap(),
-            emptyMap()
+            dummyLoopToGDG
         )
         val args = (0..7).map { IFTNode.Const(it.toLong()) }.toList()
 
@@ -82,8 +82,7 @@ class DefaultGeneratorDetailsGeneratorTest {
             emptyMap(),
             displayAddress,
             emptyList(),
-            emptyMap(),
-            emptyMap()
+            dummyLoopToGDG
         )
 
         val expectedCFGBuilder = ControlFlowGraphBuilder()
@@ -117,8 +116,7 @@ class DefaultGeneratorDetailsGeneratorTest {
             emptyMap(),
             displayAddress,
             emptyList(),
-            emptyMap(),
-            emptyMap()
+            dummyLoopToGDG
         )
 
         val expectedCFGBuilder = ControlFlowGraphBuilder()
@@ -151,8 +149,7 @@ class DefaultGeneratorDetailsGeneratorTest {
             keyRefMapOf(memVar to VariableLocationType.MEMORY),
             displayAddress,
             emptyList(),
-            emptyMap(),
-            emptyMap()
+            dummyLoopToGDG
         )
 
         var readMemVar = gdg.genRead(memVar, true)
@@ -189,8 +186,7 @@ class DefaultGeneratorDetailsGeneratorTest {
             keyRefMapOf(memVar to VariableLocationType.MEMORY),
             displayAddress,
             emptyList(),
-            emptyMap(),
-            emptyMap()
+            dummyLoopToGDG
         )
 
         var readMemVar = gdg.genRead(memVar, false)
@@ -222,8 +218,7 @@ class DefaultGeneratorDetailsGeneratorTest {
             keyRefMapOf(regVar to VariableLocationType.REGISTER),
             displayAddress,
             emptyList(),
-            emptyMap(),
-            emptyMap()
+            dummyLoopToGDG
         )
 
         val readRegVar = gdg.genRead(regVar, true)
@@ -244,8 +239,7 @@ class DefaultGeneratorDetailsGeneratorTest {
             keyRefMapOf(regVar to VariableLocationType.REGISTER),
             displayAddress,
             emptyList(),
-            emptyMap(),
-            emptyMap()
+            dummyLoopToGDG
         )
 
         assertFailsWith<DefaultFunctionDetailsGenerator.IndirectRegisterAccess> { gdg.genRead(regVar, false) }
@@ -264,8 +258,7 @@ class DefaultGeneratorDetailsGeneratorTest {
             keyRefMapOf(memVar to VariableLocationType.MEMORY),
             displayAddress,
             emptyList(),
-            emptyMap(),
-            emptyMap()
+            dummyLoopToGDG
         )
 
         val value = IFTNode.Const(1)
@@ -304,8 +297,7 @@ class DefaultGeneratorDetailsGeneratorTest {
             keyRefMapOf(memVar to VariableLocationType.MEMORY),
             displayAddress,
             emptyList(),
-            emptyMap(),
-            emptyMap()
+            dummyLoopToGDG
         )
 
         val value = IFTNode.Const(1)
@@ -339,8 +331,7 @@ class DefaultGeneratorDetailsGeneratorTest {
             keyRefMapOf(regVar to VariableLocationType.REGISTER),
             displayAddress,
             emptyList(),
-            emptyMap(),
-            emptyMap()
+            dummyLoopToGDG
         )
 
         val value = IFTNode.Const(1)
@@ -363,8 +354,7 @@ class DefaultGeneratorDetailsGeneratorTest {
             keyRefMapOf(regVar to VariableLocationType.REGISTER),
             displayAddress,
             emptyList(),
-            emptyMap(),
-            emptyMap()
+            dummyLoopToGDG
         )
 
         val value = IFTNode.Const(1)
@@ -389,8 +379,7 @@ class DefaultGeneratorDetailsGeneratorTest {
             keyRefMapOf(memVar to VariableLocationType.MEMORY),
             displayAddress,
             listOf(Ref(nestedForeach)),
-            emptyMap(),
-            emptyMap()
+            dummyLoopToGDG
         )
         gdg.resumeFDG.spilledRegistersRegionSize.settledValue = 8
 

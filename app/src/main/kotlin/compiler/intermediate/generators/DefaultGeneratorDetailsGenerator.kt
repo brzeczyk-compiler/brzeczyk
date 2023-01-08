@@ -1,6 +1,5 @@
 package compiler.intermediate.generators
 
-import compiler.ast.AstNode
 import compiler.ast.Function
 import compiler.ast.NamedNode
 import compiler.ast.Statement
@@ -23,8 +22,7 @@ class DefaultGeneratorDetailsGenerator(
     variablesLocationTypes: Map<Ref<NamedNode>, VariableLocationType>,
     displayAddress: IFTNode,
     private val nestedForeachLoops: List<Ref<Statement.ForeachLoop>>,
-    private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>, // constructor doesn't use this argument, thus incomplete map can be passed
-    private val generatorDetailsGenerators: Map<Ref<Function>, GeneratorDetailsGenerator> // constructor doesn't use this argument, thus incomplete map can be passed
+    private val getGDGForNestedLoop: (Statement.ForeachLoop) -> GeneratorDetailsGenerator
 ) : GeneratorDetailsGenerator {
 
     override fun genInitCall(args: List<IFTNode>): FunctionDetailsGenerator.FunctionCallIntermediateForm {
@@ -184,8 +182,7 @@ class DefaultGeneratorDetailsGenerator(
             val checkNode = IFTNode.Equals(getFramePointerReadNode(), IFTNode.Const(0))
             cfgBuilder.addSingleTree(checkNode)
 
-            val targetGDG = generatorDetailsGenerators[nameResolution[Ref(it.value.generatorCall)]!!]!!
-            val callCFG = targetGDG.genFinalizeCall(getFramePointerReadNode()).callGraph
+            val callCFG = getGDGForNestedLoop(it.value).genFinalizeCall(getFramePointerReadNode()).callGraph
             cfgBuilder.addAllFrom(callCFG)
             cfgBuilder.addLink(Pair(checkNode, CFGLinkType.CONDITIONAL_FALSE), callCFG.entryTreeRoot!!)
         }

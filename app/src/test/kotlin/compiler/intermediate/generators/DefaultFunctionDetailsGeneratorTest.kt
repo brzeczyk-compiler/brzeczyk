@@ -40,6 +40,7 @@ class DefaultFunctionDetailsGeneratorTest {
 
         assert(expected.isIsomorphicTo(result.callGraph))
         assertEquals(null, result.result)
+        assertEquals(null, result.secondResult)
     }
 
     @Test
@@ -73,6 +74,7 @@ class DefaultFunctionDetailsGeneratorTest {
 
         assert(expected.isIsomorphicTo(result.callGraph))
         assertEquals(null, result.result)
+        assertEquals(null, result.secondResult)
     }
 
     @Test
@@ -94,6 +96,7 @@ class DefaultFunctionDetailsGeneratorTest {
         val result = fdg.genCall(listOf())
         assert(expected.isIsomorphicTo(result.callGraph))
         assertEquals(expectedResult, result.result)
+        assertEquals(null, result.secondResult)
     }
 
     @Test
@@ -152,6 +155,7 @@ class DefaultFunctionDetailsGeneratorTest {
 
         assert(expected.isIsomorphicTo(result.callGraph))
         assertEquals(expectedResult, result.result)
+        assertEquals(null, result.secondResult)
     }
 
     @Test

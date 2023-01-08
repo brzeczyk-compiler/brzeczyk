@@ -30,7 +30,7 @@ class AllocationTest {
     fun `test program which uses no registers`() {
         val linearProgram = listOf(
             Instruction.InPlaceInstruction.Dummy(),
-            Instruction.RetInstruction.Dummy(),
+            Instruction.TerminalInstruction.Dummy(),
             Instruction.UnconditionalJumpInstruction.Dummy("targetLabel"),
             Instruction.ConditionalJumpInstruction.Dummy("targetLabel"),
             Label("targetLabel"),
@@ -71,7 +71,7 @@ class AllocationTest {
             Instruction.InPlaceInstruction.Dummy(
                 regsDefined = listOf(phReg4),
             ),
-            Instruction.RetInstruction.Dummy(),
+            Instruction.TerminalInstruction.Dummy(),
         )
         val livenessGraphs = Liveness.LivenessGraphs(mapOf(), mapOf())
         val orderedPhysicalRegisters = listOf(phReg1, phReg2, phReg3)
@@ -165,7 +165,7 @@ class AllocationTest {
             Instruction.InPlaceInstruction.Dummy(
                 regsUsed = listOf(reg3),
             ),
-            Instruction.RetInstruction.Dummy(),
+            Instruction.TerminalInstruction.Dummy(),
         )
         val livenessGraphs = Liveness.LivenessGraphs(mapOf(), mapOf())
         val orderedPhysicalRegisters = listOf(phReg1)
@@ -249,7 +249,7 @@ class AllocationTest {
             Instruction.InPlaceInstruction.Dummy(
                 regsDefined = listOf(reg3, reg4),
             ),
-            Instruction.RetInstruction.Dummy(),
+            Instruction.TerminalInstruction.Dummy(),
         )
         val livenessGraphs = Liveness.LivenessGraphs(mapOf(), mapOf())
         val allocatablePhysicalRegisters = listOf(phReg1, phReg2)

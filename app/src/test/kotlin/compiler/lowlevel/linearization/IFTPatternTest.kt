@@ -55,7 +55,9 @@ internal class IFTPatternTest {
         val patternRegWrite = IFTPattern.RegisterWrite(IFTPattern.AnyArgument("reg"))
         val patternStackPush = IFTPattern.StackPush()
         val patternStackPop = IFTPattern.StackPop()
-        val patternCall = IFTPattern.Call()
+        val patternJumpToReg = IFTPattern.JumpToRegister(IFTPattern.AnyArgument("reg"))
+        val patternCall = IFTPattern.Call(IFTPattern.AnyNode(), IFTPattern.AnyArgument("used"), IFTPattern.AnyArgument("defined"))
+        val patternReturn = IFTPattern.Return(IFTPattern.AnyArgument("used"))
 
         val patternLogNeg = IFTPattern.UnaryOperator(IFTNode.LogicalNegation::class)
         val patternLogIff = IFTPattern.BinaryOperator(IFTNode.LogicalIff::class)
@@ -86,6 +88,8 @@ internal class IFTPatternTest {
         val right = IFTNode.Const(0L)
         val node = IFTNode.Const(0L)
         val reg = Register()
+        val regList1 = listOf(Register())
+        val regList2 = listOf(Register())
 
         val nodeMemRead = IFTNode.MemoryRead(node)
         val nodeMemAddress = IFTNode.MemoryLabel("address")
@@ -95,7 +99,9 @@ internal class IFTPatternTest {
         val nodeRegWrite = IFTNode.RegisterWrite(reg, node)
         val nodeStackPush = IFTNode.StackPush(node)
         val nodeStackPop = IFTNode.StackPop()
-        val nodeCall = IFTNode.Call(node, emptyList(), emptyList())
+        val nodeJumpToReg = IFTNode.JumpToRegister(reg)
+        val nodeCall = IFTNode.Call(node, regList1, regList2)
+        val nodeReturn = IFTNode.Return(regList1)
 
         val nodeLogNeg = IFTNode.LogicalNegation(node)
         val nodeLogIff = IFTNode.LogicalIff(left, right)
@@ -130,7 +136,9 @@ internal class IFTPatternTest {
         assertEquals(IFTPattern.MatchResult(listOf(node), mapOf("reg" to reg)), patternRegWrite.match(nodeRegWrite))
         assertEquals(IFTPattern.MatchResult(listOf(node), emptyMap()), patternStackPush.match(nodeStackPush))
         assertEquals(IFTPattern.MatchResult(emptyList(), emptyMap()), patternStackPop.match(nodeStackPop))
-        assertEquals(IFTPattern.MatchResult(listOf(node), emptyMap()), patternCall.match(nodeCall))
+        assertEquals(IFTPattern.MatchResult(emptyList(), mapOf("reg" to reg)), patternJumpToReg.match(nodeJumpToReg))
+        assertEquals(IFTPattern.MatchResult(listOf(node), mapOf("used" to regList1, "defined" to regList2)), patternCall.match(nodeCall))
+        assertEquals(IFTPattern.MatchResult(emptyList(), mapOf("used" to regList1)), patternReturn.match(nodeReturn))
 
         assertEquals(IFTPattern.MatchResult(listOf(node), emptyMap()), patternLogNeg.match(nodeLogNeg))
         assertEquals(IFTPattern.MatchResult(listOf(left, right), emptyMap()), patternLogIff.match(nodeLogIff))

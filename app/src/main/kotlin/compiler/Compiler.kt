@@ -63,6 +63,8 @@ class Compiler(val diagnostics: Diagnostics) {
                 diagnostics.hasAnyError()
             )
 
+            // TODO: create GeneratorDetailsGenerators as well
+
             val functionCFGs = createGraphForProgram(astWithBuiltinFunctions, programProperties, functionDetailsGenerators, diagnostics)
 
             val mainFunction = FunctionDependenciesAnalyzer.extractMainFunction(ast, diagnostics)
@@ -95,7 +97,9 @@ class Compiler(val diagnostics: Diagnostics) {
                     mainFunction!!.returnType != Type.Number,
                     functionDetailsGenerators
                         .filter { it.key.value.implementation is Function.Implementation.Foreign }
-                        .map { it.value.identifier },
+                        .map { it.value.identifier } +
+                        BuiltinFunctions.internallyUsedExternalSymbols,
+                    // TODO: add identifiers of foreign generators
                     finalCode.map { functionCode ->
                         functionDetailsGenerators[functionCode.key]!!.identifier to
                             CodeSection.FunctionCode(

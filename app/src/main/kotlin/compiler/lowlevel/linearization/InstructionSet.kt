@@ -137,6 +137,12 @@ object InstructionSet {
                     Instruction.InPlaceInstruction.PopR(outRegister) // POP  out
                 )
             },
+            InstructionPattern(IFTPattern.JumpToRegister(IFTPattern.AnyArgument("reg"))) {
+                _, _, _, args ->
+                listOf(
+                    Instruction.TerminalInstruction.JmpR(args["reg"] as Register)
+                )
+            },
             InstructionPattern(
                 IFTPattern.Call(
                     IFTPattern.MemoryLabel(IFTPattern.AnyArgument("label")),
@@ -172,7 +178,7 @@ object InstructionSet {
             InstructionPattern(IFTPattern.Return(IFTPattern.AnyArgument("usedRegs"))) {
                 _, _, _, args ->
                 listOf(
-                    Instruction.RetInstruction.Ret(args["usedRegs"] as Collection<Register>)
+                    Instruction.TerminalInstruction.Ret(args["usedRegs"] as Collection<Register>)
                 )
             },
             InstructionPattern(IFTPattern.UnaryOperator(IFTNode.Negation::class)) {

@@ -41,6 +41,7 @@ data class DefaultFunctionDetailsGenerator(
 
     override val spilledRegistersRegionOffset: ULong get() = variablesRegionSize
     override val spilledRegistersRegionSize: ConstantPlaceholder = ConstantPlaceholder()
+    val requiredMemoryBelowRBP get() = SummedConstant(variablesRegionSize.toLong(), spilledRegistersRegionSize)
     override val identifier: String = functionLocationInCode.label
     init {
         for ((variable, locationType) in variablesLocationTypes.entries) {
@@ -60,7 +61,36 @@ data class DefaultFunctionDetailsGenerator(
     override fun genCall(
         args: List<IFTNode>,
     ): FunctionDetailsGenerator.FunctionCallIntermediateForm {
-        return SysV64CallingConvention.genCall(functionLocationInCode, args, variableToStoreFunctionResult !== null)
+        return SysV64CallingConvention.genCall(functionLocationInCode, args, if (variableToStoreFunctionResult !== null) 1 else 0)
+    }
+
+    fun genDisplayUpdate(): ControlFlowGraph {
+        val cfgBuilder = ControlFlowGraphBuilder()
+
+        val savePreviousRbp = IFTNode.RegisterWrite(
+            previousDisplayEntryRegister,
+            IFTNode.MemoryRead(displayElementAddress())
+        )
+        val updateRbpAtDepth = IFTNode.MemoryWrite(
+            displayElementAddress(),
+            IFTNode.RegisterRead(Register.RBP)
+        )
+        cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, savePreviousRbp)
+        cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, updateRbpAtDepth)
+
+        return cfgBuilder.build()
+    }
+
+    fun genCalleeSavedRegistersBackup(): ControlFlowGraph {
+        val cfgBuilder = ControlFlowGraphBuilder()
+
+        for ((hardwareReg, backupReg) in calleeSavedRegistersWithoutRSPAndRBP zip calleeSavedBackupRegisters)
+            cfgBuilder.addLinksFromAllFinalRoots(
+                CFGLinkType.UNCONDITIONAL,
+                IFTNode.RegisterWrite(backupReg, IFTNode.RegisterRead(hardwareReg))
+            )
+
+        return cfgBuilder.build()
     }
 
     override fun genPrologue(): ControlFlowGraph {
@@ -87,7 +117,7 @@ data class DefaultFunctionDetailsGenerator(
                 // make stack aligned back
                 IFTNode.Const(
                     AlignedConstant(
-                        SummedConstant(variablesRegionSize.toLong(), spilledRegistersRegionSize),
+                        requiredMemoryBelowRBP,
                         stackAlignmentInBytes.toLong(),
                         stackAlignmentInBytes - 2 * memoryUnitSize.toLong() // -2 to account return address and backed up rbp
                     )
@@ -97,16 +127,7 @@ data class DefaultFunctionDetailsGenerator(
         cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, subRsp)
 
         // update display
-        val savePreviousRbp = IFTNode.RegisterWrite(
-            previousDisplayEntryRegister,
-            IFTNode.MemoryRead(displayElementAddress())
-        )
-        val updateRbpAtDepth = IFTNode.MemoryWrite(
-            displayElementAddress(),
-            IFTNode.RegisterRead(Register.RBP)
-        )
-        cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, savePreviousRbp)
-        cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, updateRbpAtDepth)
+        cfgBuilder.mergeUnconditionally(genDisplayUpdate())
 
         // move args from registers and stack
         for ((param, register) in parameters zip argPositionToRegister) {
@@ -136,11 +157,31 @@ data class DefaultFunctionDetailsGenerator(
         }
 
         // backup callee-saved registers
+        cfgBuilder.mergeUnconditionally(genCalleeSavedRegistersBackup())
+
+        return cfgBuilder.build()
+    }
+
+    fun genCalleeSavedRegistersRestore(): ControlFlowGraph {
+        val cfgBuilder = ControlFlowGraphBuilder()
+
         for ((hardwareReg, backupReg) in calleeSavedRegistersWithoutRSPAndRBP zip calleeSavedBackupRegisters)
             cfgBuilder.addLinksFromAllFinalRoots(
                 CFGLinkType.UNCONDITIONAL,
-                IFTNode.RegisterWrite(backupReg, IFTNode.RegisterRead(hardwareReg))
+                IFTNode.RegisterWrite(hardwareReg, IFTNode.RegisterRead(backupReg))
             )
+
+        return cfgBuilder.build()
+    }
+
+    fun genDisplayRestore(): ControlFlowGraph {
+        val cfgBuilder = ControlFlowGraphBuilder()
+
+        val restorePreviousDisplayEntry = IFTNode.MemoryWrite(
+            displayElementAddress(),
+            IFTNode.RegisterRead(previousDisplayEntryRegister)
+        )
+        cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, restorePreviousDisplayEntry)
 
         return cfgBuilder.build()
     }
@@ -149,11 +190,7 @@ data class DefaultFunctionDetailsGenerator(
         val cfgBuilder = ControlFlowGraphBuilder()
 
         // restore callee-saved registers
-        for ((hardwareReg, backupReg) in calleeSavedRegistersWithoutRSPAndRBP zip calleeSavedBackupRegisters)
-            cfgBuilder.addLinksFromAllFinalRoots(
-                CFGLinkType.UNCONDITIONAL,
-                IFTNode.RegisterWrite(hardwareReg, IFTNode.RegisterRead(backupReg))
-            )
+        cfgBuilder.mergeUnconditionally(genDisplayRestore())
 
         // move result to RAX
         if (variableToStoreFunctionResult != null)
@@ -163,11 +200,7 @@ data class DefaultFunctionDetailsGenerator(
             )
 
         // restore previous rbp in display at depth
-        val restorePreviousDisplayEntry = IFTNode.MemoryWrite(
-            displayElementAddress(),
-            IFTNode.RegisterRead(previousDisplayEntryRegister)
-        )
-        cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, restorePreviousDisplayEntry)
+        cfgBuilder.mergeUnconditionally(genCalleeSavedRegistersRestore())
 
         // restore rsp
         val movRspRbp = IFTNode.RegisterWrite(
@@ -191,18 +224,20 @@ data class DefaultFunctionDetailsGenerator(
         return cfgBuilder.build()
     }
 
-    override fun genInit(): ControlFlowGraph = TODO()
-    override fun genFinalize(): ControlFlowGraph = TODO()
-    override fun genYield(value: IFTNode): ControlFlowGraph = TODO()
-
-    private fun genAccess(namedNode: NamedNode, isDirect: Boolean, regAccessGenerator: (Register) -> IFTNode, memAccessGenerator: (IFTNode) -> IFTNode): IFTNode {
+    private fun genAccess(
+        namedNode: NamedNode,
+        isDirect: Boolean,
+        regAccessGenerator: (Register) -> IFTNode,
+        memAccessGenerator: (IFTNode) -> IFTNode,
+        baseRegister: Register
+    ): IFTNode {
         // requires correct value for RBP register
         return if (isDirect) {
             when (variablesLocationTypes[Ref(namedNode)]!!) {
                 VariableLocationType.MEMORY -> {
                     memAccessGenerator(
                         IFTNode.Subtract(
-                            IFTNode.RegisterRead(Register.RBP),
+                            IFTNode.RegisterRead(baseRegister),
                             IFTNode.Const(variablesStackOffsets[Ref(namedNode)]!!.toLong())
                         )
                     )
@@ -225,10 +260,13 @@ data class DefaultFunctionDetailsGenerator(
     }
 
     override fun genRead(namedNode: NamedNode, isDirect: Boolean): IFTNode =
-        genAccess(namedNode, isDirect, { IFTNode.RegisterRead(it) }, { IFTNode.MemoryRead(it) })
+        genAccess(namedNode, isDirect, { IFTNode.RegisterRead(it) }, { IFTNode.MemoryRead(it) }, Register.RBP)
 
     override fun genWrite(namedNode: NamedNode, value: IFTNode, isDirect: Boolean): IFTNode =
-        genAccess(namedNode, isDirect, { IFTNode.RegisterWrite(it, value) }, { IFTNode.MemoryWrite(it, value) })
+        genAccess(namedNode, isDirect, { IFTNode.RegisterWrite(it, value) }, { IFTNode.MemoryWrite(it, value) }, Register.RBP)
+
+    fun genDirectWriteWithCustomBase(namedNode: NamedNode, value: IFTNode, baseRegister: Register) =
+        genAccess(namedNode, true, { IFTNode.RegisterWrite(it, value) }, { IFTNode.MemoryWrite(it, value) }, baseRegister)
 
     private fun displayElementAddress(): IFTNode {
         return IFTNode.Add(

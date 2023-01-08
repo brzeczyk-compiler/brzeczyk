@@ -1,5 +1,10 @@
 #include <stdio.h>
 #include <inttypes.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+
+// input / output
 
 void print_int64(int64_t value) {
     printf("%" PRId64 "\n", value);
@@ -10,6 +15,19 @@ int64_t read_int64() {
     scanf("%" SCNd64, &value);
     return value;
 }
+
+// internal procedures
+// these functions have names starting with "_$" which makes them not accessible from our language
+void* _$checked_malloc(size_t size) {
+    void* address = malloc(size);
+    if (size > 0 && address == NULL) {
+        fprintf(stderr, "%s\n", strerror(ENOMEM));
+        exit(1);
+    }
+    return address;
+}
+
+// generators
 
 typedef int64_t generator_id_t;
 typedef int64_t generator_state_t;

@@ -10,7 +10,8 @@ val callerSavedRegisters = listOf(Register.RAX, Register.RCX, Register.RDX, Regi
 const val stackAlignmentInBytes = 16
 
 object SysV64CallingConvention {
-    fun genCall(targetFunction: IFTNode.MemoryLabel, args: List<IFTNode>, returnsValue: Boolean): FunctionDetailsGenerator.FunctionCallIntermediateForm {
+    // numberOfReturnedArguments must be in range [0, 2]
+    fun genCall(targetFunction: IFTNode.MemoryLabel, args: List<IFTNode>, numberOfReturnedValues: Int): FunctionDetailsGenerator.FunctionCallIntermediateForm {
         val moveArgsCFGBuilder = ControlFlowGraphBuilder()
         val usedRegisters = mutableListOf<Register>()
 
@@ -68,11 +69,13 @@ object SysV64CallingConvention {
             )
 
         // At the end create IFTNode to get function result
-        val readResultNode: IFTNode? =
-            if (returnsValue) IFTNode.RegisterRead(Register.RAX)
+        val readFirstResultNode =
+            if (numberOfReturnedValues >= 1) IFTNode.RegisterRead(Register.RAX)
+            else null
+        val readSecondResultNode =
+            if (numberOfReturnedValues >= 2) IFTNode.RegisterRead(Register.RDX)
             else null
 
-        val furtherContinuationNode = null // TODO()
-        return FunctionDetailsGenerator.FunctionCallIntermediateForm(cfgBuilder.build(), readResultNode, furtherContinuationNode)
+        return FunctionDetailsGenerator.FunctionCallIntermediateForm(cfgBuilder.build(), readFirstResultNode, readSecondResultNode)
     }
 }

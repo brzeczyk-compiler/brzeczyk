@@ -4,7 +4,7 @@ import compiler.intermediate.ControlFlowGraph
 import compiler.intermediate.IFTNode
 import compiler.lowlevel.Asmable
 import compiler.lowlevel.Instruction
-import compiler.lowlevel.Instruction.UnconditionalJumpInstruction.Jmp
+import compiler.lowlevel.Instruction.UnconditionalJumpInstruction.JmpL
 import compiler.lowlevel.Label
 import compiler.utils.Ref
 import compiler.utils.mutableKeyRefMapOf
@@ -38,6 +38,7 @@ class LinearizationTest {
     private class Unconditional(val node: IFTNode) : AsmablePattern()
     private class Conditional(val node: IFTNode, val whenTrue: Boolean, val targetLabelNumber: Int) : AsmablePattern()
     private object NextLabel : AsmablePattern()
+    private class ExactLabel(val label: String) : AsmablePattern()
     private class Jump(val targetLabelNumber: Int) : AsmablePattern()
 
     private fun assertLinearizationMatches(expected: List<AsmablePattern>, actual: List<Asmable>) {
@@ -73,8 +74,13 @@ class LinearizationTest {
                     assertEquals(labelCount++, labelNumbers[actualItem.label])
                 }
 
+                is ExactLabel -> {
+                    assertIs<Label>(actualItem)
+                    assertEquals(expectedItem.label, actualItem.label)
+                }
+
                 is Jump -> {
-                    assertIs<Jmp>(actualItem)
+                    assertIs<JmpL>(actualItem)
                     assertEquals(expectedItem.targetLabelNumber, labelNumbers[actualItem.targetLabel])
                 }
             }
@@ -401,6 +407,55 @@ class LinearizationTest {
                 Jump(1),
                 NextLabel,
                 Unconditional(node4)
+            ),
+            result
+        )
+    }
+
+    @Test
+    fun `explicit label`() {
+        val node = newNode()
+        val labeledNode = IFTNode.LabeledNode(".dummyLabel", node)
+
+        val cfg = ControlFlowGraph(
+            listOf(labeledNode),
+            labeledNode,
+            emptyMap(),
+            emptyMap(),
+            emptyMap()
+        )
+
+        val result = Linearization.linearize(cfg, covering)
+
+        assertLinearizationMatches(
+            listOf(
+                ExactLabel(".dummyLabel"),
+                Unconditional(node)
+            ),
+            result
+        )
+    }
+
+    @Test
+    fun `explicit label has priority over implicit one`() {
+        val node = newNode()
+        val labeledNode = IFTNode.LabeledNode(".dummyLabel", node)
+
+        val cfg = ControlFlowGraph(
+            listOf(labeledNode),
+            labeledNode,
+            refMapOf(labeledNode to labeledNode),
+            refMapOf(),
+            refMapOf()
+        )
+
+        val result = Linearization.linearize(cfg, covering)
+
+        assertLinearizationMatches(
+            listOf(
+                ExactLabel(".dummyLabel"),
+                Unconditional(node),
+                Jump(0)
             ),
             result
         )

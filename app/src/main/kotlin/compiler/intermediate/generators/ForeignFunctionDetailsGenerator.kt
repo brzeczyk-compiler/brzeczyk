@@ -5,19 +5,15 @@ import compiler.intermediate.IFTNode
 
 class ForeignFunctionDetailsGenerator(
     private val memoryLabel: IFTNode.MemoryLabel,
-    private val returnsValue: Boolean
+    private val numberOfReturnedValues: Int
 ) : FunctionDetailsGenerator {
     override fun genCall(args: List<IFTNode>): FunctionDetailsGenerator.FunctionCallIntermediateForm {
-        return SysV64CallingConvention.genCall(memoryLabel, args, returnsValue)
+        return SysV64CallingConvention.genCall(memoryLabel, args, numberOfReturnedValues)
     }
 
     override fun genPrologue() = throw NotImplementedError()
 
     override fun genEpilogue() = throw NotImplementedError()
-
-    override fun genInit() = throw NotImplementedError()
-    override fun genFinalize() = throw NotImplementedError()
-    override fun genYield(value: IFTNode) = throw NotImplementedError()
 
     override val spilledRegistersRegionOffset get() = throw NotImplementedError()
 

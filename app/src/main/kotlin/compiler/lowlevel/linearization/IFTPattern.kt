@@ -168,6 +168,14 @@ sealed class IFTPattern {
         }
     }
 
+    data class JumpToRegister(val targetPattern: ArgumentPattern<Register> = AnyArgument()) : IFTPattern() {
+        override fun match(node: IFTNode): MatchResult? {
+            if (node !is IFTNode.JumpToRegister) return null
+            val targetMatch = targetPattern.match(node.targetRegister) ?: return null
+            return MatchResult(emptyList(), targetMatch)
+        }
+    }
+
     data class Call(
         val addressPattern: IFTPattern = AnyNode(),
         val usedRegsPattern: ArgumentPattern<Collection<Register>> = AnyArgument(),

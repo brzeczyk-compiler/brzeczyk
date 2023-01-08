@@ -70,12 +70,12 @@ class DynamicCoveringBuilderTest {
 
     @Test fun `test instructions are ordered bottom-up`() {
         // not a data class, so equality will be done by reference - which is what we want
-        val retInstruction1 = Instruction.RetInstruction.Dummy()
-        val retInstruction2 = Instruction.RetInstruction.Dummy()
-        val retInstruction3 = Instruction.RetInstruction.Dummy()
-        val ret1Covering = Pattern.Result(listOf(), 1) { _, _ -> listOf(retInstruction1) }
-        val ret2Covering = Pattern.Result(listOf(), 1) { _, _ -> listOf(retInstruction2) }
-        val ret3Covering = Pattern.Result(listOf(dummyNode1, dummyNode2), 1) { _, _ -> listOf(retInstruction3) }
+        val termInstruction1 = Instruction.TerminalInstruction.Dummy()
+        val termInstruction2 = Instruction.TerminalInstruction.Dummy()
+        val termInstruction3 = Instruction.TerminalInstruction.Dummy()
+        val ret1Covering = Pattern.Result(listOf(), 1) { _, _ -> listOf(termInstruction1) }
+        val ret2Covering = Pattern.Result(listOf(), 1) { _, _ -> listOf(termInstruction2) }
+        val ret3Covering = Pattern.Result(listOf(dummyNode1, dummyNode2), 1) { _, _ -> listOf(termInstruction3) }
 
         val coveringBuilder = DynamicCoveringBuilder(
             instructionSetOf(
@@ -85,21 +85,21 @@ class DynamicCoveringBuilderTest {
             )
         )
 
-        val expectedInstructions = listOf(retInstruction1, retInstruction2, retInstruction3)
+        val expectedInstructions = listOf(termInstruction1, termInstruction2, termInstruction3)
         assertEquals(expectedInstructions, coveringBuilder.coverUnconditional(xorNode1))
         assertEquals(expectedInstructions, coveringBuilder.coverConditional(xorNode1, "label", true))
     }
 
     @Test fun `test builder chooses the cheapest covering`() {
         // not a data class, so equality will be done by reference - which is what we want
-        val retInstruction1 = Instruction.RetInstruction.Dummy()
-        val retInstruction2 = Instruction.RetInstruction.Dummy()
-        val retInstruction3 = Instruction.RetInstruction.Dummy()
-        val retInstruction4 = Instruction.RetInstruction.Dummy()
-        val ret1Covering = Pattern.Result(listOf(), 100) { _, _ -> listOf(retInstruction1) }
-        val ret2Covering = Pattern.Result(listOf(), 100) { _, _ -> listOf(retInstruction2) }
-        val ret3Covering = Pattern.Result(listOf(dummyNode1, dummyNode2), 10) { _, _ -> listOf(retInstruction3) }
-        val ret4Covering = Pattern.Result(listOf(), 100) { _, _ -> listOf(retInstruction4) }
+        val termInstruction1 = Instruction.TerminalInstruction.Dummy()
+        val termInstruction2 = Instruction.TerminalInstruction.Dummy()
+        val termInstruction3 = Instruction.TerminalInstruction.Dummy()
+        val termInstruction4 = Instruction.TerminalInstruction.Dummy()
+        val ret1Covering = Pattern.Result(listOf(), 100) { _, _ -> listOf(termInstruction1) }
+        val ret2Covering = Pattern.Result(listOf(), 100) { _, _ -> listOf(termInstruction2) }
+        val ret3Covering = Pattern.Result(listOf(dummyNode1, dummyNode2), 10) { _, _ -> listOf(termInstruction3) }
+        val ret4Covering = Pattern.Result(listOf(), 100) { _, _ -> listOf(termInstruction4) }
 
         val coveringBuilder = DynamicCoveringBuilder(
             instructionSetOf(
@@ -110,21 +110,21 @@ class DynamicCoveringBuilderTest {
             )
         )
 
-        val expectedInstructions = listOf(retInstruction4)
+        val expectedInstructions = listOf(termInstruction4)
         assertEquals(expectedInstructions, coveringBuilder.coverUnconditional(xorNode1))
         assertEquals(expectedInstructions, coveringBuilder.coverConditional(xorNode1, "label", true))
     }
 
     @Test fun `test builder chooses the cheapest covering even when it is more granular`() {
         // not a data class, so equality will be done by reference - which is what we want
-        val retInstruction1 = Instruction.RetInstruction.Dummy()
-        val retInstruction2 = Instruction.RetInstruction.Dummy()
-        val retInstruction3 = Instruction.RetInstruction.Dummy()
-        val retInstruction4 = Instruction.RetInstruction.Dummy()
-        val ret1Covering = Pattern.Result(listOf(), 1) { _, _ -> listOf(retInstruction1) }
-        val ret2Covering = Pattern.Result(listOf(), 1) { _, _ -> listOf(retInstruction2) }
-        val ret3Covering = Pattern.Result(listOf(dummyNode1, dummyNode2), 1) { _, _ -> listOf(retInstruction3) }
-        val ret4Covering = Pattern.Result(listOf(), 1000) { _, _ -> listOf(retInstruction4) }
+        val termInstruction1 = Instruction.TerminalInstruction.Dummy()
+        val termInstruction2 = Instruction.TerminalInstruction.Dummy()
+        val termInstruction3 = Instruction.TerminalInstruction.Dummy()
+        val termInstruction4 = Instruction.TerminalInstruction.Dummy()
+        val ret1Covering = Pattern.Result(listOf(), 1) { _, _ -> listOf(termInstruction1) }
+        val ret2Covering = Pattern.Result(listOf(), 1) { _, _ -> listOf(termInstruction2) }
+        val ret3Covering = Pattern.Result(listOf(dummyNode1, dummyNode2), 1) { _, _ -> listOf(termInstruction3) }
+        val ret4Covering = Pattern.Result(listOf(), 1000) { _, _ -> listOf(termInstruction4) }
 
         val coveringBuilder = DynamicCoveringBuilder(
             instructionSetOf(
@@ -135,7 +135,7 @@ class DynamicCoveringBuilderTest {
             )
         )
 
-        val expectedInstructions = listOf(retInstruction1, retInstruction2, retInstruction3)
+        val expectedInstructions = listOf(termInstruction1, termInstruction2, termInstruction3)
         assertEquals(expectedInstructions, coveringBuilder.coverUnconditional(xorNode1))
         assertEquals(expectedInstructions, coveringBuilder.coverConditional(xorNode1, "label", true))
     }

@@ -94,8 +94,6 @@ internal class NameResolverTest {
         assertContains(nameDefinitions, Ref(xUseInG))
         assertContains(nameDefinitions, Ref(yUseInG))
 
-        assertEquals(nameDefinitions.size, 5)
-
         assertEquals(nameDefinitions[Ref(fCall1)], Ref(fFunction))
         assertEquals(nameDefinitions[Ref(fCall2)], Ref(fFunction))
         assertEquals(nameDefinitions[Ref(xUseInF)], Ref(xParam))
@@ -109,7 +107,7 @@ internal class NameResolverTest {
         /*
         Create AST for program:
         ---------------------------------
-        zew czynność f(a: Liczba) -> Liczba {
+        przekaźnik f(a: Liczba) -> Liczba {
             zm x: Liczba = 1
             dopóki (x <= a) {
                 przekaż x

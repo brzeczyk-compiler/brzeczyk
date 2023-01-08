@@ -42,8 +42,10 @@ object NameResolver {
         fun popGenerator(): Function = generators.pop()
 
         fun isEmpty(): Boolean = variables.isEmpty() && functions.isEmpty()
-        fun onlyHasVariables(): Boolean = variables.isNotEmpty() && functions.isEmpty() && generators.isEmpty()
-        fun onlyHasCallables(): Boolean = (functions.isNotEmpty() || generators.isNotEmpty()) && variables.isEmpty()
+
+        fun hasVariable(): Boolean = variables.isNotEmpty()
+        fun hasFunction(): Boolean = functions.isNotEmpty()
+        fun hasGenerator(): Boolean = generators.isNotEmpty()
     }
 
     data class Result(val nameDefinitions: Map<Ref<AstNode>, Ref<NamedNode>>, val programStaticDepth: Int)
@@ -73,11 +75,29 @@ object NameResolver {
                     diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.UndefinedVariable(astNode))
                 if (astNode is Statement.Assignment)
                     diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.AssignmentToUndefinedVariable(astNode))
-            } else if (visibleNames[name]!!.onlyHasCallables()) {
-                if (astNode is Expression.Variable)
-                    diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.FunctionIsNotVariable(visibleNames[name]!!.topFunction(), astNode))
-                if (astNode is Statement.Assignment)
-                    diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.AssignmentToFunction(visibleNames[name]!!.topFunction(), astNode))
+            } else if (!visibleNames[name]!!.hasVariable()) { // then it must have at least one function or generator
+                if (astNode is Expression.Variable) {
+                    diagnostics.report(
+                        Diagnostic.ResolutionDiagnostic.NameResolutionError.CallableIsNotVariable(
+                            if (visibleNames[name]!!.hasFunction())
+                                visibleNames[name]!!.topFunction()
+                            else
+                                visibleNames[name]!!.topGenerator(),
+                            astNode
+                        )
+                    )
+                }
+                if (astNode is Statement.Assignment) {
+                    diagnostics.report(
+                        Diagnostic.ResolutionDiagnostic.NameResolutionError.AssignmentToCallable(
+                            if (visibleNames[name]!!.hasFunction())
+                                visibleNames[name]!!.topFunction()
+                            else
+                                visibleNames[name]!!.topGenerator(),
+                            astNode
+                        )
+                    )
+                }
             } else {
                 return false
             }
@@ -88,8 +108,26 @@ object NameResolver {
         fun checkFunctionUsage(functionCall: Expression.FunctionCall): Boolean {
             if (!visibleNames.containsKey(functionCall.name)) {
                 diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.UndefinedFunction(functionCall))
-            } else if (visibleNames[functionCall.name]!!.onlyHasVariables()) {
-                diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.VariableIsNotCallable(visibleNames[functionCall.name]!!.topVariable(), functionCall))
+            } else if (!visibleNames[functionCall.name]!!.hasFunction()) {
+                if (visibleNames[functionCall.name]!!.hasGenerator())
+                    diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.GeneratorUsedAsFunction(visibleNames[functionCall.name]!!.topGenerator(), functionCall))
+                else if (visibleNames[functionCall.name]!!.hasVariable())
+                    diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.VariableIsNotCallable(visibleNames[functionCall.name]!!.topVariable(), functionCall))
+            } else {
+                return false
+            }
+            failed = true
+            return true
+        }
+
+        fun checkGeneratorUsage(generatorCall: Expression.FunctionCall): Boolean {
+            if (!visibleNames.containsKey(generatorCall.name)) {
+                diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.UndefinedFunction(generatorCall))
+            } else if (!visibleNames[generatorCall.name]!!.hasGenerator()) {
+                if (visibleNames[generatorCall.name]!!.hasFunction())
+                    diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.FunctionUsedAsAGenerator(visibleNames[generatorCall.name]!!.topFunction(), generatorCall))
+                else if (visibleNames[generatorCall.name]!!.hasVariable())
+                    diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.VariableIsNotCallable(visibleNames[generatorCall.name]!!.topVariable(), generatorCall))
             } else {
                 return false
             }
@@ -204,9 +242,7 @@ object NameResolver {
 
                 is Expression.FunctionCall -> {
                     if (!checkFunctionUsage(node)) {
-                        // if this is a generator call then analysis of Statement.ForEachLoop has already resolved this name
-                        if (!nameDefinitions.containsKey(Ref(node)))
-                            nameDefinitions[Ref(node)] = Ref(visibleNames[node.name]!!.topFunction())
+                        nameDefinitions[Ref(node)] = Ref(visibleNames[node.name]!!.topFunction())
                         node.arguments.forEach { analyzeNode(it, currentScope) }
                     }
                 }
@@ -287,12 +323,14 @@ object NameResolver {
                     // receiving variable and generator call are treated as they belonged to the new scope
                     analyzeNode(node.receivingVariable, newScope)
 
-                    // resolve name for generator call. The subsequent analyzeNode won't update the name resolution for this call
-                    if (!checkFunctionUsage(node.generatorCall)) {
+                    // resolve name for generator call.
+                    if (!checkGeneratorUsage(node.generatorCall)) {
                         nameDefinitions[Ref(node.generatorCall)] =
                             Ref(visibleNames[node.generatorCall.name]!!.topGenerator())
                     }
-                    analyzeNode(node.generatorCall, newScope)
+                    // skip analysing generatorCall because it would resolve the name again, but treating it as a regular function call
+                    // instead move on to analysing its arguments directly
+                    node.generatorCall.arguments.forEach { analyzeNode(it, currentScope) }
 
                     node.action.forEach { analyzeNode(it, newScope) }
                     destroyScope(newScope)

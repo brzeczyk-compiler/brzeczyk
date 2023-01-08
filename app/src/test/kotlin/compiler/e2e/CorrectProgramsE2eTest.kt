@@ -204,7 +204,7 @@ class CorrectProgramsE2eTest {
         E2eTestUtils.assertProgramCorrect(
             """
             czynność napisz(wartość: Liczba = 0) {
-                zew czynność print_int64(wartość: Liczba) jako napisz
+                zewnętrzna czynność print_int64(wartość: Liczba) jako napisz
                 napisz(-wartość)
             }
             

@@ -2,7 +2,6 @@ package compiler.e2e
 
 import compiler.diagnostics.Diagnostic
 import compiler.e2e.E2eTestUtils.assertErrorOfType
-import kotlin.test.Ignore
 import kotlin.test.Test
 
 class NameResolverE2eTest {
@@ -433,7 +432,6 @@ class NameResolverE2eTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test function used as generator call`() {
         assertErrorOfType(
@@ -452,7 +450,6 @@ class NameResolverE2eTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test generator used as function call`() {
         assertErrorOfType(

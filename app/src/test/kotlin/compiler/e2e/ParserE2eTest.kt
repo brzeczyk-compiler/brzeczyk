@@ -315,6 +315,18 @@ class ParserE2eTest {
                             }
                             
                         """,
+                """
+                            przekaźnik f() {
+                                przekaż
+                            }
+                            
+                        """,
+                """
+                            przekaźnik f() {
+                                przekaż Nic
+                            }
+                            
+                        """,
             )
         )
     }

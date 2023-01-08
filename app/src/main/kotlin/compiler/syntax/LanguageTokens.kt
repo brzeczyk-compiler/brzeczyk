@@ -30,8 +30,15 @@ object LanguageTokens {
             Pair(TokenType.RETURN, "zwróć"),
             Pair(TokenType.RETURN_UNIT, "zakończ"),
             Pair(TokenType.FUNCTION, "czynność"),
-            Pair(TokenType.FOREIGN, "zewnętrzna"),
+            Pair(TokenType.FOREIGN1, "zewnętrzna"),
+            Pair(TokenType.FOREIGN2, "zewnętrzny"),
             Pair(TokenType.AS, "jako"),
+
+            // Generators related keywords
+            Pair(TokenType.GENERATOR, "przekaźnik"),
+            Pair(TokenType.YIELD, "przekaż"),
+            Pair(TokenType.FOR_EACH, "otrzymując"),
+            Pair(TokenType.FROM, "od"),
 
             // Special characters
             Pair(TokenType.COLON, ":"),

@@ -1,0 +1,8 @@
+// INTEGRATION TESTS IGNORE
+czynność główna() {
+    wart max = wczytaj()
+
+    otrzymując x: Liczba od przedziału(max) {
+        napisz(x)
+    }
+}

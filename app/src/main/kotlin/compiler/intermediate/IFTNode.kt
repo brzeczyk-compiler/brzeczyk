@@ -59,9 +59,9 @@ sealed class IFTNode {
     data class Return(val usedRegisters: Collection<Register>) : IFTNode()
 
     // test nodes
-    data class Dummy(val dummy: Unit = Unit) : IFTNode()
+    data class Dummy(val info: Any = Unit) : IFTNode()
     data class DummyRead(val namedNode: NamedNode, val isDirect: Boolean, val isGlobal: Boolean = false) : IFTNode()
     data class DummyWrite(val namedNode: NamedNode, val value: IFTNode, val isDirect: Boolean, val isGlobal: Boolean = false) : IFTNode()
     data class DummyCallResult(val dummy: Unit = Unit) : IFTNode()
-    data class DummyCall(val function: Function, val args: List<IFTNode>, val callResult: DummyCallResult) : IFTNode()
+    data class DummyCall(val function: Function, val args: List<IFTNode>, val callResult1: DummyCallResult, val callResult2: DummyCallResult = DummyCallResult()) : IFTNode()
 }

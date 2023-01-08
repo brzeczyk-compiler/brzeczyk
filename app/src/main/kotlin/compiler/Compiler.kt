@@ -56,7 +56,7 @@ class Compiler(val diagnostics: Diagnostics) {
 
             val programProperties = ProgramAnalyzer.analyzeProgram(astWithBuiltinFunctions, diagnostics)
 
-            val functionDetailsGenerators = FunctionDependenciesAnalyzer.createFunctionDetailsGenerators(
+            val (functionDetailsGenerators, generatorDetailsGenerators) = FunctionDependenciesAnalyzer.createFunctionDetailsGenerators(
                 astWithBuiltinFunctions,
                 programProperties.variableProperties,
                 programProperties.functionReturnedValueVariables,
@@ -67,7 +67,7 @@ class Compiler(val diagnostics: Diagnostics) {
                 astWithBuiltinFunctions,
                 programProperties,
                 functionDetailsGenerators,
-                emptyMap(), // TODO: provide generator details generators
+                generatorDetailsGenerators,
                 diagnostics
             )
 

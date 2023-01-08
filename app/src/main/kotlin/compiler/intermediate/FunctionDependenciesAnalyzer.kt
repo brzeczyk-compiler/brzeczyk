@@ -15,7 +15,9 @@ import compiler.diagnostics.Diagnostics
 import compiler.intermediate.generators.DISPLAY_LABEL_IN_MEMORY
 import compiler.intermediate.generators.DefaultFunctionDetailsGenerator
 import compiler.intermediate.generators.ForeignFunctionDetailsGenerator
+import compiler.intermediate.generators.ForeignGeneratorDetailsGenerator
 import compiler.intermediate.generators.FunctionDetailsGenerator
+import compiler.intermediate.generators.GeneratorDetailsGenerator
 import compiler.intermediate.generators.VariableLocationType
 import compiler.utils.Ref
 import compiler.utils.mutableKeyRefMapOf
@@ -87,39 +89,55 @@ object FunctionDependenciesAnalyzer {
         variableProperties: Map<Ref<AstNode>, VariablePropertiesAnalyzer.VariableProperties>,
         functionReturnedValueVariables: Map<Ref<Function>, Variable>,
         allowInconsistentNamingErrors: Boolean = false
-    ): Map<Ref<Function>, FunctionDetailsGenerator> {
-        val result = mutableKeyRefMapOf<Function, FunctionDetailsGenerator>()
+    ): Pair<Map<Ref<Function>, FunctionDetailsGenerator>, Map<Ref<Function>, GeneratorDetailsGenerator>> {
+        val functionDGs = mutableKeyRefMapOf<Function, FunctionDetailsGenerator>()
+        val generatorDGs = mutableKeyRefMapOf<Function, GeneratorDetailsGenerator>()
         val functionIdentifiers = createUniqueIdentifiers(program, allowInconsistentNamingErrors)
 
         fun createDetailsGenerator(function: Function, depth: ULong) {
-            result[Ref(function)] = when (function.implementation) {
-
-                is Function.Implementation.Foreign -> {
-                    ForeignFunctionDetailsGenerator(
-                        IFTNode.MemoryLabel(function.implementation.foreignName),
-                        if (function.returnType !is Type.Unit) 1 else 0
-                    )
-                }
-
-                is Function.Implementation.Local -> {
-                    val variablesLocationTypes = mutableKeyRefMapOf<NamedNode, VariableLocationType>()
-                    variableProperties
-                        .filter { (_, properties) -> properties.owner === function }
-                        .forEach { (variable, properties) ->
-                            variablesLocationTypes[Ref(variable.value as NamedNode)] =
-                                if (properties.accessedIn.any { it != Ref(function) } || properties.writtenIn.any { it != Ref(function) })
-                                    VariableLocationType.MEMORY
-                                else VariableLocationType.REGISTER
+            if (function.isGenerator) {
+                generatorDGs[Ref(function)] = when (function.implementation) {
+                    is Function.Implementation.Foreign -> {
+                        function.implementation.foreignName.let {
+                            ForeignGeneratorDetailsGenerator(
+                                IFTNode.MemoryLabel(it + "_init"),
+                                IFTNode.MemoryLabel(it + "_resume"),
+                                IFTNode.MemoryLabel(it + "_finalize")
+                            )
                         }
+                    }
+                    is Function.Implementation.Local -> throw NotImplementedError() // TODO
+                }
+            } else {
+                functionDGs[Ref(function)] = when (function.implementation) {
 
-                    DefaultFunctionDetailsGenerator(
-                        function.parameters,
-                        functionReturnedValueVariables[Ref(function)],
-                        IFTNode.MemoryLabel(functionIdentifiers[Ref(function)]!!.value),
-                        depth,
-                        variablesLocationTypes,
-                        IFTNode.MemoryLabel(DISPLAY_LABEL_IN_MEMORY)
-                    )
+                    is Function.Implementation.Foreign -> {
+                        ForeignFunctionDetailsGenerator(
+                            IFTNode.MemoryLabel(function.implementation.foreignName),
+                            if (function.returnType !is Type.Unit) 1 else 0
+                        )
+                    }
+
+                    is Function.Implementation.Local -> {
+                        val variablesLocationTypes = mutableKeyRefMapOf<NamedNode, VariableLocationType>()
+                        variableProperties
+                            .filter { (_, properties) -> properties.owner === function }
+                            .forEach { (variable, properties) ->
+                                variablesLocationTypes[Ref(variable.value as NamedNode)] =
+                                    if (properties.accessedIn.any { it != Ref(function) } || properties.writtenIn.any { it != Ref(function) })
+                                        VariableLocationType.MEMORY
+                                    else VariableLocationType.REGISTER
+                            }
+
+                        DefaultFunctionDetailsGenerator(
+                            function.parameters,
+                            functionReturnedValueVariables[Ref(function)],
+                            IFTNode.MemoryLabel(functionIdentifiers[Ref(function)]!!.value),
+                            depth,
+                            variablesLocationTypes,
+                            IFTNode.MemoryLabel(DISPLAY_LABEL_IN_MEMORY)
+                        )
+                    }
                 }
             }
         }
@@ -136,6 +154,7 @@ object FunctionDependenciesAnalyzer {
                             processBlock(statement.actionWhenTrue)
                             statement.actionWhenFalse?.let { processBlock(it) }
                         }
+
                         is Statement.Loop -> processBlock(statement.action)
                         else -> {}
                     }
@@ -147,7 +166,7 @@ object FunctionDependenciesAnalyzer {
 
         program.globals.forEach { if (it is Program.Global.FunctionDefinition) processFunction(it.function, 0u) }
 
-        return result
+        return Pair(functionDGs, generatorDGs)
     }
 
     fun createCallGraph(ast: Program, nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>): Map<Ref<Function>, Set<Ref<Function>>> {

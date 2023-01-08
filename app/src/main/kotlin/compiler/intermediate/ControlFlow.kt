@@ -589,7 +589,7 @@ object ControlFlow {
                     val prevLast = last
                     last = returning
 
-                    returnCleanup()
+                    if (last.isNotEmpty()) returnCleanup()
 
                     returning = last.toMutableList()
                     last = prevLast

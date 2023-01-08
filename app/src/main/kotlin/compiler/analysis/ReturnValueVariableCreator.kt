@@ -14,7 +14,7 @@ object ReturnValueVariableCreator {
         val resultMapping: MutableMap<Ref<Function>, Variable> = mutableKeyRefMapOf()
 
         fun createReturnVariableFor(function: Function) {
-            if (function.implementation is Function.Implementation.Local && function.returnType !is Type.Unit)
+            if (function.implementation is Function.Implementation.Local && function.returnType !is Type.Unit && !function.isGenerator)
                 resultMapping[Ref(function)] = Variable(
                     Variable.Kind.VALUE,
                     "_result_dummy_${function.name}",

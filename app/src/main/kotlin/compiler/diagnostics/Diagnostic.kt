@@ -10,6 +10,7 @@ import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.input.Location
 import compiler.input.LocationRange
+import compiler.intermediate.MAIN_FUNCTION_IDENTIFIER
 import compiler.utils.Ref
 
 sealed interface Diagnostic {
@@ -64,11 +65,6 @@ sealed interface Diagnostic {
         ) : ParserError() {
             override val errorMessage get() = "Foreign name <<$foreignName>> at location $location is not a valid identifier."
         }
-    }
-
-    object MainFunctionNotFound : Diagnostic {
-        override val isError get() = true
-        override val message get() = "Main function 'główna' not found"
     }
 
     sealed class ResolutionDiagnostic(private val astNodes: List<AstNode>) : Diagnostic {
@@ -295,6 +291,18 @@ sealed interface Diagnostic {
             ) : TypeCheckingError(listOf(function)) {
                 override val errorMessage = "The function neither returns unit, nor has a 'return' statement."
             }
+
+            class ReturnWithValueInGenerator(
+                returnStatement: Statement.FunctionReturn,
+            ) : TypeCheckingError(listOf(returnStatement)) {
+                override val errorMessage = "The generator returns with value."
+            }
+
+            class YieldInNonGeneratorFunction(
+                yieldStatement: Statement.GeneratorYield,
+            ) : TypeCheckingError(listOf(yieldStatement)) {
+                override val errorMessage = "The yield occurs in non-generator function."
+            }
         }
 
         sealed class VariablePropertiesError(astNodes: List<AstNode>) : ResolutionDiagnostic(astNodes) {
@@ -336,6 +344,11 @@ sealed interface Diagnostic {
                     override val errorMessage = "The 'continue' is used outside of a loop."
                 }
             }
+        }
+
+        object MainFunctionNotFound : ResolutionDiagnostic(emptyList()) {
+            override val isError: Boolean = true
+            override val errorMessage = "Main function '$MAIN_FUNCTION_IDENTIFIER' not found."
         }
     }
 }

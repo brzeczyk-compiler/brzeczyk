@@ -398,9 +398,9 @@ object AstFactory {
             Productions.atomicContinue ->
                 Statement.LoopContinuation(combineLocations(children))
             Productions.atomicReturnUnit ->
-                Statement.FunctionReturn(Expression.UnitLiteral(combineLocations(children)), combineLocations(children))
+                Statement.FunctionReturn(Expression.UnitLiteral(combineLocations(children)), true, combineLocations(children))
             Productions.atomicReturn ->
-                Statement.FunctionReturn(processExpression(children[1], diagnostics), combineLocations(children))
+                Statement.FunctionReturn(processExpression(children[1], diagnostics), false, combineLocations(children))
             Productions.atomicYield ->
                 Statement.GeneratorYield(processExpression(children[1], diagnostics), combineLocations(children))
             Productions.atomicVarDef ->

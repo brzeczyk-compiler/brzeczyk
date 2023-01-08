@@ -68,8 +68,8 @@ sealed interface AstNode {
                     is Statement.LoopBreak -> "przerwij"
                     is Statement.LoopContinuation -> "pomiń"
                     is Statement.VariableDefinition -> "definition of << ${this.variable.toSimpleString()} >>"
-                    is Statement.ForeachLoop -> TODO()
-                    is Statement.GeneratorYield -> TODO()
+                    is Statement.ForeachLoop -> "otrzymując ${this.receivingVariable.toSimpleString()} od ${this.generatorCall.toSimpleString()} { ... }"
+                    is Statement.GeneratorYield -> "przekaż ${this.value.toSimpleString()}"
                 }
 
                 is Variable -> "variable << ${this.toSimpleString()} >>"

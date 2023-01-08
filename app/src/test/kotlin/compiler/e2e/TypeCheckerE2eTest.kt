@@ -30,6 +30,14 @@ class TypeCheckerE2eTest {
         assertErrorOfType(program, Diagnostic.ResolutionDiagnostic.TypeCheckingError.MissingReturnStatement::class)
     }
 
+    private fun assertReturnWithValueInGeneratorError(program: String) {
+        assertErrorOfType(program, Diagnostic.ResolutionDiagnostic.TypeCheckingError.ReturnWithValueInGenerator::class)
+    }
+
+    private fun assertYieldInNonGeneratorFunctionError(program: String) {
+        assertErrorOfType(program, Diagnostic.ResolutionDiagnostic.TypeCheckingError.YieldInNonGeneratorFunction::class)
+    }
+
     @Test
     fun `test instantiate variable with wrong type`() {
         assertInvalidTypeError("zm a: Liczba = prawda;")
@@ -78,6 +86,58 @@ class TypeCheckerE2eTest {
                 }
                 czynność g() {
                     zm a: Czy = f()
+                }
+            """
+        )
+    }
+
+    @Test
+    fun `test receiving variables with incorrect types`() {
+        assertInvalidTypeError(
+            """
+                przekaźnik f() -> Liczba {}
+                czynność główna() {
+                    otrzymując x: Czy od f() { }
+                }
+            """
+        )
+        assertInvalidTypeError(
+            """
+                przekaźnik f() -> Liczba {}
+                czynność główna() {
+                    otrzymując x: Nic od f() { }
+                }
+            """
+        )
+        assertInvalidTypeError(
+            """
+                przekaźnik f() -> Czy {}
+                czynność główna() {
+                    otrzymując x: Liczba od f() { }
+                }
+            """
+        )
+        assertInvalidTypeError(
+            """
+                przekaźnik f() -> Czy {}
+                czynność główna() {
+                    otrzymując x: Nic od f() { }
+                }
+            """
+        )
+        assertInvalidTypeError(
+            """
+                przekaźnik f() -> Nic {}
+                czynność główna() {
+                    otrzymując x: Liczba od f() { }
+                }
+            """
+        )
+        assertInvalidTypeError(
+            """
+                przekaźnik f() -> Nic {}
+                czynność główna() {
+                    otrzymując x: Czy od f() { }
                 }
             """
         )
@@ -667,6 +727,147 @@ class TypeCheckerE2eTest {
             """
                 czynność f() -> Czy {
                     zwróć 654
+                }
+            """
+        )
+    }
+
+    @Test
+    fun `test wrong yield type`() {
+        assertInvalidTypeError(
+            """
+                przekaźnik f() -> Liczba {
+                    przekaż fałsz
+                }
+            """
+        )
+        assertInvalidTypeError(
+            """
+                przekaźnik f() -> Liczba {
+                    przekaż nic
+                }
+            """
+        )
+        assertInvalidTypeError(
+            """
+                przekaźnik f() -> Czy {
+                    przekaż 123
+                }
+            """
+        )
+        assertInvalidTypeError(
+            """
+                przekaźnik f() -> Czy {
+                    przekaż nic
+                }
+            """
+        )
+        assertInvalidTypeError(
+            """
+                przekaźnik f() -> Nic {
+                    przekaż 123
+                }
+            """
+        )
+        assertInvalidTypeError(
+            """
+                przekaźnik f() -> Nic {
+                    przekaż prawda
+                }
+            """
+        )
+    }
+
+    @Test
+    fun `test return with value in a generator`() {
+        assertReturnWithValueInGeneratorError(
+            """
+                przekaźnik f() -> Liczba {
+                    zwróć 123
+                }
+            """
+        )
+        assertReturnWithValueInGeneratorError(
+            """
+                przekaźnik f() -> Liczba {
+                    zwróć fałsz
+                }
+            """
+        )
+        assertReturnWithValueInGeneratorError(
+            """
+                przekaźnik f() -> Czy {
+                    zwróć prawda
+                }
+            """
+        )
+        assertReturnWithValueInGeneratorError(
+            """
+                przekaźnik f() -> Czy {
+                    zwróć 17
+                }
+            """
+        )
+        assertReturnWithValueInGeneratorError(
+            """
+                przekaźnik f() -> Nic {
+                    zwróć nic
+                }
+            """
+        )
+        assertProgramCorrect(
+            """
+                czynność główna() { }
+                przekaźnik f() -> Liczba {
+                    zakończ
+                }
+            """
+        )
+        assertProgramCorrect(
+            """
+                czynność główna() { }
+                przekaźnik f() -> Czy {
+                    zakończ
+                }
+            """
+        )
+        assertProgramCorrect(
+            """
+                czynność główna() { }
+                przekaźnik f() -> Nic {
+                    zakończ
+                }
+            """
+        )
+    }
+
+    @Test
+    fun `test yield in non-generator function`() {
+        assertYieldInNonGeneratorFunctionError(
+            """
+                czynność f() -> Liczba {
+                    przekaż 123
+                }
+            """
+        )
+        assertYieldInNonGeneratorFunctionError(
+            """
+                czynność f() -> Liczba {
+                    przekaż -1
+                }
+            """
+        )
+        assertYieldInNonGeneratorFunctionError(
+            """
+                czynność f() -> Czy {
+                    przekaż fałsz
+                }
+            """
+        )
+        assertYieldInNonGeneratorFunctionError(
+            """
+                czynność f() -> Czy {
+                    przekaż prawda
                 }
             """
         )

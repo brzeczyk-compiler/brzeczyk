@@ -153,7 +153,12 @@ class ArgumentResolver(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNo
                             processExpression(statement.condition)
                             processBlock(statement.action)
                         }
+                        is Statement.ForeachLoop -> {
+                            processExpression(statement.generatorCall)
+                            processBlock(statement.action)
+                        }
                         is Statement.FunctionReturn -> processExpression(statement.value)
+                        is Statement.GeneratorYield -> processExpression(statement.value)
                         else -> {}
                     }
                 }
@@ -194,6 +199,9 @@ class ArgumentResolver(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNo
                             statement.actionWhenFalse?.let { processBlock(it) }
                         }
                         is Statement.Loop -> {
+                            processBlock(statement.action)
+                        }
+                        is Statement.ForeachLoop -> {
                             processBlock(statement.action)
                         }
                         else -> {}

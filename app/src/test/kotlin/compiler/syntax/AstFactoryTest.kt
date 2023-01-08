@@ -858,8 +858,8 @@ class AstFactoryTest {
                                         listOf(
                                             Statement.Conditional(
                                                 Expression.BinaryOperation(Expression.BinaryOperation.Kind.NOT_EQUALS, Expression.Variable("x", dummyLocationRange), Expression.Variable("y", dummyLocationRange), dummyLocationRange),
-                                                listOf(Statement.FunctionReturn(Expression.UnitLiteral(dummyLocationRange), dummyLocationRange)),
-                                                listOf(Statement.FunctionReturn(Expression.Variable("z", dummyLocationRange), dummyLocationRange)),
+                                                listOf(Statement.FunctionReturn(Expression.UnitLiteral(dummyLocationRange), true, dummyLocationRange)),
+                                                listOf(Statement.FunctionReturn(Expression.Variable("z", dummyLocationRange), false, dummyLocationRange)),
                                                 dummyLocationRange,
                                             )
                                         ),

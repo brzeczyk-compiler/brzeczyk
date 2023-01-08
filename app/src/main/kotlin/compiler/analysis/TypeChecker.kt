@@ -110,18 +110,24 @@ class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
                     is Statement.LoopContinuation -> { } // TODO: check if inside a loop
 
                     is Statement.FunctionReturn -> {
-                        if (function.isGenerator && !statement.isNonValue)
+                        if (function.isGenerator && !statement.isWithoutExplicitlySpecifiedValue)
                             report(TypeCheckingError.ReturnWithValueInGenerator(statement))
                         else if (!function.isGenerator)
                             checkExpression(statement.value, function.returnType)
                     }
                     is Statement.ForeachLoop -> {
+                        val calledFunction = nameResolution[Ref(statement.generatorCall)]!!.value
+                        if (calledFunction is Function && !calledFunction.isGenerator)
+                            report(TypeCheckingError.ForEachLoopOverNonGeneratorFunction(statement.generatorCall))
                         checkVariable(statement.receivingVariable, false)
                         checkExpression(statement.generatorCall, statement.receivingVariable.type)
                         checkBlock(statement.action)
                     }
                     is Statement.GeneratorYield -> {
-                        checkExpression(statement.value, function.returnType)
+                        if (function.isGenerator)
+                            checkExpression(statement.value, function.returnType)
+                        else
+                            report(TypeCheckingError.YieldInNonGeneratorFunction(statement))
                     }
                 }
             }

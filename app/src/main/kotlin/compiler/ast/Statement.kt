@@ -61,7 +61,7 @@ sealed class Statement : AstNode {
 
     data class FunctionReturn(
         val value: Expression,
-        val isNonValue: Boolean = false,
+        val isWithoutExplicitlySpecifiedValue: Boolean = false,
         override val location: LocationRange? = null,
     ) : Statement()
 

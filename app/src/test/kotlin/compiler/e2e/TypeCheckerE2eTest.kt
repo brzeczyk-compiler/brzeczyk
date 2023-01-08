@@ -31,8 +31,16 @@ class TypeCheckerE2eTest {
         assertErrorOfType(program, Diagnostic.ResolutionDiagnostic.TypeCheckingError.MissingReturnStatement::class)
     }
 
-    private fun assertReturnWithValueInGenerator(program: String) {
+    private fun assertReturnWithValueInGeneratorError(program: String) {
         assertErrorOfType(program, Diagnostic.ResolutionDiagnostic.TypeCheckingError.ReturnWithValueInGenerator::class)
+    }
+
+    private fun assertYieldInNonGeneratorFunctionError(program: String) {
+        assertErrorOfType(program, Diagnostic.ResolutionDiagnostic.TypeCheckingError.YieldInNonGeneratorFunction::class)
+    }
+
+    private fun assertForEachLoopOverNonGeneratorFunctionError(program: String) {
+        assertErrorOfType(program, Diagnostic.ResolutionDiagnostic.TypeCheckingError.ForEachLoopOverNonGeneratorFunction::class)
     }
 
     @Test
@@ -780,31 +788,38 @@ class TypeCheckerE2eTest {
     @Ignore
     @Test
     fun `test return with value in a generator`() {
-        assertReturnWithValueInGenerator(
+        assertReturnWithValueInGeneratorError(
             """
                 przekaźnik f() -> Liczba {
                     zwróć 123
                 }
             """
         )
-        assertReturnWithValueInGenerator(
+        assertReturnWithValueInGeneratorError(
             """
                 przekaźnik f() -> Liczba {
                     zwróć fałsz
                 }
             """
         )
-        assertReturnWithValueInGenerator(
+        assertReturnWithValueInGeneratorError(
             """
                 przekaźnik f() -> Czy {
                     zwróć prawda
                 }
             """
         )
-        assertReturnWithValueInGenerator(
+        assertReturnWithValueInGeneratorError(
             """
                 przekaźnik f() -> Czy {
                     zwróć 17
+                }
+            """
+        )
+        assertReturnWithValueInGeneratorError(
+            """
+                przekaźnik f() -> Nic {
+                    zwróć nic
                 }
             """
         )
@@ -819,6 +834,91 @@ class TypeCheckerE2eTest {
             """
                 przekaźnik f() -> Czy {
                     zakończ
+                }
+            """
+        )
+        assertProgramCorrect(
+            """
+                przekaźnik f() -> Nic {
+                    zakończ
+                }
+            """
+        )
+    }
+
+    @Ignore
+    @Test
+    fun `test yield in non-generator function`() {
+        assertYieldInNonGeneratorFunctionError(
+            """
+                czynność f() -> Liczba {
+                    przekaż 123
+                }
+            """
+        )
+        assertYieldInNonGeneratorFunctionError(
+            """
+                czynność f() -> Liczba {
+                    przekaż -1
+                }
+            """
+        )
+        assertYieldInNonGeneratorFunctionError(
+            """
+                czynność f() -> Czy {
+                    przekaż fałsz
+                }
+            """
+        )
+        assertYieldInNonGeneratorFunctionError(
+            """
+                czynność f() -> Czy {
+                    przekaż prawda
+                }
+            """
+        )
+    }
+
+    @Ignore
+    @Test
+    fun `test for each loop over non-generator function`() {
+        assertForEachLoopOverNonGeneratorFunctionError(
+            """
+                czynność f() -> Liczba {
+                    zwróć 10
+                }
+                czynność główna() {
+                    otrzymując x: Liczba od f() { }
+                }
+            """
+        )
+        assertForEachLoopOverNonGeneratorFunctionError(
+            """
+                czynność f() -> Czy {
+                    zwróć fałsz
+                }
+                czynność główna() {
+                    otrzymując x: Czy od f() { }
+                }
+            """
+        )
+        assertForEachLoopOverNonGeneratorFunctionError(
+            """
+                czynność f(a: Liczba) -> Liczba {
+                    zwróć a + 2
+                }
+                czynność główna() {
+                    otrzymując x: Liczba od f(10) { }
+                }
+            """
+        )
+        assertForEachLoopOverNonGeneratorFunctionError(
+            """
+                czynność f(a: Liczba) -> Czy {
+                    zwróć a > 10
+                }
+                czynność główna() {
+                    otrzymując x: Czy od f(13) { }
                 }
             """
         )

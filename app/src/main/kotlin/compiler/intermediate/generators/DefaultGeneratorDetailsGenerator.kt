@@ -209,7 +209,7 @@ class DefaultGeneratorDetailsGenerator(
 
     // Function details generators
     private companion object {
-        val mallocFDG = ForeignFunctionDetailsGenerator(IFTNode.MemoryLabel("\$checked_malloc"), 1)
+        val mallocFDG = ForeignFunctionDetailsGenerator(IFTNode.MemoryLabel("_\$checked_malloc"), 1)
         val freeFDG = ForeignFunctionDetailsGenerator(IFTNode.MemoryLabel("free"), 0)
     }
 

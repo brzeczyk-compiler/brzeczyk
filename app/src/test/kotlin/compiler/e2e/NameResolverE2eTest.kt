@@ -387,7 +387,7 @@ class NameResolverE2eTest {
                     }
                     
                 """,
-            Diagnostic.ResolutionDiagnostic.NameResolutionError.FunctionIsNotVariable::class
+            Diagnostic.ResolutionDiagnostic.NameResolutionError.CallableIsNotVariable::class
         )
     }
 
@@ -401,7 +401,7 @@ class NameResolverE2eTest {
                     }
                     
                 """,
-            Diagnostic.ResolutionDiagnostic.NameResolutionError.AssignmentToFunction::class
+            Diagnostic.ResolutionDiagnostic.NameResolutionError.AssignmentToCallable::class
         )
     }
 
@@ -415,7 +415,7 @@ class NameResolverE2eTest {
                     }
                     
                 """,
-            Diagnostic.ResolutionDiagnostic.NameResolutionError.FunctionIsNotVariable::class
+            Diagnostic.ResolutionDiagnostic.NameResolutionError.CallableIsNotVariable::class
         )
     }
 
@@ -429,6 +429,41 @@ class NameResolverE2eTest {
                     
                 """,
             Diagnostic.ResolutionDiagnostic.NameResolutionError.VariableIsNotCallable::class
+        )
+    }
+
+    @Test
+    fun `test function used as generator call`() {
+        assertErrorOfType(
+            """
+                    czynność f(x: Liczba) -> Liczba {
+                        zwróć x
+                    }
+                
+                    czynność główna() {
+                        otrzymując x: Liczba od f(5) {
+                            x = 1
+                        }
+                    }
+                """,
+            Diagnostic.ResolutionDiagnostic.NameResolutionError.FunctionUsedAsAGenerator::class
+        )
+    }
+
+    @Test
+    fun `test generator used as function call`() {
+        assertErrorOfType(
+            """
+                    przekaźnik f(x: Liczba) -> Liczba {
+                        przekaż x
+                        zakończ
+                    }
+                
+                    czynność główna() {
+                        f(4)
+                    }
+                """,
+            Diagnostic.ResolutionDiagnostic.NameResolutionError.GeneratorUsedAsFunction::class
         )
     }
 }

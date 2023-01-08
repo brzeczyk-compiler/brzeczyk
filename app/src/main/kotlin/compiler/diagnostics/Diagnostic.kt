@@ -126,18 +126,32 @@ sealed interface Diagnostic {
                 override val errorMessage = "The variable is called."
             }
 
-            class FunctionIsNotVariable(
+            class CallableIsNotVariable(
                 function: Function,
                 variable: Expression.Variable,
             ) : NameResolutionError(listOf(function, variable)) {
-                override val errorMessage = "The function is used as a variable."
+                override val errorMessage = "The callable is used as a variable."
             }
 
-            class AssignmentToFunction(
+            class AssignmentToCallable(
                 function: Function,
                 assignment: Statement.Assignment,
             ) : NameResolutionError(listOf(function, assignment)) {
-                override val errorMessage = "The function is a left operand of the assignment."
+                override val errorMessage = "The callable is a left operand of the assignment."
+            }
+
+            class FunctionUsedAsAGenerator(
+                function: Function,
+                functionCall: Expression.FunctionCall,
+            ) : NameResolutionError(listOf(function, functionCall)) {
+                override val errorMessage = "Function called where generator call was expected"
+            }
+
+            class GeneratorUsedAsFunction(
+                generator: Function,
+                generatorCall: Expression.FunctionCall,
+            ) : NameResolutionError(listOf(generator, generatorCall)) {
+                override val errorMessage = "Generator called where function call was expected"
             }
         }
 

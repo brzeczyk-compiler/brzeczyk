@@ -27,19 +27,25 @@ object NameResolver {
          */
         private val variables: Stack<NamedNode> = Stack() // will only contain Variable and Function.Parameter
         private val functions: Stack<Function> = Stack()
+        private val generators: Stack<Function> = Stack()
 
         fun addVariable(variable: NamedNode) = variables.add(variable)
         fun addFunction(function: Function) = functions.add(function)
+        fun addGenerator(function: Function) = generators.add(function)
 
         fun topVariable(): NamedNode = variables.peek()
         fun topFunction(): Function = functions.peek()
+        fun topGenerator(): Function = generators.peek()
 
         fun popVariable(): NamedNode = variables.pop()
         fun popFunction(): Function = functions.pop()
+        fun popGenerator(): Function = generators.pop()
 
         fun isEmpty(): Boolean = variables.isEmpty() && functions.isEmpty()
-        fun onlyHasVariables(): Boolean = variables.isNotEmpty() && functions.isEmpty()
-        fun onlyHasFunctions(): Boolean = functions.isNotEmpty() && variables.isEmpty()
+
+        fun hasVariable(): Boolean = variables.isNotEmpty()
+        fun hasFunction(): Boolean = functions.isNotEmpty()
+        fun hasGenerator(): Boolean = generators.isNotEmpty()
     }
 
     data class Result(val nameDefinitions: Map<Ref<AstNode>, Ref<NamedNode>>, val programStaticDepth: Int)
@@ -69,11 +75,29 @@ object NameResolver {
                     diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.UndefinedVariable(astNode))
                 if (astNode is Statement.Assignment)
                     diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.AssignmentToUndefinedVariable(astNode))
-            } else if (visibleNames[name]!!.onlyHasFunctions()) {
-                if (astNode is Expression.Variable)
-                    diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.FunctionIsNotVariable(visibleNames[name]!!.topFunction(), astNode))
-                if (astNode is Statement.Assignment)
-                    diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.AssignmentToFunction(visibleNames[name]!!.topFunction(), astNode))
+            } else if (!visibleNames[name]!!.hasVariable()) { // then it must have at least one function or generator
+                if (astNode is Expression.Variable) {
+                    diagnostics.report(
+                        Diagnostic.ResolutionDiagnostic.NameResolutionError.CallableIsNotVariable(
+                            if (visibleNames[name]!!.hasFunction())
+                                visibleNames[name]!!.topFunction()
+                            else
+                                visibleNames[name]!!.topGenerator(),
+                            astNode
+                        )
+                    )
+                }
+                if (astNode is Statement.Assignment) {
+                    diagnostics.report(
+                        Diagnostic.ResolutionDiagnostic.NameResolutionError.AssignmentToCallable(
+                            if (visibleNames[name]!!.hasFunction())
+                                visibleNames[name]!!.topFunction()
+                            else
+                                visibleNames[name]!!.topGenerator(),
+                            astNode
+                        )
+                    )
+                }
             } else {
                 return false
             }
@@ -84,8 +108,26 @@ object NameResolver {
         fun checkFunctionUsage(functionCall: Expression.FunctionCall): Boolean {
             if (!visibleNames.containsKey(functionCall.name)) {
                 diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.UndefinedFunction(functionCall))
-            } else if (visibleNames[functionCall.name]!!.onlyHasVariables()) {
-                diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.VariableIsNotCallable(visibleNames[functionCall.name]!!.topVariable(), functionCall))
+            } else if (!visibleNames[functionCall.name]!!.hasFunction()) {
+                if (visibleNames[functionCall.name]!!.hasGenerator())
+                    diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.GeneratorUsedAsFunction(visibleNames[functionCall.name]!!.topGenerator(), functionCall))
+                else if (visibleNames[functionCall.name]!!.hasVariable())
+                    diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.VariableIsNotCallable(visibleNames[functionCall.name]!!.topVariable(), functionCall))
+            } else {
+                return false
+            }
+            failed = true
+            return true
+        }
+
+        fun checkGeneratorUsage(generatorCall: Expression.FunctionCall): Boolean {
+            if (!visibleNames.containsKey(generatorCall.name)) {
+                diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.UndefinedFunction(generatorCall))
+            } else if (!visibleNames[generatorCall.name]!!.hasGenerator()) {
+                if (visibleNames[generatorCall.name]!!.hasFunction())
+                    diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.FunctionUsedAsAGenerator(visibleNames[generatorCall.name]!!.topFunction(), generatorCall))
+                else if (visibleNames[generatorCall.name]!!.hasVariable())
+                    diagnostics.report(Diagnostic.ResolutionDiagnostic.NameResolutionError.VariableIsNotCallable(visibleNames[generatorCall.name]!!.topVariable(), generatorCall))
             } else {
                 return false
             }
@@ -105,8 +147,10 @@ object NameResolver {
                 visibleNames[name] = NameOverloadState()
             if (node is Variable || node is Function.Parameter)
                 visibleNames[name]!!.addVariable(node)
-            if (node is Function)
+            else if (node is Function && !node.isGenerator)
                 visibleNames[name]!!.addFunction(node)
+            else if (node is Function)
+                visibleNames[name]!!.addGenerator(node)
         }
 
         fun destroyScope(scope: MutableMap<String, NamedNode>) {
@@ -114,8 +158,10 @@ object NameResolver {
                 // if (name, node) exists in scope then the node has to be on top of the corresponding NameOverloadState stack
                 if (node is Variable || node is Function.Parameter)
                     visibleNames[name]!!.popVariable()
-                if (node is Function)
+                else if (node is Function && !node.isGenerator)
                     visibleNames[name]!!.popFunction()
+                else if (node is Function)
+                    visibleNames[name]!!.popGenerator()
 
                 // invariant: no node of a particular name exists <==> visibleNames[name] does not exist
                 if (visibleNames[name]!!.isEmpty())
@@ -270,6 +316,30 @@ object NameResolver {
                 is Statement.FunctionReturn -> {
                     analyzeNode(node.value, currentScope)
                 }
+
+                is Statement.ForeachLoop -> {
+                    val newScope = makeScope() // foreach body introduces a new scope
+
+                    // receiving variable and generator call are treated as they belonged to the new scope
+                    analyzeNode(node.receivingVariable, newScope)
+
+                    // resolve name for generator call.
+                    if (!checkGeneratorUsage(node.generatorCall)) {
+                        nameDefinitions[Ref(node.generatorCall)] =
+                            Ref(visibleNames[node.generatorCall.name]!!.topGenerator())
+                    }
+                    // skip analysing generatorCall because it would resolve the name again, but treating it as a regular function call
+                    // instead move on to analysing its arguments directly
+                    node.generatorCall.arguments.forEach { analyzeNode(it, currentScope) }
+
+                    node.action.forEach { analyzeNode(it, newScope) }
+                    destroyScope(newScope)
+                }
+
+                is Statement.GeneratorYield -> {
+                    analyzeNode(node.value, currentScope)
+                }
+
                 else -> {}
             }
         }

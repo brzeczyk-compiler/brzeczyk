@@ -201,6 +201,16 @@ sealed interface Diagnostic {
             }
         }
 
+        sealed class VariableInitializationError(astNodes: List<AstNode>) : ResolutionDiagnostic(astNodes) {
+            override val isError get() = true
+
+            class ReferenceToUninitializedVariable(
+                variable: NamedNode
+            ) : VariableInitializationError(listOf(variable)) {
+                override val errorMessage = "A (potentially) uninitialized variable cannot be referenced."
+            }
+        }
+
         sealed class TypeCheckingError(astNodes: List<AstNode>) : ResolutionDiagnostic(astNodes) {
             override val isError get() = true
 

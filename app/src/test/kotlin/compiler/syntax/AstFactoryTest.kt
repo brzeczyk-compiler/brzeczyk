@@ -169,12 +169,65 @@ class AstFactoryTest {
         assertEquals(expectedAst, resultAst)
     }
 
+    @Test fun `test correctly translates generator definition`() {
+        val parseTree = makeNTNode(
+            NonTerminalType.PROGRAM, Productions.program,
+            makeNTNode(
+                NonTerminalType.FUNC_DEF, Productions.funcDef,
+                makeTNode(TokenType.GENERATOR, "przekaźnik"),
+                makeTNode(TokenType.IDENTIFIER, "poboczna"),
+                makeTNode(TokenType.LEFT_PAREN, "("),
+                makeNTNode(
+                    NonTerminalType.DEF_ARGS, Productions.defArgs1,
+                    makeNTNode(
+                        NonTerminalType.DEF_ARG, Productions.defArg,
+                        makeTNode(TokenType.IDENTIFIER, "x"),
+                        makeTNode(TokenType.COLON, ":"),
+                        makeNTNode(NonTerminalType.TYPE, Productions.type, makeTNode(TokenType.TYPE_BOOLEAN, "Czy"))
+                    ),
+                    makeTNode(TokenType.COMMA, ","),
+                    makeNTNode(
+                        NonTerminalType.DEF_ARG, Productions.defArg,
+                        makeTNode(TokenType.IDENTIFIER, "y"),
+                        makeTNode(TokenType.COLON, ":"),
+                        makeNTNode(NonTerminalType.TYPE, Productions.type, makeTNode(TokenType.TYPE_INTEGER, "Liczba"))
+                    )
+                ),
+                makeTNode(TokenType.RIGHT_PAREN, ")"),
+                makeTNode(TokenType.ARROW, "->"),
+                makeNTNode(NonTerminalType.TYPE, Productions.type, makeTNode(TokenType.TYPE_INTEGER, "Liczba")),
+                makeTNode(TokenType.LEFT_BRACE, "{"),
+                makeNTNode(NonTerminalType.MANY_STATEMENTS, Productions.manyStatements),
+                makeTNode(TokenType.RIGHT_BRACE, "}")
+            )
+        )
+        val expectedAst = Program(
+            listOf(
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "poboczna",
+                        listOf(
+                            Function.Parameter("x", Type.Boolean, null, dummyLocationRange),
+                            Function.Parameter("y", Type.Number, null, dummyLocationRange),
+                        ),
+                        Type.Number, listOf(), true, dummyLocationRange
+                    ),
+
+                    dummyLocationRange
+                )
+            )
+        )
+
+        val resultAst = AstFactory.createFromParseTree(parseTree, dummyDiagnostics)
+        assertEquals(expectedAst, resultAst)
+    }
+
     @Test fun `test correctly translates foreign function declarations`() {
         val parseTree = makeNTNode(
             NonTerminalType.PROGRAM, Productions.program,
             makeNTNode(
                 NonTerminalType.FOREIGN_DECL, Productions.foreignDecl,
-                makeTNode(TokenType.FOREIGN, "zewnętrzna"),
+                makeTNode(TokenType.FOREIGN1, "zewnętrzna"),
                 makeTNode(TokenType.FUNCTION, "czynność"),
                 makeTNode(TokenType.IDENTIFIER, "poboczna0"),
                 makeTNode(TokenType.LEFT_PAREN, "("),
@@ -192,7 +245,7 @@ class AstFactoryTest {
             makeTNode(TokenType.NEWLINE, "\n"),
             makeNTNode(
                 NonTerminalType.FOREIGN_DECL, Productions.foreignDecl,
-                makeTNode(TokenType.FOREIGN, "zewnętrzna"),
+                makeTNode(TokenType.FOREIGN1, "zewnętrzna"),
                 makeTNode(TokenType.FUNCTION, "czynność"),
                 makeTNode(TokenType.IDENTIFIER, "poboczna1"),
                 makeTNode(TokenType.LEFT_PAREN, "("),
@@ -204,7 +257,7 @@ class AstFactoryTest {
             makeTNode(TokenType.NEWLINE, "\n"),
             makeNTNode(
                 NonTerminalType.FOREIGN_DECL, Productions.foreignDecl,
-                makeTNode(TokenType.FOREIGN, "zewnętrzna"),
+                makeTNode(TokenType.FOREIGN1, "zewnętrzna"),
                 makeTNode(TokenType.FUNCTION, "czynność"),
                 makeTNode(TokenType.FOREIGN_NAME, "`_Poboczna2`"),
                 makeTNode(TokenType.LEFT_PAREN, "("),
@@ -216,7 +269,7 @@ class AstFactoryTest {
             makeTNode(TokenType.SEMICOLON, ";"),
             makeNTNode(
                 NonTerminalType.FOREIGN_DECL, Productions.foreignDecl,
-                makeTNode(TokenType.FOREIGN, "zewnętrzna"),
+                makeTNode(TokenType.FOREIGN1, "zewnętrzna"),
                 makeTNode(TokenType.FUNCTION, "czynność"),
                 makeTNode(TokenType.FOREIGN_NAME, "`Poboczna3`"),
                 makeTNode(TokenType.LEFT_PAREN, "("),
@@ -228,6 +281,51 @@ class AstFactoryTest {
                 makeTNode(TokenType.IDENTIFIER, "poboczna3")
             ),
             makeTNode(TokenType.NEWLINE, "\n"),
+            makeNTNode(
+                NonTerminalType.FOREIGN_DECL, Productions.foreignDecl,
+                makeTNode(TokenType.FOREIGN2, "zewnętrzny"),
+                makeTNode(TokenType.GENERATOR, "przekaźnik"),
+                makeTNode(TokenType.IDENTIFIER, "zew_generator"),
+                makeTNode(TokenType.LEFT_PAREN, "("),
+                makeNTNode(
+                    NonTerminalType.DEF_ARGS, Productions.defArgs1,
+                    makeNTNode(
+                        NonTerminalType.DEF_ARG, Productions.defArg,
+                        makeTNode(TokenType.IDENTIFIER, "x"),
+                        makeTNode(TokenType.COLON, ":"),
+                        makeNTNode(NonTerminalType.TYPE, Productions.type, makeTNode(TokenType.TYPE_INTEGER, "Liczba"))
+                    )
+                ),
+                makeTNode(TokenType.RIGHT_PAREN, ")"),
+                makeTNode(TokenType.ARROW, "->"),
+                makeNTNode(NonTerminalType.TYPE, Productions.type, makeTNode(TokenType.TYPE_BOOLEAN, "Czy")),
+                makeTNode(TokenType.AS, "jako"),
+                makeTNode(TokenType.IDENTIFIER, "mój_generator")
+            ),
+            makeTNode(TokenType.NEWLINE, "\n"),
+            makeNTNode(
+                NonTerminalType.FOREIGN_DECL, Productions.foreignDecl,
+                makeTNode(TokenType.FOREIGN1, "zewnętrzny"),
+                makeTNode(TokenType.FUNCTION, "czynność"),
+                makeTNode(TokenType.IDENTIFIER, "odmieniony"),
+                makeTNode(TokenType.LEFT_PAREN, "("),
+                makeNTNode(NonTerminalType.DEF_ARGS, Productions.defArgs1),
+                makeTNode(TokenType.RIGHT_PAREN, ")"),
+                makeTNode(TokenType.ARROW, "->"),
+                makeNTNode(NonTerminalType.TYPE, Productions.type, makeTNode(TokenType.TYPE_INTEGER, "Liczba")),
+            ),
+            makeTNode(TokenType.NEWLINE, "\n"),
+            makeNTNode(
+                NonTerminalType.FOREIGN_DECL, Productions.foreignDecl,
+                makeTNode(TokenType.FOREIGN2, "zewnętrzna"),
+                makeTNode(TokenType.GENERATOR, "przekaźnik"),
+                makeTNode(TokenType.IDENTIFIER, "odmieniona"),
+                makeTNode(TokenType.LEFT_PAREN, "("),
+                makeNTNode(NonTerminalType.DEF_ARGS, Productions.defArgs1),
+                makeTNode(TokenType.RIGHT_PAREN, ")"),
+                makeTNode(TokenType.ARROW, "->"),
+                makeNTNode(NonTerminalType.TYPE, Productions.type, makeTNode(TokenType.TYPE_INTEGER, "Liczba")),
+            ),
         )
         val expectedAst = Program(
             listOf(
@@ -274,7 +372,40 @@ class AstFactoryTest {
                         dummyLocationRange
                     ),
                     dummyLocationRange
-                )
+                ),
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "mój_generator",
+                        listOf(Function.Parameter("x", Type.Number, null, dummyLocationRange)),
+                        Type.Boolean,
+                        Function.Implementation.Foreign("zew_generator"),
+                        true,
+                        dummyLocationRange
+                    ),
+                    dummyLocationRange
+                ),
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "odmieniony",
+                        listOf(),
+                        Type.Number,
+                        Function.Implementation.Foreign("odmieniony"),
+                        false,
+                        dummyLocationRange
+                    ),
+                    dummyLocationRange
+                ),
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "odmieniona",
+                        listOf(),
+                        Type.Number,
+                        Function.Implementation.Foreign("odmieniona"),
+                        true,
+                        dummyLocationRange
+                    ),
+                    dummyLocationRange
+                ),
             )
         )
 
@@ -287,7 +418,7 @@ class AstFactoryTest {
             NonTerminalType.PROGRAM, Productions.program,
             makeNTNode(
                 NonTerminalType.FOREIGN_DECL, Productions.foreignDecl,
-                makeTNode(TokenType.FOREIGN, "zewnętrzna"),
+                makeTNode(TokenType.FOREIGN1, "zewnętrzna"),
                 makeTNode(TokenType.FUNCTION, "czynność"),
                 makeTNode(TokenType.FOREIGN_NAME, "`Poboczna`"),
                 makeTNode(TokenType.LEFT_PAREN, "("),
@@ -736,6 +867,124 @@ class AstFactoryTest {
                                     )
                                 ),
                                 dummyLocationRange
+                            )
+                        ),
+                        false,
+                        dummyLocationRange
+                    ),
+                    dummyLocationRange
+                )
+            )
+        )
+
+        val resultAst = AstFactory.createFromParseTree(parseTree, dummyDiagnostics)
+        assertEquals(expectedAst, resultAst)
+    }
+
+    @Test fun `test correctly translates while loop`() {
+        val parseTree = makeProgramWithMainFunction(
+            makeNTNode(
+                NonTerminalType.STATEMENT, Productions.statementNonBrace,
+                makeNTNode(
+                    NonTerminalType.NON_BRACE_STATEMENT, Productions.nonBraceStatementWhile,
+                    makeTNode(TokenType.WHILE, "dopóki"),
+                    makeTNode(TokenType.LEFT_PAREN, "("),
+                    makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR,
+                    makeTNode(TokenType.RIGHT_PAREN, ")"),
+                    makeNTNode(
+                        NonTerminalType.NON_IF_MAYBE_BLOCK, Productions.nonIfMaybeBlockNonBrace,
+                        makeNTNode(
+                            NonTerminalType.NON_IF_NON_BRACE_STATEMENT, Productions.nonIfNonBraceStatementAtomic,
+                            makeNTNode(NonTerminalType.ATOMIC_STATEMENT, Productions.atomicBreak, makeTNode(TokenType.BREAK, "przerwij")),
+                            makeTNode(TokenType.NEWLINE, "\n")
+                        )
+                    )
+                )
+            )
+        )
+        val expectedAst = Program(
+            listOf(
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "główna",
+                        listOf(),
+                        Type.Unit,
+                        listOf(
+                            Statement.Loop(
+                                Expression.Variable("x", dummyLocationRange),
+                                listOf(Statement.LoopBreak(dummyLocationRange)),
+                                dummyLocationRange,
+                            )
+                        ),
+                        false,
+                        dummyLocationRange
+                    ),
+                    dummyLocationRange
+                )
+            )
+        )
+
+        val resultAst = AstFactory.createFromParseTree(parseTree, dummyDiagnostics)
+        assertEquals(expectedAst, resultAst)
+    }
+
+    @Test fun `test correctly translates foreach loop`() {
+        val parseTree = makeProgramWithMainFunction(
+            makeNTNode(
+                NonTerminalType.STATEMENT, Productions.statementNonBrace,
+                makeNTNode(
+                    NonTerminalType.NON_BRACE_STATEMENT, Productions.nonBraceStatementForEach,
+                    makeTNode(TokenType.FOR_EACH, "otrzymując"),
+                    makeTNode(TokenType.IDENTIFIER, "x"),
+                    makeTNode(TokenType.COLON, ":"),
+                    makeNTNode(NonTerminalType.TYPE, Productions.type, makeTNode(TokenType.TYPE_INTEGER, "Liczba")),
+                    makeTNode(TokenType.FROM, "od"),
+                    makeTNode(TokenType.IDENTIFIER, "f"),
+                    makeTNode(TokenType.LEFT_PAREN, "("),
+                    makeNTNode(
+                        NonTerminalType.CALL_ARGS, Productions.callArgs1,
+                        makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "a")) wrapUpTo NonTerminalType.EXPR,
+                        makeTNode(TokenType.COMMA, ","),
+                        makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "b")) wrapUpTo NonTerminalType.EXPR,
+                        makeTNode(TokenType.ASSIGNMENT, "="),
+                        makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "c")) wrapUpTo NonTerminalType.EXPR,
+                    ),
+                    makeTNode(TokenType.RIGHT_PAREN, ")"),
+                    makeNTNode(
+                        NonTerminalType.NON_IF_MAYBE_BLOCK, Productions.nonIfMaybeBlockNonBrace,
+                        makeNTNode(
+                            NonTerminalType.NON_IF_NON_BRACE_STATEMENT, Productions.nonIfNonBraceStatementAtomic,
+                            makeNTNode(
+                                NonTerminalType.ATOMIC_STATEMENT, Productions.atomicYield,
+                                makeTNode(TokenType.YIELD, "przekaż"),
+                                makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR,
+                            ),
+                            makeTNode(TokenType.NEWLINE, "\n")
+                        ),
+                    ),
+                )
+            )
+        )
+        val expectedAst = Program(
+            listOf(
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "główna",
+                        listOf(),
+                        Type.Unit,
+                        listOf(
+                            Statement.ForeachLoop(
+                                Variable(Variable.Kind.VALUE, "x", Type.Number, null, dummyLocationRange),
+                                Expression.FunctionCall(
+                                    "f",
+                                    listOf(
+                                        Expression.FunctionCall.Argument(null, Expression.Variable("a", dummyLocationRange), dummyLocationRange),
+                                        Expression.FunctionCall.Argument("b", Expression.Variable("c", dummyLocationRange), dummyLocationRange),
+                                    ),
+                                    dummyLocationRange,
+                                ),
+                                listOf(Statement.GeneratorYield(Expression.Variable("x", dummyLocationRange), dummyLocationRange)),
+                                dummyLocationRange,
                             )
                         ),
                         false,

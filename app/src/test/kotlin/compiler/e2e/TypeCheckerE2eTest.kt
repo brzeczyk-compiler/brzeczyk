@@ -3,7 +3,6 @@ package compiler.e2e
 import compiler.diagnostics.Diagnostic
 import compiler.e2e.E2eTestUtils.assertErrorOfType
 import compiler.e2e.E2eTestUtils.assertProgramCorrect
-import org.junit.Ignore
 import kotlin.test.Test
 
 class TypeCheckerE2eTest {
@@ -37,10 +36,6 @@ class TypeCheckerE2eTest {
 
     private fun assertYieldInNonGeneratorFunctionError(program: String) {
         assertErrorOfType(program, Diagnostic.ResolutionDiagnostic.TypeCheckingError.YieldInNonGeneratorFunction::class)
-    }
-
-    private fun assertForEachLoopOverNonGeneratorFunctionError(program: String) {
-        assertErrorOfType(program, Diagnostic.ResolutionDiagnostic.TypeCheckingError.ForEachLoopOverNonGeneratorFunction::class)
     }
 
     @Test
@@ -96,7 +91,6 @@ class TypeCheckerE2eTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test receiving variables with incorrect types`() {
         assertInvalidTypeError(
@@ -738,7 +732,6 @@ class TypeCheckerE2eTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test wrong yield type`() {
         assertInvalidTypeError(
@@ -785,7 +778,6 @@ class TypeCheckerE2eTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test return with value in a generator`() {
         assertReturnWithValueInGeneratorError(
@@ -825,6 +817,7 @@ class TypeCheckerE2eTest {
         )
         assertProgramCorrect(
             """
+                czynność główna() { }
                 przekaźnik f() -> Liczba {
                     zakończ
                 }
@@ -832,6 +825,7 @@ class TypeCheckerE2eTest {
         )
         assertProgramCorrect(
             """
+                czynność główna() { }
                 przekaźnik f() -> Czy {
                     zakończ
                 }
@@ -839,6 +833,7 @@ class TypeCheckerE2eTest {
         )
         assertProgramCorrect(
             """
+                czynność główna() { }
                 przekaźnik f() -> Nic {
                     zakończ
                 }
@@ -846,7 +841,6 @@ class TypeCheckerE2eTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test yield in non-generator function`() {
         assertYieldInNonGeneratorFunctionError(

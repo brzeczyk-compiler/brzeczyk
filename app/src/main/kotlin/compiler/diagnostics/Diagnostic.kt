@@ -303,12 +303,6 @@ sealed interface Diagnostic {
             ) : TypeCheckingError(listOf(yieldStatement)) {
                 override val errorMessage = "The yield occurs in non-generator function."
             }
-
-            class ForEachLoopOverNonGeneratorFunction(
-                functionCall: Expression.FunctionCall,
-            ) : TypeCheckingError(listOf(functionCall)) {
-                override val errorMessage = "The for each loop loops over non-generator function."
-            }
         }
 
         sealed class VariablePropertiesError(astNodes: List<AstNode>) : ResolutionDiagnostic(astNodes) {

@@ -108,7 +108,7 @@ class ParserE2eTest {
                             
                         """,
                 """
-                            zew czynność f() { }
+                            zewnętrzna czynność f() { }
                         """,
                 """
                             czynność zewnętrzna f()

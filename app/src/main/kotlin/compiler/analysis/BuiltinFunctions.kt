@@ -6,6 +6,7 @@ import compiler.ast.Type
 
 object BuiltinFunctions {
     private val builtinFunctions = mapOf(
+        // Writes a single number followed by a new line to output
         "napisz" to Function(
             "napisz",
             listOf(Function.Parameter("wartość", Type.Number, null)),
@@ -14,6 +15,7 @@ object BuiltinFunctions {
             false
         ),
 
+        // Reads a single number from input
         "wczytaj" to Function(
             "wczytaj",
             emptyList(),
@@ -22,6 +24,7 @@ object BuiltinFunctions {
             false
         ),
 
+        // Returns consecutive numbers from 0 to `do` - 1
         "przedziału" to Function(
             "przedziału",
             listOf(Function.Parameter("do", Type.Number, null)),
@@ -30,6 +33,7 @@ object BuiltinFunctions {
             true
         ),
 
+        // Returns numbers read from input until its end
         "wejścia" to Function(
             "wejścia",
             listOf(),

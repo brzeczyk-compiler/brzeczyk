@@ -1,0 +1,7 @@
+czynność główna() {
+    wart max: Liczba = wczytaj()
+
+    otrzymując x: Liczba od przedziału(max)
+        otrzymując y: Liczba od przedziału(x)
+            napisz(10 * x + y)
+}

@@ -43,8 +43,9 @@ object DefaultParameterResolver {
                     process(statement.function.body)
                 }
 
-                is Statement.ForeachLoop -> TODO()
-                is Statement.GeneratorYield -> TODO()
+                is Statement.ForeachLoop -> process(statement.action)
+
+                is Statement.GeneratorYield -> { }
             }
         }
 

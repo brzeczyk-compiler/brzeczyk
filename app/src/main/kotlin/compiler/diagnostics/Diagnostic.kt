@@ -10,6 +10,7 @@ import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.input.Location
 import compiler.input.LocationRange
+import compiler.intermediate.MAIN_FUNCTION_IDENTIFIER
 import compiler.utils.Ref
 
 sealed interface Diagnostic {
@@ -64,11 +65,6 @@ sealed interface Diagnostic {
         ) : ParserError() {
             override val errorMessage get() = "Foreign name <<$foreignName>> at location $location is not a valid identifier."
         }
-    }
-
-    object MainFunctionNotFound : Diagnostic {
-        override val isError get() = true
-        override val message get() = "Main function 'główna' not found"
     }
 
     sealed class ResolutionDiagnostic(private val astNodes: List<AstNode>) : Diagnostic {
@@ -126,18 +122,32 @@ sealed interface Diagnostic {
                 override val errorMessage = "The variable is called."
             }
 
-            class FunctionIsNotVariable(
+            class CallableIsNotVariable(
                 function: Function,
                 variable: Expression.Variable,
             ) : NameResolutionError(listOf(function, variable)) {
-                override val errorMessage = "The function is used as a variable."
+                override val errorMessage = "The callable is used as a variable."
             }
 
-            class AssignmentToFunction(
+            class AssignmentToCallable(
                 function: Function,
                 assignment: Statement.Assignment,
             ) : NameResolutionError(listOf(function, assignment)) {
-                override val errorMessage = "The function is a left operand of the assignment."
+                override val errorMessage = "The callable is a left operand of the assignment."
+            }
+
+            class FunctionUsedAsAGenerator(
+                function: Function,
+                functionCall: Expression.FunctionCall,
+            ) : NameResolutionError(listOf(function, functionCall)) {
+                override val errorMessage = "Function called where generator call was expected"
+            }
+
+            class GeneratorUsedAsFunction(
+                generator: Function,
+                generatorCall: Expression.FunctionCall,
+            ) : NameResolutionError(listOf(generator, generatorCall)) {
+                override val errorMessage = "Generator called where function call was expected"
             }
         }
 
@@ -184,6 +194,16 @@ sealed interface Diagnostic {
                 functionCall: Expression.FunctionCall,
             ) : ArgumentResolutionError(listOf(functionCall)) {
                 override val errorMessage = "Too many arguments are provided in the function call."
+            }
+        }
+
+        sealed class VariableInitializationError(astNodes: List<AstNode>) : ResolutionDiagnostic(astNodes) {
+            override val isError get() = true
+
+            class ReferenceToUninitializedVariable(
+                variable: NamedNode
+            ) : VariableInitializationError(listOf(variable)) {
+                override val errorMessage = "A (potentially) uninitialized variable cannot be referenced."
             }
         }
 
@@ -271,6 +291,18 @@ sealed interface Diagnostic {
             ) : TypeCheckingError(listOf(function)) {
                 override val errorMessage = "The function neither returns unit, nor has a 'return' statement."
             }
+
+            class ReturnWithValueInGenerator(
+                returnStatement: Statement.FunctionReturn,
+            ) : TypeCheckingError(listOf(returnStatement)) {
+                override val errorMessage = "The generator returns with value."
+            }
+
+            class YieldInNonGeneratorFunction(
+                yieldStatement: Statement.GeneratorYield,
+            ) : TypeCheckingError(listOf(yieldStatement)) {
+                override val errorMessage = "The yield occurs in non-generator function."
+            }
         }
 
         sealed class VariablePropertiesError(astNodes: List<AstNode>) : ResolutionDiagnostic(astNodes) {
@@ -312,6 +344,11 @@ sealed interface Diagnostic {
                     override val errorMessage = "The 'continue' is used outside of a loop."
                 }
             }
+        }
+
+        object MainFunctionNotFound : ResolutionDiagnostic(emptyList()) {
+            override val isError: Boolean = true
+            override val errorMessage = "Main function '$MAIN_FUNCTION_IDENTIFIER' not found."
         }
     }
 }

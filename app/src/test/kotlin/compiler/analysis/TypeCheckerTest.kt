@@ -1165,4 +1165,98 @@ class TypeCheckerTest {
 
         assertEquals(listOf<Diagnostic>(TypeCheckingError.ConditionalTypesMismatch(conditional, Type.Number, Type.Boolean)), diagnosticsList)
     }
+
+    // przekaźnik f() -> Liczba {}
+    // czynność główna() {
+    //     otrzymując x: Czy od f() { }
+    // }
+
+    @Test
+    fun `test generator receiving variable with wrong type`() {
+        val generator = Function("f", emptyList(), Type.Number, emptyList(), true)
+        val receivingVariable = Variable(Variable.Kind.VALUE, "x", Type.Boolean, null)
+        val generatorCall = Expression.FunctionCall("f", emptyList())
+        nameResolution[Ref(generatorCall)] = Ref(generator)
+        val main = mainFunction(listOf(Statement.ForeachLoop(receivingVariable, generatorCall, emptyList())))
+        val program = Program(
+            listOf(
+                Program.Global.FunctionDefinition(generator),
+                Program.Global.FunctionDefinition(main)
+            )
+        )
+
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
+        }
+
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.InvalidType(generatorCall, Type.Number, Type.Boolean)), diagnosticsList)
+    }
+
+    // przekaźnik f() -> Czy {
+    //    przekaż 12
+    // }
+
+    @Test
+    fun `test generator yield with wrong expression type`() {
+        val generatorYield = Statement.GeneratorYield(Expression.NumberLiteral(12))
+        val generator = Function("f", emptyList(), Type.Boolean, listOf(generatorYield), true)
+        val program = Program(listOf(Program.Global.FunctionDefinition(generator)))
+
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
+        }
+
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.InvalidType(generatorYield.value, Type.Number, Type.Boolean)), diagnosticsList)
+    }
+
+    // przekaźnik f() -> Liczba {
+    //     zwróć 12
+    // }
+
+    @Test
+    fun `test generator return with value`() {
+        val generatorReturn = Statement.FunctionReturn(Expression.NumberLiteral(12))
+        val generator = Function("f", emptyList(), Type.Boolean, listOf(generatorReturn), true)
+        val program = Program(listOf(Program.Global.FunctionDefinition(generator)))
+
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
+        }
+
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.ReturnWithValueInGenerator(generatorReturn)), diagnosticsList)
+    }
+
+    // przekaźnik f() -> Liczba {
+    //     zakończ
+    // }
+
+    @Test
+    fun `test generator return`() {
+        val generatorReturn = Statement.FunctionReturn(Expression.UnitLiteral(), true)
+        val generator = Function("f", emptyList(), Type.Boolean, listOf(generatorReturn), true)
+        val program = Program(listOf(Program.Global.FunctionDefinition(generator)))
+
+        TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
+
+        assertEquals(emptyList(), diagnosticsList)
+    }
+
+    // czynność f() -> Liczba {
+    //     przekaż 12
+    //     zwróć 10
+    // }
+
+    @Test
+    fun `test yield in non-generator function`() {
+        val generatorYield = Statement.GeneratorYield(Expression.NumberLiteral(12))
+        val returnStatement = Statement.FunctionReturn(Expression.NumberLiteral(10))
+        val function = Function("f", emptyList(), Type.Number, listOf(generatorYield, returnStatement))
+        val program = Program(listOf(Program.Global.FunctionDefinition(function)))
+
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
+        }
+
+        assertEquals(listOf<Diagnostic>(TypeCheckingError.YieldInNonGeneratorFunction(generatorYield)), diagnosticsList)
+    }
 }

@@ -1,0 +1,22 @@
+Input:
+Exit code:
+0
+Output:
+----------
+Input:
+1
+Exit code:
+0
+Output:
+2
+----------
+Input:
+2
+3
+4
+Exit code:
+0
+Output:
+3
+4
+5

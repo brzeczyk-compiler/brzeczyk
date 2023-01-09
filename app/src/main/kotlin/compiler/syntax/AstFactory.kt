@@ -154,17 +154,18 @@ object AstFactory {
     private fun processFunctionDefinition(parseTree: ParseTree<Symbol>, diagnostics: Diagnostics): Function {
         val children = (parseTree as ParseTree.Branch).getFilteredChildren()
 
+        val isGenerator = children[0].token() == TokenType.GENERATOR
         val name = (children[1] as ParseTree.Leaf).content
         val parameters = processFunctionDefinitionParameters(children[3], diagnostics)
         val returnType = if (children[5].token() == TokenType.ARROW) processType(children[6]) else Type.Unit
         val body = processManyStatements(children[children.lastIndex - 1], diagnostics)
-        val isGenerator = false // TODO
         return Function(name, parameters, returnType, body, isGenerator, combineLocations(children))
     }
 
     private fun processForeignFunctionDeclaration(parseTree: ParseTree<Symbol>, diagnostics: Diagnostics): Function {
         val children = (parseTree as ParseTree.Branch).getFilteredChildren()
 
+        val isGenerator = children[1].token() == TokenType.GENERATOR
         val foreignName = extractForeignName(children[2] as ParseTree.Leaf<Symbol>, diagnostics, false)
         val parameters = processFunctionDefinitionParameters(children[4], diagnostics)
         val returnType = if (children.size > 6 && children[6].token() == TokenType.ARROW) processType(children[7]) else Type.Unit
@@ -172,7 +173,6 @@ object AstFactory {
             (children[children.size - 1] as ParseTree.Leaf).content
         else
             extractForeignName(children[2] as ParseTree.Leaf<Symbol>, diagnostics, true)
-        val isGenerator = false // TODO
         return Function(localName, parameters, returnType, Function.Implementation.Foreign(foreignName), isGenerator, parseTree.location)
     }
 
@@ -360,6 +360,22 @@ object AstFactory {
                 val bodyBlock = processMaybeBlock(children[4], diagnostics)
                 Statement.Loop(conditionExpr, bodyBlock, combineLocations(children))
             }
+            in listOf(Productions.nonBraceStatementForEach, Productions.nonIfNonBraceStatementForEach) -> {
+                val receivingVariable = Variable(
+                    Variable.Kind.VALUE,
+                    (children[1] as ParseTree.Leaf).content,
+                    processType(children[3]),
+                    null,
+                    combineLocations(children.subList(1, 4)),
+                )
+                val generatorCall = Expression.FunctionCall(
+                    (children[5] as ParseTree.Leaf).content,
+                    processFunctionCallArguments(children[7], diagnostics),
+                    combineLocations(children.subList(5, 9)),
+                )
+                val action = processMaybeBlock(children[9], diagnostics)
+                Statement.ForeachLoop(receivingVariable, generatorCall, action, combineLocations(children))
+            }
             in listOf(Productions.nonBraceStatementFuncDef, Productions.nonIfNonBraceStatementFuncDef) ->
                 Statement.FunctionDefinition(processFunctionDefinition(children[0], diagnostics), combineLocations(children))
             else -> throw IllegalArgumentException()
@@ -382,9 +398,11 @@ object AstFactory {
             Productions.atomicContinue ->
                 Statement.LoopContinuation(combineLocations(children))
             Productions.atomicReturnUnit ->
-                Statement.FunctionReturn(Expression.UnitLiteral(combineLocations(children)), combineLocations(children))
+                Statement.FunctionReturn(Expression.UnitLiteral(combineLocations(children)), true, combineLocations(children))
             Productions.atomicReturn ->
-                Statement.FunctionReturn(processExpression(children[1], diagnostics), combineLocations(children))
+                Statement.FunctionReturn(processExpression(children[1], diagnostics), false, combineLocations(children))
+            Productions.atomicYield ->
+                Statement.GeneratorYield(processExpression(children[1], diagnostics), combineLocations(children))
             Productions.atomicVarDef ->
                 Statement.VariableDefinition(processVariableDeclaration(children[0], diagnostics), combineLocations(children))
             Productions.atomicForeignDecl ->

@@ -54,9 +54,9 @@ sealed class IFTNode {
     data class StackPush(val node: IFTNode) : IFTNode()
     data class StackPop(val dummy: Unit = Unit) : IFTNode()
 
-    data class JumpToRegister(val targetRegister: Register) : IFTNode()
+    data class JumpToRegister(val targetRegister: Register) : IFTNode() // only valid as a final node in CFG
     data class Call(val address: IFTNode, val usedRegisters: Collection<Register>, val definedRegisters: Collection<Register>) : IFTNode()
-    data class Return(val usedRegisters: Collection<Register>) : IFTNode()
+    data class Return(val usedRegisters: Collection<Register>) : IFTNode() // only valid as a final node in CFG
 
     // test nodes
     data class Dummy(val info: Any = Unit) : IFTNode()

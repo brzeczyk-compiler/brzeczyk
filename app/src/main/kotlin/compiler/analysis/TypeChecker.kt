@@ -97,7 +97,7 @@ class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
 
                     is Statement.Conditional -> {
                         checkExpression(statement.condition, Type.Boolean)
-                        statement.actionWhenTrue.let { checkBlock(it) }
+                        checkBlock(statement.actionWhenTrue)
                         statement.actionWhenFalse?.let { checkBlock(it) }
                     }
 
@@ -109,9 +109,23 @@ class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
                     is Statement.LoopBreak -> { } // TODO: check if inside a loop
                     is Statement.LoopContinuation -> { } // TODO: check if inside a loop
 
-                    is Statement.FunctionReturn -> checkExpression(statement.value, function.returnType)
-                    is Statement.ForeachLoop -> TODO()
-                    is Statement.GeneratorYield -> TODO()
+                    is Statement.FunctionReturn -> {
+                        if (function.isGenerator && !statement.isWithoutExplicitlySpecifiedValue)
+                            report(TypeCheckingError.ReturnWithValueInGenerator(statement))
+                        else if (!function.isGenerator)
+                            checkExpression(statement.value, function.returnType)
+                    }
+                    is Statement.ForeachLoop -> {
+                        checkVariable(statement.receivingVariable, false)
+                        checkExpression(statement.generatorCall, statement.receivingVariable.type)
+                        checkBlock(statement.action)
+                    }
+                    is Statement.GeneratorYield -> {
+                        if (function.isGenerator)
+                            checkExpression(statement.value, function.returnType)
+                        else
+                            report(TypeCheckingError.YieldInNonGeneratorFunction(statement))
+                    }
                 }
             }
         }
@@ -137,7 +151,7 @@ class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
 
         checkBlock(function.body)
 
-        if (function.implementation is Function.Implementation.Local && function.returnType != Type.Unit)
+        if (function.implementation is Function.Implementation.Local && function.returnType != Type.Unit && !function.isGenerator)
             checkIfLastStatementIsReturn(function.body)
     }
 
@@ -152,7 +166,7 @@ class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
 
                 is Expression.Variable -> {
                     when (val node = nameResolution[Ref(expression)]!!.value) {
-                        is Variable -> return node.type // TODO: check if the variable has been initialized
+                        is Variable -> return node.type
 
                         is Function.Parameter -> return node.type
 

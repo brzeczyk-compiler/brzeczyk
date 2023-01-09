@@ -88,6 +88,14 @@ object VariablePropertiesAnalyzer {
                 is Statement.Loop -> (sequenceOf(node.condition) + node.action.asSequence())
                     .forEach { analyzeVariables(it, currentFunction) }
                 is Statement.FunctionReturn -> analyzeVariables(node.value, currentFunction)
+                is Statement.ForeachLoop -> {
+                    mutableVariableProperties[Ref(node.receivingVariable)] = MutableVariableProperties(currentFunction ?: GlobalContext)
+                    analyzeVariables(node.generatorCall, currentFunction)
+                    node.action.forEach { analyzeVariables(it, currentFunction) }
+                }
+                is Statement.GeneratorYield -> {
+                    analyzeVariables(node.value, currentFunction)
+                }
                 is Expression.Variable -> {
                     val resolvedVariable: NamedNode = nameResolution[Ref(node)]!!.value
                     mutableVariableProperties[Ref(resolvedVariable)]!!.accessedIn.add(Ref(currentFunction!!))
@@ -112,7 +120,7 @@ object VariablePropertiesAnalyzer {
                         }
                     }
                     node.body.forEach { analyzeVariables(it, node) }
-                    if (node.implementation is Function.Implementation.Local && node.returnType != Type.Unit) {
+                    if (node.implementation is Function.Implementation.Local && node.returnType != Type.Unit && !node.isGenerator) {
                         // Accessed set consists of only the owner function, cause the variable's value is moved to
                         // appropriate Register in the ControlFlowGraph of epilogue of this function, and the Variable
                         // is never accessed anymore (including both outer & inner functions).

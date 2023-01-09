@@ -79,7 +79,7 @@ object FunctionDependenciesAnalyzer {
             } as Program.Global.FunctionDefinition?
             )?.function
         if (mainFunction == null) {
-            diagnostics.report(Diagnostic.MainFunctionNotFound)
+            diagnostics.report(Diagnostic.ResolutionDiagnostic.MainFunctionNotFound)
         }
         return mainFunction
     }

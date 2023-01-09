@@ -56,7 +56,7 @@ class Compiler(val diagnostics: Diagnostics) {
 
             val programProperties = ProgramAnalyzer.analyzeProgram(astWithBuiltinFunctions, diagnostics)
 
-            val (functionDetailsGenerators, generatorDetailsGenerators) = FunctionDependenciesAnalyzer.createFunctionDetailsGenerators(
+            val (functionDetailsGenerators, generatorDetailsGenerators) = FunctionDependenciesAnalyzer.createCallablesDetailsGenerators(
                 astWithBuiltinFunctions,
                 programProperties.variableProperties,
                 programProperties.functionReturnedValueVariables,
@@ -102,8 +102,10 @@ class Compiler(val diagnostics: Diagnostics) {
                     functionDetailsGenerators
                         .filter { it.key.value.implementation is Function.Implementation.Foreign }
                         .map { it.value.identifier } +
-                        BuiltinFunctions.internallyUsedExternalSymbols,
-                    // TODO: add identifiers of foreign generators
+                        BuiltinFunctions.internallyUsedExternalSymbols +
+                        generatorDetailsGenerators
+                            .filter { it.key.value.implementation is Function.Implementation.Foreign }
+                            .flatMap { it.value.let { listOf(it.initFDG, it.finalizeFDG, it.resumeFDG) }.map { it.identifier } },
                     finalCode.map { functionCode ->
                         functionDetailsGenerators[functionCode.key]!!.identifier to
                             CodeSection.FunctionCode(

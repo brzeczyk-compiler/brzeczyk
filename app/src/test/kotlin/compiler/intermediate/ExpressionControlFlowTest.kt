@@ -232,11 +232,11 @@ class ExpressionControlFlowTest {
             Expression.BinaryOperation(Expression.BinaryOperation.Kind.GREATER_THAN, xExpr, yExpr) to IFTNode.GreaterThan(xVarRead, yVarRead),
             Expression.BinaryOperation(Expression.BinaryOperation.Kind.GREATER_THAN_OR_EQUALS, xExpr, yExpr) to IFTNode.GreaterThanOrEquals(xVarRead, yVarRead),
         )
-        basic hasSameStructureAs xVarRead.toCfg()
-        basicParam hasSameStructureAs pParamRead.toCfg()
+        basic assertHasSameStructureAs xVarRead.toCfg()
+        basicParam assertHasSameStructureAs pParamRead.toCfg()
 
         for ((expr, iftNode) in operatorTests) {
-            context.createCfg(expr) hasSameStructureAs iftNode.toCfg()
+            context.createCfg(expr) assertHasSameStructureAs iftNode.toCfg()
         }
     }
 
@@ -248,7 +248,7 @@ class ExpressionControlFlowTest {
 
         val assignmentCfg = context.createCfg("x" asVarExprIn context, "y" asVarIn context) // y = x
 
-        assignmentCfg hasSameStructureAs IFTNode.DummyWrite("y" asVarIn context, IFTNode.DummyRead("x" asVarIn context, true), true).toCfg()
+        assignmentCfg assertHasSameStructureAs IFTNode.DummyWrite("y" asVarIn context, IFTNode.DummyRead("x" asVarIn context, true), true).toCfg()
     }
 
     @Test
@@ -259,7 +259,7 @@ class ExpressionControlFlowTest {
         )
 
         val read = context.createCfg("x" asVarExprIn context)
-        read hasSameStructureAs
+        read assertHasSameStructureAs
             IFTNode.DummyRead(
                 "x" asVarIn context,
                 isDirect = false,
@@ -267,7 +267,7 @@ class ExpressionControlFlowTest {
             ).toCfg()
 
         val write = context.createCfg(Expression.NumberLiteral(10), "x" asVarIn context)
-        write hasSameStructureAs
+        write assertHasSameStructureAs
             IFTNode.DummyWrite(
                 "x" asVarIn context,
                 IFTNode.Const(10),
@@ -294,7 +294,7 @@ class ExpressionControlFlowTest {
         val callResult = IFTNode.DummyCallResult()
 
         val basicCall = context.createCfg("f" asFunCallIn context) // f()
-        basicCall hasSameStructureAs (
+        basicCall assertHasSameStructureAs (
             IFTNode.DummyCall("f" asFunIn context, emptyList(), callResult)
                 merge IFTNode.RegisterWrite(r1, callResult)
                 merge IFTNode.RegisterRead(r1)
@@ -304,7 +304,7 @@ class ExpressionControlFlowTest {
             ("x" asVarExprIn context)
                 add ("f" asFunCallIn context)
         )
-        callAffectingVariable hasSameStructureAs (
+        callAffectingVariable assertHasSameStructureAs (
             IFTNode.RegisterWrite(r1, IFTNode.DummyRead("x" asVarIn context, true))
                 merge IFTNode.DummyCall("f" asFunIn context, emptyList(), callResult)
                 merge IFTNode.RegisterWrite(r2, callResult)
@@ -315,7 +315,7 @@ class ExpressionControlFlowTest {
             ("x" asVarExprIn context)
                 add ("g" asFunCallIn context)
         )
-        callNotAffectingVariable hasSameStructureAs (
+        callNotAffectingVariable assertHasSameStructureAs (
             IFTNode.DummyCall("g" asFunIn context, emptyList(), callResult)
                 merge IFTNode.RegisterWrite(r1, callResult)
                 merge IFTNode.Add(IFTNode.DummyRead("x" asVarIn context, true), IFTNode.RegisterRead(r1))
@@ -325,7 +325,7 @@ class ExpressionControlFlowTest {
             ("f" asFunCallIn context)
                 add ("x" asVarExprIn context)
         )
-        variableAfterAffectingFunction hasSameStructureAs (
+        variableAfterAffectingFunction assertHasSameStructureAs (
             IFTNode.DummyCall("f" asFunIn context, emptyList(), callResult)
                 merge IFTNode.RegisterWrite(r1, callResult)
                 merge IFTNode.Add(IFTNode.RegisterRead(r1), IFTNode.DummyRead("x" asVarIn context, true))
@@ -335,7 +335,7 @@ class ExpressionControlFlowTest {
             ("g" asFunCallIn context)
                 add ("x" asVarExprIn context)
         )
-        variableAfterNotAffectingFunction hasSameStructureAs (
+        variableAfterNotAffectingFunction assertHasSameStructureAs (
             IFTNode.DummyCall("g" asFunIn context, emptyList(), callResult)
                 merge IFTNode.RegisterWrite(r1, callResult)
                 merge IFTNode.Add(IFTNode.RegisterRead(r1), IFTNode.DummyRead("x" asVarIn context, true))
@@ -346,7 +346,7 @@ class ExpressionControlFlowTest {
                 add ("f" asFunCallIn context)
                 add ("x" asVarExprIn context)
         )
-        variableOnBothSidesOfFunction hasSameStructureAs (
+        variableOnBothSidesOfFunction assertHasSameStructureAs (
             IFTNode.RegisterWrite(r1, IFTNode.DummyRead("x" asVarIn context, true))
                 merge IFTNode.DummyCall("f" asFunIn context, emptyList(), callResult)
                 merge IFTNode.RegisterWrite(r2, callResult)
@@ -358,7 +358,7 @@ class ExpressionControlFlowTest {
                 add ("x" asVarExprIn context)
                 add ("f" asFunCallIn context)
         )
-        multipleUsageBeforeCall hasSameStructureAs (
+        multipleUsageBeforeCall assertHasSameStructureAs (
             IFTNode.RegisterWrite(r1, IFTNode.DummyRead("x" asVarIn context, true))
                 merge IFTNode.DummyCall("f" asFunIn context, emptyList(), callResult)
                 merge IFTNode.RegisterWrite(r2, callResult)
@@ -384,7 +384,7 @@ class ExpressionControlFlowTest {
             ("x" asVarExprIn context)
                 and ("y" asVarExprIn context)
         )
-        andCfg hasSameStructureAs (
+        andCfg assertHasSameStructureAs (
             mergeCFGsConditionally(
                 IFTNode.DummyRead("x" asVarIn context, true).toCfg(),
                 IFTNode.RegisterWrite(r1, IFTNode.DummyRead("y" asVarIn context, true)).toCfg(),
@@ -397,7 +397,7 @@ class ExpressionControlFlowTest {
             ("x" asVarExprIn context)
                 or ("y" asVarExprIn context)
         )
-        orCfg hasSameStructureAs (
+        orCfg assertHasSameStructureAs (
             mergeCFGsConditionally(
                 IFTNode.DummyRead("x" asVarIn context, true).toCfg(),
                 IFTNode.RegisterWrite(r1, IFTNode.Const(1)).toCfg(),
@@ -413,7 +413,7 @@ class ExpressionControlFlowTest {
                 "z" asVarExprIn context
             )
         )
-        ternaryCfg hasSameStructureAs (
+        ternaryCfg assertHasSameStructureAs (
             mergeCFGsConditionally(
                 IFTNode.DummyRead("x" asVarIn context, true).toCfg(),
                 IFTNode.RegisterWrite(r1, IFTNode.DummyRead("y" asVarIn context, true)).toCfg(),
@@ -458,7 +458,7 @@ class ExpressionControlFlowTest {
             ) add ("f" asFunCallIn context)
         )
 
-        variableInConditional hasSameStructureAs (
+        variableInConditional assertHasSameStructureAs (
             mergeCFGsConditionally(
                 IFTNode.DummyRead("x" asVarIn context, true).toCfg(),
                 IFTNode.RegisterWrite(r1, IFTNode.DummyRead("x" asVarIn context, true)).toCfg(),
@@ -477,7 +477,7 @@ class ExpressionControlFlowTest {
                     "h" asFunCallIn context,
                 )
         )
-        functionCallsInConditional hasSameStructureAs (
+        functionCallsInConditional assertHasSameStructureAs (
             IFTNode.RegisterWrite(r1, IFTNode.DummyRead("x" asVarIn context, true))
                 merge IFTNode.RegisterWrite(r2, IFTNode.DummyRead("y" asVarIn context, true))
                 merge IFTNode.RegisterWrite(r3, IFTNode.DummyRead("z" asVarIn context, true))
@@ -508,7 +508,7 @@ class ExpressionControlFlowTest {
             ("x" asVarExprIn context)
                 and ("f" asFunCallIn context)
         )
-        andWithFunction hasSameStructureAs (
+        andWithFunction assertHasSameStructureAs (
             mergeCFGsConditionally(
                 IFTNode.DummyRead("x" asVarIn context, true).toCfg(),
                 IFTNode.DummyCall("f" asFunIn context, emptyList(), callResult1)
@@ -526,7 +526,7 @@ class ExpressionControlFlowTest {
                 "f" asFunCallIn context
             )
         )
-        variableAndFunctionInTernary hasSameStructureAs (
+        variableAndFunctionInTernary assertHasSameStructureAs (
             mergeCFGsConditionally(
                 IFTNode.DummyRead("x" asVarIn context, true).toCfg(),
                 IFTNode.RegisterWrite(r1, IFTNode.DummyRead("x" asVarIn context, true)).toCfg(),
@@ -566,7 +566,7 @@ class ExpressionControlFlowTest {
             "g" withArgs listOf("x" asVarExprIn context, "f" asFunCallIn context)
                 asFunCallIn context
         )
-        multipleArguments hasSameStructureAs (
+        multipleArguments assertHasSameStructureAs (
             IFTNode.RegisterWrite(r1, IFTNode.DummyRead("x" asVarIn context, true))
                 merge IFTNode.DummyCall("f" asFunIn context, emptyList(), callResult1)
                 merge IFTNode.RegisterWrite(r2, callResult1)
@@ -579,7 +579,7 @@ class ExpressionControlFlowTest {
             ("x" asVarExprIn context)
                 add ("h" withArgs listOf("f" asFunCallIn context) asFunCallIn context)
         )
-        nestedArguments hasSameStructureAs (
+        nestedArguments assertHasSameStructureAs (
             IFTNode.RegisterWrite(r1, IFTNode.DummyRead("x" asVarIn context, true))
                 merge IFTNode.DummyCall("f" asFunIn context, emptyList(), callResult1)
                 merge IFTNode.RegisterWrite(r2, callResult1)
@@ -634,7 +634,7 @@ class ExpressionControlFlowTest {
                     )
         )
 
-        cfg hasSameStructureAs (
+        cfg assertHasSameStructureAs (
             IFTNode.RegisterWrite(r1, IFTNode.DummyRead("x" asVarIn context, true))
                 merge IFTNode.DummyCall("f" asFunIn context, emptyList(), callResult1)
                 merge IFTNode.RegisterWrite(r2, callResult1)

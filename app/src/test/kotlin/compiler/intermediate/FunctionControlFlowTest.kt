@@ -120,8 +120,13 @@ class FunctionControlFlowTest {
         defaultParameterValues,
         functionReturnedValueVariables,
         object : Diagnostics {
-            override fun report(diagnostic: Diagnostic) { diagnostics.add(diagnostic) }
-            override fun hasAnyError(): Boolean { throw RuntimeException("This method shouldn't be called") }
+            override fun report(diagnostic: Diagnostic) {
+                diagnostics.add(diagnostic)
+            }
+
+            override fun hasAnyError(): Boolean {
+                throw RuntimeException("This method shouldn't be called")
+            }
         },
         { node, variable, _ -> IFTNode.MemoryWrite(IFTNode.MemoryLabel(variable.name), node) },
         dummyGeneratorDetailsGenerator
@@ -675,6 +680,11 @@ class FunctionControlFlowTest {
         assertEquals(listOf<Diagnostic>(ControlFlowDiagnostic.Warnings.UnreachableStatement(evaluation)), diagnostics)
     }
 
+    //    przekaźnik generator() {}
+    //    f() {
+    //        otrzymując x: Liczba od generator() {123}
+    //    }
+
     @Test
     fun `simple foreach`() {
         val generator = Function(
@@ -731,8 +741,13 @@ class FunctionControlFlowTest {
                     IFTNode.DummyCall(generatorFinalize, listOf(idRegisterRead), IFTNode.DummyCallResult(), IFTNode.DummyCallResult()).toCfg()
                 )
             )
-        resultCfg hasSameStructureAs expectedCfg
+        resultCfg assertHasSameStructureAs expectedCfg
     }
+
+    //    przekaźnik generator() {}
+    //    przekaźnik f() {
+    //        otrzymując x: Liczba od generator() {123}
+    //    }
 
     @Test
     fun `nested foreach`() {
@@ -793,8 +808,28 @@ class FunctionControlFlowTest {
                         merge IFTNode.MemoryWrite(frameMemoryAddress, IFTNode.Const(0))
                 )
             )
-        resultCfg hasSameStructureAs expectedCfg
+        resultCfg assertHasSameStructureAs expectedCfg
     }
+
+    //    przekaźnik generator() {}
+    //    f() {
+    //        otrzymując x: Liczba od generator() {
+    //            jeśli (prawda) {
+    //                123
+    //                przerwij
+    //            }
+    //            wpw {
+    //                jeśli(prawda) {
+    //                    123
+    //                    pomiń
+    //                } wpw {
+    //                    123
+    //                    zwróć
+    //                }
+    //            }
+    //        }
+    //    }
+
     @Test
     fun `foreach - break, continue, return`() {
         val generator = Function(
@@ -902,8 +937,12 @@ class FunctionControlFlowTest {
             builder.addLink(Pair(it.treeRoots[10], CFGLinkType.UNCONDITIONAL), it.treeRoots[3]) // continue
             builder.build()
         }
-        resultCfg hasSameStructureAs expectedCfg
+        resultCfg assertHasSameStructureAs expectedCfg
     }
+
+//    przekaźnik generator() {
+//        przekaż 123
+//    }
 
     @Test
     fun `yield test`() {
@@ -922,6 +961,6 @@ class FunctionControlFlowTest {
         val result = test(program)
         val resultCfg = result.values.first()
 
-        resultCfg hasSameStructureAs IFTNode.DummyCall(generator.copy(name = generator.name + "_yield"), listOf(IFTNode.Const(123)), IFTNode.DummyCallResult()).toCfg()
+        resultCfg assertHasSameStructureAs IFTNode.DummyCall(generator.copy(name = generator.name + "_yield"), listOf(IFTNode.Const(123)), IFTNode.DummyCallResult()).toCfg()
     }
 }

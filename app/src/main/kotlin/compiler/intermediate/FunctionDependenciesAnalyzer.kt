@@ -84,7 +84,7 @@ object FunctionDependenciesAnalyzer {
         return mainFunction
     }
 
-    fun createFunctionDetailsGenerators(
+    fun createCallablesDetailsGenerators(
         program: Program,
         variableProperties: Map<Ref<AstNode>, VariablePropertiesAnalyzer.VariableProperties>,
         functionReturnedValueVariables: Map<Ref<Function>, Variable>,

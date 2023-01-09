@@ -6,9 +6,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
-private fun mapLinkType(list: List<Pair<IFTNode, CFGLinkType>?>, type: CFGLinkType) = list.map { it?.copy(second = type) }
-
-infix fun ControlFlowGraph.hasSameStructureAs(cfg: ControlFlowGraph) {
+infix fun ControlFlowGraph.assertHasSameStructureAs(cfg: ControlFlowGraph) {
     val registersMap = mutableKeyRefMapOf<Register, Register>()
     val callResultsMap = mutableKeyRefMapOf<IFTNode.DummyCallResult, IFTNode.DummyCallResult>()
     val nodeMap = mutableKeyRefMapOf<IFTNode, IFTNode>()
@@ -20,18 +18,18 @@ infix fun ControlFlowGraph.hasSameStructureAs(cfg: ControlFlowGraph) {
         assertSame(this[Ref(a)]!!, b)
     }
 
-    infix fun IFTNode.hasSameStructureAs(iftNode: IFTNode) {
+    infix fun IFTNode.assertHasSameStructureAs(iftNode: IFTNode) {
 
         assertEquals(this::class, iftNode::class)
         nodeMap.ensurePairSymmetrical(this, iftNode)
         when (this) {
             is IFTNode.BinaryOperator -> {
-                this.left hasSameStructureAs (iftNode as IFTNode.BinaryOperator).left
-                this.right hasSameStructureAs iftNode.right
+                this.left assertHasSameStructureAs (iftNode as IFTNode.BinaryOperator).left
+                this.right assertHasSameStructureAs iftNode.right
             }
 
             is IFTNode.UnaryOperator -> {
-                this.node hasSameStructureAs (iftNode as IFTNode.UnaryOperator).node
+                this.node assertHasSameStructureAs (iftNode as IFTNode.UnaryOperator).node
             }
 
             is IFTNode.DummyCall -> {
@@ -40,8 +38,8 @@ infix fun ControlFlowGraph.hasSameStructureAs(cfg: ControlFlowGraph) {
                 (this.args zip iftNode.args).forEach {
                     nodeMap.ensurePairSymmetrical(it.first, it.second)
                 }
-                this.callResult1 hasSameStructureAs iftNode.callResult1
-                this.callResult2 hasSameStructureAs iftNode.callResult2
+                this.callResult1 assertHasSameStructureAs iftNode.callResult1
+                this.callResult2 assertHasSameStructureAs iftNode.callResult2
             }
 
             is IFTNode.DummyCallResult -> callResultsMap.ensurePairSymmetrical(this, iftNode as IFTNode.DummyCallResult)
@@ -51,11 +49,11 @@ infix fun ControlFlowGraph.hasSameStructureAs(cfg: ControlFlowGraph) {
             }
             is IFTNode.MemoryWrite -> {
                 assertEquals(this.address, (iftNode as IFTNode.MemoryWrite).address)
-                this.value hasSameStructureAs iftNode.value
+                this.value assertHasSameStructureAs iftNode.value
             }
             is IFTNode.RegisterWrite -> {
                 registersMap.ensurePairSymmetrical(this.register, (iftNode as IFTNode.RegisterWrite).register)
-                this.node hasSameStructureAs iftNode.node
+                this.node assertHasSameStructureAs iftNode.node
             }
             is IFTNode.RegisterRead -> registersMap.ensurePairSymmetrical(this.register, (iftNode as IFTNode.RegisterRead).register)
             else -> {
@@ -67,7 +65,7 @@ infix fun ControlFlowGraph.hasSameStructureAs(cfg: ControlFlowGraph) {
     assertEquals(this.treeRoots.size, cfg.treeRoots.size)
 
     fun dfs(left: IFTNode, right: IFTNode) {
-        left hasSameStructureAs right
+        left assertHasSameStructureAs right
 
         if (this.unconditionalLinks.containsKey(Ref(left))) {
             assertTrue(cfg.unconditionalLinks.containsKey(Ref(right)))

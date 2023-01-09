@@ -95,19 +95,15 @@ object FunctionDependenciesAnalyzer {
         val functionIdentifiers = createUniqueIdentifiers(program, allowInconsistentNamingErrors)
 
         fun createDetailsGenerator(function: Function, depth: ULong) {
-            if (function.isGenerator) {
-                generatorDGs[Ref(function)] = when (function.implementation) {
-                    is Function.Implementation.Foreign -> {
-                        function.implementation.foreignName.let {
-                            ForeignGeneratorDetailsGenerator(
-                                IFTNode.MemoryLabel(it + "_init"),
-                                IFTNode.MemoryLabel(it + "_resume"),
-                                IFTNode.MemoryLabel(it + "_finalize")
-                            )
-                        }
+            if (function.isGenerator && function.implementation is Function.Implementation.Foreign) { // TODO: implement local gdg
+                generatorDGs[Ref(function)] =
+                    function.implementation.foreignName.let {
+                        ForeignGeneratorDetailsGenerator(
+                            IFTNode.MemoryLabel(it + "_init"),
+                            IFTNode.MemoryLabel(it + "_resume"),
+                            IFTNode.MemoryLabel(it + "_finalize")
+                        )
                     }
-                    is Function.Implementation.Local -> throw NotImplementedError() // TODO
-                }
             } else {
                 functionDGs[Ref(function)] = when (function.implementation) {
 

@@ -29,7 +29,6 @@ class FunctionControlFlowTest {
     private val functionReturnedValueVariables = mutableKeyRefMapOf<Function, Variable>()
     private val diagnostics = mutableListOf<Diagnostic>()
     private var genForeachFramePointerAddress: Boolean = false
-
     private fun addExpressionNode(expression: Expression, variable: Variable?): IFTNode {
         val node = IFTNode.Dummy()
         expressionNodes.putIfAbsent(Ref(expression), mutableRefMapOf())
@@ -86,7 +85,7 @@ class FunctionControlFlowTest {
             }
 
             override fun genYield(value: IFTNode): ControlFlowGraph {
-                return IFTNode.Dummy(listOf("yield", it, value)).toCfg()
+                return IFTNode.DummyCall(it.copy(name = it.name + "_yield"), listOf(value), IFTNode.DummyCallResult(), IFTNode.DummyCallResult()).toCfg()
             }
 
             override fun getNestedForeachFramePointerAddress(foreachLoop: Statement.ForeachLoop): IFTNode? {
@@ -733,5 +732,196 @@ class FunctionControlFlowTest {
                 )
             )
         resultCfg hasSameStructureAs expectedCfg
+    }
+
+    @Test
+    fun `nested foreach`() {
+        genForeachFramePointerAddress = true
+
+        val generator = Function(
+            "generator",
+            emptyList(),
+            Type.Unit,
+            Function.Implementation.Local(emptyList()),
+            true
+        )
+        val generatorInit = generator.copy(name = "generator_init")
+        val generatorResume = generator.copy(name = "generator_resume")
+        val generatorFinalize = generator.copy(name = "generator_finalize")
+
+        val genCall = Expression.FunctionCall("generator", emptyList(), null)
+        val genCallResult = dummyGeneratorDetailsGenerator(generator).genInitCall(emptyList())
+
+        expressionNodes[Ref(genCall)] = mutableMapOf(Ref(null) to Ref(genCallResult.callGraph.entryTreeRoot!!))
+        expressionAccessNodes[Ref(genCall)] = mutableMapOf(Ref(null) to Ref(genCallResult.result!!))
+        nameResolution[Ref(genCall)] = Ref(generator)
+
+        val variable = Variable(
+            Variable.Kind.VARIABLE,
+            "x",
+            Type.Number,
+            null
+        )
+        val value = Expression.NumberLiteral(123)
+        expressionNodes[Ref(value)] = mutableMapOf(Ref(null) to Ref(IFTNode.Const(123)))
+        val foreach = Statement.ForeachLoop(variable, genCall, listOf(Statement.Evaluation(value)))
+
+        val function = Function("f", listOf(), Type.Unit, listOf(foreach), isGenerator = true)
+        val program = Program(listOf(Program.Global.FunctionDefinition(function)))
+
+        val result = test(program)
+        val resultCfg = result.values.first()
+
+        val stateRegister = Register()
+        val frameMemoryAddress = IFTNode.Dummy(listOf("foreach frame pointer address", function, foreach))
+        val generatorId = IFTNode.DummyCallResult()
+        val stateResult = IFTNode.DummyCallResult()
+        val valueResult = IFTNode.DummyCallResult()
+        val idRegisterRead = IFTNode.MemoryRead(frameMemoryAddress)
+
+        val expectedCfg = (
+            IFTNode.DummyCall(generatorInit, emptyList(), generatorId, IFTNode.DummyCallResult())
+                merge IFTNode.MemoryWrite(frameMemoryAddress, generatorId)
+                merge IFTNode.RegisterWrite(stateRegister, IFTNode.Const(0))
+                merge mergeCFGsInLoop(
+                    IFTNode.DummyCall(generatorResume, listOf(idRegisterRead, IFTNode.RegisterRead(stateRegister)), valueResult, stateResult)
+                        merge IFTNode.NotEquals(stateResult, IFTNode.Const(0)),
+                    IFTNode.RegisterWrite(stateRegister, stateResult)
+                        merge IFTNode.MemoryWrite(IFTNode.MemoryLabel(variable.name), valueResult)
+                        merge IFTNode.Const(FixedConstant(123)),
+                    IFTNode.DummyCall(generatorFinalize, listOf(idRegisterRead), IFTNode.DummyCallResult(), IFTNode.DummyCallResult())
+                        merge IFTNode.MemoryWrite(frameMemoryAddress, IFTNode.Const(0))
+                )
+            )
+        resultCfg hasSameStructureAs expectedCfg
+    }
+    @Test
+    fun `foreach - break, continue, return`() {
+        val generator = Function(
+            "generator",
+            emptyList(),
+            Type.Unit,
+            Function.Implementation.Local(emptyList()),
+            true
+        )
+        val generatorInit = generator.copy(name = "generator_init")
+        val generatorResume = generator.copy(name = "generator_resume")
+        val generatorFinalize = generator.copy(name = "generator_finalize")
+
+        val genCall = Expression.FunctionCall("generator", emptyList(), null)
+        val genCallResult = dummyGeneratorDetailsGenerator(generator).genInitCall(emptyList())
+
+        expressionNodes[Ref(genCall)] = mutableMapOf(Ref(null) to Ref(genCallResult.callGraph.entryTreeRoot!!))
+        expressionAccessNodes[Ref(genCall)] = mutableMapOf(Ref(null) to Ref(genCallResult.result!!))
+        nameResolution[Ref(genCall)] = Ref(generator)
+
+        val variable = Variable(
+            Variable.Kind.VARIABLE,
+            "x",
+            Type.Number,
+            null
+        )
+        val value1 = Expression.NumberLiteral(123)
+        val value2 = Expression.NumberLiteral(123)
+        val value3 = Expression.NumberLiteral(123)
+        val trueLiteral1 = Expression.BooleanLiteral(true)
+        val trueLiteral2 = Expression.BooleanLiteral(true)
+        val unitLiteral = Expression.UnitLiteral()
+        expressionNodes[Ref(value1)] = mutableMapOf(Ref(null) to Ref(IFTNode.Const(123)))
+        expressionNodes[Ref(value2)] = mutableMapOf(Ref(null) to Ref(IFTNode.Const(123)))
+        expressionNodes[Ref(value3)] = mutableMapOf(Ref(null) to Ref(IFTNode.Const(123)))
+        expressionNodes[Ref(trueLiteral1)] = mutableMapOf(Ref(null) to Ref(IFTNode.Const(1)))
+        expressionNodes[Ref(trueLiteral2)] = mutableMapOf(Ref(null) to Ref(IFTNode.Const(1)))
+        expressionNodes[Ref(unitLiteral)] = mutableMapOf(Ref(null) to Ref(IFTNode.Const(0)))
+        val foreach = Statement.ForeachLoop(
+            variable,
+            genCall,
+            listOf(
+                Statement.Conditional(
+                    trueLiteral1,
+                    listOf(
+                        Statement.Evaluation(value1),
+                        Statement.LoopBreak(),
+                    ),
+                    listOf(
+                        Statement.Conditional(
+                            trueLiteral2,
+                            listOf(
+                                Statement.Evaluation(value2),
+                                Statement.LoopContinuation(),
+                            ),
+                            listOf(
+                                Statement.Evaluation(value3),
+                                Statement.FunctionReturn(unitLiteral)
+                            )
+                        )
+                    )
+                )
+            )
+        )
+
+        val function = Function("f", listOf(), Type.Unit, listOf(foreach))
+        val program = Program(listOf(Program.Global.FunctionDefinition(function)))
+
+        val result = test(program)
+        val resultCfg = result.values.first()
+
+        val idRegister = Register()
+        val stateRegister = Register()
+        val generatorId = IFTNode.DummyCallResult()
+        val stateResult = IFTNode.DummyCallResult()
+        val valueResult = IFTNode.DummyCallResult()
+        val idRegisterRead = IFTNode.RegisterRead(idRegister)
+
+        val expectedCfg = (
+            IFTNode.DummyCall(generatorInit, emptyList(), generatorId, IFTNode.DummyCallResult())
+                merge IFTNode.RegisterWrite(idRegister, generatorId)
+                merge IFTNode.RegisterWrite(stateRegister, IFTNode.Const(0))
+                merge mergeCFGsInLoop(
+                    IFTNode.DummyCall(generatorResume, listOf(idRegisterRead, IFTNode.RegisterRead(stateRegister)), valueResult, stateResult)
+                        merge IFTNode.NotEquals(stateResult, IFTNode.Const(0)),
+                    IFTNode.RegisterWrite(stateRegister, stateResult)
+                        merge IFTNode.MemoryWrite(IFTNode.MemoryLabel(variable.name), valueResult)
+                        merge mergeCFGsConditionally(
+                            IFTNode.Const(1).toCfg(),
+                            IFTNode.Const(123).toCfg(), // 8
+                            mergeCFGsConditionally(
+                                IFTNode.Const(1).toCfg(),
+                                IFTNode.Const(123).toCfg(),
+                                IFTNode.Const(123)
+                                    merge IFTNode.Const(0)
+                                    merge IFTNode.DummyCall(generatorFinalize, listOf(idRegisterRead), IFTNode.DummyCallResult(), IFTNode.DummyCallResult()).toCfg()
+                            )
+                        ),
+                    IFTNode.DummyCall(generatorFinalize, listOf(idRegisterRead), IFTNode.DummyCallResult(), IFTNode.DummyCallResult()).toCfg()
+                )
+            ).let {
+            val builder = ControlFlowGraphBuilder()
+            builder.addAllFrom(it)
+            builder.addLink(Pair(it.treeRoots[8], CFGLinkType.UNCONDITIONAL), it.treeRoots[14]) // break
+            builder.addLink(Pair(it.treeRoots[10], CFGLinkType.UNCONDITIONAL), it.treeRoots[3]) // continue
+            builder.build()
+        }
+        resultCfg hasSameStructureAs expectedCfg
+    }
+
+    @Test
+    fun `yield test`() {
+
+        val value = Expression.NumberLiteral(123)
+        expressionAccessNodes[Ref(value)] = mutableMapOf(Ref(null) to Ref(IFTNode.Const(123)))
+
+        val generator = Function(
+            "generator",
+            emptyList(),
+            Type.Unit,
+            Function.Implementation.Local(listOf(Statement.GeneratorYield(value))),
+            true
+        )
+        val program = Program(listOf(Program.Global.FunctionDefinition(generator)))
+        val result = test(program)
+        val resultCfg = result.values.first()
+
+        resultCfg hasSameStructureAs IFTNode.DummyCall(generator.copy(name = generator.name + "_yield"), listOf(IFTNode.Const(123)), IFTNode.DummyCallResult()).toCfg()
     }
 }

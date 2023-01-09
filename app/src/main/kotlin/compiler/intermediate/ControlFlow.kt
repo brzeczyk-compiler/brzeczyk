@@ -16,6 +16,7 @@ import compiler.diagnostics.Diagnostic.ResolutionDiagnostic.ControlFlowDiagnosti
 import compiler.diagnostics.Diagnostics
 import compiler.intermediate.FunctionDependenciesAnalyzer.createCallGraph
 import compiler.intermediate.generators.FunctionDetailsGenerator
+import compiler.intermediate.generators.GeneratorDetailsGenerator
 import compiler.intermediate.generators.GlobalVariableAccessGenerator
 import compiler.intermediate.generators.VariableAccessGenerator
 import compiler.utils.Ref
@@ -30,12 +31,13 @@ object ControlFlow {
         program: Program,
         programProperties: ProgramAnalyzer.ProgramProperties,
         functionDetailsGenerators: Map<Ref<Function>, FunctionDetailsGenerator>,
+        generatorDetailsGenerators: Map<Ref<Function>, GeneratorDetailsGenerator>,
         diagnostics: Diagnostics,
     ): Map<Ref<Function>, ControlFlowGraph> {
         val globalVariableAccessGenerator = GlobalVariableAccessGenerator(programProperties.variableProperties)
         val callGraph = createCallGraph(program, programProperties.nameResolution)
 
-        fun partiallyAppliedCreateGraphForExpression(expression: Expression, targetVariable: Variable?, currentFunction: Function): ControlFlowGraph {
+        fun partiallyAppliedCreateGraphForExpression(expression: Expression, targetVariable: Variable?, currentFunction: Function, accessNodeConsumer: ((ControlFlowGraph, IFTNode) -> Unit)?): ControlFlowGraph {
             return createGraphForExpression(
                 expression,
                 targetVariable,
@@ -44,11 +46,23 @@ object ControlFlow {
                 programProperties.variableProperties,
                 callGraph,
                 functionDetailsGenerators,
+                generatorDetailsGenerators,
                 programProperties.argumentResolution,
                 programProperties.defaultParameterMapping,
-                globalVariableAccessGenerator
+                globalVariableAccessGenerator,
+                accessNodeConsumer
             )
         }
+
+        fun createWriteToVariable(iftNode: IFTNode, variable: Variable, currentFunction: Function): IFTNode {
+            val variableAccessGenerators: Map<Ref<VariableOwner>, VariableAccessGenerator> =
+                createVariableAccessGenerators(functionDetailsGenerators, generatorDetailsGenerators, globalVariableAccessGenerator)
+            val owner = programProperties.variableProperties[Ref(variable)]!!.owner
+            return variableAccessGenerators[Ref(owner)]!!.genWrite(variable, iftNode, owner === currentFunction)
+        }
+
+        fun getGeneratorDetailsGenerator(generator: Function) =
+            generatorDetailsGenerators[Ref(generator)]!!
 
         val cfgForEachFunction = createGraphForEachFunction(
             program,
@@ -56,7 +70,9 @@ object ControlFlow {
             programProperties.nameResolution,
             programProperties.defaultParameterMapping,
             programProperties.functionReturnedValueVariables,
-            diagnostics
+            diagnostics,
+            ::createWriteToVariable,
+            ::getGeneratorDetailsGenerator
         )
 
         return cfgForEachFunction.mapValues { (function, bodyCFG) ->
@@ -65,7 +81,7 @@ object ControlFlow {
                 functionDetailsGenerators[function]!!.genPrologue(),
                 functionDetailsGenerators[function]!!.genEpilogue()
             )
-        }
+        } // TODO: add initialization and finalization of generators
     }
 
     fun attachPrologueAndEpilogue(body: ControlFlowGraph, prologue: ControlFlowGraph, epilogue: ControlFlowGraph): ControlFlowGraph {
@@ -88,6 +104,19 @@ object ControlFlow {
         return builder.build()
     }
 
+    private fun createVariableAccessGenerators(
+        functionDetailsGenerators: Map<Ref<Function>, FunctionDetailsGenerator>,
+        generatorDetailsGenerators: Map<Ref<Function>, GeneratorDetailsGenerator>,
+        globalVariableAccessGenerator: VariableAccessGenerator
+    ) = run {
+        val result = mutableKeyRefMapOf<VariableOwner, VariableAccessGenerator>()
+
+        result.putAll(functionDetailsGenerators)
+        result.putAll(generatorDetailsGenerators)
+        result[Ref(VariablePropertiesAnalyzer.GlobalContext)] = globalVariableAccessGenerator
+        result
+    }
+
     fun createGraphForExpression(
         expression: Expression,
         targetVariable: Variable?,
@@ -96,9 +125,11 @@ object ControlFlow {
         variableProperties: Map<Ref<AstNode>, VariablePropertiesAnalyzer.VariableProperties>,
         callGraph: Map<Ref<Function>, Set<Ref<Function>>>,
         functionDetailsGenerators: Map<Ref<Function>, FunctionDetailsGenerator>,
+        generatorDetailsGenerators: Map<Ref<Function>, GeneratorDetailsGenerator>,
         argumentResolution: ArgumentResolutionResult,
         defaultParameterMapping: Map<Ref<Function.Parameter>, Variable>,
-        globalVariablesAccessGenerator: VariableAccessGenerator
+        globalVariablesAccessGenerator: VariableAccessGenerator,
+        accessNodeConsumer: ((ControlFlowGraph, IFTNode) -> Unit)? = null // if not provided, access node will be added at the end of cfg
     ): ControlFlowGraph {
         fun getVariablesModifiedBy(function: Function): Set<Ref<Variable>> {
             val possiblyCalledFunctions = callGraph[Ref(function)]!! + refSetOf(function)
@@ -107,13 +138,8 @@ object ControlFlow {
                 .map { Ref(it.key.value as Variable) }.toSet()
         }
 
-        val variableAccessGenerators: Map<Ref<VariableOwner>, VariableAccessGenerator> = run {
-            val result = mutableKeyRefMapOf<VariableOwner, VariableAccessGenerator>()
-
-            result.putAll(functionDetailsGenerators)
-            result[Ref(VariablePropertiesAnalyzer.GlobalContext)] = globalVariablesAccessGenerator
-            result
-        }
+        val variableAccessGenerators: Map<Ref<VariableOwner>, VariableAccessGenerator> =
+            createVariableAccessGenerators(functionDetailsGenerators, generatorDetailsGenerators, globalVariablesAccessGenerator)
 
         // first stage is to decide which variable usages have to be realized via temporary registers
         // and which variables are invalidated by function calls / conditionals
@@ -188,6 +214,7 @@ object ControlFlow {
         fun ControlFlowGraphBuilder.addNextTree(nextTree: IFTNode) {
             addNextCFG(ControlFlowGraphBuilder().apply { addLink(null, nextTree) }.build())
         }
+
         fun makeReadNode(readableNode: NamedNode): IFTNode {
             // readableNode must be Variable or Function.Parameter
             val owner = variableProperties[Ref(readableNode)]!!.owner
@@ -293,7 +320,13 @@ object ControlFlow {
                     function.parameters.withIndex().filter { parameterValues[it.index] == null }.forEach { // default arguments
                         parameterValues[it.index] = makeReadNode(defaultParameterMapping[Ref(it.value)]!!)
                     }
-                    val callIntermediateForm = functionDetailsGenerators[Ref(function)]!!.genCall(parameterValues.map { it!! }.toList())
+                    val callIntermediateForm = parameterValues.map { it!! }.toList().let { args ->
+                        if (function.isGenerator) {
+                            generatorDetailsGenerators[Ref(function)]!!.genInitCall(args)
+                        } else {
+                            functionDetailsGenerators[Ref(function)]!!.genCall(args)
+                        }
+                    }
                     cfgBuilder.addNextCFG(callIntermediateForm.callGraph)
                     invalidatedVariables[Ref(astNode)]!!.forEach { currentTemporaryRegisters.remove(it) }
 
@@ -336,20 +369,26 @@ object ControlFlow {
         if (targetVariable != null) {
             val owner = variableProperties[Ref(targetVariable)]!!.owner
             cfgBuilder.addNextTree(variableAccessGenerators[Ref(owner)]!!.genWrite(targetVariable, result, owner === currentFunction))
-        } else {
+        } else if (accessNodeConsumer == null) {
             cfgBuilder.addNextTree(result)
         }
 
-        return cfgBuilder.build()
+        return cfgBuilder.build().also {
+            if (accessNodeConsumer != null) {
+                accessNodeConsumer(it, result)
+            }
+        }
     }
 
     fun createGraphForEachFunction(
         program: Program,
-        createGraphForExpression: (Expression, Variable?, Function) -> ControlFlowGraph,
+        createGraphForExpression: (Expression, Variable?, Function, ((ControlFlowGraph, IFTNode) -> Unit)?) -> ControlFlowGraph,
         nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
         defaultParameterValues: Map<Ref<Function.Parameter>, Variable>,
         functionReturnedValueVariables: Map<Ref<Function>, Variable>,
-        diagnostics: Diagnostics
+        diagnostics: Diagnostics,
+        createWriteToVariable: (IFTNode, Variable, Function) -> IFTNode,
+        getGeneratorDetailsGenerator: (Function) -> GeneratorDetailsGenerator
     ): Map<Ref<Function>, ControlFlowGraph> {
         val controlFlowGraphs = mutableKeyRefMapOf<Function, ControlFlowGraph>()
 
@@ -359,12 +398,11 @@ object ControlFlow {
             var last = listOf<Pair<IFTNode, CFGLinkType>?>(null)
             var breaking: MutableList<Pair<IFTNode, CFGLinkType>?>? = null
             var continuing: MutableList<Pair<IFTNode, CFGLinkType>?>? = null
+            var returning: MutableList<Pair<IFTNode, CFGLinkType>?> = mutableListOf()
 
-            fun processStatementBlock(block: StatementBlock) {
-                fun addExpression(expression: Expression, variable: Variable?): IFTNode? {
-                    val cfg = createGraphForExpression(expression, variable, function)
+            fun processStatementBlock(block: StatementBlock, returnCleanup: (() -> Unit)? = null) { // returnCleanup asserts that all returning nodes are in "last"
+                fun addCfg(cfg: ControlFlowGraph): IFTNode? {
                     val entry = cfg.entryTreeRoot
-
                     if (entry != null) {
                         for (node in last) {
                             cfgBuilder.addLink(node, entry)
@@ -373,9 +411,50 @@ object ControlFlow {
                         last = cfg.finalTreeRoots
                     }
                     cfgBuilder.addAllFrom(cfg)
-
                     return entry
                 }
+
+                fun addNode(node: IFTNode) {
+                    addCfg(ControlFlowGraphBuilder().addSingleTree(node).build())
+                }
+
+                fun addExpression(expression: Expression, variable: Variable?, accessNodeConsumer: ((ControlFlowGraph, IFTNode) -> Unit)? = null): IFTNode? {
+                    return if (accessNodeConsumer == null)
+                        addCfg(createGraphForExpression(expression, variable, function, null))
+                    else run {
+                        var result: IFTNode? = null
+                        createGraphForExpression(expression, variable, function) { cfg, node ->
+                            result = addCfg(cfg)
+                            accessNodeConsumer(cfg, node)
+                        }
+                        result
+                    }
+                }
+
+                fun addLoop(conditionEntry: IFTNode, generateLoopBody: () -> Unit) {
+                    val conditionEnd = last
+
+                    val outerBreaking = breaking
+                    val outerContinuing = continuing
+
+                    breaking = mutableListOf()
+                    continuing = mutableListOf()
+
+                    last = mapLinkType(conditionEnd, CFGLinkType.CONDITIONAL_TRUE)
+                    generateLoopBody()
+                    val end = last
+
+                    for (node in end + continuing!!)
+                        cfgBuilder.addLink(node, conditionEntry)
+
+                    last = mapLinkType(conditionEnd, CFGLinkType.CONDITIONAL_FALSE) + breaking!!
+
+                    breaking = outerBreaking
+                    continuing = outerContinuing
+                }
+
+                val outerReturning = returning
+                returning = mutableListOf()
 
                 for (statement in block) {
                     if (last.isEmpty())
@@ -423,27 +502,8 @@ object ControlFlow {
                             last = trueBranchEnd + falseBranchEnd
                         }
 
-                        is Statement.Loop -> {
-                            val conditionEntry = addExpression(statement.condition, null)!!
-                            val conditionEnd = last
-
-                            val outerBreaking = breaking
-                            val outerContinuing = continuing
-
-                            breaking = mutableListOf()
-                            continuing = mutableListOf()
-
-                            last = mapLinkType(conditionEnd, CFGLinkType.CONDITIONAL_TRUE)
+                        is Statement.Loop -> addLoop(addExpression(statement.condition, null)!!) {
                             processStatementBlock(statement.action)
-                            val end = last
-
-                            for (node in end + continuing!!)
-                                cfgBuilder.addLink(node, conditionEntry)
-
-                            last = mapLinkType(conditionEnd, CFGLinkType.CONDITIONAL_FALSE) + breaking!!
-
-                            breaking = outerBreaking
-                            continuing = outerContinuing
                         }
 
                         is Statement.LoopBreak -> {
@@ -466,13 +526,77 @@ object ControlFlow {
 
                         is Statement.FunctionReturn -> {
                             addExpression(statement.value, functionReturnedValueVariables[Ref(function)])
+                            returning.addAll(last)
                             last = emptyList()
                         }
 
-                        is Statement.ForeachLoop -> TODO()
-                        is Statement.GeneratorYield -> TODO()
+                        is Statement.ForeachLoop -> {
+                            val gdg = getGeneratorDetailsGenerator(nameResolution[Ref(statement.generatorCall)]!!.value as Function)
+                            val frameMemoryAddress = if (function.isGenerator)
+                                getGeneratorDetailsGenerator(function).getNestedForeachFramePointerAddress(statement)
+                            else null
+
+                            val generatorId = run {
+                                var result: IFTNode? = null
+                                addExpression(statement.generatorCall, null) { _, node -> // initialization
+                                    result = if (frameMemoryAddress == null) {
+                                        val idReg = Register()
+                                        addNode(IFTNode.RegisterWrite(idReg, node))
+                                        IFTNode.RegisterRead(idReg)
+                                    } else {
+                                        addNode(IFTNode.MemoryWrite(frameMemoryAddress, node))
+                                        IFTNode.MemoryRead(frameMemoryAddress)
+                                    }
+                                }
+                                result!!
+                            }
+
+                            // generator state, initially 0
+                            val lastPosition = Register()
+                            addNode(IFTNode.RegisterWrite(lastPosition, IFTNode.Const(0)))
+
+                            fun finalize() {
+                                addCfg(gdg.genFinalizeCall(generatorId).callGraph)
+                                frameMemoryAddress?.let {
+                                    addNode(IFTNode.MemoryWrite(frameMemoryAddress, IFTNode.Const(0)))
+                                }
+                            }
+
+                            val resume = gdg.genResumeCall(generatorId, IFTNode.RegisterRead(lastPosition))
+                            val resumeEntry = addCfg(resume.callGraph)!!
+
+                            addNode(
+                                IFTNode.NotEquals(resume.secondResult!!, IFTNode.Const(0))
+                            )
+                            addLoop(resumeEntry) {
+                                addNode(IFTNode.RegisterWrite(lastPosition, resume.secondResult))
+                                addNode(createWriteToVariable(resume.result!!, statement.receivingVariable, function))
+                                processStatementBlock(statement.action, ::finalize)
+                            }
+
+                            finalize()
+                        }
+
+                        is Statement.GeneratorYield -> {
+                            addExpression(statement.value, null) { _, node ->
+                                addCfg(getGeneratorDetailsGenerator(function).genYield(node))
+                            }
+                        }
                     }
                 }
+
+                returnCleanup?.let {
+                    val prevLast = last
+                    last = returning
+
+                    if (last.isNotEmpty()) returnCleanup()
+
+                    returning = last.toMutableList()
+                    last = prevLast
+                }
+
+                outerReturning.addAll(returning)
+                returning = outerReturning
             }
 
             processStatementBlock(function.body)

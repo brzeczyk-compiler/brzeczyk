@@ -1,4 +1,3 @@
-// INTEGRATION TESTS IGNORE
 czynność główna() {
     otrzymując x: Liczba od wejścia() {
         napisz(x + 1)

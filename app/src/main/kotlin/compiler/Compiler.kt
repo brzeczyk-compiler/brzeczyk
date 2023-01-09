@@ -56,16 +56,20 @@ class Compiler(val diagnostics: Diagnostics) {
 
             val programProperties = ProgramAnalyzer.analyzeProgram(astWithBuiltinFunctions, diagnostics)
 
-            val functionDetailsGenerators = FunctionDependenciesAnalyzer.createFunctionDetailsGenerators(
+            val (functionDetailsGenerators, generatorDetailsGenerators) = FunctionDependenciesAnalyzer.createCallablesDetailsGenerators(
                 astWithBuiltinFunctions,
                 programProperties.variableProperties,
                 programProperties.functionReturnedValueVariables,
                 diagnostics.hasAnyError()
             )
 
-            // TODO: create GeneratorDetailsGenerators as well
-
-            val functionCFGs = createGraphForProgram(astWithBuiltinFunctions, programProperties, functionDetailsGenerators, diagnostics)
+            val functionCFGs = createGraphForProgram(
+                astWithBuiltinFunctions,
+                programProperties,
+                functionDetailsGenerators,
+                generatorDetailsGenerators,
+                diagnostics
+            )
 
             val mainFunction = FunctionDependenciesAnalyzer.extractMainFunction(ast, diagnostics)
 
@@ -98,8 +102,10 @@ class Compiler(val diagnostics: Diagnostics) {
                     functionDetailsGenerators
                         .filter { it.key.value.implementation is Function.Implementation.Foreign }
                         .map { it.value.identifier } +
-                        BuiltinFunctions.internallyUsedExternalSymbols,
-                    // TODO: add identifiers of foreign generators
+                        BuiltinFunctions.internallyUsedExternalSymbols +
+                        generatorDetailsGenerators
+                            .filter { it.key.value.implementation is Function.Implementation.Foreign }
+                            .flatMap { it.value.let { listOf(it.initFDG, it.finalizeFDG, it.resumeFDG) }.map { it.identifier } },
                     finalCode.map { functionCode ->
                         functionDetailsGenerators[functionCode.key]!!.identifier to
                             CodeSection.FunctionCode(

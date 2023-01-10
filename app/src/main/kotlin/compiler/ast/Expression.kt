@@ -24,7 +24,7 @@ sealed class Expression : AstNode {
     ) : Expression()
 
     data class ArrayElement(
-        val name: String,
+        val expression: Expression,
         val index: Expression,
         override val location: LocationRange? = null
     ) : Expression()

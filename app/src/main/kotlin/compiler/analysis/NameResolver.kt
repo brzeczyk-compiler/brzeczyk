@@ -265,6 +265,8 @@ object NameResolver {
                     analyzeNode(node.resultWhenTrue, currentScope)
                     analyzeNode(node.resultWhenFalse, currentScope)
                 }
+                is Expression.ArrayElement -> TODO()
+                is Expression.ArrayLength -> TODO()
 
                 // Statements
 

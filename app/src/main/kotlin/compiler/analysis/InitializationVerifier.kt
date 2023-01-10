@@ -188,6 +188,8 @@ object InitializationVerifier {
                     }
                     null
                 }
+                is Expression.ArrayElement -> TODO()
+                is Expression.ArrayLength -> TODO()
                 else -> null
             }
         }

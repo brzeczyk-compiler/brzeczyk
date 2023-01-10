@@ -27,7 +27,7 @@ sealed class Statement : AstNode {
     ) : Statement() {
         sealed class LValue() {
             data class Variable(val name: String) : LValue()
-            data class ArrayElement(val name: String, val index: Expression) : LValue()
+            data class ArrayElement(val expression: Expression, val index: Expression) : LValue()
         }
     }
 

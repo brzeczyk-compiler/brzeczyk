@@ -23,7 +23,7 @@ sealed interface AstNode {
                     is Expression.UnaryOperation -> "${this.kind} ${this.operand}"
                     is Expression.UnitLiteral -> "nic"
                     is Expression.Variable -> this.name
-                    is Expression.ArrayElement -> "${this.name}[${this.index}]"
+                    is Expression.ArrayElement -> "${this.expression}[${this.index}]"
                     is Expression.ArrayLength -> "długość ${this.expression}"
                 }
 
@@ -64,7 +64,7 @@ sealed interface AstNode {
                         lvalue.let {
                             when (it) {
                                 is Statement.Assignment.LValue.Variable -> "assignment << ${it.name} = ${this.value.toSimpleString()} >>"
-                                is Statement.Assignment.LValue.ArrayElement -> "assignment << ${it.name}[${it.index}] = ${this.value.toSimpleString()} >>"
+                                is Statement.Assignment.LValue.ArrayElement -> "assignment << ${it.expression}[${it.index.toSimpleString()}] = ${this.value.toSimpleString()} >>"
                             }
                         }
                     }

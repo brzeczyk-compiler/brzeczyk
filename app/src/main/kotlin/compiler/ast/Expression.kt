@@ -23,6 +23,17 @@ sealed class Expression : AstNode {
         override val location: LocationRange? = null,
     ) : Expression()
 
+    data class ArrayElement(
+        val name: String,
+        val index: Expression,
+        override val location: LocationRange? = null
+    ) : Expression()
+
+    data class ArrayLength(
+        val expression: Expression,
+        override val location: LocationRange? = null
+    ) : Expression()
+
     data class FunctionCall(
         val name: String,
         val arguments: List<Argument>,

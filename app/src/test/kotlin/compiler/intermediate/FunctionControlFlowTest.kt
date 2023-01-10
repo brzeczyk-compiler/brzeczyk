@@ -244,7 +244,7 @@ class FunctionControlFlowTest {
         val variable = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
         val definition = Statement.VariableDefinition(variable)
         val value = Expression.NumberLiteral(123)
-        val assignment = Statement.Assignment("x", value)
+        val assignment = Statement.Assignment(Statement.Assignment.LValue.Variable("x"), value)
         nameResolution[Ref(assignment)] = Ref(variable)
         val function = Function("f", listOf(), Type.Unit, listOf(definition, assignment))
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))

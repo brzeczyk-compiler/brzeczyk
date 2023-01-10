@@ -391,7 +391,7 @@ object AstFactory {
             Productions.atomicAssignment -> {
                 val lhsName = extractIdentifier(children[0] as ParseTree.Branch, diagnostics)
                 val rhsExpr = processExpression(children[2], diagnostics)
-                Statement.Assignment(lhsName, rhsExpr, combineLocations(children))
+                Statement.Assignment(Statement.Assignment.LValue.Variable(lhsName), rhsExpr, combineLocations(children))
             }
             Productions.atomicBreak ->
                 Statement.LoopBreak(combineLocations(children))

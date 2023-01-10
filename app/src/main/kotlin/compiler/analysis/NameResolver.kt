@@ -281,9 +281,14 @@ object NameResolver {
                 }
 
                 is Statement.Assignment -> {
-                    if (!checkVariableUsage(node.variableName, node)) {
-                        nameDefinitions[Ref(node)] = Ref(visibleNames[node.variableName]!!.topVariable())
-                        analyzeNode(node.value, currentScope)
+                    when (node.lvalue) {
+                        is Statement.Assignment.LValue.Variable -> {
+                            if (!checkVariableUsage(node.lvalue.name, node)) {
+                                nameDefinitions[Ref(node)] = Ref(visibleNames[node.lvalue.name]!!.topVariable())
+                                analyzeNode(node.value, currentScope)
+                            }
+                        }
+                        is Statement.Assignment.LValue.ArrayElement -> TODO()
                     }
                 }
 

@@ -23,6 +23,8 @@ sealed interface AstNode {
                     is Expression.UnaryOperation -> "${this.kind} ${this.operand}"
                     is Expression.UnitLiteral -> "nic"
                     is Expression.Variable -> this.name
+                    is Expression.ArrayElement -> "${this.name}[${this.index}]"
+                    is Expression.ArrayLength -> "długość ${this.expression}"
                 }
 
                 is Variable -> "${this.kind} ${this.name}: ${this.type}${if (this.value != null) "= ${this.value.toSimpleString()}" else ""}"
@@ -58,7 +60,14 @@ sealed interface AstNode {
                 is Expression -> "expression << ${this.toSimpleString()} >>"
 
                 is Statement -> when (this) {
-                    is Statement.Assignment -> "assignment << ${this.variableName} = ${this.value.toSimpleString()} >>"
+                    is Statement.Assignment -> {
+                        lvalue.let {
+                            when (it) {
+                                is Statement.Assignment.LValue.Variable -> "assignment << ${it.name} = ${this.value.toSimpleString()} >>"
+                                is Statement.Assignment.LValue.ArrayElement -> "assignment << ${it.name}[${it.index}] = ${this.value.toSimpleString()} >>"
+                            }
+                        }
+                    }
                     is Statement.Block -> "{ ... }"
                     is Statement.Conditional -> "jeśli - zaś gdy - wpp block with the condition (${this.condition.toSimpleString()})"
                     is Statement.Evaluation -> "evaluation of << ${this.expression.toSimpleString()} >>"

@@ -34,6 +34,13 @@ sealed class Expression : AstNode {
         override val location: LocationRange? = null
     ) : Expression()
 
+    data class ArrayAllocation(
+        val name: String,
+        val size: Int,
+        val initalization: List<Expression>,
+        override val location: LocationRange? = null
+    ) : Expression()
+
     data class FunctionCall(
         val name: String,
         val arguments: List<Argument>,

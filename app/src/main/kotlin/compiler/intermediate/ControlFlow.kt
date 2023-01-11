@@ -195,6 +195,7 @@ object ControlFlow {
                 }
                 is Expression.ArrayLength -> TODO()
                 is Expression.ArrayElement -> TODO()
+                is Expression.ArrayAllocation -> TODO()
             }
         }
 
@@ -364,6 +365,7 @@ object ControlFlow {
                 }
                 is Expression.ArrayLength -> TODO()
                 is Expression.ArrayElement -> TODO()
+                is Expression.ArrayAllocation -> TODO()
             }
         }
 

@@ -175,6 +175,7 @@ class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
                 }
                 is Expression.ArrayElement -> TODO()
                 is Expression.ArrayLength -> TODO()
+                is Expression.ArrayAllocation -> TODO()
 
                 is Expression.FunctionCall -> {
                     when (val node = nameResolution[Ref(expression)]!!.value) {
@@ -293,6 +294,7 @@ class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
                 }
                 is Expression.ArrayElement -> TODO()
                 is Expression.ArrayLength -> TODO()
+                is Expression.ArrayAllocation -> TODO()
             }
 
             return null

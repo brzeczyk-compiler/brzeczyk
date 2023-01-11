@@ -190,6 +190,7 @@ object InitializationVerifier {
                 }
                 is Expression.ArrayElement -> TODO()
                 is Expression.ArrayLength -> TODO()
+                is Expression.ArrayAllocation -> TODO()
                 else -> null
             }
         }

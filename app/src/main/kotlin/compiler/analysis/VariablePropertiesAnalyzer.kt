@@ -134,6 +134,7 @@ object VariablePropertiesAnalyzer {
                 is Variable -> node.value?.let { analyzeVariables(it, currentFunction) }
                 is Expression.ArrayElement -> TODO()
                 is Expression.ArrayLength -> TODO()
+                is Expression.ArrayAllocation -> TODO()
                 else -> {}
             }
         }

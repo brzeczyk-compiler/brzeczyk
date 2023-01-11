@@ -127,6 +127,7 @@ class ArgumentResolver(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNo
                 }
                 is Expression.ArrayElement -> TODO()
                 is Expression.ArrayLength -> TODO()
+                is Expression.ArrayAllocation -> TODO()
                 else -> {}
             }
         }

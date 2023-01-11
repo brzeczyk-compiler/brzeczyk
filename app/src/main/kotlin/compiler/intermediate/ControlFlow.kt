@@ -193,6 +193,9 @@ object ControlFlow {
                     invalidatedVariables[Ref(astNode)] = modifiedInTrueBranch + modifiedInFalseBranch
                     modifiedUnderCurrentBase + modifiedInCondition + modifiedInTrueBranch + modifiedInFalseBranch
                 }
+                is Expression.ArrayLength -> TODO()
+                is Expression.ArrayElement -> TODO()
+                is Expression.ArrayAllocation -> TODO()
             }
         }
 
@@ -360,6 +363,9 @@ object ControlFlow {
                     last = lastAfterTrueBranch + lastAfterFalseBranch
                     IFTNode.RegisterRead(resultTemporaryRegister)
                 }
+                is Expression.ArrayLength -> TODO()
+                is Expression.ArrayElement -> TODO()
+                is Expression.ArrayAllocation -> TODO()
             }
         }
 

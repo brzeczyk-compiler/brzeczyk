@@ -247,7 +247,7 @@ class FunctionDependenciesAnalyzerTest {
             Type.Unit,
             listOf(
                 Statement.Assignment(
-                    "a",
+                    Statement.Assignment.LValue.Variable("a"),
                     Expression.Conditional(
                         Expression.Variable("b"),
                         Expression.NumberLiteral(3),
@@ -748,7 +748,7 @@ class FunctionDependenciesAnalyzerTest {
         val fFunctionCall = Expression.FunctionCall("f", listOf())
         val gFunctionCall = Expression.FunctionCall("g", listOf())
 
-        val yAssignment = Statement.Assignment("y", gFunctionCall)
+        val yAssignment = Statement.Assignment(Statement.Assignment.LValue.Variable("y"), gFunctionCall)
         val xVariable = Variable(Variable.Kind.VALUE, "x", Type.Number, fFunctionCall)
         val yVariable = Variable(Variable.Kind.VARIABLE, "y", Type.Number, null)
 

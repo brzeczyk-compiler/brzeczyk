@@ -173,6 +173,9 @@ class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
                         is Function -> report(TypeCheckingError.FunctionAsValue(expression, node))
                     }
                 }
+                is Expression.ArrayElement -> TODO()
+                is Expression.ArrayLength -> TODO()
+                is Expression.ArrayAllocation -> TODO()
 
                 is Expression.FunctionCall -> {
                     when (val node = nameResolution[Ref(expression)]!!.value) {
@@ -289,6 +292,9 @@ class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
                     // in case of change, update Expression.getValueOfLiteral as well
                     report(TypeCheckingError.NonConstantExpression(expression))
                 }
+                is Expression.ArrayElement -> TODO()
+                is Expression.ArrayLength -> TODO()
+                is Expression.ArrayAllocation -> TODO()
             }
 
             return null

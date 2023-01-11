@@ -21,10 +21,15 @@ sealed class Statement : AstNode {
     ) : Statement()
 
     data class Assignment(
-        val variableName: String,
+        val lvalue: LValue,
         val value: Expression,
         override val location: LocationRange? = null,
-    ) : Statement()
+    ) : Statement() {
+        sealed class LValue() {
+            data class Variable(val name: String) : LValue()
+            data class ArrayElement(val expression: Expression, val index: Expression) : LValue()
+        }
+    }
 
     data class Block(
         val block: StatementBlock,

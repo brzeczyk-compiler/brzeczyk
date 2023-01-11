@@ -129,7 +129,7 @@ internal class NameResolverTest {
             listOf(Expression.FunctionCall.Argument(null, Expression.NumberLiteral(5)))
         )
         val xMain = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
-        val xMainAssignment = Statement.Assignment("x", Expression.NumberLiteral(5))
+        val xMainAssignment = Statement.Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(5))
 
         val aF = Function.Parameter("a", Type.Number, null)
         val xF = Variable(Variable.Kind.VARIABLE, "x", Type.Number, Expression.NumberLiteral(1))
@@ -140,7 +140,7 @@ internal class NameResolverTest {
         val fCmp1 = Expression.BinaryOperation(Expression.BinaryOperation.Kind.LESS_THAN_OR_EQUALS, xFCmp1, aFCmp)
         val xFRead = Expression.Variable("x")
         val xFAssign = Statement.Assignment(
-            "x",
+            Statement.Assignment.LValue.Variable("x"),
             Expression.BinaryOperation(
                 Expression.BinaryOperation.Kind.ADD,
                 xFRead,

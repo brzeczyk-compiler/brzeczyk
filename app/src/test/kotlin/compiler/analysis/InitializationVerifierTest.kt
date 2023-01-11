@@ -90,7 +90,7 @@ class InitializationVerifierTest {
     fun `test reference after late initialization is correct`() {
         val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
         val xDefinition = Statement.VariableDefinition(x)
-        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
+        val assignmentToX = Statement.Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(123))
         val readFromX = Expression.Variable("x")
 
         val y = Variable(Variable.Kind.VALUE, "y", Type.Number, readFromX)
@@ -118,7 +118,7 @@ class InitializationVerifierTest {
     fun `test initialization in statement block is correct`() {
         val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
         val xDefinition = Statement.VariableDefinition(x)
-        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
+        val assignmentToX = Statement.Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(123))
         val blockWithAssignment = Statement.Block(listOf(assignmentToX))
         val readFromX = Expression.Variable("x")
 
@@ -148,7 +148,7 @@ class InitializationVerifierTest {
     fun `test initialization in one side of conditional is incorrect`() {
         val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
         val xDefinition = Statement.VariableDefinition(x)
-        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
+        val assignmentToX = Statement.Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(123))
         val conditionalAssignmentToX = Statement.Conditional(Expression.BooleanLiteral(false), listOf(assignmentToX), null)
         val readFromX = Expression.Variable("x")
 
@@ -212,8 +212,8 @@ class InitializationVerifierTest {
     fun `test initialization in both sides of a conditional is correct`() {
         val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
         val xDefinition = Statement.VariableDefinition(x)
-        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
-        val alternativeAssignmentToX = Statement.Assignment("x", Expression.NumberLiteral(124))
+        val assignmentToX = Statement.Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(123))
+        val alternativeAssignmentToX = Statement.Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(124))
         val trickyAssignmentToX = Statement.Conditional(
             Expression.BooleanLiteral(false), listOf(assignmentToX),
             listOf(alternativeAssignmentToX)
@@ -252,7 +252,7 @@ class InitializationVerifierTest {
     fun `test initialization in condition is correct`() {
         val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
         val xDefinition = Statement.VariableDefinition(x)
-        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
+        val assignmentToX = Statement.Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(123))
         val readFromX = Expression.Variable("x")
 
         val innerFunction = Function(
@@ -291,7 +291,7 @@ class InitializationVerifierTest {
     fun `test initialization in loop body is incorrect`() {
         val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
         val xDefinition = Statement.VariableDefinition(x)
-        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
+        val assignmentToX = Statement.Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(123))
         val loopWithAssignment = Statement.Loop(Expression.BooleanLiteral(false), listOf(assignmentToX))
         val readFromX = Expression.Variable("x")
 
@@ -325,7 +325,7 @@ class InitializationVerifierTest {
     fun `test initialization in foreach body is incorrect`() {
         val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
         val xDefinition = Statement.VariableDefinition(x)
-        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
+        val assignmentToX = Statement.Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(123))
         val readFromX = Expression.Variable("x")
 
         val innerGenerator = Function(
@@ -367,7 +367,7 @@ class InitializationVerifierTest {
     fun `test initialization after yield is incorrect`() {
         val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
         val xDefinition = Statement.VariableDefinition(x)
-        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
+        val assignmentToX = Statement.Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(123))
         val readFromX = Expression.Variable("x")
 
         val innerGenerator = Function(
@@ -414,7 +414,7 @@ class InitializationVerifierTest {
     fun `test initialization in inner function call is correct`() {
         val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
         val xDefinition = Statement.VariableDefinition(x)
-        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
+        val assignmentToX = Statement.Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(123))
         val readFromX = Expression.Variable("x")
 
         val innerFunction = Function(
@@ -455,7 +455,7 @@ class InitializationVerifierTest {
     fun `test assignment in function definition is not enough`() {
         val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
         val xDefinition = Statement.VariableDefinition(x)
-        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
+        val assignmentToX = Statement.Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(123))
         val readFromX = Expression.Variable("x")
 
         val innerFunction = Function(
@@ -492,7 +492,7 @@ class InitializationVerifierTest {
     fun `test initialization in only one side of conditional assignment is incorrect`() {
         val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
         val xDefinition = Statement.VariableDefinition(x)
-        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
+        val assignmentToX = Statement.Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(123))
         val readFromX = Expression.Variable("x")
 
         val innerFunction = Function(
@@ -536,7 +536,7 @@ class InitializationVerifierTest {
     fun `test initialization in both sides of conditional assignment is correct`() {
         val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
         val xDefinition = Statement.VariableDefinition(x)
-        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
+        val assignmentToX = Statement.Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(123))
         val readFromX = Expression.Variable("x")
 
         val innerFunction = Function(
@@ -579,7 +579,7 @@ class InitializationVerifierTest {
     fun `test initialization in right side of short circuit is incorrect`() {
         val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
         val xDefinition = Statement.VariableDefinition(x)
-        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
+        val assignmentToX = Statement.Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(123))
         val readFromX = Expression.Variable("x")
 
         val innerFunction = Function(
@@ -623,7 +623,7 @@ class InitializationVerifierTest {
     fun `test initialization in left side of short circuit is correct`() {
         val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
         val xDefinition = Statement.VariableDefinition(x)
-        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
+        val assignmentToX = Statement.Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(123))
         val readFromX = Expression.Variable("x")
 
         val innerFunction = Function(
@@ -670,7 +670,7 @@ class InitializationVerifierTest {
     fun `test initialization in function return is correct`() {
         val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
         val xDefinition = Statement.VariableDefinition(x)
-        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
+        val assignmentToX = Statement.Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(123))
         val readFromX = Expression.Variable("x")
 
         val innerFunction = Function(
@@ -721,7 +721,7 @@ class InitializationVerifierTest {
     fun `test initialization in default parameter is correct`() {
         val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
         val xDefinition = Statement.VariableDefinition(x)
-        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
+        val assignmentToX = Statement.Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(123))
         val readFromX = Expression.Variable("x")
 
         val innerFunction = Function(
@@ -768,7 +768,7 @@ class InitializationVerifierTest {
     fun `test initialization after a potential return in nested function call is incorrect`() {
         val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
         val xDefinition = Statement.VariableDefinition(x)
-        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
+        val assignmentToX = Statement.Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(123))
         val readFromX = Expression.Variable("x")
 
         val returningIf = Statement.Conditional(
@@ -811,7 +811,7 @@ class InitializationVerifierTest {
     fun `test initialization after a potential return in a loop in a nested function call is incorrect`() {
         val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
         val xDefinition = Statement.VariableDefinition(x)
-        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
+        val assignmentToX = Statement.Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(123))
         val readFromX = Expression.Variable("x")
 
         val returningLoop = Statement.Loop(
@@ -854,7 +854,7 @@ class InitializationVerifierTest {
     fun `test potential return after initialization is correct`() {
         val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
         val xDefinition = Statement.VariableDefinition(x)
-        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
+        val assignmentToX = Statement.Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(123))
         val readFromX = Expression.Variable("x")
 
         val returningIf = Statement.Conditional(
@@ -898,7 +898,7 @@ class InitializationVerifierTest {
     fun `test return in if at same level does not matter`() {
         val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
         val xDefinition = Statement.VariableDefinition(x)
-        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
+        val assignmentToX = Statement.Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(123))
         val readFromX = Expression.Variable("x")
 
         val returningLoop = Statement.Loop(
@@ -943,7 +943,7 @@ class InitializationVerifierTest {
     fun `test return in if in nested function does matter`() {
         val x = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
         val xDefinition = Statement.VariableDefinition(x)
-        val assignmentToX = Statement.Assignment("x", Expression.NumberLiteral(123))
+        val assignmentToX = Statement.Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(123))
         val readFromX = Expression.Variable("x")
 
         val returningLoop = Statement.Loop(

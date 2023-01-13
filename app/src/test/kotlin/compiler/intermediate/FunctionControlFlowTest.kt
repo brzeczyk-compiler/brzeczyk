@@ -135,6 +135,7 @@ class FunctionControlFlowTest {
                 throw RuntimeException("This method shouldn't be called")
             }
         },
+        { variable, _ -> IFTNode.MemoryRead(IFTNode.MemoryLabel(variable.name)) },
         { node, variable, _ -> IFTNode.MemoryWrite(IFTNode.MemoryLabel(variable.name), node) },
         dummyGeneratorDetailsGenerator
     )

@@ -1,5 +1,6 @@
 package compiler.intermediate.generators
 
+import compiler.ast.Type
 import compiler.intermediate.ControlFlowGraph
 import compiler.intermediate.ControlFlowGraphBuilder
 import compiler.intermediate.IFTNode
@@ -29,12 +30,18 @@ object ArrayMemoryManagement {
         return Pair(cfgBuilder.build(), IFTNode.Add(mallocCall.result, IFTNode.Const(2 * memoryUnitSize.toLong())))
     }
 
-    // frees array, given address of the first element
-    fun genFree(address: IFTNode): ControlFlowGraph {
-        val freeCall = freeFDG.genCall(listOf(IFTNode.Subtract(address, IFTNode.Const(2 * memoryUnitSize.toLong()))))
-        return freeCall.callGraph
+    fun genRefCountIncrement(address: IFTNode): Unit = TODO()
+
+    fun genRefCountDecrement(address: IFTNode, type: Type): ControlFlowGraph {
+        fun getArrayLevel(type: Type): Int = when (type) {
+            is Type.Array -> 1 + getArrayLevel(type.elementType)
+            else -> 0
+        }
+
+        val level = getArrayLevel(type)
+        return refCountDecrementFDG.genCall(listOf(address, IFTNode.Const(level.toLong()))).callGraph
     }
 
     private val mallocFDG = ForeignFunctionDetailsGenerator(IFTNode.MemoryLabel("_\$checked_malloc"), 1)
-    private val freeFDG = ForeignFunctionDetailsGenerator(IFTNode.MemoryLabel("free"), 0)
+    private val refCountDecrementFDG = ForeignFunctionDetailsGenerator(IFTNode.MemoryLabel("_\$array_ref_count_decrement"), 0)
 }

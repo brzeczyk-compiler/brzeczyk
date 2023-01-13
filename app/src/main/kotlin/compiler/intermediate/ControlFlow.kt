@@ -58,9 +58,14 @@ object ControlFlow {
             )
         }
 
+        val variableAccessGenerators = createVariableAccessGenerators(functionDetailsGenerators, generatorDetailsGenerators, globalVariableAccessGenerator)
+
+        fun createReadFromVariable(variable: Variable, currentFunction: Function): IFTNode {
+            val owner = programProperties.variableProperties[Ref(variable)]!!.owner
+            return variableAccessGenerators[Ref(owner)]!!.genRead(variable, owner === currentFunction)
+        }
+
         fun createWriteToVariable(iftNode: IFTNode, variable: Variable, currentFunction: Function): IFTNode {
-            val variableAccessGenerators: Map<Ref<VariableOwner>, VariableAccessGenerator> =
-                createVariableAccessGenerators(functionDetailsGenerators, generatorDetailsGenerators, globalVariableAccessGenerator)
             val owner = programProperties.variableProperties[Ref(variable)]!!.owner
             return variableAccessGenerators[Ref(owner)]!!.genWrite(variable, iftNode, owner === currentFunction)
         }
@@ -75,6 +80,7 @@ object ControlFlow {
             programProperties.defaultParameterMapping,
             programProperties.functionReturnedValueVariables,
             diagnostics,
+            ::createReadFromVariable,
             ::createWriteToVariable,
             ::getGeneratorDetailsGenerator
         )
@@ -454,10 +460,8 @@ object ControlFlow {
     private data class EscapeTreeHead(var value: IFTNode) // wrapper class allowing to modify arguments value
     private fun EscapeTreeHead?.copy() = this?.copy()
 
-    private fun Variable.generateDestructor(): ControlFlowGraph = when (type) {
-        is Type.Array -> {
-            TODO()
-        }
+    private fun Variable.generateDestructor(value: IFTNode): ControlFlowGraph = when (type) {
+        is Type.Array -> ArrayMemoryManagement.genRefCountDecrement(value, type)
         else -> ControlFlowGraphBuilder().build()
     }
 
@@ -468,6 +472,7 @@ object ControlFlow {
         defaultParameterValues: Map<Ref<Function.Parameter>, Variable>,
         functionReturnedValueVariables: Map<Ref<Function>, Variable>,
         diagnostics: Diagnostics,
+        createReadFromVariable: (Variable, Function) -> IFTNode,
         createWriteToVariable: (IFTNode, Variable, Function) -> IFTNode,
         getGeneratorDetailsGenerator: (Function) -> GeneratorDetailsGenerator
     ): Map<Ref<Function>, ControlFlowGraph> {
@@ -512,10 +517,11 @@ object ControlFlow {
                 }
 
                 fun addToDestructionStructures(variable: Variable) {
-                    destructorsStack.add(variable.generateDestructor())
-                    addToEscapeTree(variable.generateDestructor(), returnTreeHead)
-                    addToEscapeTree(variable.generateDestructor(), breakTreeHead)
-                    addToEscapeTree(variable.generateDestructor(), continueTreeHead)
+                    val genDestructor = { variable.generateDestructor(createReadFromVariable(variable, function)) }
+                    destructorsStack.add(genDestructor())
+                    addToEscapeTree(genDestructor(), returnTreeHead)
+                    addToEscapeTree(genDestructor(), breakTreeHead)
+                    addToEscapeTree(genDestructor(), continueTreeHead)
                 }
 
                 fun addExpression(expression: Expression, target: AssignmentTarget?, accessNodeConsumer: ((ControlFlowGraph, IFTNode) -> Unit)? = null): IFTNode? {

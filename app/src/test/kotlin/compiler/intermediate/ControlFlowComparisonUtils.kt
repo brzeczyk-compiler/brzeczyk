@@ -122,6 +122,9 @@ infix fun ControlFlowGraph.merge(iftNode: IFTNode): ControlFlowGraph =
 infix fun IFTNode.merge(iftNode: IFTNode): ControlFlowGraph =
     this.toCfg() merge iftNode.toCfg()
 
+infix fun ControlFlowGraph.add(cfg: ControlFlowGraph) =
+    ControlFlowGraphBuilder().mergeUnconditionally(this).addAllFrom(cfg).build()
+
 fun mergeCFGsConditionally(condition: ControlFlowGraph, cfgTrue: ControlFlowGraph, cfgFalse: ControlFlowGraph): ControlFlowGraph {
     return ControlFlowGraphBuilder().mergeUnconditionally(condition).mergeConditionally(cfgTrue, cfgFalse).build()
 }

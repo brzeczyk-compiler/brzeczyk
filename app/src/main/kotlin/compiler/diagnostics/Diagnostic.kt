@@ -303,6 +303,20 @@ sealed interface Diagnostic {
             ) : TypeCheckingError(listOf(yieldStatement)) {
                 override val errorMessage = "The yield occurs in non-generator function."
             }
+
+            class ExtractionFromNonArrayType(
+                expression: Expression,
+                type: Type,
+            ) : TypeCheckingError(listOf(expression)) {
+                override val errorMessage = "Extracting value from a non-array type: $type."
+            }
+
+            class LengthOfNonArrayType(
+                expression: Expression,
+                type: Type,
+            ) : TypeCheckingError(listOf(expression)) {
+                override val errorMessage = "Accessing length of a non-array type: $type."
+            }
         }
 
         sealed class VariablePropertiesError(astNodes: List<AstNode>) : ResolutionDiagnostic(astNodes) {

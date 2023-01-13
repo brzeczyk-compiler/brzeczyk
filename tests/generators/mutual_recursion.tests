@@ -1,0 +1,28 @@
+// INTEGRATION TESTS IGNORE
+Input:
+1
+Exit code:
+0
+Output:
+1
+----------
+Input:
+3
+Exit code:
+0
+Output:
+2
+----------
+Input:
+5
+Exit code:
+0
+Output:
+5
+----------
+Input:
+9
+Exit code:
+0
+Output:
+34

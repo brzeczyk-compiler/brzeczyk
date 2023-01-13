@@ -1,0 +1,33 @@
+przekaźnik g2() -> Czy {
+    napisz(1)
+    przekaż prawda
+    napisz(2)
+    przekaż fałsz
+    napisz(3)
+    przekaż prawda
+    napisz(4)
+    przekaż fałsz
+    napisz(5)
+    przekaż fałsz
+    napisz(6)
+    przekaż prawda
+    napisz(7)
+}
+
+przekaźnik g1() -> Czy {
+    otrzymując x: Czy od g2 { 
+        jeśli(x == fałsz)
+            przekaż fałsz
+    }
+}
+
+czynność główna() {
+    zm lim: Liczba = wczytaj()
+    zm cnt: Liczba = 0
+    otrzymując x: Czy od g1(n) { 
+        jeśli (x == fałsz)
+            cnt = cnt+1
+        jeśli(cnt == lim)
+            zakończ
+    }
+}

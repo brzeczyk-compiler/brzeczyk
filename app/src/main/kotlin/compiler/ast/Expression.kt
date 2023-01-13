@@ -34,10 +34,12 @@ sealed class Expression : AstNode {
         override val location: LocationRange? = null
     ) : Expression()
 
+    // new int[length](initial value)
+    // new int{values...} is just a syntax sugar for an above initialization with a setup loop
     data class ArrayAllocation(
         val name: String,
         val size: Int,
-        val initalization: List<Expression>,
+        val initialization: Expression,
         override val location: LocationRange? = null
     ) : Expression()
 

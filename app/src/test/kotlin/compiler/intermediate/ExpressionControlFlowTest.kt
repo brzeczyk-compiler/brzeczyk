@@ -107,7 +107,7 @@ class ExpressionControlFlowTest {
         fun createCfg(expr: Expression, targetVariable: Variable? = null): ControlFlowGraph {
             return ControlFlow.createGraphForExpression(
                 expr,
-                targetVariable,
+                targetVariable?.let { ControlFlow.AssignmentTarget.VariableTarget(it) },
                 currentFunction,
                 nameResolution,
                 variableProperties,

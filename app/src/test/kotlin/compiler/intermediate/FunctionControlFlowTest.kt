@@ -36,12 +36,20 @@ class FunctionControlFlowTest {
         return node
     }
 
-    private fun getExpressionCFG(expression: Expression, variable: Variable?, function: Function, accessNodeConsumer: ((ControlFlowGraph, IFTNode) -> Unit)?): ControlFlowGraph {
-        val node = expressionNodes[Ref(expression)]?.get(Ref(variable))
-        val nodeList = node?.let { listOf(it.value) } ?: emptyList()
-        return ControlFlowGraph(nodeList, node?.value, refMapOf(), refMapOf(), refMapOf()).also {
-            if (accessNodeConsumer != null) {
-                accessNodeConsumer(it, expressionAccessNodes[Ref(expression)]!![Ref(variable)]!!.value)
+    private fun getExpressionCFG(expression: Expression, target: ControlFlow.AssignmentTarget?, function: Function, accessNodeConsumer: ((ControlFlowGraph, IFTNode) -> Unit)?): ControlFlowGraph {
+        return when (target) {
+            is ControlFlow.AssignmentTarget.VariableTarget? -> {
+                val node = expressionNodes[Ref(expression)]?.get(Ref(target?.variable))
+                val nodeList = node?.let { listOf(it.value) } ?: emptyList()
+                ControlFlowGraph(nodeList, node?.value, refMapOf(), refMapOf(), refMapOf()).also {
+                    if (accessNodeConsumer != null) {
+                        accessNodeConsumer(it, expressionAccessNodes[Ref(expression)]!![Ref(target?.variable)]!!.value)
+                    }
+                }
+            }
+
+            else -> {
+                ControlFlowGraphBuilder().build()
             }
         }
     }

@@ -460,4 +460,83 @@ class LinearizationTest {
             result
         )
     }
+
+    @Test
+    fun `NoOp nodes are skipped`() {
+        val node1 = newNode()
+        val noOpNode = IFTNode.NoOp()
+        val node2 = newNode()
+
+        val cfg = ControlFlowGraph(
+            listOf(node1, noOpNode, node2),
+            node1,
+            refMapOf(node1 to noOpNode, noOpNode to node2),
+            refMapOf(),
+            refMapOf()
+        )
+
+        val result = Linearization.linearize(cfg, covering)
+
+        assertLinearizationMatches(
+            listOf(
+                Unconditional(node1),
+                Unconditional(node2)
+            ),
+            result
+        )
+    }
+
+    @Test
+    fun `multiple NoOp nodes are skipped`() {
+        val node1 = newNode()
+        val noOpNode1 = IFTNode.NoOp()
+        val noOpNode2 = IFTNode.NoOp()
+        val noOpNode3 = IFTNode.NoOp()
+        val node2 = newNode()
+
+        val cfg = ControlFlowGraph(
+            listOf(node1, noOpNode1, noOpNode2, noOpNode3, node2),
+            node1,
+            refMapOf(node1 to noOpNode1, noOpNode1 to noOpNode2, noOpNode2 to noOpNode3, noOpNode3 to node2),
+            refMapOf(),
+            refMapOf()
+        )
+
+        val result = Linearization.linearize(cfg, covering)
+
+        assertLinearizationMatches(
+            listOf(
+                Unconditional(node1),
+                Unconditional(node2)
+            ),
+            result
+        )
+    }
+
+    @Test
+    fun `NoOp nodes can be jumped to`() {
+        val node1 = newNode()
+        val noOpNode = IFTNode.NoOp()
+        val node2 = newNode()
+
+        val cfg = ControlFlowGraph(
+            listOf(node1, noOpNode, node2),
+            node1,
+            refMapOf(node1 to noOpNode, noOpNode to node2, node2 to noOpNode),
+            refMapOf(),
+            refMapOf()
+        )
+
+        val result = Linearization.linearize(cfg, covering)
+
+        assertLinearizationMatches(
+            listOf(
+                Unconditional(node1),
+                NextLabel,
+                Unconditional(node2),
+                Jump(0)
+            ),
+            result
+        )
+    }
 }

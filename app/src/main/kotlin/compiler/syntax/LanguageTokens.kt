@@ -7,11 +7,13 @@ import compiler.syntax.utils.TokenRegexParser
 object LanguageTokens {
     fun getTokens(): List<Pair<AbstractDfa<Char, Unit>, TokenType>> {
         val list = listOf(
-            // Parenthesis and braces
+            // Parenthesis, braces and brackets
             Pair(TokenType.LEFT_PAREN, "\\("),
             Pair(TokenType.RIGHT_PAREN, "\\)"),
             Pair(TokenType.LEFT_BRACE, "\\{"),
             Pair(TokenType.RIGHT_BRACE, "\\}"),
+            Pair(TokenType.LEFT_BRACKET, "\\["),
+            Pair(TokenType.RIGHT_BRACKET, "\\]"),
 
             // Variable types
             Pair(TokenType.VARIABLE, "zm"),
@@ -33,6 +35,11 @@ object LanguageTokens {
             Pair(TokenType.FOREIGN1, "zewnętrzna"),
             Pair(TokenType.FOREIGN2, "zewnętrzny"),
             Pair(TokenType.AS, "jako"),
+
+            // Array related keywords
+            Pair(TokenType.LENGTH, "długość"),
+            Pair(TokenType.ALLOCATE, "alokacja"),
+            Pair(TokenType.NULL_ARRAY, "pusta"),
 
             // Generators related keywords
             Pair(TokenType.GENERATOR, "przekaźnik"),

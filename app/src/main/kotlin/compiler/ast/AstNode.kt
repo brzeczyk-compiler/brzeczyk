@@ -22,10 +22,11 @@ sealed interface AstNode {
                     is Expression.NumberLiteral -> this.value.toString()
                     is Expression.UnaryOperation -> "${this.kind} ${this.operand}"
                     is Expression.UnitLiteral -> "nic"
+                    is Expression.NullArray -> "pusta"
                     is Expression.Variable -> this.name
                     is Expression.ArrayElement -> "${this.expression}[${this.index}]"
                     is Expression.ArrayLength -> "długość ${this.expression}"
-                    is Expression.ArrayAllocation -> "alokacja ${this.name}[${this.size}]{${this.initalization.joinToString { it.toSimpleString() } }}"
+                    is Expression.ArrayAllocation -> "alokacja ${this.type}[${this.size.toSimpleString()}]{${this.initalization.joinToString { it.toSimpleString() } }}"
                 }
 
                 is Variable -> "${this.kind} ${this.name}: ${this.type}${if (this.value != null) "= ${this.value.toSimpleString()}" else ""}"

@@ -460,11 +460,6 @@ object ControlFlow {
     private data class EscapeTreeHead(var value: IFTNode) // wrapper class allowing to modify arguments value
     private fun EscapeTreeHead?.copy() = this?.copy()
 
-    private fun Variable.generateDestructor(value: IFTNode): ControlFlowGraph = when (type) {
-        is Type.Array -> ArrayMemoryManagement.genRefCountDecrement(value, type)
-        else -> ControlFlowGraphBuilder().build()
-    }
-
     fun createGraphForEachFunction(
         program: Program,
         createGraphForExpression: (Expression, AssignmentTarget?, Function, ((ControlFlowGraph, IFTNode) -> Unit)?) -> ControlFlowGraph,
@@ -505,6 +500,14 @@ object ControlFlow {
                 cfgBuilder.addAllFrom(ControlFlowGraphBuilder().addSingleTree(node).build(), false)
             }
 
+            fun Variable.generateDestructor(): ControlFlowGraph = when (type) {
+                is Type.Array -> ControlFlowGraphBuilder()
+                    .mergeUnconditionally(ArrayMemoryManagement.genRefCountDecrement(createReadFromVariable(this, function), type))
+                    .addSingleTree(createWriteToVariable(IFTNode.Const(0), this, function))
+                    .build()
+                else -> ControlFlowGraphBuilder().build()
+            }
+
             fun processStatementBlock(block: StatementBlock, returnTreeHead: EscapeTreeHead, breakTreeHead: EscapeTreeHead?, continueTreeHead: EscapeTreeHead?) {
                 val destructorsStack = Stack<ControlFlowGraph>()
 
@@ -517,7 +520,7 @@ object ControlFlow {
                 }
 
                 fun addToDestructionStructures(variable: Variable) {
-                    val genDestructor = { variable.generateDestructor(createReadFromVariable(variable, function)) }
+                    val genDestructor = { variable.generateDestructor() }
                     destructorsStack.add(genDestructor())
                     addToEscapeTree(genDestructor(), returnTreeHead)
                     addToEscapeTree(genDestructor(), breakTreeHead)
@@ -571,6 +574,8 @@ object ControlFlow {
 
                             if (variable.kind != Variable.Kind.CONSTANT && variable.value != null)
                                 addExpression(variable.value, variable.asTarget())
+                            else if (variable.type is Type.Array)
+                                addNode(createWriteToVariable(IFTNode.Const(0), variable, function))
 
                             addToDestructionStructures(variable)
                         }

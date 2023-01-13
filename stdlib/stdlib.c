@@ -28,6 +28,9 @@ void* _$checked_malloc(size_t size) {
 }
 
 void _$array_ref_count_decrement(uint64_t* address, int64_t level) { // simple array has level 1
+    if (address == 0)
+        return;
+
     uint64_t* ref_count = address - 2;
     uint64_t* length = address - 1;
 

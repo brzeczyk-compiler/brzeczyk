@@ -1,8 +1,8 @@
 package compiler.analysis
 
+import compiler.ast.Function
 import compiler.ast.Program
 import compiler.ast.Statement
-import compiler.ast.Function
 import compiler.utils.Ref
 import compiler.utils.mutableKeyRefMapOf
 
@@ -32,7 +32,7 @@ object GeneratorResolver {
                 is Statement.FunctionDefinition -> {
                     val function = statement.function
                     val updatedParentGenerators = if (function.isGenerator) parentGenerators + listOf(function) else parentGenerators
-                    if(function.isGenerator) resultMapping.putIfAbsent(Ref(function), mutableListOf())
+                    if (function.isGenerator) resultMapping.putIfAbsent(Ref(function), mutableListOf())
                     process(updatedParentGenerators, function.body)
                 }
 
@@ -40,7 +40,6 @@ object GeneratorResolver {
                     parentGenerators.forEach { resultMapping[Ref(it)]?.add(Ref(statement)) }
                     process(parentGenerators, statement.action)
                 }
-
             }
         }
 
@@ -50,7 +49,7 @@ object GeneratorResolver {
                 is Program.Global.FunctionDefinition -> {
                     val function = global.function
                     val updatedParentGenerators = if (function.isGenerator) listOf(function) else listOf()
-                    if(function.isGenerator) resultMapping.putIfAbsent(Ref(function), mutableListOf())
+                    if (function.isGenerator) resultMapping.putIfAbsent(Ref(function), mutableListOf())
                     function.body.forEach { process(updatedParentGenerators, it) }
                 }
             }

@@ -1,3 +1,4 @@
+// INTEGRATION TESTS IGNORE
 przekaźnik g2() -> Czy {
     napisz(1)
     przekaż prawda

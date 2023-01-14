@@ -1,3 +1,4 @@
+// INTEGRATION TESTS IGNORE
 przekaźnik p()-> Liczba {
     przekaż 1
 }

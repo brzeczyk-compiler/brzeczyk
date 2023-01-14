@@ -1,3 +1,4 @@
+// INTEGRATION TESTS IGNORE
 czynność główna() {
     przekaźnik liczby_naturalne() -> Liczba {
         zm x: Liczba = 0

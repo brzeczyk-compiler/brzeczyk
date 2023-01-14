@@ -56,6 +56,17 @@ infix fun ControlFlowGraph.assertHasSameStructureAs(cfg: ControlFlowGraph) {
                 this.node assertHasSameStructureAs iftNode.node
             }
             is IFTNode.RegisterRead -> registersMap.ensurePairSymmetrical(this.register, (iftNode as IFTNode.RegisterRead).register)
+            is IFTNode.DummyArrayAllocation -> {
+                assertEquals(this.size, (iftNode as IFTNode.DummyArrayAllocation).size)
+                assertEquals(this.type, iftNode.type)
+                assertEquals(this.initList.size, iftNode.initList.size)
+                (this.initList zip iftNode.initList).forEach { it.first assertHasSameStructureAs it.second }
+            }
+            is IFTNode.DummyArrayRefCountInc -> this.address assertHasSameStructureAs (iftNode as IFTNode.DummyArrayRefCountInc).address
+            is IFTNode.DummyArrayRefCountDec -> {
+                assertEquals(this.type, (iftNode as IFTNode.DummyArrayRefCountDec).type)
+                this.address assertHasSameStructureAs iftNode.address
+            }
             else -> {
                 assertEquals(this, iftNode)
             }

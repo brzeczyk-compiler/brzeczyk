@@ -7,6 +7,7 @@ import compiler.ast.Function
 import compiler.ast.NamedNode
 import compiler.ast.Type
 import compiler.ast.Variable
+import compiler.intermediate.generators.ArrayMemoryManagement
 import compiler.intermediate.generators.FunctionDetailsGenerator
 import compiler.intermediate.generators.VariableAccessGenerator
 import compiler.utils.Ref
@@ -104,12 +105,13 @@ class ExpressionControlFlowTest {
                 variableProperties[namedNode] = VariablePropertiesAnalyzer.fixVariableProperties(mutableVP)
         }
 
-        fun createCfg(expr: Expression, targetVariable: Variable? = null): ControlFlowGraph {
+        fun createCfg(expr: Expression, targetVariable: Variable? = null, expressionTypes: Map<Ref<Expression>, Type> = emptyMap()): ControlFlowGraph {
             return ControlFlow.createGraphForExpression(
                 expr,
                 targetVariable?.let { ControlFlow.AssignmentTarget.VariableTarget(it) },
                 currentFunction,
                 nameResolution,
+                expressionTypes,
                 variableProperties,
                 finalCallGraph,
                 functionDetailsGenerators,
@@ -122,9 +124,19 @@ class ExpressionControlFlowTest {
 
                     override fun genWrite(namedNode: NamedNode, value: IFTNode, isDirect: Boolean): IFTNode =
                         IFTNode.DummyWrite(namedNode, value, isDirect, true)
-                }
+                },
+                TestArrayMemoryManagement
             )
         }
+    }
+    private object TestArrayMemoryManagement : ArrayMemoryManagement {
+        private var arrayId = 0
+        override fun genAllocation(size: IFTNode, initialization: List<IFTNode>, type: Type, mode: Expression.ArrayAllocation.InitializationType): Pair<ControlFlowGraph, IFTNode> =
+            Pair(IFTNode.DummyArrayAllocation(size, initialization, type, mode).toCfg(), IFTNode.Dummy("address of array ${arrayId++}"))
+
+        override fun genRefCountIncrement(address: IFTNode): ControlFlowGraph = IFTNode.DummyArrayRefCountInc(address).toCfg()
+
+        override fun genRefCountDecrement(address: IFTNode, type: Type): ControlFlowGraph = IFTNode.DummyArrayRefCountDec(address, type).toCfg()
     }
 
     private infix fun String.asVarIn(exprContext: ExpressionContext): Variable {

@@ -261,10 +261,11 @@ class CorrectProgramsE2eTest {
                 zwróć alokacja Liczba[n](1)
             }
             czynność główna() {
-                zm x: [[Liczba]] = alokacja [Liczba][3](pusta)
-                x[0] = alokacja Liczba[3](0)
-                x[1] = alokacja Liczba{1, 2}
-                x[2] = alokacja Liczba{3, 4, 5, 6}
+                zm x: [[Liczba]] = alokacja [Liczba] {
+                    x[0] = alokacja Liczba[3](0),
+                    x[1] = alokacja Liczba{1, 2},
+                    x[2] = alokacja Liczba{3, 4, 5, 6}
+                }
                 
                 napisz(długość x) // 3
                 napisz(długość x[2]) // 4

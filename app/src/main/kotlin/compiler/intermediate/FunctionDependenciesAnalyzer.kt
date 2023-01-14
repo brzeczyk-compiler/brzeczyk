@@ -174,7 +174,6 @@ object FunctionDependenciesAnalyzer {
                 is Expression.BooleanLiteral -> refSetOf()
                 is Expression.NumberLiteral -> refSetOf()
                 is Expression.UnitLiteral -> refSetOf()
-                is Expression.NullArray -> refSetOf()
                 is Expression.Variable -> refSetOf()
                 null -> refSetOf()
 

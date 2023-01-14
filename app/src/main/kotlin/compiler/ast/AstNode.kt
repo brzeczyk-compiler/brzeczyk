@@ -22,7 +22,6 @@ sealed interface AstNode {
                     is Expression.NumberLiteral -> this.value.toString()
                     is Expression.UnaryOperation -> "${this.kind} ${this.operand}"
                     is Expression.UnitLiteral -> "nic"
-                    is Expression.NullArray -> "pusta"
                     is Expression.Variable -> this.name
                     is Expression.ArrayElement -> "${this.expression}[${this.index}]"
                     is Expression.ArrayLength -> "długość ${this.expression}"

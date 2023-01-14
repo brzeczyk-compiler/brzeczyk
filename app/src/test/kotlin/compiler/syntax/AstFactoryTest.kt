@@ -764,12 +764,12 @@ class AstFactoryTest {
                                 Expression.ArrayAllocation(
                                     Type.Number,
                                     Expression.NumberLiteral(3),
-                                    false,
                                     listOf(
                                         Expression.NumberLiteral(1, dummyLocationRange),
                                         Expression.NumberLiteral(2, dummyLocationRange),
                                         Expression.NumberLiteral(3, dummyLocationRange),
                                     ),
+                                    Expression.ArrayAllocation.InitializationType.ALL_VALUES,
                                     dummyLocationRange
                                 ),
                                 dummyLocationRange

@@ -8,10 +8,6 @@ sealed class Expression : AstNode {
         override val location: LocationRange? = null,
     ) : Expression()
 
-    data class NullArray(
-        override val location: LocationRange? = null,
-    ) : Expression()
-
     data class BooleanLiteral(
         val value: Boolean,
         override val location: LocationRange? = null,
@@ -39,7 +35,7 @@ sealed class Expression : AstNode {
     ) : Expression()
 
     data class ArrayAllocation(
-        val type: String,
+        val type: Type,
         val size: Expression,
         val initialization: List<Expression>,
         val initializationType: InitializationType,

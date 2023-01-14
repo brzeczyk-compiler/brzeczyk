@@ -13,7 +13,7 @@ enum class TokenType {
     // Function related keywords
     RETURN, RETURN_UNIT, FUNCTION, FOREIGN1, FOREIGN2, AS,
     // Array related keyword
-    LENGTH, ALLOCATE, NULL_ARRAY,
+    LENGTH, ALLOCATE,
     // Generators related keywords
     GENERATOR, YIELD, FOR_EACH, FROM,
     // Special characters

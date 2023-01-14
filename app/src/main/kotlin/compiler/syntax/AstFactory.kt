@@ -151,7 +151,6 @@ object AstFactory {
             TokenType.TRUE_CONSTANT -> Expression.BooleanLiteral(true, child.location)
             TokenType.FALSE_CONSTANT -> Expression.BooleanLiteral(false, child.location)
             TokenType.UNIT_CONSTANT -> Expression.UnitLiteral(child.location)
-            TokenType.NULL_ARRAY -> Expression.NullArray(child.location)
             else -> throw IllegalArgumentException()
         }
     }
@@ -347,13 +346,13 @@ object AstFactory {
                     i += 2
                 }
                 val size = Expression.NumberLiteral(expressions.size.toLong())
-                Expression.ArrayAllocation(type, size, false, expressions, combineLocations(children))
+                Expression.ArrayAllocation(type, size, expressions, Expression.ArrayAllocation.InitializationType.ALL_VALUES, combineLocations(children))
             }
             in listOf(Productions.expr4096ArrayDefaultAllocation, Productions.eExpr4096ArrayDefaultAllocation) -> {
                 val type = processType(children[1])
                 val size = processExpression(children[3], diagnostics)
                 val defaultValue = processExpression(children[6], diagnostics)
-                Expression.ArrayAllocation(type, size, true, listOf(defaultValue), combineLocations(children))
+                Expression.ArrayAllocation(type, size, listOf(defaultValue), Expression.ArrayAllocation.InitializationType.ONE_VALUE, combineLocations(children))
             }
             else -> throw IllegalArgumentException()
         }

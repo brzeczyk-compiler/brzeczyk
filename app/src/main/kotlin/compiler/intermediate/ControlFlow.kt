@@ -150,7 +150,6 @@ object ControlFlow {
             return when (astNode) {
                 is Expression.UnitLiteral,
                 is Expression.BooleanLiteral,
-                is Expression.NullArray,
                 is Expression.NumberLiteral -> modifiedUnderCurrentBase
 
                 is Expression.Variable -> {
@@ -232,8 +231,6 @@ object ControlFlow {
                 is Expression.BooleanLiteral -> IFTNode.Const(if (astNode.value) 1 else 0)
 
                 is Expression.NumberLiteral -> IFTNode.Const(astNode.value)
-
-                is Expression.NullArray -> TODO()
 
                 is Expression.Variable -> {
                     val readableNode = nameResolution[Ref(astNode)]!!.value

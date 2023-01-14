@@ -262,9 +262,9 @@ class CorrectProgramsE2eTest {
             }
             czynność główna() {
                 zm x: [[Liczba]] = alokacja [Liczba] {
-                    x[0] = alokacja Liczba[3](0),
-                    x[1] = alokacja Liczba{1, 2},
-                    x[2] = alokacja Liczba{3, 4, 5, 6}
+                    alokacja Liczba[3](0),
+                    alokacja Liczba{1, 2},
+                    alokacja Liczba{3, 4, 5, 6}
                 }
                 
                 napisz(długość x) // 3
@@ -273,7 +273,7 @@ class CorrectProgramsE2eTest {
                 napisz(x[2][x[1][0]]) // 4
                 napisz(długość jedynki(3)) // 3
                 napisz(jedynki(2)[1]) // 1
-            }
+            }   
             """
         )
     }

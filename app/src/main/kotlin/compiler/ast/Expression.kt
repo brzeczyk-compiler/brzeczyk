@@ -35,7 +35,7 @@ sealed class Expression : AstNode {
     ) : Expression()
 
     data class ArrayAllocation(
-        val name: String,
+        val type: String,
         val size: Expression,
         val initialization: List<Expression>,
         val initializationType: InitializationType,

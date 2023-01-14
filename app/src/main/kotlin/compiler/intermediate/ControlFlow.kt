@@ -85,7 +85,8 @@ object ControlFlow {
             diagnostics,
             ::createReadFromVariable,
             ::createWriteToVariable,
-            ::getGeneratorDetailsGenerator
+            ::getGeneratorDetailsGenerator,
+            DefaultArrayMemoryManagement
         )
 
         return cfgForEachFunction.mapValues { (function, bodyCFG) ->
@@ -358,17 +359,27 @@ object ControlFlow {
 
                 is Expression.FunctionCall -> {
                     val function = nameResolution[Ref(astNode)]!!.value as Function
-                    val parameterValues = Array<IFTNode?>(function.parameters.size) { null }
 
-                    val explicitArgumentsResultNodes = astNode.arguments.map { makeCFGForSubtree(it.value) }
-                    for ((argument, resultNode) in astNode.arguments zip explicitArgumentsResultNodes) // explicit arguments
-                        parameterValues[function.parameters.indexOfFirst { Ref(it) == argumentResolution[Ref(argument)] }] = resultNode
-                    function.parameters.withIndex().filter { parameterValues[it.index] == null }.forEach { // default arguments
-                        val readNode = makeReadNode(defaultParameterMapping[Ref(it.value)]!!)
-                        if (it.value.hasArrayType()) cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountIncrement(readNode))
-                        parameterValues[it.index] = readNode
+                    // evaluate arguments, assign results to parameters
+                    val explicitParametersToNodes = astNode.arguments.associate { argumentResolution[Ref(it)]!! to makeCFGForSubtree(it.value) }
+                    val parameterValues = function.parameters.map {
+                        if (Ref(it) in explicitParametersToNodes) { // explicit arguments
+                            if (it.hasArrayType()) {
+                                val tempReg = Register()
+                                cfgBuilder.addNextTree(IFTNode.RegisterWrite(tempReg, explicitParametersToNodes[Ref(it)]!!))
+                                IFTNode.RegisterRead(tempReg)
+                            } else
+                                explicitParametersToNodes[Ref(it)]!!
+                        } else { // default arguments
+                            val readNode = makeReadNode(defaultParameterMapping[Ref(it)]!!)
+                            if (it.hasArrayType())
+                                cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountIncrement(readNode))
+                            readNode
+                        }
                     }
-                    val callIntermediateForm = parameterValues.map { it!! }.toList().let { args ->
+
+                    // call the function
+                    val callIntermediateForm = parameterValues.let { args ->
                         if (function.isGenerator) {
                             generatorDetailsGenerators[Ref(function)]!!.genInitCall(args)
                         } else {
@@ -378,10 +389,12 @@ object ControlFlow {
                     cfgBuilder.addNextCFG(callIntermediateForm.callGraph)
                     invalidatedVariables[Ref(astNode)]!!.forEach { currentTemporaryRegisters.remove(it) }
 
+                    // decrease reference counters of array-type arguments
                     for ((param, readIFTNode) in function.parameters zip parameterValues) {
-                        if (param.hasArrayType()) cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountDecrement(readIFTNode!!, param.type))
+                        if (param.hasArrayType()) cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountDecrement(readIFTNode, param.type))
                     }
 
+                    // retrieve the result
                     if (callIntermediateForm.result != null) {
                         val temporaryResultRegister = Register()
                         cfgBuilder.addNextTree(IFTNode.RegisterWrite(temporaryResultRegister, callIntermediateForm.result))
@@ -412,6 +425,7 @@ object ControlFlow {
                     last = lastAfterTrueBranch + lastAfterFalseBranch
                     IFTNode.RegisterRead(resultTemporaryRegister)
                 }
+
                 is Expression.ArrayLength -> {
                     val array = makeCFGForSubtree(astNode.expression)
                     val resultReg = Register()
@@ -424,11 +438,13 @@ object ControlFlow {
                     cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountDecrement(array, expressionTypes[Ref(astNode.expression)]!!))
                     IFTNode.RegisterRead(resultReg)
                 }
+
                 is Expression.ArrayElement -> {
-                    val array = makeCFGForSubtree(astNode.expression)
+                    val arrayRegister = Register()
+                    cfgBuilder.addNextTree(IFTNode.RegisterWrite(arrayRegister, makeCFGForSubtree(astNode.expression)))
                     val index = makeCFGForSubtree(astNode.index)
                     val elementAddress =
-                        IFTNode.Add(array, IFTNode.Multiply(index, IFTNode.Const(memoryUnitSize.toLong())))
+                        IFTNode.Add(IFTNode.RegisterRead(arrayRegister), IFTNode.Multiply(index, IFTNode.Const(memoryUnitSize.toLong())))
                     val reg = Register()
                     cfgBuilder.addNextTree(
                         IFTNode.RegisterWrite(
@@ -441,9 +457,10 @@ object ControlFlow {
                             cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountIncrement(IFTNode.MemoryRead(elementAddress)))
                         }
                     }
-                    cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountDecrement(array, expressionTypes[Ref(astNode.expression)]!!))
+                    cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountDecrement(IFTNode.RegisterRead(arrayRegister), expressionTypes[Ref(astNode.expression)]!!))
                     IFTNode.RegisterRead(reg)
                 }
+
                 is Expression.ArrayAllocation -> {
                     val size = makeCFGForSubtree(astNode.size)
                     val expressions = astNode.initialization.map { makeCFGForSubtree(it) }
@@ -470,7 +487,17 @@ object ControlFlow {
             when (target) {
                 is AssignmentTarget.VariableTarget -> {
                     val owner = variableProperties[Ref(target.variable)]!!.owner
-                    cfgBuilder.addNextTree(variableAccessGenerators[Ref(owner)]!!.genWrite(target.variable, result, owner === currentFunction))
+                    val accessGenerator = variableAccessGenerators[Ref(owner)]!!
+
+                    target.variable.type.takeIf { it is Type.Array }?.let {
+                        cfgBuilder.addNextCFG(
+                            arrayMemoryManagement.genRefCountDecrement(
+                                accessGenerator.genRead(target.variable, owner === currentFunction),
+                                it
+                            )
+                        )
+                    }
+                    cfgBuilder.addNextTree(accessGenerator.genWrite(target.variable, result, owner === currentFunction))
                 }
                 is AssignmentTarget.ArrayElementTarget -> {
                     val targetArrayType = expressionTypes[Ref(target.element.expression)]!! as Type.Array
@@ -521,7 +548,8 @@ object ControlFlow {
         diagnostics: Diagnostics,
         createReadFromVariable: (Variable, Function) -> IFTNode,
         createWriteToVariable: (IFTNode, Variable, Function) -> IFTNode,
-        getGeneratorDetailsGenerator: (Function) -> GeneratorDetailsGenerator
+        getGeneratorDetailsGenerator: (Function) -> GeneratorDetailsGenerator,
+        arrayMemoryManagement: ArrayMemoryManagement
     ): Map<Ref<Function>, ControlFlowGraph> {
         val controlFlowGraphs = mutableKeyRefMapOf<Function, ControlFlowGraph>()
 
@@ -554,7 +582,7 @@ object ControlFlow {
 
             fun Variable.generateDestructor(): ControlFlowGraph = when (type) {
                 is Type.Array -> ControlFlowGraphBuilder()
-                    .mergeUnconditionally(ArrayMemoryManagement.genRefCountDecrement(createReadFromVariable(this, function), type))
+                    .mergeUnconditionally(arrayMemoryManagement.genRefCountDecrement(createReadFromVariable(this, function), type))
                     .addSingleTree(createWriteToVariable(IFTNode.Const(0), this, function))
                     .build()
                 else -> ControlFlowGraphBuilder().build()

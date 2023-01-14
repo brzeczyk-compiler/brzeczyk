@@ -195,7 +195,7 @@ class DefaultGeneratorDetailsGenerator(
         // decrease reference counters of all array variables (function parameters are not included)
         arrayVariables.map { it.value as Variable }.forEach {
             cfgBuilder.mergeUnconditionally(
-                ArrayMemoryManagement.genRefCountDecrement(
+                DefaultArrayMemoryManagement.genRefCountDecrement(
                     innerFDG.genDirectReadWithCustomBase(it, customBaseRegister),
                     it.type
                 )

@@ -11,6 +11,7 @@ import compiler.ast.Variable
 import compiler.diagnostics.Diagnostic
 import compiler.diagnostics.Diagnostic.ResolutionDiagnostic.ControlFlowDiagnostic
 import compiler.diagnostics.Diagnostics
+import compiler.intermediate.generators.DefaultArrayMemoryManagement
 import compiler.intermediate.generators.FunctionDetailsGenerator
 import compiler.intermediate.generators.GeneratorDetailsGenerator
 import compiler.utils.Ref
@@ -137,7 +138,8 @@ class FunctionControlFlowTest {
         },
         { variable, _ -> IFTNode.MemoryRead(IFTNode.MemoryLabel(variable.name)) },
         { node, variable, _ -> IFTNode.MemoryWrite(IFTNode.MemoryLabel(variable.name), node) },
-        dummyGeneratorDetailsGenerator
+        dummyGeneratorDetailsGenerator,
+        DefaultArrayMemoryManagement
     )
 
     private val mainNoOpNode = IFTNode.NoOp()

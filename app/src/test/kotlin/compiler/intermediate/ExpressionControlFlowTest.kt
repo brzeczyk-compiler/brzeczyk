@@ -110,6 +110,7 @@ class ExpressionControlFlowTest {
                 targetVariable?.let { ControlFlow.AssignmentTarget.VariableTarget(it) },
                 currentFunction,
                 nameResolution,
+                emptyMap(), // TODO
                 variableProperties,
                 finalCallGraph,
                 functionDetailsGenerators,

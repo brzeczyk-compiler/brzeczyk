@@ -215,10 +215,11 @@ object ControlFlow {
                 }
                 is Expression.ArrayAllocation -> {
                     var modifiedInInitList: Set<Ref<Variable>> = refSetOf()
-                    astNode.initalization.reversed().forEach { expression ->
+                    astNode.initialization.reversed().forEach { expression ->
                         modifiedInInitList = gatherVariableUsageInfo(expression, modifiedInInitList)
                     }
-                    modifiedUnderCurrentBase + modifiedInInitList
+                    val modifiedInSize = gatherVariableUsageInfo(astNode.size, modifiedInInitList)
+                    modifiedUnderCurrentBase + modifiedInInitList + modifiedInSize
                 }
             }
         }
@@ -419,22 +420,28 @@ object ControlFlow {
                 is Expression.ArrayElement -> {
                     val array = makeCFGForSubtree(astNode.expression)
                     val index = makeCFGForSubtree(astNode.index)
+                    val elementAddress =
+                        IFTNode.Add(array, IFTNode.Multiply(index, IFTNode.Const(memoryUnitSize.toLong())))
                     val reg = Register()
                     cfgBuilder.addNextTree(
                         IFTNode.RegisterWrite(
                             reg,
-                            IFTNode.MemoryRead(
-                                IFTNode.Add(array, IFTNode.Multiply(index, IFTNode.Const(memoryUnitSize.toLong())))
-                            )
+                            IFTNode.MemoryRead(elementAddress)
                         )
                     )
+                    expressionTypes[Ref(astNode.expression)]?.let {
+                        if ((it as Type.Array).elementType is Type.Array) {
+                            cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountIncrement(IFTNode.MemoryRead(elementAddress)))
+                        }
+                    }
                     cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountDecrement(array, expressionTypes[Ref(astNode.expression)]!!))
                     IFTNode.RegisterRead(reg)
                 }
                 is Expression.ArrayAllocation -> {
-                    val expressions = astNode.initalization.map { makeCFGForSubtree(it) }
+                    val size = makeCFGForSubtree(astNode.size)
+                    val expressions = astNode.initialization.map { makeCFGForSubtree(it) }
                     val arrayType = expressionTypes[Ref(astNode)]!! as Type.Array
-                    val allocation = arrayMemoryManagement.genAllocation(astNode.size, expressions, arrayType)
+                    val allocation = arrayMemoryManagement.genAllocation(size, expressions, arrayType, astNode.initializationType)
                     cfgBuilder.addNextCFG(allocation.first)
                     if (arrayType.elementType is Type.Array) {
                         expressions.forEach {

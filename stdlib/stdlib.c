@@ -27,6 +27,19 @@ void* _$checked_malloc(size_t size) {
     return address;
 }
 
+void _$populate_dynamic_array(uint64_t* address, uint64_t value, int64_t should_increment_elements) {
+    if (address == 0)
+        return;
+
+    uint64_t length = *(address - 1);
+    uint64_t* valueRefCount = ((uint64_t*) value) - 2;
+
+    for (uint64_t i = 0; i<length; i++) {
+        address[i] = value;
+        if (should_increment_elements) ++(*valueRefCount);
+    }
+}
+
 // generators
 
 typedef int64_t generator_id_t;

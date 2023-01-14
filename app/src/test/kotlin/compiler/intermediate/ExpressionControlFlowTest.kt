@@ -131,8 +131,8 @@ class ExpressionControlFlowTest {
     }
     private object TestArrayMemoryManagement : ArrayMemoryManagement {
         private var arrayId = 0
-        override fun genAllocation(size: Int, initialization: List<IFTNode>, type: Type): Pair<ControlFlowGraph, IFTNode> =
-            Pair(IFTNode.DummyArrayAllocation(size, initialization, type).toCfg(), IFTNode.Dummy("address of array ${arrayId++}"))
+        override fun genAllocation(size: IFTNode, initialization: List<IFTNode>, type: Type, mode: Expression.ArrayAllocation.InitializationType): Pair<ControlFlowGraph, IFTNode> =
+            Pair(IFTNode.DummyArrayAllocation(size, initialization, type, mode).toCfg(), IFTNode.Dummy("address of array ${arrayId++}"))
 
         override fun genRefCountIncrement(address: IFTNode): ControlFlowGraph = IFTNode.DummyArrayRefCountInc(address).toCfg()
 

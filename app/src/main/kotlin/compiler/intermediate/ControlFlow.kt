@@ -17,6 +17,7 @@ import compiler.diagnostics.Diagnostic.ResolutionDiagnostic.ControlFlowDiagnosti
 import compiler.diagnostics.Diagnostics
 import compiler.intermediate.FunctionDependenciesAnalyzer.createCallGraph
 import compiler.intermediate.generators.ArrayMemoryManagement
+import compiler.intermediate.generators.DefaultArrayMemoryManagement
 import compiler.intermediate.generators.FunctionDetailsGenerator
 import compiler.intermediate.generators.GeneratorDetailsGenerator
 import compiler.intermediate.generators.GlobalVariableAccessGenerator
@@ -54,6 +55,7 @@ object ControlFlow {
                 programProperties.argumentResolution,
                 programProperties.defaultParameterMapping,
                 globalVariableAccessGenerator,
+                DefaultArrayMemoryManagement,
                 accessNodeConsumer
             )
         }
@@ -139,6 +141,7 @@ object ControlFlow {
         argumentResolution: ArgumentResolutionResult,
         defaultParameterMapping: Map<Ref<Function.Parameter>, Variable>,
         globalVariablesAccessGenerator: VariableAccessGenerator,
+        arrayMemoryManagement: ArrayMemoryManagement,
         accessNodeConsumer: ((ControlFlowGraph, IFTNode) -> Unit)? = null // if not provided, access node will be added at the end of cfg
     ): ControlFlowGraph {
         fun getVariablesModifiedBy(function: Function): Set<Ref<Variable>> {
@@ -264,7 +267,7 @@ object ControlFlow {
                 is Expression.Variable -> {
                     val readableNode = nameResolution[Ref(astNode)]!!.value
                     if (readableNode.hasArrayType()) {
-                        cfgBuilder.addNextCFG(ArrayMemoryManagement.genRefCountIncrement(makeReadNode(readableNode)))
+                        cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountIncrement(makeReadNode(readableNode)))
                     }
                     if (Ref(astNode) !in usagesThatRequireTempRegisters) {
                         makeReadNode(readableNode)
@@ -354,7 +357,7 @@ object ControlFlow {
                         parameterValues[function.parameters.indexOfFirst { Ref(it) == argumentResolution[Ref(argument)] }] = resultNode
                     function.parameters.withIndex().filter { parameterValues[it.index] == null }.forEach { // default arguments
                         val readNode = makeReadNode(defaultParameterMapping[Ref(it.value)]!!)
-                        if (it.value.hasArrayType()) cfgBuilder.addNextCFG(ArrayMemoryManagement.genRefCountIncrement(readNode))
+                        if (it.value.hasArrayType()) cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountIncrement(readNode))
                         parameterValues[it.index] = readNode
                     }
                     val callIntermediateForm = parameterValues.map { it!! }.toList().let { args ->
@@ -368,7 +371,7 @@ object ControlFlow {
                     invalidatedVariables[Ref(astNode)]!!.forEach { currentTemporaryRegisters.remove(it) }
 
                     for ((param, readIFTNode) in function.parameters zip parameterValues) {
-                        if (param.hasArrayType()) cfgBuilder.addNextCFG(ArrayMemoryManagement.genRefCountDecrement(readIFTNode!!, param.type))
+                        if (param.hasArrayType()) cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountDecrement(readIFTNode!!, param.type))
                     }
 
                     if (callIntermediateForm.result != null) {
@@ -410,7 +413,7 @@ object ControlFlow {
                             IFTNode.MemoryRead(IFTNode.Subtract(array, IFTNode.Const(memoryUnitSize.toLong())))
                         )
                     )
-                    cfgBuilder.addNextCFG(ArrayMemoryManagement.genRefCountDecrement(array, expressionTypes[Ref(astNode.expression)]!!))
+                    cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountDecrement(array, expressionTypes[Ref(astNode.expression)]!!))
                     IFTNode.RegisterRead(resultReg)
                 }
                 is Expression.ArrayElement -> {
@@ -425,13 +428,19 @@ object ControlFlow {
                             )
                         )
                     )
-                    cfgBuilder.addNextCFG(ArrayMemoryManagement.genRefCountDecrement(array, expressionTypes[Ref(astNode.expression)]!!))
+                    cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountDecrement(array, expressionTypes[Ref(astNode.expression)]!!))
                     IFTNode.RegisterRead(reg)
                 }
                 is Expression.ArrayAllocation -> {
                     val expressions = astNode.initalization.map { makeCFGForSubtree(it) }
-                    val allocation = ArrayMemoryManagement.genAllocation(astNode.size, expressions)
+                    val arrayType = expressionTypes[Ref(astNode)]!! as Type.Array
+                    val allocation = arrayMemoryManagement.genAllocation(astNode.size, expressions, arrayType)
                     cfgBuilder.addNextCFG(allocation.first)
+                    if (arrayType.elementType is Type.Array) {
+                        expressions.forEach {
+                            cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountDecrement(it, arrayType.elementType))
+                        }
+                    }
                     allocation.second
                 }
             }
@@ -450,21 +459,29 @@ object ControlFlow {
                     cfgBuilder.addNextTree(variableAccessGenerators[Ref(owner)]!!.genWrite(target.variable, result, owner === currentFunction))
                 }
                 is AssignmentTarget.ArrayElementTarget -> {
-                    cfgBuilder.addNextTree(
-                        IFTNode.MemoryWrite(
-                            IFTNode.Add(
-                                targetArray!!,
-                                IFTNode.Multiply(index!!, IFTNode.Const(memoryUnitSize.toLong()))
-                            ),
-                            result
-                        )
+                    val targetArrayType = expressionTypes[Ref(target.element.expression)]!! as Type.Array
+                    val elementAddress = IFTNode.Add(
+                        targetArray!!,
+                        IFTNode.Multiply(index!!, IFTNode.Const(memoryUnitSize.toLong()))
                     )
+                    if (targetArrayType.elementType is Type.Array) {
+                        cfgBuilder.addNextCFG(
+                            arrayMemoryManagement.genRefCountDecrement(
+                                IFTNode.MemoryRead(elementAddress),
+                                targetArrayType.elementType
+                            )
+                        )
+                    }
+                    cfgBuilder.addNextTree(
+                        IFTNode.MemoryWrite(elementAddress, result)
+                    )
+                    cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountDecrement(targetArray, targetArrayType))
                 }
             }
         } else {
             expressionTypes[Ref(expression)]?.let {
                 if (it is Type.Array) {
-                    cfgBuilder.addNextCFG(ArrayMemoryManagement.genRefCountDecrement(result, it))
+                    cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountDecrement(result, it))
                 }
             }
             if (accessNodeConsumer == null)

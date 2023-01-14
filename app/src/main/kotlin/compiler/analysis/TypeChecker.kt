@@ -173,6 +173,7 @@ class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
                         is Function -> report(TypeCheckingError.FunctionAsValue(expression, node))
                     }
                 }
+
                 is Expression.ArrayElement -> {
                     val innerExpressionType = checkExpression(expression.expression) ?: return null // if null then something must've gone bad in the recursion
 
@@ -183,6 +184,7 @@ class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
 
                     report(TypeCheckingError.ExtractionFromNonArrayType(expression.expression, innerExpressionType))
                 }
+
                 is Expression.ArrayLength -> {
                     val innerExpressionType = checkExpression(expression.expression) ?: return null
 

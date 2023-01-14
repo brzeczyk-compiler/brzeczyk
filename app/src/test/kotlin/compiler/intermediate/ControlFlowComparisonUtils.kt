@@ -67,6 +67,7 @@ infix fun ControlFlowGraph.assertHasSameStructureAs(cfg: ControlFlowGraph) {
                 assertEquals(this.type, (iftNode as IFTNode.DummyArrayRefCountDec).type)
                 this.address assertHasSameStructureAs iftNode.address
             }
+            is IFTNode.Dummy -> assertEquals(this.info, (iftNode as IFTNode.Dummy).info)
             else -> {
                 assertEquals(this, iftNode)
             }

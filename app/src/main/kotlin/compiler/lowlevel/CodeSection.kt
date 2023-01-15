@@ -14,6 +14,8 @@ class CodeSection(
     fun writeAsm(output: PrintWriter) {
         foreignIdentifiers.forEach { output.println("extern $it") }
 
+        output.println()
+
         output.println(
             """
                 global main

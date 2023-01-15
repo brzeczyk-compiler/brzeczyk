@@ -72,14 +72,36 @@ class Compiler(val diagnostics: Diagnostics) {
                 diagnostics.hasAnyErrors()
             ) // NOTE: it probably shouldn't be FunctionDependenciesAnalyzer responsible for this
 
-            val functionControlFlowGraphs = controlFlowPlanner.createGraphsForProgram(
+            val mainFunction = FunctionDependenciesAnalyzer.extractMainFunction(program, diagnostics) // NOTE: and neither for this
+
+            val bareFunctionControlFlowGraphs = controlFlowPlanner.createGraphsForProgram(
                 program,
                 programProperties,
                 functionDetailsGenerators,
                 generatorDetailsGenerators
             )
 
-            val mainFunction = FunctionDependenciesAnalyzer.extractMainFunction(program, diagnostics) // NOTE: and neither for this
+            val functionControlFlowGraphs = bareFunctionControlFlowGraphs.flatMap { (function, bareControlFlowGraph) ->
+                if (function.value.isGenerator) {
+                    val generatorDetailsGenerator = generatorDetailsGenerators[function]!!
+                    val initControlFlowGraph = generatorDetailsGenerator.genInit()
+                    val resumeControlFlowGraph = generatorDetailsGenerator.genResume(bareControlFlowGraph)
+                    val finalizeControlFlowGraph = generatorDetailsGenerator.genFinalize()
+                    listOf(
+                        Pair(initControlFlowGraph, generatorDetailsGenerator.initFDG),
+                        Pair(resumeControlFlowGraph, generatorDetailsGenerator.resumeFDG),
+                        Pair(finalizeControlFlowGraph, generatorDetailsGenerator.finalizeFDG)
+                    )
+                } else {
+                    val functionDetailsGenerator = functionDetailsGenerators[function]!!
+                    val prologue = functionDetailsGenerator.genPrologue()
+                    val epilogue = functionDetailsGenerator.genEpilogue()
+                    val controlFlowGraph = controlFlowPlanner.attachPrologueAndEpilogue(bareControlFlowGraph, prologue, epilogue)
+                    listOf(
+                        Pair(controlFlowGraph, functionDetailsGenerator)
+                    )
+                }
+            }
 
             // Back-end
 
@@ -102,12 +124,10 @@ class Compiler(val diagnostics: Diagnostics) {
                     .flatMap { listOf(it.initFDG, it.resumeFDG, it.finalizeFDG) }
                     .map { it.identifier }
 
-            val functions = functionControlFlowGraphs.map { (function, controlFlowGraph) ->
+            val functions = functionControlFlowGraphs.map { (controlFlowGraph, functionDetailsGenerator) ->
                 val code = linearization.linearize(controlFlowGraph)
 
                 val liveness = Liveness.computeLiveness(code)
-
-                val functionDetailsGenerator = functionDetailsGenerators[function]!!
 
                 val allocationResult = allocation.allocateRegistersWithSpillsHandling(
                     code,

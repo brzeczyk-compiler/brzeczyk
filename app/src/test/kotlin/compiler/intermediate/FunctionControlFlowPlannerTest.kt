@@ -14,7 +14,6 @@ import compiler.diagnostics.Diagnostics
 import compiler.intermediate.generators.FunctionDetailsGenerator
 import compiler.intermediate.generators.GeneratorDetailsGenerator
 import compiler.utils.Ref
-import compiler.utils.keyRefMapOf
 import compiler.utils.mutableKeyRefMapOf
 import compiler.utils.mutableRefMapOf
 import compiler.utils.refMapOf
@@ -143,7 +142,7 @@ class FunctionControlFlowPlannerTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(listOf(), null, refMapOf(), refMapOf(), refMapOf())
-        assertEquals(keyRefMapOf(function to cfg), result)
+        assertEquals(listOf(Ref(function) to cfg), result)
     }
 
     // czynność f() { 123 }
@@ -160,7 +159,7 @@ class FunctionControlFlowPlannerTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(listOf(node), node, refMapOf(), refMapOf(), refMapOf())
-        assertEquals(keyRefMapOf(function to cfg), result)
+        assertEquals(listOf(Ref(function) to cfg), result)
     }
 
     // czynność f() {
@@ -190,7 +189,7 @@ class FunctionControlFlowPlannerTest {
             refMapOf()
         )
 
-        assertEquals(keyRefMapOf(function to cfg), result)
+        assertEquals(listOf(Ref(function) to cfg), result)
     }
 
     // czynność f() { wart x: Liczba = 123 }
@@ -208,7 +207,7 @@ class FunctionControlFlowPlannerTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(listOf(node), node, refMapOf(), refMapOf(), refMapOf())
-        assertEquals(keyRefMapOf(function to cfg), result)
+        assertEquals(listOf(Ref(function) to cfg), result)
     }
 
     // czynność f() {
@@ -232,7 +231,7 @@ class FunctionControlFlowPlannerTest {
 
         val cfg = ControlFlowGraph(listOf(node), node, refMapOf(), refMapOf(), refMapOf())
         val nestedCfg = ControlFlowGraph(listOf(), null, refMapOf(), refMapOf(), refMapOf())
-        assertEquals(keyRefMapOf(function to cfg, nestedFunction to nestedCfg), result)
+        assertEquals(listOf(Ref(nestedFunction) to nestedCfg, Ref(function) to cfg), result)
     }
 
     // czynność f() {
@@ -255,7 +254,7 @@ class FunctionControlFlowPlannerTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(listOf(node), node, refMapOf(), refMapOf(), refMapOf())
-        assertEquals(keyRefMapOf(function to cfg), result)
+        assertEquals(listOf(Ref(function) to cfg), result)
     }
 
     // czynność f() { { 123 } }
@@ -273,7 +272,7 @@ class FunctionControlFlowPlannerTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(listOf(node), node, refMapOf(), refMapOf(), refMapOf())
-        assertEquals(keyRefMapOf(function to cfg), result)
+        assertEquals(listOf(Ref(function) to cfg), result)
     }
 
     // czynność f() {
@@ -306,7 +305,7 @@ class FunctionControlFlowPlannerTest {
             refMapOf(node1 to node3)
         )
 
-        assertEquals(keyRefMapOf(function to cfg), result)
+        assertEquals(listOf(Ref(function) to cfg), result)
     }
 
     // czynność f() {
@@ -343,7 +342,7 @@ class FunctionControlFlowPlannerTest {
             refMapOf(node1 to node3)
         )
 
-        assertEquals(keyRefMapOf(function to cfg), result)
+        assertEquals(listOf(Ref(function) to cfg), result)
     }
 
     // czynność f() {
@@ -376,7 +375,7 @@ class FunctionControlFlowPlannerTest {
             refMapOf(node1 to node3)
         )
 
-        assertEquals(keyRefMapOf(function to cfg), result)
+        assertEquals(listOf(Ref(function) to cfg), result)
     }
 
     // czynność f() {
@@ -415,7 +414,7 @@ class FunctionControlFlowPlannerTest {
             refMapOf(node1 to node4, node2 to node3)
         )
 
-        assertEquals(keyRefMapOf(function to cfg), result)
+        assertEquals(listOf(Ref(function) to cfg), result)
     }
 
     // czynność f() {
@@ -454,7 +453,7 @@ class FunctionControlFlowPlannerTest {
             refMapOf(node1 to node4, node2 to node3)
         )
 
-        assertEquals(keyRefMapOf(function to cfg), result)
+        assertEquals(listOf(Ref(function) to cfg), result)
     }
 
     // czynność f() {
@@ -497,7 +496,7 @@ class FunctionControlFlowPlannerTest {
             refMapOf(node1 to node5, node2 to node3, node3 to node4)
         )
 
-        assertEquals(keyRefMapOf(function to cfg), result)
+        assertEquals(listOf(Ref(function) to cfg), result)
     }
 
     // czynność f() {
@@ -553,7 +552,7 @@ class FunctionControlFlowPlannerTest {
             refMapOf(node1 to node8, node2 to node3, node3 to node7, node4 to node5, node5 to node6, node7 to node1)
         )
 
-        assertEquals(keyRefMapOf(function to cfg), result)
+        assertEquals(listOf(Ref(function) to cfg), result)
     }
 
     // czynność f() {
@@ -584,7 +583,7 @@ class FunctionControlFlowPlannerTest {
             refMapOf(node1 to node2)
         )
 
-        assertEquals(keyRefMapOf(function to cfg), result)
+        assertEquals(listOf(Ref(function) to cfg), result)
     }
 
     // czynność f() { przerwij }
@@ -720,7 +719,7 @@ class FunctionControlFlowPlannerTest {
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
         val result = test(program)
-        val resultCfg = result.values.first()
+        val resultCfg = result.map { it.second }.first()
 
         val idRegister = Register()
         val stateRegister = Register()
@@ -786,7 +785,7 @@ class FunctionControlFlowPlannerTest {
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
         val result = test(program)
-        val resultCfg = result.values.first()
+        val resultCfg = result.map { it.second }.first()
 
         val stateRegister = Register()
         val frameMemoryAddress = IFTNode.Dummy(listOf("foreach frame pointer address", function, foreach))
@@ -900,7 +899,7 @@ class FunctionControlFlowPlannerTest {
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
         val result = test(program)
-        val resultCfg = result.values.first()
+        val resultCfg = result.map { it.second }.first()
 
         val idRegister = Register()
         val stateRegister = Register()
@@ -960,7 +959,7 @@ class FunctionControlFlowPlannerTest {
         )
         val program = Program(listOf(Program.Global.FunctionDefinition(generator)))
         val result = test(program)
-        val resultCfg = result.values.first()
+        val resultCfg = result.map { it.second }.first()
 
         resultCfg assertHasSameStructureAs IFTNode.DummyCall(generator.copy(name = generator.name + "_yield"), listOf(IFTNode.Const(123)), IFTNode.DummyCallResult()).toCfg()
     }

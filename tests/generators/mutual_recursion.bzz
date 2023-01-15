@@ -1,4 +1,3 @@
-// INTEGRATION TESTS IGNORE
 czynność fib_czynność(a: Liczba) -> Liczba {
     jeśli(a <= 2)
         zwróć 1

@@ -1,4 +1,3 @@
-// INTEGRATION TESTS IGNORE
 czynność główna() {
     przekaźnik mój_generator(a: Liczba = 17) -> Liczba {
         zm x: Liczba = 1

@@ -1,6 +1,5 @@
 package compiler.e2e
 
-import kotlin.test.Ignore
 import kotlin.test.Test
 
 class CorrectProgramsE2eTest {
@@ -217,7 +216,7 @@ class CorrectProgramsE2eTest {
         )
     }
 
-    @Ignore @Test
+    @Test
     fun `test generators`() {
         E2eTestUtils.assertProgramCorrect(
             """

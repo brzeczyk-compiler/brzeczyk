@@ -1301,6 +1301,62 @@ class TypeCheckerTest {
     }
 
     // czynność f() {
+    //     zm x: [[Czy]] = alokacja [Czy] {
+    //         alokacja Czy[3](fałsz),
+    //         alokacja Czy[3](prawda),
+    //     }
+    // }
+
+    @Test
+    fun `test array of arrays has a correct type`() {
+        val arrayCreation = Expression.ArrayAllocation(
+            Type.Array(Type.Boolean),
+            Expression.NumberLiteral(2),
+            listOf(
+                Expression.ArrayAllocation(
+                    Type.Boolean,
+                    Expression.NumberLiteral(1),
+                    listOf(Expression.BooleanLiteral(false)),
+                    Expression.ArrayAllocation.InitializationType.ONE_VALUE
+                ),
+                Expression.ArrayAllocation(
+                    Type.Boolean,
+                    Expression.NumberLiteral(1),
+                    listOf(Expression.BooleanLiteral(true)),
+                    Expression.ArrayAllocation.InitializationType.ONE_VALUE
+                )
+            ),
+            Expression.ArrayAllocation.InitializationType.ALL_VALUES,
+        )
+
+        val program = Program(
+            listOf(
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "f",
+                        listOf(),
+                        Type.Unit,
+                        listOf(
+                            Statement.VariableDefinition(
+                                Variable(
+                                    Variable.Kind.VARIABLE,
+                                    "x",
+                                    Type.Array(Type.Array(Type.Boolean)),
+                                    arrayCreation
+                                )
+                            )
+                        ),
+                    )
+                )
+            )
+        )
+
+        val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
+
+        assertEquals(Type.Array(Type.Array(Type.Boolean)), types[Ref(arrayCreation)])
+    }
+
+    // czynność f() {
     //     zm x: Tablica<Liczba> = nowa tablica(5, 0)
     //     zm y: Liczba = x[1]
     // }

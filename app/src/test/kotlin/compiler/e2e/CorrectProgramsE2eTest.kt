@@ -69,7 +69,7 @@ class CorrectProgramsE2eTest {
         E2eTestUtils.assertProgramCorrect(
             """
             czynność główna() {}
-            czynność dopóKI_pomiń_przerwij() {
+            czynność dopóki_pomiń_przerwij() {
                 zm x: Liczba = 0
                 dopóki (prawda) { //dopóty
                     jeśli (x == 420) pomiń

@@ -283,7 +283,7 @@ sealed interface Diagnostic {
                 type: Type,
                 expectedType: Type,
             ) : TypeCheckingError(listOf(expression)) {
-                override val errorMessage = "The type of the expression is $expectedType (expected $type)."
+                override val errorMessage = "The type of the expression is $type (expected $expectedType)."
             }
 
             class MissingReturnStatement(

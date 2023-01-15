@@ -21,7 +21,7 @@ import compiler.utils.refMapOf
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class FunctionControlFlowTest {
+class FunctionControlFlowPlannerTest {
     private val expressionNodes = mutableKeyRefMapOf<Expression, MutableMap<Ref<Variable?>, Ref<IFTNode>>>()
     private val expressionAccessNodes = mutableKeyRefMapOf<Expression, MutableMap<Ref<Variable?>, Ref<IFTNode>>>()
     private val nameResolution = mutableRefMapOf<AstNode, NamedNode>()
@@ -113,21 +113,22 @@ class FunctionControlFlowTest {
         }
     }
 
-    private fun test(program: Program) = ControlFlow.createGraphForEachFunction(
+    private val testDiagnostics = object : Diagnostics {
+        override fun report(diagnostic: Diagnostic) {
+            diagnostics.add(diagnostic)
+        }
+
+        override fun hasAnyErrors(): Boolean {
+            throw RuntimeException("This method shouldn't be called")
+        }
+    }
+
+    private fun test(program: Program) = ControlFlowPlanner(testDiagnostics).createGraphsForFunctions(
         program,
         this::getExpressionCFG,
         nameResolution,
         defaultParameterValues,
         functionReturnedValueVariables,
-        object : Diagnostics {
-            override fun report(diagnostic: Diagnostic) {
-                diagnostics.add(diagnostic)
-            }
-
-            override fun hasAnyError(): Boolean {
-                throw RuntimeException("This method shouldn't be called")
-            }
-        },
         { node, variable, _ -> IFTNode.MemoryWrite(IFTNode.MemoryLabel(variable.name), node) },
         dummyGeneratorDetailsGenerator
     )

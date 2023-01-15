@@ -14,10 +14,10 @@ import compiler.utils.keyRefMapOf
 import compiler.utils.mutableKeyRefMapOf
 import compiler.utils.mutableRefMapOf
 import compiler.utils.refSetOf
+import io.mockk.mockk
 import kotlin.test.Test
 
-class ExpressionControlFlowTest {
-
+class ExpressionControlFlowPlannerTest {
     private class TestFunctionDetailsGenerator(val function: Function) :
         FunctionDetailsGenerator {
         override fun genCall(args: List<IFTNode>): FunctionDetailsGenerator.FunctionCallIntermediateForm {
@@ -105,7 +105,7 @@ class ExpressionControlFlowTest {
         }
 
         fun createCfg(expr: Expression, targetVariable: Variable? = null): ControlFlowGraph {
-            return ControlFlow.createGraphForExpression(
+            return ControlFlowPlanner(mockk()).createGraphForExpression(
                 expr,
                 targetVariable,
                 currentFunction,

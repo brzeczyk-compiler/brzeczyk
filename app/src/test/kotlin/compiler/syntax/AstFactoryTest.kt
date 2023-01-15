@@ -24,7 +24,9 @@ class AstFactoryTest {
     // helper procedures
     private val dummyLocation = Location(0, 0)
     private val dummyLocationRange = LocationRange(dummyLocation, dummyLocation)
-    private val dummyDiagnostics = mockk<Diagnostics>()
+    private val diagnostics = mockk<Diagnostics>()
+
+    private val astFactory = AstFactory(diagnostics)
 
     private fun makeNTNode(nonTerminalType: NonTerminalType, production: Production<Symbol>, vararg children: ParseTree<Symbol>): ParseTree<Symbol> =
         ParseTree.Branch(dummyLocationRange, Symbol.NonTerminal(nonTerminalType), children.asList(), production)
@@ -81,7 +83,7 @@ class AstFactoryTest {
         val parseTree = makeNTNode(NonTerminalType.PROGRAM, Productions.program)
         val expectedAst = Program(listOf())
 
-        val resultAst = AstFactory.createFromParseTree(parseTree, dummyDiagnostics)
+        val resultAst = astFactory.createFromParseTree(parseTree)
         assertEquals(expectedAst, resultAst)
     }
 
@@ -112,7 +114,7 @@ class AstFactoryTest {
             )
         )
 
-        val resultAst = AstFactory.createFromParseTree(parseTree, dummyDiagnostics)
+        val resultAst = astFactory.createFromParseTree(parseTree)
         assertEquals(expectedAst, resultAst)
     }
 
@@ -165,7 +167,7 @@ class AstFactoryTest {
             )
         )
 
-        val resultAst = AstFactory.createFromParseTree(parseTree, dummyDiagnostics)
+        val resultAst = astFactory.createFromParseTree(parseTree)
         assertEquals(expectedAst, resultAst)
     }
 
@@ -218,7 +220,7 @@ class AstFactoryTest {
             )
         )
 
-        val resultAst = AstFactory.createFromParseTree(parseTree, dummyDiagnostics)
+        val resultAst = astFactory.createFromParseTree(parseTree)
         assertEquals(expectedAst, resultAst)
     }
 
@@ -409,7 +411,7 @@ class AstFactoryTest {
             )
         )
 
-        val resultAst = AstFactory.createFromParseTree(parseTree, dummyDiagnostics)
+        val resultAst = astFactory.createFromParseTree(parseTree)
         assertEquals(expectedAst, resultAst)
     }
 
@@ -428,8 +430,7 @@ class AstFactoryTest {
             makeTNode(TokenType.NEWLINE, "\n")
         )
 
-        val diagnostics = mockk<Diagnostics>()
-        assertFails { AstFactory.createFromParseTree(parseTree, diagnostics) }
+        assertFails { astFactory.createFromParseTree(parseTree) }
         verify(exactly = 1) { diagnostics.report(ofType(Diagnostic.ParserError.ForeignNameAsInvalidIdentifier::class)) }
     }
 
@@ -464,7 +465,7 @@ class AstFactoryTest {
             )
         )
 
-        val resultAst = AstFactory.createFromParseTree(parseTree, dummyDiagnostics)
+        val resultAst = astFactory.createFromParseTree(parseTree)
         assertEquals(expectedAst, resultAst)
     }
 
@@ -476,9 +477,8 @@ class AstFactoryTest {
             ) wrapUpTo NonTerminalType.EXPR
         )
 
-        val diagnostics = mockk<Diagnostics>()
         every { diagnostics.report(any()) } returns Unit
-        AstFactory.createFromParseTree(parseTree, diagnostics)
+        astFactory.createFromParseTree(parseTree)
         verify(exactly = 1) { diagnostics.report(ofType(Diagnostic.ParserError.InvalidNumberLiteral::class)) }
     }
 
@@ -521,7 +521,7 @@ class AstFactoryTest {
             )
         )
 
-        val resultAst = AstFactory.createFromParseTree(parseTree, dummyDiagnostics)
+        val resultAst = astFactory.createFromParseTree(parseTree)
         assertEquals(expectedAst, resultAst)
     }
 
@@ -571,7 +571,7 @@ class AstFactoryTest {
             )
         )
 
-        val resultAst = AstFactory.createFromParseTree(parseTree, dummyDiagnostics)
+        val resultAst = astFactory.createFromParseTree(parseTree)
         assertEquals(expectedAst, resultAst)
     }
 
@@ -612,7 +612,7 @@ class AstFactoryTest {
             )
         )
 
-        val resultAst = AstFactory.createFromParseTree(parseTree, dummyDiagnostics)
+        val resultAst = astFactory.createFromParseTree(parseTree)
         assertEquals(expectedAst, resultAst)
     }
 
@@ -638,8 +638,7 @@ class AstFactoryTest {
             )
         )
 
-        val diagnostics = mockk<Diagnostics>()
-        assertFails { AstFactory.createFromParseTree(parseTree, diagnostics) }
+        assertFails { astFactory.createFromParseTree(parseTree) }
         verify(exactly = 1) { diagnostics.report(ofType(Diagnostic.ParserError.UnexpectedToken::class)) }
     }
 
@@ -688,7 +687,7 @@ class AstFactoryTest {
             )
         )
 
-        val resultAst = AstFactory.createFromParseTree(parseTree, dummyDiagnostics)
+        val resultAst = astFactory.createFromParseTree(parseTree)
         assertEquals(expectedAst, resultAst)
     }
 
@@ -711,8 +710,7 @@ class AstFactoryTest {
             ) wrapUpTo NonTerminalType.EXPR
         )
 
-        val diagnostics = mockk<Diagnostics>()
-        assertFails { AstFactory.createFromParseTree(parseTree, diagnostics) }
+        assertFails { astFactory.createFromParseTree(parseTree) }
         verify(exactly = 1) { diagnostics.report(ofType(Diagnostic.ParserError.UnexpectedToken::class)) }
     }
 
@@ -760,7 +758,7 @@ class AstFactoryTest {
             )
         )
 
-        val resultAst = AstFactory.createFromParseTree(parseTree, dummyDiagnostics)
+        val resultAst = astFactory.createFromParseTree(parseTree)
         assertEquals(expectedAst, resultAst)
     }
 
@@ -877,7 +875,7 @@ class AstFactoryTest {
             )
         )
 
-        val resultAst = AstFactory.createFromParseTree(parseTree, dummyDiagnostics)
+        val resultAst = astFactory.createFromParseTree(parseTree)
         assertEquals(expectedAst, resultAst)
     }
 
@@ -924,7 +922,7 @@ class AstFactoryTest {
             )
         )
 
-        val resultAst = AstFactory.createFromParseTree(parseTree, dummyDiagnostics)
+        val resultAst = astFactory.createFromParseTree(parseTree)
         assertEquals(expectedAst, resultAst)
     }
 
@@ -995,7 +993,7 @@ class AstFactoryTest {
             )
         )
 
-        val resultAst = AstFactory.createFromParseTree(parseTree, dummyDiagnostics)
+        val resultAst = astFactory.createFromParseTree(parseTree)
         assertEquals(expectedAst, resultAst)
     }
 }

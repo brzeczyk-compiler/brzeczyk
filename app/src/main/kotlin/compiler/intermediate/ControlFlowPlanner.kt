@@ -24,15 +24,14 @@ import compiler.utils.mutableKeyRefMapOf
 import compiler.utils.mutableRefSetOf
 import compiler.utils.refSetOf
 
-object ControlFlow {
+class ControlFlowPlanner(private val diagnostics: Diagnostics) {
     private fun mapLinkType(list: List<Pair<IFTNode, CFGLinkType>?>, type: CFGLinkType) = list.map { it?.copy(second = type) }
 
-    fun createGraphForProgram(
+    fun createGraphsForProgram(
         program: Program,
         programProperties: ProgramAnalyzer.ProgramProperties,
         functionDetailsGenerators: Map<Ref<Function>, FunctionDetailsGenerator>,
-        generatorDetailsGenerators: Map<Ref<Function>, GeneratorDetailsGenerator>,
-        diagnostics: Diagnostics,
+        generatorDetailsGenerators: Map<Ref<Function>, GeneratorDetailsGenerator>
     ): Map<Ref<Function>, ControlFlowGraph> {
         val globalVariableAccessGenerator = GlobalVariableAccessGenerator(programProperties.variableProperties)
         val callGraph = createCallGraph(program, programProperties.nameResolution)
@@ -64,13 +63,12 @@ object ControlFlow {
         fun getGeneratorDetailsGenerator(generator: Function) =
             generatorDetailsGenerators[Ref(generator)]!!
 
-        val cfgForEachFunction = createGraphForEachFunction(
+        val cfgForEachFunction = createGraphsForFunctions(
             program,
             ::partiallyAppliedCreateGraphForExpression,
             programProperties.nameResolution,
             programProperties.defaultParameterMapping,
             programProperties.functionReturnedValueVariables,
-            diagnostics,
             ::createWriteToVariable,
             ::getGeneratorDetailsGenerator
         )
@@ -380,13 +378,12 @@ object ControlFlow {
         }
     }
 
-    fun createGraphForEachFunction(
+    fun createGraphsForFunctions(
         program: Program,
         createGraphForExpression: (Expression, Variable?, Function, ((ControlFlowGraph, IFTNode) -> Unit)?) -> ControlFlowGraph,
         nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
         defaultParameterValues: Map<Ref<Function.Parameter>, Variable>,
         functionReturnedValueVariables: Map<Ref<Function>, Variable>,
-        diagnostics: Diagnostics,
         createWriteToVariable: (IFTNode, Variable, Function) -> IFTNode,
         getGeneratorDetailsGenerator: (Function) -> GeneratorDetailsGenerator
     ): Map<Ref<Function>, ControlFlowGraph> {
@@ -478,7 +475,7 @@ object ControlFlow {
                                     addExpression(parameter.defaultValue, defaultParameterValues[Ref(parameter)])
                             }
 
-                            if (nestedFunction.implementation is Function.Implementation.Local)
+                            if (nestedFunction.isLocal)
                                 processFunction(nestedFunction)
                         }
 
@@ -606,7 +603,7 @@ object ControlFlow {
 
         program.globals
             .filterIsInstance<Program.Global.FunctionDefinition>()
-            .filter { it.function.implementation is Function.Implementation.Local }
+            .filter { it.function.isLocal }
             .forEach { processFunction(it.function) }
 
         return controlFlowGraphs

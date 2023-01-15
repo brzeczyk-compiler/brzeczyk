@@ -64,7 +64,7 @@ class LexerTest {
             reports.add(diagnostic)
         }
 
-        override fun hasAnyError() = reports.any { it.isError }
+        override fun hasAnyErrors() = reports.any { it.isError }
     }
 
     @Test fun `empty input results in no tokens`() {

@@ -1,5 +1,5 @@
 #!/bin/bash
-./gradlew test "$@"
+./gradlew "$@" test install
 echo "----------------------------------------"
 echo "Running integration tests!"
 echo "----------------------------------------"

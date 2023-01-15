@@ -27,7 +27,7 @@ class TypeCheckerTest {
 
     private val diagnostics: Diagnostics = object : Diagnostics {
         override fun report(diagnostic: Diagnostic) { diagnosticsList.add(diagnostic) }
-        override fun hasAnyError(): Boolean = throw RuntimeException("This method should not be called")
+        override fun hasAnyErrors(): Boolean = throw RuntimeException("This method should not be called")
     }
 
     // stała x: Liczba = 123

@@ -151,7 +151,7 @@ class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
 
         checkBlock(function.body)
 
-        if (function.implementation is Function.Implementation.Local && function.returnType != Type.Unit && !function.isGenerator)
+        if (function.isLocal && function.returnType != Type.Unit && !function.isGenerator)
             checkIfLastStatementIsReturn(function.body)
     }
 

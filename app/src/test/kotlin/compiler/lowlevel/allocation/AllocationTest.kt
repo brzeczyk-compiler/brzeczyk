@@ -45,18 +45,17 @@ class AllocationTest {
             ): PartialAllocation.AllocationResult = PartialAllocation.AllocationResult(mapOf(), listOf())
         }
 
-        val result = Allocation.allocateRegistersWithSpillsHandling(
+        val result = Allocation(allocator).allocateRegistersWithSpillsHandling(
             linearProgram,
             livenessGraphs,
             orderedPhysicalRegisters,
             orderedPhysicalRegisters,
             orderedPhysicalRegisters,
-            allocator,
             variableBlockSize
         )
 
         assertEquals(mapOf(), result.allocatedRegisters)
-        assertEquals(linearProgram, result.linearProgram)
+        assertEquals(linearProgram, result.code)
         assertEquals(0u, result.spilledOffset)
     }
 
@@ -102,13 +101,12 @@ class AllocationTest {
             }
         }
 
-        val result = Allocation.allocateRegistersWithSpillsHandling(
+        val result = Allocation(allocator).allocateRegistersWithSpillsHandling(
             linearProgram,
             livenessGraphs,
             orderedPhysicalRegisters,
             orderedPhysicalRegisters,
             orderedPhysicalRegisters,
-            allocator,
             variableBlockSize
         )
 
@@ -147,7 +145,7 @@ class AllocationTest {
                 linearProgram[2],
                 linearProgram[3],
             ),
-            result.linearProgram
+            result.code
         )
         assertEquals(3u * memoryUnitSize, result.spilledOffset)
     }
@@ -194,13 +192,12 @@ class AllocationTest {
             }
         }
 
-        val result = Allocation.allocateRegistersWithSpillsHandling(
+        val result = Allocation(allocator).allocateRegistersWithSpillsHandling(
             linearProgram,
             livenessGraphs,
             phRegs,
             orderedPhysicalRegisters,
             orderedPhysicalRegisters,
-            allocator,
             variableBlockSize
         )
 
@@ -234,7 +231,7 @@ class AllocationTest {
                 linearProgram[3],
                 linearProgram[4],
             ),
-            result.linearProgram
+            result.code
         )
         assertEquals(3u * memoryUnitSize, result.spilledOffset)
     }
@@ -279,13 +276,12 @@ class AllocationTest {
             }
         }
 
-        val result = Allocation.allocateRegistersWithSpillsHandling(
+        val result = Allocation(allocator).allocateRegistersWithSpillsHandling(
             linearProgram,
             livenessGraphs,
             phRegs,
             allocatablePhysicalRegisters,
             allocatablePhysicalRegisters,
-            allocator,
             variableBlockSize
         )
 
@@ -324,7 +320,7 @@ class AllocationTest {
                 ),
                 linearProgram[3],
             ),
-            result.linearProgram
+            result.code
         )
         assertEquals(2u * memoryUnitSize, result.spilledOffset)
     }

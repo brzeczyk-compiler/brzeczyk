@@ -22,6 +22,8 @@ data class Function(
         data class Foreign(val foreignName: String) : Implementation()
     }
 
+    val isLocal: Boolean get() = implementation is Implementation.Local
+
     val body: StatementBlock get() = if (implementation is Implementation.Local) implementation.body else emptyList()
 
     constructor(

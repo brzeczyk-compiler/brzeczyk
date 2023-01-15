@@ -72,10 +72,10 @@ class CorrectProgramsE2eTest {
             czynność dopóKI_pomiń_przerwij() {
                 zm x: Liczba = 0
                 dopóki (prawda) { //dopóty
-                jeśli (x == 420) pomiń
-                napisz(x)
-                x=x+1
-                jeśli (x == 1000) przerwij
+                    jeśli (x == 420) pomiń
+                    napisz(x)
+                    x=x+1
+                    jeśli (x == 1000) przerwij
                 }
             }
             """

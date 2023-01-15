@@ -267,8 +267,8 @@ object NameResolver {
                 }
 
                 is Expression.ArrayElement -> {
-                    analyzeNode(node.expression, currentScope)
                     analyzeNode(node.index, currentScope)
+                    analyzeNode(node.expression, currentScope)
                 }
 
                 is Expression.ArrayLength -> {

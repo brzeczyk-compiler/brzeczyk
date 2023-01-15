@@ -1515,7 +1515,7 @@ class TypeCheckerTest {
         }
 
         assertEquals(
-            listOf<Diagnostic>(TypeCheckingError.ExtractionFromNonArrayType(arrayElement.expression, Type.Boolean)),
+            listOf<Diagnostic>(TypeCheckingError.AccessFromNonArrayType(arrayElement.expression, Type.Boolean)),
             diagnosticsList
         )
     }

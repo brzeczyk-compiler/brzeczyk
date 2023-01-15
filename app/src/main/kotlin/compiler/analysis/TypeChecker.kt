@@ -182,7 +182,7 @@ class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
                         return innerExpressionType.elementType
                     }
 
-                    report(TypeCheckingError.ExtractionFromNonArrayType(expression.expression, innerExpressionType))
+                    report(TypeCheckingError.AccessFromNonArrayType(expression.expression, innerExpressionType))
                 }
 
                 is Expression.ArrayLength -> {

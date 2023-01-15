@@ -304,7 +304,7 @@ sealed interface Diagnostic {
                 override val errorMessage = "The yield occurs in non-generator function."
             }
 
-            class ExtractionFromNonArrayType(
+            class AccessFromNonArrayType(
                 expression: Expression,
                 type: Type,
             ) : TypeCheckingError(listOf(expression)) {

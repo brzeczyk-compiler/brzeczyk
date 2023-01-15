@@ -24,11 +24,6 @@ object GeneratorResolver {
                 process(updatedSurroundingGenerators, function.body)
             }
 
-            fun processForEachLoop(surroundingGenerators: List<Function>, foreachLoop: Statement.ForeachLoop) {
-                surroundingGenerators.forEach { resultMapping[Ref(it)]?.add(Ref(foreachLoop)) }
-                process(surroundingGenerators, foreachLoop.action)
-            }
-
             when (node) {
                 is Program -> { }
                 is Expression -> { }
@@ -54,7 +49,11 @@ object GeneratorResolver {
                     is Statement.Loop -> process(surroundingGenerators, node.action)
 
                     is Statement.FunctionDefinition -> processFunction(surroundingGenerators, node.function)
-                    is Statement.ForeachLoop -> processForEachLoop(surroundingGenerators, node)
+
+                    is Statement.ForeachLoop -> {
+                        surroundingGenerators.forEach { resultMapping[Ref(it)]?.add(Ref(node)) }
+                        process(surroundingGenerators, node.action)
+                    }
                 }
             }
         }

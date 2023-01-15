@@ -729,7 +729,7 @@ class AstFactoryTest {
         val parseTree = makeProgramWithExpressionsEvaluation(
             makeNTNode(
                 NonTerminalType.EXPR4096, Productions.expr4096ArrayListAllocation,
-                makeTNode(TokenType.ALLOCATE, "alokacja"),
+                makeTNode(TokenType.ARRAY_ALLOCATION, "ciąg"),
                 makeNTNode(
                     NonTerminalType.TYPE, Productions.type,
                     makeTNode(TokenType.TYPE_INTEGER, "Liczba")
@@ -791,7 +791,7 @@ class AstFactoryTest {
         val parseTree = makeProgramWithExpressionsEvaluation(
             makeNTNode(
                 NonTerminalType.EXPR4096, Productions.expr4096ArrayDefaultAllocation,
-                makeTNode(TokenType.ALLOCATE, "alokacja"),
+                makeTNode(TokenType.ARRAY_ALLOCATION, "ciąg"),
                 makeNTNode(
                     NonTerminalType.TYPE, Productions.type,
                     makeTNode(TokenType.TYPE_BOOLEAN, "Czy")

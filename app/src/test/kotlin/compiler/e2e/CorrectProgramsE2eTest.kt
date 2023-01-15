@@ -258,7 +258,7 @@ class CorrectProgramsE2eTest {
         E2eTestUtils.assertProgramCorrect(
             """
             czynność główna() {
-                zm x: [Liczba] = alokacja [Liczba]{1,2,4,8,16} 
+                zm x: [Liczba] = ciąg [Liczba]{1,2,4,8,16} 
                 
                 x[2] = 13
                 
@@ -278,7 +278,7 @@ class CorrectProgramsE2eTest {
         E2eTestUtils.assertProgramCorrect(
             """
             czynność główna() {
-                zm x: [Liczba] = alokacja [Liczba][11](1) 
+                zm x: [Liczba] = ciąg [Liczba][11](1) 
                 zm y: [Liczba] = x
                 
                 x[3] = 4
@@ -301,13 +301,13 @@ class CorrectProgramsE2eTest {
         E2eTestUtils.assertProgramCorrect(
             """
             czynność jedynki(n: Liczba) -> [Liczba] {
-                zwróć alokacja Liczba[n](1)
+                zwróć ciąg Liczba[n](1)
             }
             czynność główna() {
-                zm x: [[Liczba]] = alokacja [Liczba] {
-                    alokacja Liczba[3](0),
-                    alokacja Liczba{1, 2},
-                    alokacja Liczba{3, 4, 5, 6}
+                zm x: [[Liczba]] = ciąg [Liczba] {
+                    ciąg Liczba[3](0),
+                    ciąg Liczba{1, 2},
+                    ciąg Liczba{3, 4, 5, 6}
                 }
                 
                 zm y: [Liczba] = x[0]

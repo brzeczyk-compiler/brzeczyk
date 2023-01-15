@@ -37,8 +37,8 @@ object LanguageGrammar {
         val expr4096Const = getProduction("EXPR4096", "{nCONST}")
         val expr4096Identifier = getProduction("EXPR4096", "{tIDENTIFIER}")
         val expr4096Call = getProduction("EXPR4096", "{tIDENTIFIER}{tLEFT_PAREN}$NLS{nCALL_ARGS}{tRIGHT_PAREN}")
-        val expr4096ArrayDefaultAllocation = getProduction("EXPR4096", "{tALLOCATE}{nTYPE}{tLEFT_BRACKET}$NLS{nE_EXPR}{tRIGHT_BRACKET}{tLEFT_PAREN}$NLS{nE_EXPR}{tRIGHT_PAREN}")
-        val expr4096ArrayListAllocation = getProduction("EXPR4096", "{tALLOCATE}{nTYPE}{tLEFT_BRACE}$NLS{nE_EXPR}({tCOMMA}$NLS{nE_EXPR})*{tRIGHT_BRACE}")
+        val expr4096ArrayDefaultAllocation = getProduction("EXPR4096", "{tARRAY_ALLOCATION}{nTYPE}{tLEFT_BRACKET}$NLS{nE_EXPR}{tRIGHT_BRACKET}{tLEFT_PAREN}$NLS{nE_EXPR}{tRIGHT_PAREN}")
+        val expr4096ArrayListAllocation = getProduction("EXPR4096", "{tARRAY_ALLOCATION}{nTYPE}{tLEFT_BRACE}$NLS{nE_EXPR}({tCOMMA}$NLS{nE_EXPR})*{tRIGHT_BRACE}")
 
         val expr2048PassThrough = getProduction("EXPR2048", "{nEXPR4096}")
         val expr2048ArrayAccess = getProduction("EXPR2048", "{nEXPR4096}{tLEFT_BRACKET}$NLS{nE_EXPR}{tRIGHT_BRACKET}({tLEFT_BRACKET}$NLS{nE_EXPR}{tRIGHT_BRACKET})*")
@@ -96,8 +96,8 @@ object LanguageGrammar {
         val eExpr4096Const = getProduction("E_EXPR4096", "{nCONST}$NLS")
         val eExpr4096Identifier = getProduction("E_EXPR4096", "{tIDENTIFIER}$NLS")
         val eExpr4096Call = getProduction("E_EXPR4096", "{tIDENTIFIER}$NLS{tLEFT_PAREN}$NLS{nCALL_ARGS}{tRIGHT_PAREN}$NLS")
-        val eExpr4096ArrayDefaultAllocation = getProduction("E_EXPR4096", "{tALLOCATE}{nTYPE}{tLEFT_BRACKET}$NLS{nE_EXPR}{tRIGHT_BRACKET}{tLEFT_PAREN}$NLS{nE_EXPR}{tRIGHT_PAREN}$NLS")
-        val eExpr4096ArrayListAllocation = getProduction("E_EXPR4096", "{tALLOCATE}{nTYPE}{tLEFT_BRACE}$NLS{nE_EXPR}({tCOMMA}$NLS{nE_EXPR})*{tRIGHT_BRACE}$NLS")
+        val eExpr4096ArrayDefaultAllocation = getProduction("E_EXPR4096", "{tARRAY_ALLOCATION}{nTYPE}{tLEFT_BRACKET}$NLS{nE_EXPR}{tRIGHT_BRACKET}{tLEFT_PAREN}$NLS{nE_EXPR}{tRIGHT_PAREN}$NLS")
+        val eExpr4096ArrayListAllocation = getProduction("E_EXPR4096", "{tARRAY_ALLOCATION}{nTYPE}{tLEFT_BRACE}$NLS{nE_EXPR}({tCOMMA}$NLS{nE_EXPR})*{tRIGHT_BRACE}$NLS")
 
         val eExpr2048PassThrough = getProduction("E_EXPR2048", "{nE_EXPR4096}")
         val eExpr2048ArrayAccess = getProduction("E_EXPR2048", "{nE_EXPR4096}{tLEFT_BRACKET}$NLS{nE_EXPR}{tRIGHT_BRACKET}({tLEFT_BRACKET}$NLS{nE_EXPR}{tRIGHT_BRACKET})*$NLS")

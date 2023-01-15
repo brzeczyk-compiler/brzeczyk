@@ -10,6 +10,7 @@ import compiler.ast.Variable
 import compiler.intermediate.generators.ArrayMemoryManagement
 import compiler.intermediate.generators.FunctionDetailsGenerator
 import compiler.intermediate.generators.VariableAccessGenerator
+import compiler.intermediate.generators.memoryUnitSize
 import compiler.utils.Ref
 import compiler.utils.keyRefMapOf
 import compiler.utils.mutableKeyRefMapOf
@@ -125,14 +126,14 @@ class ExpressionControlFlowTest {
                     override fun genWrite(namedNode: NamedNode, value: IFTNode, isDirect: Boolean): IFTNode =
                         IFTNode.DummyWrite(namedNode, value, isDirect, true)
                 },
-                TestArrayMemoryManagement
+                TestArrayMemoryManagement()
             )
         }
     }
-    private object TestArrayMemoryManagement : ArrayMemoryManagement {
+    private class TestArrayMemoryManagement : ArrayMemoryManagement {
         private var arrayId = 0
         override fun genAllocation(size: IFTNode, initialization: List<IFTNode>, type: Type, mode: Expression.ArrayAllocation.InitializationType): Pair<ControlFlowGraph, IFTNode> =
-            Pair(IFTNode.DummyArrayAllocation(size, initialization, type, mode).toCfg(), IFTNode.Dummy("address of array ${arrayId++}"))
+            Pair(IFTNode.DummyArrayAllocation(size, initialization, type, mode).toCfg(), dummyArrayAddress(arrayId++))
 
         override fun genRefCountIncrement(address: IFTNode): ControlFlowGraph = IFTNode.DummyArrayRefCountInc(address).toCfg()
 
@@ -194,6 +195,10 @@ class ExpressionControlFlowTest {
 
     private fun ternary(cond: Expression, ifTrue: Expression, ifFalse: Expression): Expression {
         return Expression.Conditional(cond, ifTrue, ifFalse)
+    }
+
+    companion object {
+        private fun dummyArrayAddress(id: Int) = IFTNode.Dummy("address of array $id")
     }
 
     @Test
@@ -683,6 +688,85 @@ class ExpressionControlFlowTest {
                         )
                     )
                 )
+            )
+    }
+
+    private fun Int.toLiteral() = Expression.NumberLiteral(this.toLong())
+    private fun Int.toConst() = IFTNode.Const(this.toLong())
+
+    @Test
+    fun `simple array`() {
+        val context = ExpressionContext(setOf("a"))
+        val init = Expression.ArrayAllocation("", 5.toLiteral(), listOf(6.toLiteral()), Expression.ArrayAllocation.InitializationType.ONE_VALUE)
+        val type = Type.Array(Type.Number)
+        val cfgAssign = context.createCfg(init, "a" asVarIn context, expressionTypes = mapOf(Ref(init) to type))
+        val cfgNotAssign = context.createCfg(init, expressionTypes = mapOf(Ref(init) to type))
+        val address = dummyArrayAddress(0)
+
+        cfgAssign assertHasSameStructureAs (
+            IFTNode.DummyArrayAllocation(5.toConst(), listOf(6.toConst()), type, Expression.ArrayAllocation.InitializationType.ONE_VALUE)
+                merge IFTNode.DummyWrite("a" asVarIn context, address, true)
+            )
+        cfgNotAssign assertHasSameStructureAs (
+            IFTNode.DummyArrayAllocation(5.toConst(), listOf(6.toConst()), type, Expression.ArrayAllocation.InitializationType.ONE_VALUE)
+                merge IFTNode.DummyArrayRefCountDec(address, type)
+                merge address
+            )
+    }
+
+    @Test
+    fun `array of arrays`() {
+        val context = ExpressionContext(setOf("a"))
+        val alloc1 = Expression.ArrayAllocation("", 1.toLiteral(), listOf(1.toLiteral()), Expression.ArrayAllocation.InitializationType.ONE_VALUE)
+        val alloc2 = Expression.ArrayAllocation("", 1.toLiteral(), listOf(alloc1), Expression.ArrayAllocation.InitializationType.ONE_VALUE)
+        val type1 = Type.Array(Type.Number)
+        val type2 = Type.Array(type1)
+        val expressionTypes = mapOf(
+            Ref(alloc1 as Expression) to type1,
+            Ref(alloc2 as Expression) to type2
+        )
+        val cfgAssign = context.createCfg(alloc2, "a" asVarIn context, expressionTypes = expressionTypes)
+        val cfgNotAssign = context.createCfg(alloc2, expressionTypes = expressionTypes)
+        val address0 = dummyArrayAddress(0)
+        val address1 = dummyArrayAddress(1)
+        cfgAssign assertHasSameStructureAs (
+            IFTNode.DummyArrayAllocation(1.toConst(), listOf(1.toConst()), type1, Expression.ArrayAllocation.InitializationType.ONE_VALUE)
+                merge IFTNode.DummyArrayAllocation(1.toConst(), listOf(address0), type2, Expression.ArrayAllocation.InitializationType.ONE_VALUE)
+                merge IFTNode.DummyArrayRefCountDec(address0, type1) // asserts refcount will be increased while allocation of second array
+                merge IFTNode.DummyWrite("a" asVarIn context, address1, true)
+            )
+        cfgNotAssign assertHasSameStructureAs (
+            IFTNode.DummyArrayAllocation(1.toConst(), listOf(1.toConst()), type1, Expression.ArrayAllocation.InitializationType.ONE_VALUE)
+                merge IFTNode.DummyArrayAllocation(1.toConst(), listOf(address0), type2, Expression.ArrayAllocation.InitializationType.ONE_VALUE)
+                merge IFTNode.DummyArrayRefCountDec(address0, type1)
+                merge IFTNode.DummyArrayRefCountDec(address1, type2)
+                merge address1
+            )
+    }
+
+    @Test
+    fun `arrays - access element and length`() {
+        val context = ExpressionContext(emptySet())
+        val init = Expression.ArrayAllocation("", 5.toLiteral(), listOf(6.toLiteral()), Expression.ArrayAllocation.InitializationType.ONE_VALUE)
+        val type = Type.Array(Type.Number)
+        val getElement = Expression.ArrayElement(init, 3.toLiteral())
+        val getLength = Expression.ArrayLength(init)
+        val cfgElement = context.createCfg(getElement, expressionTypes = mapOf(Ref(init) to type))
+        val cfgLength = context.createCfg(getLength, expressionTypes = mapOf(Ref(init) to type))
+        val address = dummyArrayAddress(0)
+        val register = Register()
+
+        cfgElement assertHasSameStructureAs (
+            IFTNode.DummyArrayAllocation(5.toConst(), listOf(6.toConst()), type, Expression.ArrayAllocation.InitializationType.ONE_VALUE)
+                merge IFTNode.RegisterWrite(register, IFTNode.MemoryRead(IFTNode.Add(address, IFTNode.Multiply(3.toConst(), memoryUnitSize.toInt().toConst()))))
+                merge IFTNode.DummyArrayRefCountDec(address, type)
+                merge IFTNode.RegisterRead(register)
+            )
+        cfgLength assertHasSameStructureAs (
+            IFTNode.DummyArrayAllocation(5.toConst(), listOf(6.toConst()), type, Expression.ArrayAllocation.InitializationType.ONE_VALUE)
+                merge IFTNode.RegisterWrite(register, IFTNode.MemoryRead(IFTNode.Subtract(address, memoryUnitSize.toInt().toConst())))
+                merge IFTNode.DummyArrayRefCountDec(address, type)
+                merge IFTNode.RegisterRead(register)
             )
     }
 }

@@ -48,7 +48,7 @@ class LanguageTokensTest {
         assertEquals(firstMatch(tokens, "fałsz"), TokenType.FALSE_CONSTANT)
         assertEquals(firstMatch(tokens, "nic"), TokenType.UNIT_CONSTANT)
         assertEquals(firstMatch(tokens, "długość"), TokenType.LENGTH)
-        assertEquals(firstMatch(tokens, "alokacja"), TokenType.ALLOCATE)
+        assertEquals(firstMatch(tokens, "ciąg"), TokenType.ARRAY_ALLOCATION)
     }
 
     @Test fun `test special symbols`() {

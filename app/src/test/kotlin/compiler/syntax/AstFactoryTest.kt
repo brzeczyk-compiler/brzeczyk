@@ -787,6 +787,116 @@ class AstFactoryTest {
         assertEquals(expectedAst, resultAst)
     }
 
+    @Test fun `test correctly translates default value array allocation`() {
+        val parseTree = makeProgramWithExpressionsEvaluation(
+            makeNTNode(
+                NonTerminalType.EXPR4096, Productions.expr4096ArrayDefaultAllocation,
+                makeTNode(TokenType.ALLOCATE, "alokacja"),
+                makeNTNode(
+                    NonTerminalType.TYPE, Productions.type,
+                    makeTNode(TokenType.TYPE_BOOLEAN, "Czy")
+                ),
+                makeTNode(TokenType.LEFT_BRACKET, "["),
+                makeNTNode(
+                    NonTerminalType.EXPR4096, Productions.expr4096Const,
+                    makeNTNode(NonTerminalType.CONST, Productions.const, makeTNode(TokenType.INTEGER, "123"))
+                ) wrapUpTo NonTerminalType.EXPR,
+                makeTNode(TokenType.RIGHT_BRACKET, "]"),
+                makeTNode(TokenType.LEFT_PAREN, "("),
+                makeNTNode(
+                    NonTerminalType.EXPR4096, Productions.expr4096Const,
+                    makeNTNode(NonTerminalType.CONST, Productions.const, makeTNode(TokenType.FALSE_CONSTANT, "fałsz"))
+                ) wrapUpTo NonTerminalType.EXPR,
+                makeTNode(TokenType.RIGHT_PAREN, ")"),
+            ) wrapUpTo NonTerminalType.EXPR
+        )
+
+        val expectedAst = Program(
+            listOf(
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "główna",
+                        listOf(),
+                        Type.Unit,
+                        listOf(
+                            Statement.Evaluation(
+                                Expression.ArrayAllocation(
+                                    Type.Boolean,
+                                    Expression.NumberLiteral(123, dummyLocationRange),
+                                    listOf(
+                                        Expression.BooleanLiteral(false, dummyLocationRange),
+                                    ),
+                                    Expression.ArrayAllocation.InitializationType.ONE_VALUE,
+                                    dummyLocationRange
+                                ),
+                                dummyLocationRange
+                            )
+                        ),
+                        false,
+                        dummyLocationRange
+                    ),
+                    dummyLocationRange
+                )
+            )
+        )
+
+        val resultAst = AstFactory.createFromParseTree(parseTree, dummyDiagnostics)
+        assertEquals(expectedAst, resultAst)
+    }
+
+    @Test fun `test correctly translates array access`() {
+        val parseTree = makeProgramWithExpressionsEvaluation(
+            makeNTNode(
+                NonTerminalType.EXPR2048, Productions.expr2048ArrayAccess,
+                makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR,
+                makeTNode(TokenType.LEFT_BRACKET, "["),
+                makeNTNode(
+                    NonTerminalType.EXPR4096, Productions.expr4096Const,
+                    makeNTNode(NonTerminalType.CONST, Productions.const, makeTNode(TokenType.INTEGER, "7"))
+                ) wrapUpTo NonTerminalType.EXPR,
+                makeTNode(TokenType.RIGHT_BRACKET, "]"),
+                makeTNode(TokenType.LEFT_PAREN, "["),
+                makeNTNode(
+                    NonTerminalType.EXPR4096, Productions.expr4096Const,
+                    makeNTNode(NonTerminalType.CONST, Productions.const, makeTNode(TokenType.INTEGER, "13"))
+                ) wrapUpTo NonTerminalType.EXPR,
+                makeTNode(TokenType.RIGHT_PAREN, "]"),
+            ) wrapUpTo NonTerminalType.EXPR
+        )
+
+        val expectedAst = Program(
+            listOf(
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "główna",
+                        listOf(),
+                        Type.Unit,
+                        listOf(
+                            Statement.Evaluation(
+                                Expression.ArrayElement(
+                                    Expression.ArrayElement(
+                                        Expression.Variable("x", dummyLocationRange),
+                                        Expression.NumberLiteral(7, dummyLocationRange),
+                                        dummyLocationRange
+                                    ),
+                                    Expression.NumberLiteral(13, dummyLocationRange),
+                                    dummyLocationRange
+                                ),
+                                dummyLocationRange
+                            )
+                        ),
+                        false,
+                        dummyLocationRange
+                    ),
+                    dummyLocationRange
+                )
+            )
+        )
+
+        val resultAst = AstFactory.createFromParseTree(parseTree, dummyDiagnostics)
+        assertEquals(expectedAst, resultAst)
+    }
+
     @Test fun `test reports error on incorrect call argument name`() {
         val parseTree = makeProgramWithExpressionsEvaluation(
             makeNTNode(

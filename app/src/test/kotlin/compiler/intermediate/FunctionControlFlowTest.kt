@@ -352,7 +352,7 @@ class FunctionControlFlowTest {
 
     // czynność f() {
     //     jeśli (prawda) 123
-    //     wpw 456
+    //     wpp 456
     //     789
     // }
 
@@ -938,11 +938,11 @@ class FunctionControlFlowTest {
     //             123
     //             przerwij
     //         }
-    //         wpw {
+    //         wpp {
     //             jeśli(prawda) {
     //                 123
     //                 pomiń
-    //             } wpw {
+    //             } wpp {
     //                 123
     //                 zwróć
     //             }

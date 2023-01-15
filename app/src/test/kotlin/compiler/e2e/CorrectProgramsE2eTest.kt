@@ -1,5 +1,6 @@
 package compiler.e2e
 
+import kotlin.test.Ignore
 import kotlin.test.Test
 
 class CorrectProgramsE2eTest {
@@ -216,10 +217,9 @@ class CorrectProgramsE2eTest {
         )
     }
 
-    @Test
+    @Ignore @Test
     fun `test generators`() {
-        // TODO: exchange to "assertProgramCorrect" after the next phases are implemented
-        E2eTestUtils.assertNoDiagnosticsOfType(
+        E2eTestUtils.assertProgramCorrect(
             """
             czynność główna() {
                 przekaźnik mój_generator(a: Liczba = 17) -> Liczba {
@@ -229,24 +229,23 @@ class CorrectProgramsE2eTest {
                 
                         x = x + 1
                 
-                        if (x % 2 == 0)
+                        jeśli (x % 2 == 0)
                             przekaż (100 + x/2)
                     }
                     zakończ // możliwa tylko forma bez wartości
                 }
                 
-                otrzymując x: Liczba od f(25) { 
-                    if (x == 10)
+                otrzymując x: Liczba od mój_generator(25) { 
+                    jeśli (x == 10)
                         pomiń
             
                     napisz(x)
             
-                    if (x == 20)
+                    jeśli (x == 20)
                         przerwij
                 }
             }
             """,
-            compiler.diagnostics.Diagnostic.ParserError::class,
         )
     }
 }

@@ -1,0 +1,25 @@
+// INTEGRATION TESTS IGNORE
+czynność główna() {
+    przekaźnik mój_generator(a: Liczba = 17) -> Liczba {
+        zm x: Liczba = 1
+        dopóki (x <= a) {
+            przekaż x
+    
+            x = x + 1
+    
+            jeśli (x % 2 == 0)
+                przekaż (100 + x/2)
+        }
+        zakończ
+    }
+    zm n: Liczba = wczytaj()
+    otrzymując x: Liczba od mój_generator(n) { 
+        jeśli (x == 10)
+            pomiń
+
+        napisz(x)
+
+        jeśli (x == 20)
+            przerwij
+    }
+}

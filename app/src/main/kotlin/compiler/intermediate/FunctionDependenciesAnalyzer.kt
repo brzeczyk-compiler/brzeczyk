@@ -45,7 +45,7 @@ object FunctionDependenciesAnalyzer {
             when (node) {
                 is Program.Global.FunctionDefinition -> { analyze(node.function, pathSoFar) }
                 is Statement.FunctionDefinition -> { analyze(node.function, pathSoFar) }
-                is Function -> if (node.implementation is Function.Implementation.Local) {
+                is Function -> if (node.isLocal) {
                     val newPrefix = nameFunction(node, pathSoFar)
                     var blockNumber = 0
                     fun handleNestedBlock(statements: List<Statement>) = statements.forEach { analyze(it, newPrefix + "@block" + blockNumber++) }

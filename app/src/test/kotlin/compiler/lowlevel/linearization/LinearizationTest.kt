@@ -33,6 +33,8 @@ class LinearizationTest {
         }
     }
 
+    private val linearization = Linearization(covering)
+
     private sealed class AsmablePattern
 
     private class Unconditional(val node: IFTNode) : AsmablePattern()
@@ -93,7 +95,7 @@ class LinearizationTest {
     fun `empty graph`() {
         val cfg = ControlFlowGraph(listOf(), null, refMapOf(), refMapOf(), refMapOf())
 
-        val result = Linearization.linearize(cfg, covering)
+        val result = linearization.linearize(cfg)
 
         assertLinearizationMatches(emptyList(), result)
     }
@@ -103,7 +105,7 @@ class LinearizationTest {
         val node = newNode()
         val cfg = ControlFlowGraph(listOf(node), node, refMapOf(), refMapOf(), refMapOf())
 
-        val result = Linearization.linearize(cfg, covering)
+        val result = linearization.linearize(cfg)
 
         assertLinearizationMatches(listOf(Unconditional(node)), result)
     }
@@ -121,7 +123,7 @@ class LinearizationTest {
             refMapOf()
         )
 
-        val result = Linearization.linearize(cfg, covering)
+        val result = linearization.linearize(cfg)
 
         assertLinearizationMatches(
             listOf(
@@ -144,7 +146,7 @@ class LinearizationTest {
             refMapOf()
         )
 
-        val result = Linearization.linearize(cfg, covering)
+        val result = linearization.linearize(cfg)
 
         assertLinearizationMatches(
             listOf(
@@ -170,7 +172,7 @@ class LinearizationTest {
             refMapOf(node1 to node3)
         )
 
-        val result = Linearization.linearize(cfg, covering)
+        val result = linearization.linearize(cfg)
 
         assertLinearizationMatches(
             listOf(
@@ -197,7 +199,7 @@ class LinearizationTest {
             refMapOf(node1 to node3)
         )
 
-        val result = Linearization.linearize(cfg, covering)
+        val result = linearization.linearize(cfg)
 
         assertLinearizationMatches(
             listOf(
@@ -226,7 +228,7 @@ class LinearizationTest {
             refMapOf(node1 to node3, node3 to node5)
         )
 
-        val result = Linearization.linearize(cfg, covering)
+        val result = linearization.linearize(cfg)
 
         assertLinearizationMatches(
             listOf(
@@ -255,7 +257,7 @@ class LinearizationTest {
             refMapOf(node1 to node2)
         )
 
-        val result = Linearization.linearize(cfg, covering)
+        val result = linearization.linearize(cfg)
 
         assertLinearizationMatches(
             listOf(
@@ -280,7 +282,7 @@ class LinearizationTest {
             refMapOf(node1 to node1)
         )
 
-        val result = Linearization.linearize(cfg, covering)
+        val result = linearization.linearize(cfg)
 
         assertLinearizationMatches(
             listOf(
@@ -306,7 +308,7 @@ class LinearizationTest {
             refMapOf(node1 to node3)
         )
 
-        val result = Linearization.linearize(cfg, covering)
+        val result = linearization.linearize(cfg)
 
         assertLinearizationMatches(
             listOf(
@@ -335,7 +337,7 @@ class LinearizationTest {
             refMapOf(node1 to node2)
         )
 
-        val result = Linearization.linearize(cfg, covering)
+        val result = linearization.linearize(cfg)
 
         assertLinearizationMatches(
             listOf(
@@ -364,7 +366,7 @@ class LinearizationTest {
             refMapOf(node1 to node3, node2 to node1)
         )
 
-        val result = Linearization.linearize(cfg, covering)
+        val result = linearization.linearize(cfg)
 
         assertLinearizationMatches(
             listOf(
@@ -395,7 +397,7 @@ class LinearizationTest {
             refMapOf(node1 to node4, node2 to node1)
         )
 
-        val result = Linearization.linearize(cfg, covering)
+        val result = linearization.linearize(cfg)
 
         assertLinearizationMatches(
             listOf(
@@ -425,7 +427,7 @@ class LinearizationTest {
             emptyMap()
         )
 
-        val result = Linearization.linearize(cfg, covering)
+        val result = linearization.linearize(cfg)
 
         assertLinearizationMatches(
             listOf(
@@ -449,7 +451,7 @@ class LinearizationTest {
             refMapOf()
         )
 
-        val result = Linearization.linearize(cfg, covering)
+        val result = linearization.linearize(cfg)
 
         assertLinearizationMatches(
             listOf(

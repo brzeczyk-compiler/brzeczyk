@@ -8,57 +8,58 @@ import compiler.lowlevel.Instruction
 import compiler.lowlevel.Label
 import compiler.lowlevel.dataflow.Liveness
 
-object Allocation {
+class Allocation(private val allocator: PartialAllocation) {
+    companion object {
+        val HARDWARE_REGISTERS = listOf(
+            Register.R15,
+            Register.R14,
+            Register.R13,
+            Register.R12,
+            Register.R11,
+            Register.R10,
+            Register.RBP,
+            Register.RSP,
+            Register.R9,
+            Register.R8,
+            Register.RDI,
+            Register.RSI,
+            Register.RDX,
+            Register.RCX,
+            Register.RBX,
+            Register.RAX,
+        )
 
-    val HARDWARE_REGISTERS = listOf(
-        Register.R15,
-        Register.R14,
-        Register.R13,
-        Register.R12,
-        Register.R11,
-        Register.R10,
-        Register.RBP,
-        Register.RSP,
-        Register.R9,
-        Register.R8,
-        Register.RDI,
-        Register.RSI,
-        Register.RDX,
-        Register.RCX,
-        Register.RBX,
-        Register.RAX,
-    )
+        val AVAILABLE_REGISTERS = listOf(
+            Register.R15,
+            Register.R14,
+            Register.R13,
+            Register.R12,
+            Register.R11,
+            Register.R10,
+            Register.R9,
+            Register.R8,
+            Register.RDI,
+            Register.RSI,
+            Register.RDX,
+            Register.RCX,
+            Register.RBX,
+            Register.RAX,
+        )
 
-    val AVAILABLE_REGISTERS = listOf(
-        Register.R15,
-        Register.R14,
-        Register.R13,
-        Register.R12,
-        Register.R11,
-        Register.R10,
-        Register.R9,
-        Register.R8,
-        Register.RDI,
-        Register.RSI,
-        Register.RDX,
-        Register.RCX,
-        Register.RBX,
-        Register.RAX,
-    )
-
-    val POTENTIAL_SPILL_HANDLING_REGISTERS = listOf(
-        Register.R11,
-        Register.R10,
-        Register.R15,
-        Register.R14,
-        Register.R13,
-        Register.R12,
-        Register.RBX,
-    )
+        val POTENTIAL_SPILL_HANDLING_REGISTERS = listOf(
+            Register.R11,
+            Register.R10,
+            Register.R15,
+            Register.R14,
+            Register.R13,
+            Register.R12,
+            Register.RBX,
+        )
+    }
 
     data class Result(
         val allocatedRegisters: Map<Register, Register>,
-        val linearProgram: List<Asmable>,
+        val code: List<Asmable>,
         val spilledOffset: ULong,
     )
 
@@ -68,7 +69,6 @@ object Allocation {
         hardwareRegisters: List<Register>,
         availableRegisters: List<Register>,
         potentialSpillHandlingRegisters: List<Register>,
-        allocator: PartialAllocation,
         spilledRegistersRegionOffset: ULong
     ): Result {
         var reservedRegistersNumber = 0
@@ -88,8 +88,7 @@ object Allocation {
 
                 val spilledRegistersColoring: Map<Register, ULong> = colorSpilledRegisters(
                     spilledRegisters,
-                    livenessGraphs,
-                    allocator,
+                    livenessGraphs
                 )
 
                 val registerAllocation: Map<Register, Register> = allocateSpilledRegisters(
@@ -139,8 +138,7 @@ object Allocation {
 
     private fun colorSpilledRegisters(
         spilledRegisters: Set<Register>,
-        livenessGraphs: Liveness.LivenessGraphs,
-        allocator: PartialAllocation,
+        livenessGraphs: Liveness.LivenessGraphs
     ): Map<Register, ULong> {
         val spillsPossibleColors = spilledRegisters.map { Register() }
         val spillsColoring: Map<Register, Register> = allocator.allocateRegisters(

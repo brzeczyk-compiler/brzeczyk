@@ -11,7 +11,7 @@ import compiler.ast.Variable
 import compiler.diagnostics.Diagnostics
 import compiler.utils.Ref
 
-object ProgramAnalyzer {
+class ProgramAnalyzer(private val diagnostics: Diagnostics) {
     data class ProgramProperties(
         val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
         val argumentResolution: Map<Ref<Expression.FunctionCall.Argument>, Ref<Function.Parameter>>,
@@ -23,16 +23,16 @@ object ProgramAnalyzer {
         val staticDepth: Int,
     )
 
-    fun analyzeProgram(ast: Program, diagnostics: Diagnostics): ProgramProperties {
-        val nameResolutionResult = NameResolver.calculateNameResolution(ast, diagnostics)
+    fun analyze(program: Program): ProgramProperties {
+        val nameResolutionResult = NameResolver.calculateNameResolution(program, diagnostics)
         val nameResolution = nameResolutionResult.nameDefinitions
-        val argumentResolution = ArgumentResolver.calculateArgumentToParameterResolution(ast, nameResolution, diagnostics)
-        val expressionTypes = TypeChecker.calculateTypes(ast, nameResolution, argumentResolution.argumentsToParametersMap, diagnostics)
-        val defaultParameterMapping = DefaultParameterResolver.mapFunctionParametersToDummyVariables(ast)
-        InitializationVerifier.verifyAccessedVariablesAreInitialized(ast, nameResolution, defaultParameterMapping, diagnostics)
-        val functionReturnedValueVariables = ReturnValueVariableCreator.createDummyVariablesForFunctionReturnValue(ast)
-        val variableProperties = VariablePropertiesAnalyzer.calculateVariableProperties(ast, nameResolution, defaultParameterMapping, functionReturnedValueVariables, argumentResolution.accessedDefaultValues, diagnostics)
-        val generatorProperties = GeneratorResolver.computeGeneratorProperties(ast)
+        val argumentResolution = ArgumentResolver.calculateArgumentToParameterResolution(program, nameResolution, diagnostics)
+        val expressionTypes = TypeChecker.calculateTypes(program, nameResolution, argumentResolution.argumentsToParametersMap, diagnostics)
+        val defaultParameterMapping = DefaultParameterResolver.mapFunctionParametersToDummyVariables(program)
+        InitializationVerifier.verifyAccessedVariablesAreInitialized(program, nameResolution, defaultParameterMapping, diagnostics)
+        val functionReturnedValueVariables = ReturnValueVariableCreator.createDummyVariablesForFunctionReturnValue(program)
+        val variableProperties = VariablePropertiesAnalyzer.calculateVariableProperties(program, nameResolution, defaultParameterMapping, functionReturnedValueVariables, argumentResolution.accessedDefaultValues, diagnostics)
+        val generatorProperties = GeneratorResolver.computeGeneratorProperties(program)
 
         return ProgramProperties(
             nameResolution,

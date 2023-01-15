@@ -2,11 +2,10 @@ package compiler
 
 import compiler.analysis.BuiltinFunctions
 import compiler.analysis.ProgramAnalyzer
-import compiler.ast.Function
 import compiler.ast.Type
 import compiler.diagnostics.Diagnostics
 import compiler.input.ReaderInput
-import compiler.intermediate.ControlFlow.createGraphForProgram
+import compiler.intermediate.ControlFlowPlanner
 import compiler.intermediate.FunctionDependenciesAnalyzer
 import compiler.lexer.Lexer
 import compiler.lowlevel.AsmFile
@@ -39,81 +38,101 @@ class Compiler(val diagnostics: Diagnostics) {
 
     private val lexer = Lexer(LanguageTokens.getTokens(), diagnostics)
     private val parser = Parser(LanguageGrammar.getGrammar(), diagnostics)
+    private val astFactory = AstFactory(diagnostics)
+    private val programAnalyzer = ProgramAnalyzer(diagnostics)
+    private val controlFlowPlanner = ControlFlowPlanner(diagnostics)
     private val covering = DynamicCoveringBuilder(InstructionSet.getInstructionSet())
+    private val allocation = Allocation(ColoringAllocation)
+    private val linearization = Linearization(covering)
 
     fun process(input: Reader, output: Writer): Boolean {
         try {
-            val tokenSequence = lexer.process(ReaderInput(input))
+            // Front-end
 
-            val leaves: Sequence<ParseTree<Symbol>> = tokenSequence.filter { it.category != TokenType.TO_IGNORE } // TODO: move this transformation somewhere else
+            val tokens = lexer.process(ReaderInput(input))
+
+            val tokensAsLeaves: Sequence<ParseTree<Symbol>> = tokens
+                .filter { it.category != TokenType.TO_IGNORE }
                 .map { ParseTree.Leaf(it.location, Symbol.Terminal(it.category), it.content) }
 
-            val parseTree = parser.process(leaves)
+            val parseTree = parser.process(tokensAsLeaves)
 
-            val ast = AstFactory.createFromParseTree(parseTree, diagnostics) // TODO: make AstFactory and Resolver a class for consistency with Lexer and Parser
+            val initialProgram = astFactory.createFromParseTree(parseTree)
 
-            val astWithBuiltinFunctions = BuiltinFunctions.addBuiltinFunctions(ast)
+            val program = BuiltinFunctions.addBuiltinFunctions(initialProgram)
 
-            val programProperties = ProgramAnalyzer.analyzeProgram(astWithBuiltinFunctions, diagnostics)
+            val programProperties = programAnalyzer.analyze(program)
 
             val (functionDetailsGenerators, generatorDetailsGenerators) = FunctionDependenciesAnalyzer.createCallablesDetailsGenerators(
-                astWithBuiltinFunctions,
+                program,
                 programProperties.variableProperties,
                 programProperties.functionReturnedValueVariables,
-                diagnostics.hasAnyError()
-            )
+                diagnostics.hasAnyErrors()
+            ) // TODO: it probably shouldn't be FunctionDependenciesAnalyzer responsible for this
 
-            val functionCFGs = createGraphForProgram(
-                astWithBuiltinFunctions,
+            val functionControlFlowGraphs = controlFlowPlanner.createGraphsForProgram(
+                program,
                 programProperties,
                 functionDetailsGenerators,
-                generatorDetailsGenerators,
-                diagnostics
+                generatorDetailsGenerators
             )
 
-            val mainFunction = FunctionDependenciesAnalyzer.extractMainFunction(ast, diagnostics)
+            val mainFunction = FunctionDependenciesAnalyzer.extractMainFunction(program, diagnostics) // TODO: and neither for this
 
-            if (diagnostics.hasAnyError())
+            // Back-end
+
+            if (diagnostics.hasAnyErrors())
                 return false
 
-            val linearFunctions = functionCFGs.mapValues { Linearization.linearize(it.value, covering) }
+            val displayStorage = DisplayStorage(programProperties.staticDepth)
+            val globalVariableStorage = GlobalVariableStorage(program)
 
-            val finalCode = linearFunctions.mapValues {
-                Allocation.allocateRegistersWithSpillsHandling(
-                    it.value,
-                    Liveness.computeLiveness(it.value),
+            val mainFunctionLabel = functionDetailsGenerators[Ref(mainFunction)]!!.identifier
+            val ignoreMainReturnValue = mainFunction!!.returnType != Type.Number
+
+            val foreignIdentifiers = BuiltinFunctions.internallyUsedExternalSymbols +
+                functionDetailsGenerators
+                    .filterKeys { !it.value.isLocal }
+                    .map { it.value.identifier } +
+                generatorDetailsGenerators
+                    .filterKeys { !it.value.isLocal }
+                    .values
+                    .flatMap { listOf(it.initFDG, it.resumeFDG, it.finalizeFDG) }
+                    .map { it.identifier }
+
+            val functions = functionControlFlowGraphs.map { (function, controlFlowGraph) ->
+                val code = linearization.linearize(controlFlowGraph)
+
+                val liveness = Liveness.computeLiveness(code)
+
+                val functionDetailsGenerator = functionDetailsGenerators[function]!!
+
+                val allocationResult = allocation.allocateRegistersWithSpillsHandling(
+                    code,
+                    liveness,
                     Allocation.HARDWARE_REGISTERS,
                     Allocation.AVAILABLE_REGISTERS,
                     Allocation.POTENTIAL_SPILL_HANDLING_REGISTERS,
-                    ColoringAllocation,
-                    functionDetailsGenerators[it.key]!!.spilledRegistersRegionOffset
+                    functionDetailsGenerator.spilledRegistersRegionOffset
                 )
+
+                functionDetailsGenerator.spilledRegistersRegionSize.settledValue = allocationResult.spilledOffset.toLong()
+
+                CodeSection.FunctionCode(functionDetailsGenerator.identifier, allocationResult.code, allocationResult.allocatedRegisters)
             }
 
-            finalCode.entries.forEach { functionDetailsGenerators[it.key]!!.spilledRegistersRegionSize.settledValue = it.value.spilledOffset.toLong() }
+            val codeSection = CodeSection(
+                mainFunctionLabel,
+                ignoreMainReturnValue,
+                foreignIdentifiers,
+                functions
+            )
 
             AsmFile.printFile(
                 PrintWriter(output),
-                DisplayStorage(programProperties.staticDepth)::writeAsm,
-                GlobalVariableStorage(ast)::writeAsm,
-                CodeSection(
-                    functionDetailsGenerators[Ref(mainFunction)]!!.identifier,
-                    mainFunction!!.returnType != Type.Number,
-                    functionDetailsGenerators
-                        .filter { it.key.value.implementation is Function.Implementation.Foreign }
-                        .map { it.value.identifier } +
-                        BuiltinFunctions.internallyUsedExternalSymbols +
-                        generatorDetailsGenerators
-                            .filter { it.key.value.implementation is Function.Implementation.Foreign }
-                            .flatMap { it.value.let { listOf(it.initFDG, it.finalizeFDG, it.resumeFDG) }.map { it.identifier } },
-                    finalCode.map { functionCode ->
-                        functionDetailsGenerators[functionCode.key]!!.identifier to
-                            CodeSection.FunctionCode(
-                                functionCode.value.linearProgram,
-                                functionCode.value.allocatedRegisters
-                            )
-                    }.toMap()
-                )::writeAsm
+                displayStorage::writeAsm,
+                globalVariableStorage::writeAsm,
+                codeSection::writeAsm
             )
 
             return true

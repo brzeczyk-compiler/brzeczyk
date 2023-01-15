@@ -5,6 +5,7 @@ import compiler.ast.Expression
 import compiler.ast.Function
 import compiler.ast.NamedNode
 import compiler.ast.Program
+import compiler.ast.Statement
 import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.diagnostics.Diagnostics
@@ -18,6 +19,7 @@ object ProgramAnalyzer {
         val defaultParameterMapping: Map<Ref<Function.Parameter>, Variable>,
         val functionReturnedValueVariables: Map<Ref<Function>, Variable>,
         val variableProperties: Map<Ref<AstNode>, VariablePropertiesAnalyzer.VariableProperties>,
+        val generatorProperties: Map<Ref<Function>, List<Ref<Statement.ForeachLoop>>>,
         val staticDepth: Int,
     )
 
@@ -30,6 +32,7 @@ object ProgramAnalyzer {
         InitializationVerifier.verifyAccessedVariablesAreInitialized(ast, nameResolution, defaultParameterMapping, diagnostics)
         val functionReturnedValueVariables = ReturnValueVariableCreator.createDummyVariablesForFunctionReturnValue(ast)
         val variableProperties = VariablePropertiesAnalyzer.calculateVariableProperties(ast, nameResolution, defaultParameterMapping, functionReturnedValueVariables, argumentResolution.accessedDefaultValues, diagnostics)
+        val generatorProperties = GeneratorResolver.computeGeneratorProperties(ast)
 
         return ProgramProperties(
             nameResolution,
@@ -38,6 +41,7 @@ object ProgramAnalyzer {
             defaultParameterMapping,
             functionReturnedValueVariables,
             variableProperties,
+            generatorProperties,
             nameResolutionResult.programStaticDepth,
         )
     }

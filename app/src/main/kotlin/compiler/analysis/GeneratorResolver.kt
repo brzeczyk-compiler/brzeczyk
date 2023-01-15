@@ -11,9 +11,9 @@ object GeneratorResolver {
 
         val resultMapping: MutableMap<Ref<Function>, MutableList<Ref<Statement.ForeachLoop>>> = mutableKeyRefMapOf()
 
-        fun process(parentGenerators: List<Function>, statement: Statement) {
-            fun process(parentGenerators: List<Function>, vararg bunchOfBlocks: List<Statement>?) =
-                bunchOfBlocks.toList().forEach { block -> block?.forEach { process(parentGenerators, it) } }
+        fun process(surroundingGenerators: List<Function>, statement: Statement) {
+            fun process(surroundingGenerators: List<Function>, vararg bunchOfBlocks: List<Statement>?) =
+                bunchOfBlocks.forEach { block -> block?.forEach { process(surroundingGenerators, it) } }
 
             when (statement) {
                 // Exhaust all possibilities to be forced to update this place when changing the Statement class.
@@ -25,20 +25,20 @@ object GeneratorResolver {
                 is Statement.FunctionReturn -> { }
                 is Statement.GeneratorYield -> { }
 
-                is Statement.Block -> process(parentGenerators, statement.block)
-                is Statement.Conditional -> process(parentGenerators, statement.actionWhenTrue, statement.actionWhenFalse)
-                is Statement.Loop -> process(parentGenerators, statement.action)
+                is Statement.Block -> process(surroundingGenerators, statement.block)
+                is Statement.Conditional -> process(surroundingGenerators, statement.actionWhenTrue, statement.actionWhenFalse)
+                is Statement.Loop -> process(surroundingGenerators, statement.action)
 
                 is Statement.FunctionDefinition -> {
                     val function = statement.function
-                    val updatedParentGenerators = if (function.isGenerator) parentGenerators + listOf(function) else parentGenerators
+                    val updatedSurroundingGenerators = if (function.isGenerator) surroundingGenerators + listOf(function) else surroundingGenerators
                     if (function.isGenerator) resultMapping.putIfAbsent(Ref(function), mutableListOf())
-                    process(updatedParentGenerators, function.body)
+                    process(updatedSurroundingGenerators, function.body)
                 }
 
                 is Statement.ForeachLoop -> {
-                    parentGenerators.forEach { resultMapping[Ref(it)]?.add(Ref(statement)) }
-                    process(parentGenerators, statement.action)
+                    surroundingGenerators.forEach { resultMapping[Ref(it)]?.add(Ref(statement)) }
+                    process(surroundingGenerators, statement.action)
                 }
             }
         }
@@ -48,9 +48,9 @@ object GeneratorResolver {
                 is Program.Global.VariableDefinition -> { }
                 is Program.Global.FunctionDefinition -> {
                     val function = global.function
-                    val updatedParentGenerators = if (function.isGenerator) listOf(function) else listOf()
+                    val updatedSurroundingGenerators = if (function.isGenerator) listOf(function) else listOf()
                     if (function.isGenerator) resultMapping.putIfAbsent(Ref(function), mutableListOf())
-                    function.body.forEach { process(updatedParentGenerators, it) }
+                    function.body.forEach { process(updatedSurroundingGenerators, it) }
                 }
             }
         }

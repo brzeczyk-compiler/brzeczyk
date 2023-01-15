@@ -13,7 +13,7 @@ object DefaultParameterResolver {
         val resultMapping: MutableMap<Ref<Function.Parameter>, Variable> = mutableKeyRefMapOf()
 
         fun process(statement: Statement) {
-            fun process(vararg bunchOfBlocks: List<Statement>?) = bunchOfBlocks.toList().forEach { block -> block?.forEach { process(it) } }
+            fun process(vararg bunchOfBlocks: List<Statement>?) = bunchOfBlocks.forEach { block -> block?.forEach { process(it) } }
 
             when (statement) {
                 // Exhaust all possibilities to be forced to update this place when changing the Statement class.

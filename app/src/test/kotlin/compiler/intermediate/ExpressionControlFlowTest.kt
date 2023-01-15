@@ -7,7 +7,6 @@ import compiler.ast.Function
 import compiler.ast.NamedNode
 import compiler.ast.Type
 import compiler.ast.Variable
-import compiler.intermediate.generators.ArrayMemoryManagement
 import compiler.intermediate.generators.FunctionDetailsGenerator
 import compiler.intermediate.generators.VariableAccessGenerator
 import compiler.intermediate.generators.memoryUnitSize
@@ -130,15 +129,6 @@ class ExpressionControlFlowTest {
             )
         }
     }
-    private class TestArrayMemoryManagement : ArrayMemoryManagement {
-        private var arrayId = 0
-        override fun genAllocation(size: IFTNode, initialization: List<IFTNode>, type: Type, mode: Expression.ArrayAllocation.InitializationType): Pair<ControlFlowGraph, IFTNode> =
-            Pair(IFTNode.DummyArrayAllocation(size, initialization, type, mode).toCfg(), dummyArrayAddress(arrayId++))
-
-        override fun genRefCountIncrement(address: IFTNode): ControlFlowGraph = IFTNode.DummyArrayRefCountInc(address).toCfg()
-
-        override fun genRefCountDecrement(address: IFTNode, type: Type): ControlFlowGraph = IFTNode.DummyArrayRefCountDec(address, type).toCfg()
-    }
 
     private infix fun String.asVarIn(exprContext: ExpressionContext): Variable {
         return exprContext.nameToVarMap[this]!!
@@ -195,10 +185,6 @@ class ExpressionControlFlowTest {
 
     private fun ternary(cond: Expression, ifTrue: Expression, ifFalse: Expression): Expression {
         return Expression.Conditional(cond, ifTrue, ifFalse)
-    }
-
-    companion object {
-        private fun dummyArrayAddress(id: Int) = IFTNode.Dummy("address of array $id")
     }
 
     @Test
@@ -258,7 +244,7 @@ class ExpressionControlFlowTest {
     }
 
     @Test
-    fun `assignment`() {
+    fun `assignment to variables`() {
         val context = ExpressionContext(
             setOf("x", "y")
         )
@@ -390,7 +376,7 @@ class ExpressionControlFlowTest {
     }
 
     @Test
-    fun `conditionals`() {
+    fun `conditional expressions`() {
         val context = ExpressionContext(
             setOf("x", "y", "z")
         )
@@ -729,6 +715,7 @@ class ExpressionControlFlowTest {
         val cfgNotAssign = context.createCfg(alloc2, expressionTypes = expressionTypes)
         val address0 = dummyArrayAddress(0)
         val address1 = dummyArrayAddress(1)
+
         cfgAssign assertHasSameStructureAs (
             IFTNode.DummyArrayAllocation(1.toConst(), listOf(1.toConst()), type1, Expression.ArrayAllocation.InitializationType.ONE_VALUE)
                 merge IFTNode.DummyArrayAllocation(1.toConst(), listOf(address0), type2, Expression.ArrayAllocation.InitializationType.ONE_VALUE)
@@ -754,19 +741,24 @@ class ExpressionControlFlowTest {
         val cfgElement = context.createCfg(getElement, expressionTypes = mapOf(Ref(init) to type))
         val cfgLength = context.createCfg(getLength, expressionTypes = mapOf(Ref(init) to type))
         val address = dummyArrayAddress(0)
-        val register = Register()
+        val resultRegister = Register()
+        val arrayTempRegister = Register()
 
-        cfgElement assertHasSameStructureAs (
+        val expectedCfgElement = (
             IFTNode.DummyArrayAllocation(5.toConst(), listOf(6.toConst()), type, Expression.ArrayAllocation.InitializationType.ONE_VALUE)
-                merge IFTNode.RegisterWrite(register, IFTNode.MemoryRead(IFTNode.Add(address, IFTNode.Multiply(3.toConst(), memoryUnitSize.toInt().toConst()))))
-                merge IFTNode.DummyArrayRefCountDec(address, type)
-                merge IFTNode.RegisterRead(register)
+                merge IFTNode.RegisterWrite(arrayTempRegister, address)
+                merge IFTNode.RegisterWrite(resultRegister, IFTNode.MemoryRead(IFTNode.Add(IFTNode.RegisterRead(arrayTempRegister), IFTNode.Multiply(3.toConst(), memoryUnitSize.toInt().toConst()))))
+                merge IFTNode.DummyArrayRefCountDec(IFTNode.RegisterRead(arrayTempRegister), type)
+                merge IFTNode.RegisterRead(resultRegister)
             )
-        cfgLength assertHasSameStructureAs (
+        expectedCfgElement assertHasSameStructureAs cfgElement
+
+        val expectedCfgLength = (
             IFTNode.DummyArrayAllocation(5.toConst(), listOf(6.toConst()), type, Expression.ArrayAllocation.InitializationType.ONE_VALUE)
-                merge IFTNode.RegisterWrite(register, IFTNode.MemoryRead(IFTNode.Subtract(address, memoryUnitSize.toInt().toConst())))
+                merge IFTNode.RegisterWrite(resultRegister, IFTNode.MemoryRead(IFTNode.Subtract(address, memoryUnitSize.toInt().toConst())))
                 merge IFTNode.DummyArrayRefCountDec(address, type)
-                merge IFTNode.RegisterRead(register)
+                merge IFTNode.RegisterRead(resultRegister)
             )
+        expectedCfgLength assertHasSameStructureAs cfgLength
     }
 }

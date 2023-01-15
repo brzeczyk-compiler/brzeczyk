@@ -13,6 +13,9 @@ sealed class IFTNode {
     // valid only as root, used to pass label information to linearization phase
     data class LabeledNode(val label: String, val node: IFTNode) : IFTNode()
 
+    // valid only as root, has to have unconditional link at output
+    data class NoOp(private val dummy: Unit = Unit) : IFTNode()
+
     data class MemoryRead(val address: IFTNode) : IFTNode()
     data class MemoryLabel(val label: String) : IFTNode()
     data class RegisterRead(val register: Register) : IFTNode()

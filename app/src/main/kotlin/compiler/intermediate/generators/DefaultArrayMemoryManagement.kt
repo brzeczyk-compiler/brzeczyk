@@ -62,8 +62,17 @@ object DefaultArrayMemoryManagement : ArrayMemoryManagement {
         return cfgBuilder.build()
     }
 
-    override fun genRefCountDecrement(address: IFTNode, type: Type): ControlFlowGraph = throw NotImplementedError()
+    override fun genRefCountDecrement(address: IFTNode, type: Type): ControlFlowGraph {
+        fun getArrayLevel(type: Type): Int = when (type) {
+            is Type.Array -> 1 + getArrayLevel(type.elementType)
+            else -> 0
+        }
+
+        val level = getArrayLevel(type)
+        return refCountDecrementFDG.genCall(listOf(address, IFTNode.Const(level.toLong()))).callGraph
+    }
 
     private val mallocFDG = ForeignFunctionDetailsGenerator(IFTNode.MemoryLabel("_\$checked_malloc"), 1)
     private val dynamicPopulateFDG = ForeignFunctionDetailsGenerator(IFTNode.MemoryLabel("_\$populate_dynamic_array"), 0)
+    private val refCountDecrementFDG = ForeignFunctionDetailsGenerator(IFTNode.MemoryLabel("_\$array_ref_count_decrement"), 0)
 }

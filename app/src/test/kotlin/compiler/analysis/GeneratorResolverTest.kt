@@ -15,11 +15,7 @@ class GeneratorResolverTest {
 
     @Test fun `test generator with no foreach loop inside`() {
         /*
-        Create AST for program:
-        ---------------------------------
-
         przekaźnik test() { }
-
         */
 
         val testGenerator = Function("test", listOf(), Type.Unit, listOf(), true)
@@ -39,12 +35,8 @@ class GeneratorResolverTest {
 
     @Test fun `test function is not mapped`() {
         /*
-        Create AST for program:
-        ---------------------------------
-
         przekaźnik test() { }
         czynność test() { }
-
         */
 
         val testGenerator = Function("test", listOf(), Type.Unit, listOf(), true)
@@ -66,13 +58,9 @@ class GeneratorResolverTest {
 
     @Test fun `test nested generator with no foreach loop`() {
         /*
-        Create AST for program:
-        ---------------------------------
-
         czynność test() {
             przekaźnik test() { }
         }
-
         */
 
         val testGenerator = Function("test", listOf(), Type.Unit, listOf(), true)
@@ -93,9 +81,6 @@ class GeneratorResolverTest {
 
     @Test fun `test generator with foreach loop`() {
         /*
-        Create AST for program:
-        ---------------------------------
-
         przekaźnik f() -> Liczba { }
 
         przekaźnik testGlobal() {
@@ -106,7 +91,6 @@ class GeneratorResolverTest {
                 otrzymując x: Liczba od f() {}
             }
         }
-
         */
         val variableX = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
         val forEach1 = Statement.ForeachLoop(variableX, Expression.FunctionCall("f", listOf()), listOf())
@@ -136,9 +120,6 @@ class GeneratorResolverTest {
 
     @Test fun `test deeply nested generators`() {
         /*
-        Create AST for program:
-        ---------------------------------
-
         przekaźnik f() -> Liczba { }
 
         czynność test() {
@@ -152,7 +133,6 @@ class GeneratorResolverTest {
                 otrzymując x: Liczba od f() {}
             }
         }
-
         */
         val variableX = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
         val forEach1 = Statement.ForeachLoop(variableX, Expression.FunctionCall("f", listOf()), listOf())
@@ -184,9 +164,6 @@ class GeneratorResolverTest {
 
     @Test fun `test foreach loops in blocks`() {
         /*
-        Create AST for program:
-        ---------------------------------
-
         przekaźnik f() -> Liczba { }
 
         czynność test() {
@@ -210,7 +187,6 @@ class GeneratorResolverTest {
                 }
             }
         }
-
         */
         val variableX = Variable(Variable.Kind.VALUE, "x", Type.Number, null)
         val forEach1 = Statement.ForeachLoop(variableX, Expression.FunctionCall("f", listOf()), listOf())

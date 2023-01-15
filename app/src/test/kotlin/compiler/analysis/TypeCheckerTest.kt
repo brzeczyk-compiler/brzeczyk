@@ -1261,7 +1261,7 @@ class TypeCheckerTest {
     }
 
     // czynność f() -> Nic {
-    //     zm x: Tablica<Liczba> = nowa tablica(5, 0)
+    //     zm x: [Liczba] = Liczba[5](0)
     // }
 
     @Test
@@ -1357,7 +1357,7 @@ class TypeCheckerTest {
     }
 
     // czynność f() {
-    //     zm x: Tablica<Liczba> = nowa tablica(5, 0)
+    //     zm x: [Liczba] = Liczba[5](0)
     //     zm y: Liczba = x[1]
     // }
 
@@ -1413,7 +1413,7 @@ class TypeCheckerTest {
     }
 
     // czynność f() {
-    //     zm x: Tablica<Liczba> = nowa tablica(5, 0)
+    //     zm x: [Liczba] = Liczba[5](0)
     //     zm y: Liczba = długość x
     // }
 

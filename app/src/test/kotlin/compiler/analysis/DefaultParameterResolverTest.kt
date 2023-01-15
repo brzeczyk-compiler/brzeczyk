@@ -19,16 +19,12 @@ class DefaultParameterResolverTest {
 
     @Test fun `test default parameters mapping in a global function`() {
         /*
-        Create AST for program:
-        ---------------------------------
-
         czynność test(
             a: Liczba,
             b: Czy,
             c: Liczba = 17,
             d: Czy = prawda
         ) { }
-
         */
 
         val aParameter = Function.Parameter("a", Type.Number, null)
@@ -66,9 +62,6 @@ class DefaultParameterResolverTest {
 
     @Test fun `test default parameters mapping in a local function`() {
         /*
-        Create AST for program:
-        ---------------------------------
-
         czynność test() {
             czynność f(
                 a: Liczba,
@@ -77,7 +70,6 @@ class DefaultParameterResolverTest {
                 d: Czy = prawda
             ) { }
         }
-
         */
 
         val aParameter = Function.Parameter("a", Type.Number, null)
@@ -116,9 +108,6 @@ class DefaultParameterResolverTest {
 
     @Test fun `test default parameters mapping in functions defined in various places`() {
         /*
-        Create AST for program:
-        ---------------------------------
-
         czynność test() {
             {
                 czynność f(a: Liczba = 17) { }
@@ -135,7 +124,6 @@ class DefaultParameterResolverTest {
                 czynność j(e: Liczba = 21) { }
             }
         }
-
         */
 
         val aValue = Expression.NumberLiteral(17)
@@ -183,9 +171,6 @@ class DefaultParameterResolverTest {
 
     @Test fun `test reference comparison`() {
         /*
-        Create AST for program:
-        ---------------------------------
-
         czynność test() {
             czynność f(a: Liczba = 17) {
                 a
@@ -194,7 +179,6 @@ class DefaultParameterResolverTest {
                 a
             }
         }
-
         */
 
         val afValue = Expression.NumberLiteral(17)

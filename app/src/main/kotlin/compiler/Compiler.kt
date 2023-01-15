@@ -70,9 +70,9 @@ class Compiler(val diagnostics: Diagnostics) {
                 programProperties.generatorProperties,
                 programProperties.functionReturnedValueVariables,
                 diagnostics.hasAnyErrors()
-            ) // NOTE: it probably shouldn't be FunctionDependenciesAnalyzer responsible for this
+            ) // TODO: it probably shouldn't be FunctionDependenciesAnalyzer responsible for this
 
-            val mainFunction = FunctionDependenciesAnalyzer.extractMainFunction(program, diagnostics) // NOTE: and neither for this
+            val mainFunction = FunctionDependenciesAnalyzer.extractMainFunction(program, diagnostics) // TODO: and neither for this
 
             val bareFunctionControlFlowGraphs = controlFlowPlanner.createGraphsForProgram(
                 program,

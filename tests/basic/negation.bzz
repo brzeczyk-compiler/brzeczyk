@@ -1,0 +1,8 @@
+// INTEGRATION TESTS IGNORE
+czynność główna() {
+    zm wejście_to_jeden: Czy = wczytaj() == 1
+	jeśli(nie wejście_to_jeden)
+		napisz(0)
+	wpp
+		napisz(1)
+}

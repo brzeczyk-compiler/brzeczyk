@@ -11,7 +11,7 @@ czynność fib_czynność(a: Liczba) -> Liczba {
         }
         otrzymując x: Liczba od fib_przekaźnik(a-1) {
             przekaż x + fib_czynność(a-2)
-			przerwij
+            przerwij
         }
     }
 

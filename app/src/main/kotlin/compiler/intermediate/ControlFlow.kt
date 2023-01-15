@@ -652,10 +652,10 @@ object ControlFlow {
                         is Statement.VariableDefinition -> {
                             val variable = statement.variable
 
+                            if (variable.type is Type.Array)
+                                addNode(createWriteToVariable(IFTNode.Const(0), variable, function))
                             if (variable.kind != Variable.Kind.CONSTANT && variable.value != null)
                                 addExpression(variable.value, variable.asTarget())
-                            else if (variable.type is Type.Array)
-                                addNode(createWriteToVariable(IFTNode.Const(0), variable, function))
 
                             addToDestructionStructures(variable)
                         }

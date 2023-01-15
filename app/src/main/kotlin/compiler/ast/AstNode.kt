@@ -25,7 +25,11 @@ sealed interface AstNode {
                     is Expression.Variable -> this.name
                     is Expression.ArrayElement -> "${this.expression}[${this.index}]"
                     is Expression.ArrayLength -> "długość ${this.expression}"
-                    is Expression.ArrayAllocation -> "alokacja [${this.size}]{${this.initialization}}}"
+                    is Expression.ArrayAllocation -> {
+                        var arrayValues = this.initialization.joinToString { it.toSimpleString() }
+                        if (this.initializationType == Expression.ArrayAllocation.InitializationType.ONE_VALUE) arrayValues += "..."
+                        "alokacja ${this.elementType}[${this.size.toSimpleString()}]{ $arrayValues }"
+                    }
                 }
 
                 is Variable -> "${this.kind} ${this.name}: ${this.type}${if (this.value != null) "= ${this.value.toSimpleString()}" else ""}"

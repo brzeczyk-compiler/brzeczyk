@@ -35,9 +35,10 @@ sealed class Expression : AstNode {
     ) : Expression()
 
     data class ArrayAllocation(
-        val type: Type,
+        val elementType: Type,
         val size: Expression,
-        val initialization: Expression,
+        val initialization: List<Expression>,
+        val initializationType: InitializationType,
         override val location: LocationRange? = null
     ) : Expression() {
         enum class InitializationType {

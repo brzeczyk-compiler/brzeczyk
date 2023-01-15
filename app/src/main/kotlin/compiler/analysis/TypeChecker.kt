@@ -193,9 +193,12 @@ class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
 
                     report(TypeCheckingError.LengthOfNonArrayType(expression.expression, innerExpressionType))
                 }
+
                 is Expression.ArrayAllocation -> {
-                    val elementType = checkExpression(expression.initialization) ?: return null
-                    return Type.Array(elementType)
+                    for (element in expression.initialization) {
+                        checkExpression(element, expression.elementType)
+                    }
+                    return Type.Array(expression.elementType)
                 }
 
                 is Expression.FunctionCall -> {

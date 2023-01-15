@@ -65,7 +65,9 @@ class Compiler(val diagnostics: Diagnostics) {
 
             val (functionDetailsGenerators, generatorDetailsGenerators) = FunctionDependenciesAnalyzer.createCallablesDetailsGenerators(
                 program,
+                programProperties.nameResolution,
                 programProperties.variableProperties,
+                programProperties.generatorProperties,
                 programProperties.functionReturnedValueVariables,
                 diagnostics.hasAnyErrors()
             ) // NOTE: it probably shouldn't be FunctionDependenciesAnalyzer responsible for this

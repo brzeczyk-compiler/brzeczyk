@@ -293,7 +293,7 @@ class FunctionDependenciesAnalyzerTest {
                 IFTNode.MemoryLabel(DISPLAY_LABEL_IN_MEMORY)
             )
         )
-        val actualResult = FunctionDependenciesAnalyzer.createCallablesDetailsGenerators(program, variableProperties, keyRefMapOf()).first
+        val actualResult = FunctionDependenciesAnalyzer.createCallablesDetailsGenerators(program, emptyMap(), variableProperties, emptyMap(), keyRefMapOf()).first
         assertEquals(expectedResult, actualResult)
     }
 
@@ -340,7 +340,7 @@ class FunctionDependenciesAnalyzerTest {
                 IFTNode.MemoryLabel(DISPLAY_LABEL_IN_MEMORY)
             ) as FunctionDetailsGenerator
         )
-        val actualResult = FunctionDependenciesAnalyzer.createCallablesDetailsGenerators(program, variableProperties, keyRefMapOf(functionF to returnVariable)).first
+        val actualResult = FunctionDependenciesAnalyzer.createCallablesDetailsGenerators(program, emptyMap(), variableProperties, emptyMap(), keyRefMapOf(functionF to returnVariable)).first
         assertEquals(expectedResult, actualResult)
     }
 

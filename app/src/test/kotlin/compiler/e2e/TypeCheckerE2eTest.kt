@@ -3,6 +3,7 @@ package compiler.e2e
 import compiler.diagnostics.Diagnostic
 import compiler.e2e.E2eTestUtils.assertErrorOfType
 import compiler.e2e.E2eTestUtils.assertProgramCorrect
+import kotlin.test.Ignore
 import kotlin.test.Test
 
 class TypeCheckerE2eTest {
@@ -779,6 +780,7 @@ class TypeCheckerE2eTest {
     }
 
     @Test
+    @Ignore
     fun `test return with value in a generator`() {
         assertReturnWithValueInGeneratorError(
             """

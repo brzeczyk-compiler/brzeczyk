@@ -17,7 +17,7 @@ czynność główna() {
             otrzymując z: Liczba od przedziału(m+1) {
                 otrzymując w: Liczba od liczby_naturalne() {
                     jeśli(w > m) przerwij
-                    wynik = wynik + x*y*w*(z+1)
+                    wynik = wynik + x*y*z*w
                 }
             }
         }

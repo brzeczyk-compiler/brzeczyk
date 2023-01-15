@@ -4,8 +4,8 @@ przekaźnik p()-> Liczba {
 }
 
 czynność główna() {
-    otrzymując x: Liczba od p(n)
+    otrzymując x: Liczba od p()
         napisz(x)
-    otrzymując x: Liczba od p(n) 
+    otrzymując x: Liczba od p() 
         napisz(x)
 }

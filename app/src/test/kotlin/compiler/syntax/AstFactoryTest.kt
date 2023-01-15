@@ -486,7 +486,7 @@ class AstFactoryTest {
         val parseTree = makeProgramWithExpressionsEvaluation(
             makeNTNode(
                 NonTerminalType.EXPR2048, Productions.expr2048UnaryBoolNot,
-                makeTNode(TokenType.NOT, "!"),
+                makeTNode(TokenType.NOT, "nie"),
                 makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "x"))
             ) wrapUpTo NonTerminalType.EXPR,
 

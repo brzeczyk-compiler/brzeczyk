@@ -1,8 +1,11 @@
 package compiler.analysis
 
+import compiler.ast.AstNode
+import compiler.ast.Expression
 import compiler.ast.Function
 import compiler.ast.Program
 import compiler.ast.Statement
+import compiler.ast.Variable
 import compiler.utils.Ref
 import compiler.utils.mutableKeyRefMapOf
 
@@ -11,51 +14,52 @@ object GeneratorResolver {
 
         val resultMapping: MutableMap<Ref<Function>, MutableList<Ref<Statement.ForeachLoop>>> = mutableKeyRefMapOf()
 
-        fun process(surroundingGenerators: List<Function>, statement: Statement) {
+        fun process(surroundingGenerators: List<Function>, node: AstNode) {
             fun process(surroundingGenerators: List<Function>, vararg bunchOfBlocks: List<Statement>?) =
                 bunchOfBlocks.forEach { block -> block?.forEach { process(surroundingGenerators, it) } }
 
-            when (statement) {
-                // Exhaust all possibilities to be forced to update this place when changing the Statement class.
-                is Statement.Evaluation -> { }
-                is Statement.VariableDefinition -> { }
-                is Statement.Assignment -> { }
-                is Statement.LoopBreak -> { }
-                is Statement.LoopContinuation -> { }
-                is Statement.FunctionReturn -> { }
-                is Statement.GeneratorYield -> { }
-
-                is Statement.Block -> process(surroundingGenerators, statement.block)
-                is Statement.Conditional -> process(surroundingGenerators, statement.actionWhenTrue, statement.actionWhenFalse)
-                is Statement.Loop -> process(surroundingGenerators, statement.action)
-
-                is Statement.FunctionDefinition -> {
-                    val function = statement.function
-                    val updatedSurroundingGenerators = if (function.isGenerator) surroundingGenerators + listOf(function) else surroundingGenerators
-                    if (function.isGenerator) resultMapping.putIfAbsent(Ref(function), mutableListOf())
-                    process(updatedSurroundingGenerators, function.body)
-                }
-
-                is Statement.ForeachLoop -> {
-                    surroundingGenerators.forEach { resultMapping[Ref(it)]?.add(Ref(statement)) }
-                    process(surroundingGenerators, statement.action)
-                }
+            fun processFunction(surroundingGenerators: List<Function>, function: Function) {
+                val updatedSurroundingGenerators = if (function.isGenerator) surroundingGenerators + listOf(function) else surroundingGenerators
+                if (function.isGenerator) resultMapping.putIfAbsent(Ref(function), mutableListOf())
+                process(updatedSurroundingGenerators, function.body)
             }
-        }
 
-        fun process(global: Program.Global) {
-            when (global) {
+            fun processForEachLoop(surroundingGenerators: List<Function>, foreachLoop: Statement.ForeachLoop) {
+                surroundingGenerators.forEach { resultMapping[Ref(it)]?.add(Ref(foreachLoop)) }
+                process(surroundingGenerators, foreachLoop.action)
+            }
+
+            when (node) {
+                is Program -> { }
+                is Expression -> { }
+                is Variable -> { }
                 is Program.Global.VariableDefinition -> { }
-                is Program.Global.FunctionDefinition -> {
-                    val function = global.function
-                    val updatedSurroundingGenerators = if (function.isGenerator) listOf(function) else listOf()
-                    if (function.isGenerator) resultMapping.putIfAbsent(Ref(function), mutableListOf())
-                    function.body.forEach { process(updatedSurroundingGenerators, it) }
+                is Expression.FunctionCall.Argument -> { }
+                is Function -> { }
+                is Function.Parameter -> { }
+
+                is Program.Global.FunctionDefinition -> processFunction(surroundingGenerators, node.function)
+
+                is Statement -> when (node) {
+                    is Statement.Evaluation -> { }
+                    is Statement.VariableDefinition -> { }
+                    is Statement.Assignment -> { }
+                    is Statement.LoopBreak -> { }
+                    is Statement.LoopContinuation -> { }
+                    is Statement.FunctionReturn -> { }
+                    is Statement.GeneratorYield -> { }
+
+                    is Statement.Block -> process(surroundingGenerators, node.block)
+                    is Statement.Conditional -> process(surroundingGenerators, node.actionWhenTrue, node.actionWhenFalse)
+                    is Statement.Loop -> process(surroundingGenerators, node.action)
+
+                    is Statement.FunctionDefinition -> processFunction(surroundingGenerators, node.function)
+                    is Statement.ForeachLoop -> processForEachLoop(surroundingGenerators, node)
                 }
             }
         }
 
-        ast.globals.forEach { process(it) }
+        ast.globals.forEach { process(listOf(), it) }
 
         return resultMapping
     }

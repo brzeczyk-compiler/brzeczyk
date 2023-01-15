@@ -1,10 +1,15 @@
 package compiler.intermediate
 
+import compiler.ast.Expression
+import compiler.ast.Type
+import compiler.intermediate.generators.ArrayMemoryManagement
 import compiler.utils.Ref
 import compiler.utils.mutableKeyRefMapOf
 import kotlin.test.assertEquals
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
+
+// CFG comparison tools
 
 infix fun ControlFlowGraph.assertHasSameStructureAs(cfg: ControlFlowGraph) {
     val registersMap = mutableKeyRefMapOf<Register, Register>()
@@ -50,6 +55,9 @@ infix fun ControlFlowGraph.assertHasSameStructureAs(cfg: ControlFlowGraph) {
             is IFTNode.MemoryWrite -> {
                 assertEquals(this.address, (iftNode as IFTNode.MemoryWrite).address)
                 this.value assertHasSameStructureAs iftNode.value
+            }
+            is IFTNode.MemoryRead -> {
+                this.address assertHasSameStructureAs (iftNode as IFTNode.MemoryRead).address
             }
             is IFTNode.RegisterWrite -> {
                 registersMap.ensurePairSymmetrical(this.register, (iftNode as IFTNode.RegisterWrite).register)
@@ -119,6 +127,8 @@ infix fun ControlFlowGraph.assertHasSameStructureAs(cfg: ControlFlowGraph) {
         dfs(this.entryTreeRoot!!, cfg.entryTreeRoot!!)
 }
 
+// CFG construction tools
+
 fun IFTNode.toCfg(): ControlFlowGraph =
     ControlFlowGraphBuilder().addSingleTree(this).build()
 
@@ -154,4 +164,21 @@ fun mergeCFGsInLoop(condition: ControlFlowGraph, cfgLoop: ControlFlowGraph, cfgE
             addLink(Pair(it.first, CFGLinkType.UNCONDITIONAL), condition.entryTreeRoot!!)
         }
     }.build()
+}
+
+// dummy ArrayMemoryManagement implementation
+
+fun dummyArrayAddress(id: Int) = IFTNode.Dummy("address of array $id")
+
+class TestArrayMemoryManagement : ArrayMemoryManagement {
+    private var arrayId = 0
+    override fun genAllocation(size: IFTNode, initialization: List<IFTNode>, type: Type, mode: Expression.ArrayAllocation.InitializationType): Pair<ControlFlowGraph, IFTNode> =
+        Pair(
+            IFTNode.DummyArrayAllocation(size, initialization, type, mode).toCfg(),
+            dummyArrayAddress(arrayId++)
+        )
+
+    override fun genRefCountIncrement(address: IFTNode): ControlFlowGraph = IFTNode.DummyArrayRefCountInc(address).toCfg()
+
+    override fun genRefCountDecrement(address: IFTNode, type: Type): ControlFlowGraph = IFTNode.DummyArrayRefCountDec(address, type).toCfg()
 }

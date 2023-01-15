@@ -19,7 +19,7 @@ class ProgramAnalyzer(private val diagnostics: Diagnostics) {
         val defaultParameterMapping: Map<Ref<Function.Parameter>, Variable>,
         val functionReturnedValueVariables: Map<Ref<Function>, Variable>,
         val variableProperties: Map<Ref<AstNode>, VariablePropertiesAnalyzer.VariableProperties>,
-        val generatorProperties: Map<Ref<Function>, List<Ref<Statement.ForeachLoop>>>,
+        val foreachLoopsInGenerators: Map<Ref<Function>, List<Ref<Statement.ForeachLoop>>>,
         val staticDepth: Int,
     )
 
@@ -32,7 +32,7 @@ class ProgramAnalyzer(private val diagnostics: Diagnostics) {
         InitializationVerifier.verifyAccessedVariablesAreInitialized(program, nameResolution, defaultParameterMapping, diagnostics)
         val functionReturnedValueVariables = ReturnValueVariableCreator.createDummyVariablesForFunctionReturnValue(program)
         val variableProperties = VariablePropertiesAnalyzer.calculateVariableProperties(program, nameResolution, defaultParameterMapping, functionReturnedValueVariables, argumentResolution.accessedDefaultValues, diagnostics)
-        val generatorProperties = GeneratorResolver.computeGeneratorProperties(program)
+        val foreachLoopsInGenerators = GeneratorAnalyzer.listForeachLoopsInGenerators(program)
 
         return ProgramProperties(
             nameResolution,
@@ -41,7 +41,7 @@ class ProgramAnalyzer(private val diagnostics: Diagnostics) {
             defaultParameterMapping,
             functionReturnedValueVariables,
             variableProperties,
-            generatorProperties,
+            foreachLoopsInGenerators,
             nameResolutionResult.programStaticDepth,
         )
     }

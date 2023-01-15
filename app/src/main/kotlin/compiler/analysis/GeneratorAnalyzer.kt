@@ -9,8 +9,8 @@ import compiler.ast.Variable
 import compiler.utils.Ref
 import compiler.utils.mutableKeyRefMapOf
 
-object GeneratorResolver {
-    fun computeGeneratorProperties(ast: Program): Map<Ref<Function>, List<Ref<Statement.ForeachLoop>>> {
+object GeneratorAnalyzer {
+    fun listForeachLoopsInGenerators(ast: Program): Map<Ref<Function>, List<Ref<Statement.ForeachLoop>>> {
 
         val resultMapping: MutableMap<Ref<Function>, MutableList<Ref<Statement.ForeachLoop>>> = mutableKeyRefMapOf()
 

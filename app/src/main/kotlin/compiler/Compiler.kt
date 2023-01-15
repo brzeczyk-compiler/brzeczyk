@@ -67,7 +67,7 @@ class Compiler(val diagnostics: Diagnostics) {
                 program,
                 programProperties.nameResolution,
                 programProperties.variableProperties,
-                programProperties.generatorProperties,
+                programProperties.foreachLoopsInGenerators,
                 programProperties.functionReturnedValueVariables,
                 diagnostics.hasAnyErrors()
             ) // TODO: it probably shouldn't be FunctionDependenciesAnalyzer responsible for this

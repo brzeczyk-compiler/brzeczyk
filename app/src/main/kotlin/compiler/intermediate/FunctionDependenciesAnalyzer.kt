@@ -89,7 +89,7 @@ object FunctionDependenciesAnalyzer {
         program: Program,
         nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
         variableProperties: Map<Ref<AstNode>, VariablePropertiesAnalyzer.VariableProperties>,
-        generatorProperties: Map<Ref<Function>, List<Ref<Statement.ForeachLoop>>>,
+        foreachLoopsInGenerators: Map<Ref<Function>, List<Ref<Statement.ForeachLoop>>>,
         functionReturnedValueVariables: Map<Ref<Function>, Variable>,
         allowInconsistentNamingErrors: Boolean = false
     ): Pair<Map<Ref<Function>, FunctionDetailsGenerator>, Map<Ref<Function>, GeneratorDetailsGenerator>> {
@@ -140,7 +140,7 @@ object FunctionDependenciesAnalyzer {
                             depth,
                             calculateVariableLocationTypes(),
                             IFTNode.MemoryLabel(DISPLAY_LABEL_IN_MEMORY),
-                            generatorProperties[Ref(function)]!!,
+                            foreachLoopsInGenerators[Ref(function)]!!,
                             getGDGForNestedLoop
                         )
                     }

@@ -119,7 +119,7 @@ class FunctionControlFlowPlannerTest {
         }
 
         override fun hasAnyErrors(): Boolean {
-            throw RuntimeException("This method shouldn't be called")
+            throw NotImplementedError("This method shouldn't be called")
         }
     }
 

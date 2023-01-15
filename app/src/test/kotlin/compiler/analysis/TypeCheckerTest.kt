@@ -1266,7 +1266,7 @@ class TypeCheckerTest {
 
     @Test
     fun `test array allocation has array type`() {
-        val arrayCreation = Expression.ArrayAllocation("x", 5, Expression.NumberLiteral(0))
+        val arrayCreation = Expression.ArrayAllocation(Expression.NumberLiteral(5), Expression.NumberLiteral(0))
         val program = Program(
             listOf(
                 Program.Global.FunctionDefinition(
@@ -1311,7 +1311,7 @@ class TypeCheckerTest {
                 Variable.Kind.VARIABLE,
                 "x",
                 Type.Array(Type.Number),
-                Expression.ArrayAllocation("x", 5, Expression.NumberLiteral(0))
+                Expression.ArrayAllocation(Expression.NumberLiteral(5), Expression.NumberLiteral(0))
             )
         )
 
@@ -1361,7 +1361,7 @@ class TypeCheckerTest {
                 Variable.Kind.VARIABLE,
                 "x",
                 Type.Array(Type.Number),
-                Expression.ArrayAllocation("x", 5, Expression.NumberLiteral(0))
+                Expression.ArrayAllocation(Expression.NumberLiteral(5), Expression.NumberLiteral(0))
             )
         )
 

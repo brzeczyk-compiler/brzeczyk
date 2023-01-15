@@ -35,11 +35,15 @@ sealed class Expression : AstNode {
     ) : Expression()
 
     data class ArrayAllocation(
-        val name: String,
-        val size: Int,
+        val size: Expression,
         val initialization: Expression,
         override val location: LocationRange? = null
-    ) : Expression()
+    ) : Expression() {
+        enum class InitializationType {
+            ONE_VALUE,
+            ALL_VALUES
+        }
+    }
 
     data class FunctionCall(
         val name: String,

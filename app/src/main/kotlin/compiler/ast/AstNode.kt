@@ -25,7 +25,7 @@ sealed interface AstNode {
                     is Expression.Variable -> this.name
                     is Expression.ArrayElement -> "${this.expression}[${this.index}]"
                     is Expression.ArrayLength -> "długość ${this.expression}"
-                    is Expression.ArrayAllocation -> "alokacja ${this.name}[${this.size}]{${this.initialization} }}"
+                    is Expression.ArrayAllocation -> "alokacja [${this.size}]{${this.initialization}}}"
                 }
 
                 is Variable -> "${this.kind} ${this.name}: ${this.type}${if (this.value != null) "= ${this.value.toSimpleString()}" else ""}"

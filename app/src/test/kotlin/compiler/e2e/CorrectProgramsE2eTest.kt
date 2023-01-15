@@ -1,5 +1,6 @@
 package compiler.e2e
 
+import org.junit.Ignore
 import kotlin.test.Test
 
 class CorrectProgramsE2eTest {
@@ -247,6 +248,79 @@ class CorrectProgramsE2eTest {
             }
             """,
             compiler.diagnostics.Diagnostic.ParserError::class,
+        )
+    }
+
+    @Ignore
+    @Test
+    fun `test arrays list initialization`() {
+        // TODO: unignore when arrays are implemented
+        E2eTestUtils.assertProgramCorrect(
+            """
+            czynność główna() {
+                zm x: [Liczba] = alokacja [Liczba]{1,2,4,8,16} 
+                
+                x[2] = 13
+                
+                napisz(długość x) // 5
+                napisz(x[0]) // 1
+                napisz(x[2]) // 13
+                napisz(x[3]) // 8
+            }   
+            """
+        )
+    }
+
+    @Ignore
+    @Test
+    fun `test arrays default value initialization`() {
+        // TODO: unignore when arrays are implemented
+        E2eTestUtils.assertProgramCorrect(
+            """
+            czynność główna() {
+                zm x: [Liczba] = alokacja [Liczba][11](1) 
+                zm y: [Liczba] = x
+                
+                x[3] = 4
+                x[2] = y[3]
+                
+                napisz(długość x) // 11
+                napisz(długość y) // 11
+                napisz(x[0]) // 1
+                napisz(y[10]) // 1
+                napisz(x[2]) // 4
+            }   
+            """
+        )
+    }
+
+    @Ignore
+    @Test
+    fun `test arrays`() {
+        // TODO: unignore when arrays are implemented
+        E2eTestUtils.assertProgramCorrect(
+            """
+            czynność jedynki(n: Liczba) -> [Liczba] {
+                zwróć alokacja Liczba[n](1)
+            }
+            czynność główna() {
+                zm x: [[Liczba]] = alokacja [Liczba] {
+                    alokacja Liczba[3](0),
+                    alokacja Liczba{1, 2},
+                    alokacja Liczba{3, 4, 5, 6}
+                }
+                
+                zm y: [Liczba] = x[0]
+                y[1] = 17
+                
+                napisz(długość x) // 3
+                napisz(długość x[2]) // 4
+                napisz(x[0][1]) // 17
+                napisz(x[2][x[1][0]]) // 4
+                napisz(długość jedynki(3)) // 3
+                napisz(jedynki(2)[1]) // 1
+            }   
+            """
         )
     }
 }

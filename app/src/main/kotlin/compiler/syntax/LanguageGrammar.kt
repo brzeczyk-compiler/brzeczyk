@@ -19,6 +19,7 @@ object LanguageGrammar {
         val program = getProduction("PROGRAM", "({nFUNC_DEF}|(({nVAR_DECL}|{nFOREIGN_DECL})({tNEWLINE}|{tSEMICOLON}))|{tNEWLINE})*")
 
         val type = getProduction("TYPE", "{tTYPE_INTEGER}|{tTYPE_BOOLEAN}|{tTYPE_UNIT}")
+        val tableType = getProduction("TYPE", "{tLEFT_BRACKET}$NLS{nTYPE}$NLS{tRIGHT_BRACKET}")
         val const = getProduction("CONST", "{tINTEGER}|{tTRUE_CONSTANT}|{tFALSE_CONSTANT}|{tUNIT_CONSTANT}")
 
         val varDecl = getProduction("VAR_DECL", "({tVARIABLE}|{tVALUE}|{tCONSTANT})$NLS{tIDENTIFIER}$NLS{tCOLON}$NLS{nTYPE}({tASSIGNMENT}$NLS{nEXPR})?")
@@ -32,10 +33,16 @@ object LanguageGrammar {
         val callArgs2 = getProduction("CALL_ARGS", "{nE_EXPR}{tASSIGNMENT}$NLS{nE_EXPR}({tCOMMA}$NLS{nE_EXPR}{tASSIGNMENT}$NLS{nE_EXPR})*")
 
         // expressions
-        val expr2048Parenthesis = getProduction("EXPR2048", "{tLEFT_PAREN}$NLS{nE_EXPR}{tRIGHT_PAREN}")
-        val expr2048Const = getProduction("EXPR2048", "{nCONST}")
-        val expr2048Identifier = getProduction("EXPR2048", "{tIDENTIFIER}")
-        val expr2048Call = getProduction("EXPR2048", "{tIDENTIFIER}{tLEFT_PAREN}$NLS{nCALL_ARGS}{tRIGHT_PAREN}")
+        val expr4096Parenthesis = getProduction("EXPR4096", "{tLEFT_PAREN}$NLS{nE_EXPR}{tRIGHT_PAREN}")
+        val expr4096Const = getProduction("EXPR4096", "{nCONST}")
+        val expr4096Identifier = getProduction("EXPR4096", "{tIDENTIFIER}")
+        val expr4096Call = getProduction("EXPR4096", "{tIDENTIFIER}{tLEFT_PAREN}$NLS{nCALL_ARGS}{tRIGHT_PAREN}")
+        val expr4096ArrayDefaultAllocation = getProduction("EXPR4096", "{tALLOCATE}{nTYPE}{tLEFT_BRACKET}$NLS{nE_EXPR}{tRIGHT_BRACKET}{tLEFT_PAREN}$NLS{nE_EXPR}{tRIGHT_PAREN}")
+        val expr4096ArrayListAllocation = getProduction("EXPR4096", "{tALLOCATE}{nTYPE}{tLEFT_BRACE}$NLS{nE_EXPR}({tCOMMA}$NLS{nE_EXPR})*{tRIGHT_BRACE}")
+
+        val expr2048PassThrough = getProduction("EXPR2048", "{nEXPR4096}")
+        val expr2048ArrayAccess = getProduction("EXPR2048", "{nEXPR4096}{tLEFT_BRACKET}$NLS{nE_EXPR}{tRIGHT_BRACKET}({tLEFT_BRACKET}$NLS{nE_EXPR}{tRIGHT_BRACKET})*")
+        val expr2048ArrayLength = getProduction("EXPR2048", "{tLENGTH}$NLS{nEXPR2048}")
         val expr2048UnaryPlus = getProduction("EXPR2048", "{tPLUS}$NLS{nEXPR2048}")
         val expr2048UnaryMinus = getProduction("EXPR2048", "{tMINUS}$NLS{nEXPR2048}")
         val expr2048UnaryBoolNot = getProduction("EXPR2048", "{tNOT}$NLS{nEXPR2048}")
@@ -85,10 +92,16 @@ object LanguageGrammar {
         val exprTernary = getProduction("EXPR", "{nEXPR2}{tQUESTION_MARK}$NLS{nEXPR2}$NLS{tCOLON}$NLS{nEXPR}")
 
         // enclosed expressions
-        val eExpr2048Parenthesis = getProduction("E_EXPR2048", "{tLEFT_PAREN}$NLS{nE_EXPR}{tRIGHT_PAREN}$NLS")
-        val eExpr2048Const = getProduction("E_EXPR2048", "{nCONST}$NLS")
-        val eExpr2048Identifier = getProduction("E_EXPR2048", "{tIDENTIFIER}$NLS")
-        val eExpr2048Call = getProduction("E_EXPR2048", "{tIDENTIFIER}$NLS{tLEFT_PAREN}$NLS{nCALL_ARGS}{tRIGHT_PAREN}$NLS")
+        val eExpr4096Parenthesis = getProduction("E_EXPR4096", "{tLEFT_PAREN}$NLS{nE_EXPR}{tRIGHT_PAREN}$NLS")
+        val eExpr4096Const = getProduction("E_EXPR4096", "{nCONST}$NLS")
+        val eExpr4096Identifier = getProduction("E_EXPR4096", "{tIDENTIFIER}$NLS")
+        val eExpr4096Call = getProduction("E_EXPR4096", "{tIDENTIFIER}$NLS{tLEFT_PAREN}$NLS{nCALL_ARGS}{tRIGHT_PAREN}$NLS")
+        val eExpr4096ArrayDefaultAllocation = getProduction("E_EXPR4096", "{tALLOCATE}{nTYPE}{tLEFT_BRACKET}$NLS{nE_EXPR}{tRIGHT_BRACKET}{tLEFT_PAREN}$NLS{nE_EXPR}{tRIGHT_PAREN}$NLS")
+        val eExpr4096ArrayListAllocation = getProduction("E_EXPR4096", "{tALLOCATE}{nTYPE}{tLEFT_BRACE}$NLS{nE_EXPR}({tCOMMA}$NLS{nE_EXPR})*{tRIGHT_BRACE}$NLS")
+
+        val eExpr2048PassThrough = getProduction("E_EXPR2048", "{nE_EXPR4096}")
+        val eExpr2048ArrayAccess = getProduction("E_EXPR2048", "{nE_EXPR4096}{tLEFT_BRACKET}$NLS{nE_EXPR}{tRIGHT_BRACKET}({tLEFT_BRACKET}$NLS{nE_EXPR}{tRIGHT_BRACKET})*$NLS")
+        val eExpr2048ArrayLength = getProduction("E_EXPR2048", "{tLENGTH}$NLS{nE_EXPR2048}")
         val eExpr2048UnaryPlus = getProduction("E_EXPR2048", "{tPLUS}$NLS{nE_EXPR2048}")
         val eExpr2048UnaryMinus = getProduction("E_EXPR2048", "{tMINUS}$NLS{nE_EXPR2048}")
         val eExpr2048UnaryBoolNot = getProduction("E_EXPR2048", "{tNOT}$NLS{nE_EXPR2048}")
@@ -173,12 +186,12 @@ object LanguageGrammar {
         internal fun getList(): List<Production<Symbol>> {
             return listOf(
                 program,
-                type, const,
+                type, tableType, const,
                 varDecl, funcDef, foreignDecl,
                 defArgs1, defArgs2, defArg, callArgs1, callArgs2,
 
-                expr2048Parenthesis, expr2048Const, expr2048Identifier, expr2048Call,
-                expr2048UnaryPlus, expr2048UnaryMinus, expr2048UnaryBoolNot, expr2048UnaryBitNot,
+                expr4096Parenthesis, expr4096Const, expr4096Identifier, expr4096Call, expr4096ArrayDefaultAllocation, expr4096ArrayListAllocation,
+                expr2048PassThrough, expr2048ArrayLength, expr2048ArrayAccess, expr2048UnaryPlus, expr2048UnaryMinus, expr2048UnaryBoolNot, expr2048UnaryBitNot,
                 expr1024PassThrough, expr1024Multiply, expr1024Divide, expr1024Modulo,
                 expr512PassThrough, expr512Plus, expr512Minus,
                 expr256PassThrough, expr256ShiftLeft, expr256ShiftRight,
@@ -191,8 +204,8 @@ object LanguageGrammar {
                 expr2PassThrough, expr2BoolOr,
                 exprPassThrough, exprTernary,
 
-                eExpr2048Parenthesis, eExpr2048Const, eExpr2048Identifier, eExpr2048Call,
-                eExpr2048UnaryPlus, eExpr2048UnaryMinus, eExpr2048UnaryBoolNot, eExpr2048UnaryBitNot,
+                eExpr4096Parenthesis, eExpr4096Const, eExpr4096Identifier, eExpr4096Call, eExpr4096ArrayDefaultAllocation, eExpr4096ArrayListAllocation,
+                eExpr2048PassThrough, eExpr2048ArrayLength, eExpr2048ArrayAccess, eExpr2048UnaryPlus, eExpr2048UnaryMinus, eExpr2048UnaryBoolNot, eExpr2048UnaryBitNot,
                 eExpr1024PassThrough, eExpr1024Multiply, eExpr1024Divide, eExpr1024Modulo,
                 eExpr512PassThrough, eExpr512Plus, eExpr512Minus,
                 eExpr256PassThrough, eExpr256ShiftLeft, eExpr256ShiftRight,

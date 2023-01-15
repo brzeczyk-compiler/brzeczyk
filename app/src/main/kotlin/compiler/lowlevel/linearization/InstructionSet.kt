@@ -283,7 +283,7 @@ object InstructionSet {
                 listOf(
                     Instruction.InPlaceInstruction.TestRR(inRegisters[0], inRegisters[0]), //       TEST reg0, reg0
                     if (args["invert"] as Boolean)
-                        Instruction.ConditionalJumpInstruction.JmpNZ(args["target"] as String) //    JNZ   target        ; inverted
+                        Instruction.ConditionalJumpInstruction.JmpNZ(args["target"] as String) //    JNZ   target        ; inverted,  but we have negation, so this cancels out
                     else
                         Instruction.ConditionalJumpInstruction.JmpZ(args["target"] as String) //   JZ  target
                 )
@@ -351,7 +351,7 @@ object InstructionSet {
                 listOf(
                     Instruction.InPlaceInstruction.CmpRR(inRegisters[0], inRegisters[1]), //        CMP  reg0, reg1
                     if (args["invert"] as Boolean)
-                        Instruction.ConditionalJumpInstruction.JmpEq(args["target"] as String) //   JE  target         ; inverted, but we have negation, so this cancels out
+                        Instruction.ConditionalJumpInstruction.JmpEq(args["target"] as String) //   JE  target         ; inverted
                     else
                         Instruction.ConditionalJumpInstruction.JmpNEq(args["target"] as String) //  JNE   target
                 )

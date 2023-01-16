@@ -213,7 +213,7 @@ class DefaultGeneratorDetailsGenerator(
     private val innerFDG = DefaultFunctionDetailsGenerator(
         parameters,
         null,
-        IFTNode.MemoryLabel(""), // doesn't matter, since we never call it
+        resumeLabel,
         depth,
         variablesLocationTypes +
             parameters.associate { Ref(it) to VariableLocationType.MEMORY },

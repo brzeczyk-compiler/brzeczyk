@@ -11,7 +11,7 @@ import compiler.utils.keyRefMapOf
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class GeneratorResolverTest {
+class GeneratorAnalyzerTest {
 
     @Test fun `test generator with no foreach loop inside`() {
         /*
@@ -24,7 +24,7 @@ class GeneratorResolverTest {
         )
 
         val program = Program(globals)
-        val actualMapping = GeneratorResolver.computeGeneratorProperties(program)
+        val actualMapping = GeneratorAnalyzer.listForeachLoopsInGenerators(program)
 
         val expectedMapping = keyRefMapOf(
             testGenerator to listOf<Ref<Statement.ForeachLoop>>(),
@@ -47,7 +47,7 @@ class GeneratorResolverTest {
         )
 
         val program = Program(globals)
-        val actualMapping = GeneratorResolver.computeGeneratorProperties(program)
+        val actualMapping = GeneratorAnalyzer.listForeachLoopsInGenerators(program)
 
         val expectedMapping = keyRefMapOf(
             testGenerator to listOf<Ref<Statement.ForeachLoop>>(),
@@ -70,7 +70,7 @@ class GeneratorResolverTest {
         )
 
         val program = Program(globals)
-        val actualMapping = GeneratorResolver.computeGeneratorProperties(program)
+        val actualMapping = GeneratorAnalyzer.listForeachLoopsInGenerators(program)
 
         val expectedMapping = keyRefMapOf(
             testGenerator to listOf<Ref<Statement.ForeachLoop>>(),
@@ -107,7 +107,7 @@ class GeneratorResolverTest {
         )
 
         val program = Program(globals)
-        val actualMapping = GeneratorResolver.computeGeneratorProperties(program)
+        val actualMapping = GeneratorAnalyzer.listForeachLoopsInGenerators(program)
 
         val expectedMapping = keyRefMapOf(
             generator to listOf(),
@@ -150,7 +150,7 @@ class GeneratorResolverTest {
         )
 
         val program = Program(globals)
-        val actualMapping = GeneratorResolver.computeGeneratorProperties(program)
+        val actualMapping = GeneratorAnalyzer.listForeachLoopsInGenerators(program)
 
         val expectedMapping = keyRefMapOf(
             generator to listOf(),
@@ -214,7 +214,7 @@ class GeneratorResolverTest {
         )
 
         val program = Program(globals)
-        val actualMapping = GeneratorResolver.computeGeneratorProperties(program)
+        val actualMapping = GeneratorAnalyzer.listForeachLoopsInGenerators(program)
 
         val expectedMapping = keyRefMapOf(
             generator to listOf(),

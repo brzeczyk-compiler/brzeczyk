@@ -1,4 +1,3 @@
-// INTEGRATION TESTS IGNORE
 przekaźnik g2() -> Liczba {
     napisz(1)
     przekaż 1

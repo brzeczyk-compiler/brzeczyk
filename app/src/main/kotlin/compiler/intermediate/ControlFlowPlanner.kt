@@ -32,7 +32,7 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
         programProperties: ProgramAnalyzer.ProgramProperties,
         functionDetailsGenerators: Map<Ref<Function>, FunctionDetailsGenerator>,
         generatorDetailsGenerators: Map<Ref<Function>, GeneratorDetailsGenerator>
-    ): Map<Ref<Function>, ControlFlowGraph> {
+    ): List<Pair<Ref<Function>, ControlFlowGraph>> {
         val globalVariableAccessGenerator = GlobalVariableAccessGenerator(programProperties.variableProperties)
         val callGraph = createCallGraph(program, programProperties.nameResolution)
 
@@ -63,7 +63,7 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
         fun getGeneratorDetailsGenerator(generator: Function) =
             generatorDetailsGenerators[Ref(generator)]!!
 
-        val cfgForEachFunction = createGraphsForFunctions(
+        return createGraphsForFunctions(
             program,
             ::partiallyAppliedCreateGraphForExpression,
             programProperties.nameResolution,
@@ -72,14 +72,6 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
             ::createWriteToVariable,
             ::getGeneratorDetailsGenerator
         )
-
-        return cfgForEachFunction.mapValues { (function, bodyCFG) ->
-            attachPrologueAndEpilogue(
-                bodyCFG,
-                functionDetailsGenerators[function]!!.genPrologue(),
-                functionDetailsGenerators[function]!!.genEpilogue()
-            )
-        } // TODO: add initialization and finalization of generators
     }
 
     fun attachPrologueAndEpilogue(body: ControlFlowGraph, prologue: ControlFlowGraph, epilogue: ControlFlowGraph): ControlFlowGraph {
@@ -386,8 +378,8 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
         functionReturnedValueVariables: Map<Ref<Function>, Variable>,
         createWriteToVariable: (IFTNode, Variable, Function) -> IFTNode,
         getGeneratorDetailsGenerator: (Function) -> GeneratorDetailsGenerator
-    ): Map<Ref<Function>, ControlFlowGraph> {
-        val controlFlowGraphs = mutableKeyRefMapOf<Function, ControlFlowGraph>()
+    ): List<Pair<Ref<Function>, ControlFlowGraph>> {
+        val controlFlowGraphs = mutableListOf<Pair<Ref<Function>, ControlFlowGraph>>()
 
         fun processFunction(function: Function) {
             val cfgBuilder = ControlFlowGraphBuilder()
@@ -598,7 +590,7 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
 
             processStatementBlock(function.body)
 
-            controlFlowGraphs[Ref(function)] = cfgBuilder.build()
+            controlFlowGraphs.add(Pair(Ref(function), cfgBuilder.build()))
         }
 
         program.globals

@@ -31,7 +31,7 @@ object AstFactory {
     }
 
     private fun skipPassThroughExpressions(parseTree: ParseTree.Branch<Symbol>): ParseTree.Branch<Symbol> {
-        return if (parseTree.nonTerm() in listOf(NonTerminalType.EXPR2048, NonTerminalType.E_EXPR2048) || parseTree.children.size > 1)
+        return if (parseTree.nonTerm() in listOf(NonTerminalType.EXPR4096, NonTerminalType.E_EXPR4096) || parseTree.children.size > 1)
             parseTree
         else
             skipPassThroughExpressions(parseTree.children.first() as ParseTree.Branch)
@@ -39,7 +39,7 @@ object AstFactory {
 
     private fun extractIdentifier(parseTree: ParseTree.Branch<Symbol>, diagnostics: Diagnostics): String {
         val properNode = skipPassThroughExpressions(parseTree)
-        if (properNode.production !in listOf(Productions.expr2048Identifier, Productions.eExpr2048Identifier)) {
+        if (properNode.production !in listOf(Productions.expr4096Identifier, Productions.eExpr4096Identifier)) {
             diagnostics.report(
                 Diagnostic.ParserError.UnexpectedToken(
                     properNode.symbol,
@@ -50,6 +50,23 @@ object AstFactory {
             throw AstCreationFailed()
         }
         return (properNode.children.first() as ParseTree.Leaf).content
+    }
+
+    private fun extractLValue(parseTree: ParseTree.Branch<Symbol>, diagnostics: Diagnostics): Statement.Assignment.LValue {
+        return when (val expr = processExpression(parseTree, diagnostics)) {
+            is Expression.Variable -> Statement.Assignment.LValue.Variable(expr.name)
+            is Expression.ArrayElement -> Statement.Assignment.LValue.ArrayElement(expr.expression, expr.index)
+            else -> {
+                diagnostics.report(
+                    Diagnostic.ParserError.UnexpectedToken(
+                        parseTree.symbol,
+                        parseTree.location,
+                        listOf(Symbol.Terminal(TokenType.IDENTIFIER)),
+                    )
+                )
+                throw AstCreationFailed()
+            }
+        }
     }
 
     private val identifierRegexDfa = RegexDfa(TokenRegexParser.parseStringToRegex("""\l[\l\u\d_]*"""))
@@ -108,6 +125,9 @@ object AstFactory {
             TokenType.TYPE_INTEGER -> Type.Number
             TokenType.TYPE_BOOLEAN -> Type.Boolean
             TokenType.TYPE_UNIT -> Type.Unit
+            TokenType.LEFT_BRACKET -> Type.Array(
+                processType(parseTree.children[1])
+            )
             else -> throw IllegalArgumentException()
         }
     }
@@ -294,17 +314,46 @@ object AstFactory {
                 val subExpr = processExpression(children[1], diagnostics)
                 Expression.UnaryOperation(unaryOperations.getValue(properNode.production), subExpr, combineLocations(children))
             }
-            in listOf(Productions.expr2048Call, Productions.eExpr2048Call) -> {
+            in listOf(Productions.expr4096Call, Productions.eExpr4096Call) -> {
                 val name = (children[0] as ParseTree.Leaf).content
                 val args = processFunctionCallArguments(children[2], diagnostics)
                 Expression.FunctionCall(name, args, combineLocations(children))
             }
-            in listOf(Productions.expr2048Identifier, Productions.eExpr2048Identifier) ->
+            in listOf(Productions.expr4096Identifier, Productions.eExpr4096Identifier) ->
                 Expression.Variable((children[0] as ParseTree.Leaf).content, combineLocations(children))
-            in listOf(Productions.expr2048Const, Productions.eExpr2048Const) ->
+            in listOf(Productions.expr4096Const, Productions.eExpr4096Const) ->
                 processConst(children[0], diagnostics)
-            in listOf(Productions.expr2048Parenthesis, Productions.eExpr2048Parenthesis) ->
+            in listOf(Productions.expr4096Parenthesis, Productions.eExpr4096Parenthesis) ->
                 processExpression(children[1], diagnostics)
+            in listOf(Productions.expr2048ArrayAccess, Productions.eExpr2048ArrayAccess) -> {
+                var expr = processExpression(children[0], diagnostics)
+                var i = 2
+                while (i < children.size) {
+                    val index = processExpression(children[i], diagnostics)
+                    expr = Expression.ArrayElement(expr, index, combineLocations(children.subList(0, i + 2)))
+                    i += 3
+                }
+                return expr
+            }
+            in listOf(Productions.expr2048ArrayLength, Productions.eExpr2048ArrayLength) ->
+                Expression.ArrayLength(processExpression(children[1], diagnostics), combineLocations(children))
+            in listOf(Productions.expr4096ArrayListAllocation, Productions.eExpr4096ArrayListAllocation) -> {
+                val type = processType(children[1])
+                val expressions = mutableListOf<Expression>()
+                var i = 3
+                while (i < children.size) {
+                    expressions.add(processExpression(children[i], diagnostics))
+                    i += 2
+                }
+                val size = Expression.NumberLiteral(expressions.size.toLong())
+                Expression.ArrayAllocation(type, size, expressions, Expression.ArrayAllocation.InitializationType.ALL_VALUES, combineLocations(children))
+            }
+            in listOf(Productions.expr4096ArrayDefaultAllocation, Productions.eExpr4096ArrayDefaultAllocation) -> {
+                val type = processType(children[1])
+                val size = processExpression(children[3], diagnostics)
+                val defaultValue = processExpression(children[6], diagnostics)
+                Expression.ArrayAllocation(type, size, listOf(defaultValue), Expression.ArrayAllocation.InitializationType.ONE_VALUE, combineLocations(children))
+            }
             else -> throw IllegalArgumentException()
         }
     }
@@ -389,9 +438,9 @@ object AstFactory {
             Productions.atomicExpr ->
                 Statement.Evaluation(processExpression(children[0], diagnostics), combineLocations(children))
             Productions.atomicAssignment -> {
-                val lhsName = extractIdentifier(children[0] as ParseTree.Branch, diagnostics)
+                val lhsLValue = extractLValue(children[0] as ParseTree.Branch, diagnostics)
                 val rhsExpr = processExpression(children[2], diagnostics)
-                Statement.Assignment(Statement.Assignment.LValue.Variable(lhsName), rhsExpr, combineLocations(children))
+                Statement.Assignment(lhsLValue, rhsExpr, combineLocations(children))
             }
             Productions.atomicBreak ->
                 Statement.LoopBreak(combineLocations(children))

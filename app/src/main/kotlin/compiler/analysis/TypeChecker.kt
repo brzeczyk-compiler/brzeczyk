@@ -80,16 +80,25 @@ class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
                     is Statement.FunctionDefinition -> checkFunction(statement.function, false)
 
                     is Statement.Assignment -> {
-                        when (val node = nameResolution[Ref(statement)]!!.value) {
-                            is Variable -> {
-                                if (node.kind != Variable.Kind.VARIABLE)
-                                    report(TypeCheckingError.ImmutableAssignment(statement, node))
-                                checkExpression(statement.value, node.type)
+                        when (statement.lvalue) {
+                            is Statement.Assignment.LValue.Variable -> {
+                                when (val node = nameResolution[Ref(statement)]!!.value) {
+                                    is Variable -> {
+                                        if (node.kind != Variable.Kind.VARIABLE)
+                                            report(TypeCheckingError.ImmutableAssignment(statement, node))
+                                        checkExpression(statement.value, node.type)
+                                    }
+
+                                    is Function.Parameter -> report(TypeCheckingError.ParameterAssignment(statement, node))
+
+                                    is Function -> report(TypeCheckingError.FunctionAssignment(statement, node))
+                                }
                             }
-
-                            is Function.Parameter -> report(TypeCheckingError.ParameterAssignment(statement, node))
-
-                            is Function -> report(TypeCheckingError.FunctionAssignment(statement, node))
+                            is Statement.Assignment.LValue.ArrayElement -> {
+                                val assignedExpression = checkExpression(statement.value)!!
+                                checkExpression(statement.lvalue.expression, Type.Array(assignedExpression))
+                                checkExpression(statement.lvalue.index, Type.Number)
+                            }
                         }
                     }
 
@@ -173,9 +182,33 @@ class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
                         is Function -> report(TypeCheckingError.FunctionAsValue(expression, node))
                     }
                 }
-                is Expression.ArrayElement -> TODO()
-                is Expression.ArrayLength -> TODO()
-                is Expression.ArrayAllocation -> TODO()
+
+                is Expression.ArrayElement -> {
+                    val innerExpressionType = checkExpression(expression.expression) ?: return null // if null then something must've gone bad in the recursion
+
+                    if (innerExpressionType is Type.Array) {
+                        checkExpression(expression.index, Type.Number)
+                        return innerExpressionType.elementType
+                    }
+
+                    report(TypeCheckingError.AccessFromNonArrayType(expression.expression, innerExpressionType))
+                }
+
+                is Expression.ArrayLength -> {
+                    val innerExpressionType = checkExpression(expression.expression) ?: return null
+
+                    if (innerExpressionType is Type.Array)
+                        return Type.Number
+
+                    report(TypeCheckingError.LengthOfNonArrayType(expression.expression, innerExpressionType))
+                }
+
+                is Expression.ArrayAllocation -> {
+                    for (element in expression.initialization) {
+                        checkExpression(element, expression.elementType)
+                    }
+                    return Type.Array(expression.elementType)
+                }
 
                 is Expression.FunctionCall -> {
                     when (val node = nameResolution[Ref(expression)]!!.value) {
@@ -283,6 +316,9 @@ class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
 
                 is Expression.NumberLiteral -> return Type.Number
 
+                is Expression.ArrayElement,
+                is Expression.ArrayLength,
+                is Expression.ArrayAllocation,
                 is Expression.Variable,
                 is Expression.FunctionCall,
                 is Expression.UnaryOperation,
@@ -292,9 +328,6 @@ class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
                     // in case of change, update Expression.getValueOfLiteral as well
                     report(TypeCheckingError.NonConstantExpression(expression))
                 }
-                is Expression.ArrayElement -> TODO()
-                is Expression.ArrayLength -> TODO()
-                is Expression.ArrayAllocation -> TODO()
             }
 
             return null

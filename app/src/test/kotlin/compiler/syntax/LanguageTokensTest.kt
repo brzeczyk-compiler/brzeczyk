@@ -47,6 +47,8 @@ class LanguageTokensTest {
         assertEquals(firstMatch(tokens, "prawda"), TokenType.TRUE_CONSTANT)
         assertEquals(firstMatch(tokens, "fałsz"), TokenType.FALSE_CONSTANT)
         assertEquals(firstMatch(tokens, "nic"), TokenType.UNIT_CONSTANT)
+        assertEquals(firstMatch(tokens, "długość"), TokenType.LENGTH)
+        assertEquals(firstMatch(tokens, "ciąg"), TokenType.ARRAY_ALLOCATION)
     }
 
     @Test fun `test special symbols`() {
@@ -54,6 +56,8 @@ class LanguageTokensTest {
         assertEquals(firstMatch(tokens, ")"), TokenType.RIGHT_PAREN)
         assertEquals(firstMatch(tokens, "{"), TokenType.LEFT_BRACE)
         assertEquals(firstMatch(tokens, "}"), TokenType.RIGHT_BRACE)
+        assertEquals(firstMatch(tokens, "["), TokenType.LEFT_BRACKET)
+        assertEquals(firstMatch(tokens, "]"), TokenType.RIGHT_BRACKET)
         assertEquals(firstMatch(tokens, ":"), TokenType.COLON)
         assertEquals(firstMatch(tokens, ","), TokenType.COMMA)
         assertEquals(firstMatch(tokens, "->"), TokenType.ARROW)

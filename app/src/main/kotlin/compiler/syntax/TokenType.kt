@@ -1,9 +1,10 @@
 package compiler.syntax
 
 enum class TokenType {
-    // Parenthesis and braces
+    // Parenthesis, braces and brackets
     LEFT_PAREN, RIGHT_PAREN,
     LEFT_BRACE, RIGHT_BRACE,
+    LEFT_BRACKET, RIGHT_BRACKET,
     // Variable types
     VARIABLE, VALUE, CONSTANT,
     // Control flow
@@ -11,6 +12,8 @@ enum class TokenType {
     WHILE, BREAK, CONTINUE,
     // Function related keywords
     RETURN, RETURN_UNIT, FUNCTION, FOREIGN1, FOREIGN2, AS,
+    // Array related keyword
+    LENGTH, ARRAY_ALLOCATION,
     // Generators related keywords
     GENERATOR, YIELD, FOR_EACH, FROM,
     // Special characters

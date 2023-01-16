@@ -204,6 +204,7 @@ class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
                 }
 
                 is Expression.ArrayAllocation -> {
+                    checkExpression(expression.size, Type.Number)
                     for (element in expression.initialization) {
                         checkExpression(element, expression.elementType)
                     }

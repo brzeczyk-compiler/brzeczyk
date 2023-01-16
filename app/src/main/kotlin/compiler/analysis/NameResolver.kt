@@ -276,6 +276,7 @@ object NameResolver {
                 }
 
                 is Expression.ArrayAllocation -> {
+                    analyzeNode(node.size, currentScope)
                     node.initialization.forEach { analyzeNode(it, currentScope) }
                 }
 

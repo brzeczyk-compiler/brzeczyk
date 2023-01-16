@@ -22,6 +22,9 @@ object E2eTestUtils {
 
     fun <T : Diagnostic> assertProgramGeneratesDiagnostics(program: String, diagnostics: List<Diagnostic>, diagnosticType: KClass<T>) {
         val actualDiagnostics = runProgram(program)
+        actualDiagnostics.toList().forEach {
+            println(it.message)
+        }
         assertEquals(diagnostics.toList(), actualDiagnostics.filter { diagnosticType.isInstance(it) }.toList())
     }
 

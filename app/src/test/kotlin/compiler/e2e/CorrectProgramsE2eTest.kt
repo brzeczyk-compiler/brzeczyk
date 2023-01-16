@@ -258,7 +258,7 @@ class CorrectProgramsE2eTest {
         E2eTestUtils.assertProgramCorrect(
             """
             czynność główna() {
-                zm x: [Liczba] = ciąg [Liczba]{1,2,4,8,16} 
+                zm x: [Liczba] = ciąg Liczba{1,2,4,8,16} 
                 
                 x[2] = 13
                 
@@ -278,7 +278,7 @@ class CorrectProgramsE2eTest {
         E2eTestUtils.assertProgramCorrect(
             """
             czynność główna() {
-                zm x: [Liczba] = ciąg [Liczba][11](1) 
+                zm x: [Liczba] = ciąg Liczba[11](1) 
                 zm y: [Liczba] = x
                 
                 x[3] = 4

@@ -302,7 +302,8 @@ object NameResolver {
                             }
                         }
                         is Statement.Assignment.LValue.ArrayElement -> {
-                            // There's no way to resolve name for an arbitrary expression
+                            analyzeNode(node.lvalue.expression, currentScope)
+                            analyzeNode(node.lvalue.index, currentScope)
                             analyzeNode(node.value, currentScope)
                         }
                     }

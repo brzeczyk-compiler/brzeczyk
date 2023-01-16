@@ -80,16 +80,30 @@ class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
                     is Statement.FunctionDefinition -> checkFunction(statement.function, false)
 
                     is Statement.Assignment -> {
-                        when (val node = nameResolution[Ref(statement)]!!.value) {
-                            is Variable -> {
-                                if (node.kind != Variable.Kind.VARIABLE)
-                                    report(TypeCheckingError.ImmutableAssignment(statement, node))
-                                checkExpression(statement.value, node.type)
+                        when (statement.lvalue) {
+                            is Statement.Assignment.LValue.Variable -> {
+                                when (val node = nameResolution[Ref(statement)]!!.value) {
+                                    is Variable -> {
+                                        if (node.kind != Variable.Kind.VARIABLE)
+                                            report(TypeCheckingError.ImmutableAssignment(statement, node))
+                                        checkExpression(statement.value, node.type)
+                                    }
+
+                                    is Function.Parameter -> report(TypeCheckingError.ParameterAssignment(statement, node))
+
+                                    is Function -> report(TypeCheckingError.FunctionAssignment(statement, node))
+                                }
                             }
-
-                            is Function.Parameter -> report(TypeCheckingError.ParameterAssignment(statement, node))
-
-                            is Function -> report(TypeCheckingError.FunctionAssignment(statement, node))
+                            is Statement.Assignment.LValue.ArrayElement -> {
+                                checkExpression(statement.lvalue.expression)?.let { innerExpressionType ->
+                                    if (innerExpressionType is Type.Array) {
+                                        checkExpression(statement.lvalue.index, Type.Number)
+                                        checkExpression(statement.value, innerExpressionType.elementType)
+                                    } else {
+                                        report(TypeCheckingError.AccessFromNonArrayType(statement.lvalue.expression, innerExpressionType))
+                                    }
+                                }
+                            }
                         }
                     }
 

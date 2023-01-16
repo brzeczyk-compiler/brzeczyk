@@ -27,7 +27,7 @@ void* _$checked_malloc(size_t size) {
     return address;
 }
 
-void _$populate_dynamic_array(uint64_t* address, uint64_t value, int64_t should_increment_elements) {
+void _$populate_dynamic_array(uint64_t* address, uint64_t value, int64_t should_increment_refcount) {
     if (address == 0)
         return;
 
@@ -36,7 +36,7 @@ void _$populate_dynamic_array(uint64_t* address, uint64_t value, int64_t should_
 
     for (uint64_t i = 0; i<length; i++) {
         address[i] = value;
-        if (should_increment_elements) ++(*valueRefCount);
+        if (should_increment_refcount) ++(*valueRefCount);
     }
 }
 

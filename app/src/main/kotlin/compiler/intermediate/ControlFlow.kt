@@ -234,10 +234,9 @@ object ControlFlow {
 
         gatherVariableUsageInfo(expression, refSetOf()).let {
             if (target is AssignmentTarget.ArrayElementTarget)
-                gatherVariableUsageInfo(
-                    target.element.expression,
-                    gatherVariableUsageInfo(target.element.index, it)
-                )
+                gatherVariableUsageInfo(target.element.index, it).let {
+                    gatherVariableUsageInfo(target.element.expression, it)
+                }
         }
 
         // second stage is to actually produce CFG
@@ -443,8 +442,7 @@ object ControlFlow {
                     val arrayRegister = Register()
                     cfgBuilder.addNextTree(IFTNode.RegisterWrite(arrayRegister, makeCFGForSubtree(astNode.expression)))
                     val index = makeCFGForSubtree(astNode.index)
-                    val elementAddress =
-                        IFTNode.Add(IFTNode.RegisterRead(arrayRegister), IFTNode.Multiply(index, IFTNode.Const(memoryUnitSize.toLong())))
+                    val elementAddress = IFTNode.Add(IFTNode.RegisterRead(arrayRegister), IFTNode.Multiply(index, IFTNode.Const(memoryUnitSize.toLong())))
                     val reg = Register()
                     cfgBuilder.addNextTree(
                         IFTNode.RegisterWrite(

@@ -685,8 +685,8 @@ class ExpressionControlFlowTest {
         val context = ExpressionContext(setOf("a"))
         val init = Expression.ArrayAllocation("", 5.toLiteral(), listOf(6.toLiteral()), Expression.ArrayAllocation.InitializationType.ONE_VALUE)
         val type = Type.Array(Type.Number)
-        val cfgAssign = context.createCfg(init, "a" asVarIn context, expressionTypes = mapOf(Ref(init) to type))
-        val cfgNotAssign = context.createCfg(init, expressionTypes = mapOf(Ref(init) to type))
+        val cfgAssign = context.createCfg(init, "a" asVarIn context, expressionTypes = mapOf(Ref(init) to type)) // a = new int[5](6)
+        val cfgNotAssign = context.createCfg(init, expressionTypes = mapOf(Ref(init) to type)) // new int[5](6)
         val address = dummyArrayAddress(0)
 
         cfgAssign assertHasSameStructureAs (
@@ -711,8 +711,8 @@ class ExpressionControlFlowTest {
             Ref(alloc1 as Expression) to type1,
             Ref(alloc2 as Expression) to type2
         )
-        val cfgAssign = context.createCfg(alloc2, "a" asVarIn context, expressionTypes = expressionTypes)
-        val cfgNotAssign = context.createCfg(alloc2, expressionTypes = expressionTypes)
+        val cfgAssign = context.createCfg(alloc2, "a" asVarIn context, expressionTypes = expressionTypes) // a = new array<int>[1](new int[1](1))
+        val cfgNotAssign = context.createCfg(alloc2, expressionTypes = expressionTypes) // new array<int>[1](new int[1](1))
         val address0 = dummyArrayAddress(0)
         val address1 = dummyArrayAddress(1)
 
@@ -738,8 +738,8 @@ class ExpressionControlFlowTest {
         val type = Type.Array(Type.Number)
         val getElement = Expression.ArrayElement(init, 3.toLiteral())
         val getLength = Expression.ArrayLength(init)
-        val cfgElement = context.createCfg(getElement, expressionTypes = mapOf(Ref(init) to type))
-        val cfgLength = context.createCfg(getLength, expressionTypes = mapOf(Ref(init) to type))
+        val cfgElement = context.createCfg(getElement, expressionTypes = mapOf(Ref(init) to type)) // (new int[5](6))[3]
+        val cfgLength = context.createCfg(getLength, expressionTypes = mapOf(Ref(init) to type)) // length(new int[5](6))
         val address = dummyArrayAddress(0)
         val resultRegister = Register()
         val arrayTempRegister = Register()

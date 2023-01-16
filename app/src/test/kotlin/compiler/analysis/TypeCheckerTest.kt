@@ -1628,10 +1628,67 @@ class TypeCheckerTest {
             TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
         }
 
-        println(diagnosticsList[0].message)
-
         assertEquals(
             listOf<Diagnostic>(TypeCheckingError.InvalidType(badArrayAccess.index, Type.Boolean, Type.Number)),
+            diagnosticsList
+        )
+    }
+
+    // czynność f() {
+    //     zm x: [Czy] = ciąg Czy[2](prawda)
+    //     x[1] = 17
+    // }
+    @Test
+    fun `test assignment to array element with incorrect type fails`() {
+        val xDef = Statement.VariableDefinition(
+            Variable(
+                Variable.Kind.VARIABLE,
+                "x",
+                Type.Array(Type.Boolean),
+                Expression.ArrayAllocation(
+                    Type.Boolean,
+                    Expression.NumberLiteral(2),
+                    listOf(Expression.BooleanLiteral(true)),
+                    Expression.ArrayAllocation.InitializationType.ONE_VALUE,
+                )
+            )
+        )
+        val xRef = Expression.Variable("x")
+
+        val badArrayElementAssignment = Statement.Assignment(
+            Statement.Assignment.LValue.ArrayElement(xRef, Expression.NumberLiteral(1)),
+            Expression.NumberLiteral(17)
+        )
+
+        val program = Program(
+            listOf(
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "f",
+                        listOf(),
+                        Type.Unit,
+                        listOf(
+                            xDef,
+                            badArrayElementAssignment
+                        )
+                    )
+                )
+            )
+        )
+
+        nameResolution[Ref(xRef)] = Ref(xDef.variable)
+
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
+        }
+
+        assertEquals(
+            listOf<Diagnostic>(
+                TypeCheckingError.InvalidType(
+                    xRef, Type.Array(Type.Boolean),
+                    Type.Array(Type.Number)
+                )
+            ),
             diagnosticsList
         )
     }

@@ -95,14 +95,9 @@ class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
                                 }
                             }
                             is Statement.Assignment.LValue.ArrayElement -> {
-                                checkExpression(statement.lvalue.expression)?.let { innerExpressionType ->
-                                    if (innerExpressionType is Type.Array) {
-                                        checkExpression(statement.lvalue.index, Type.Number)
-                                        checkExpression(statement.value, innerExpressionType.elementType)
-                                    } else {
-                                        report(TypeCheckingError.AccessFromNonArrayType(statement.lvalue.expression, innerExpressionType))
-                                    }
-                                }
+                                val assignedExpression = checkExpression(statement.value)!!
+                                checkExpression(statement.lvalue.expression, Type.Array(assignedExpression))
+                                checkExpression(statement.lvalue.index, Type.Number)
                             }
                         }
                     }

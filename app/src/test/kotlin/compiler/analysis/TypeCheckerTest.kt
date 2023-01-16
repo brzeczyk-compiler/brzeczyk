@@ -1261,7 +1261,7 @@ class TypeCheckerTest {
     }
 
     // czynność f() -> Nic {
-    //     zm x: [Liczba] = Liczba[5](0)
+    //     zm x: [Liczba] = ciąg Liczba[5](0)
     // }
 
     @Test
@@ -1301,9 +1301,9 @@ class TypeCheckerTest {
     }
 
     // czynność f() {
-    //     zm x: [[Czy]] = alokacja [Czy] {
-    //         alokacja Czy[3](fałsz),
-    //         alokacja Czy[3](prawda),
+    //     zm x: [[Czy]] = ciąg [Czy] {
+    //         ciąg Czy[3](fałsz),
+    //         ciąg Czy[3](prawda),
     //     }
     // }
 
@@ -1357,7 +1357,7 @@ class TypeCheckerTest {
     }
 
     // czynność f() {
-    //     zm x: [Liczba] = Liczba[5](0)
+    //     zm x: [Liczba] = ciąg Liczba[5](0)
     //     zm y: Liczba = x[1]
     // }
 
@@ -1413,7 +1413,7 @@ class TypeCheckerTest {
     }
 
     // czynność f() {
-    //     zm x: [Liczba] = Liczba[5](0)
+    //     zm x: [Liczba] = ciąg Liczba[5](0)
     //     zm y: Liczba = długość x
     // }
 
@@ -1574,7 +1574,7 @@ class TypeCheckerTest {
     }
 
     // czynność f() {
-    //     zm x: [Czy] = Czy[2](prawda)
+    //     zm x: [Czy] = ciąg Czy[2](prawda)
     //     zm y: Czy = x[fałsz]
     // }
 

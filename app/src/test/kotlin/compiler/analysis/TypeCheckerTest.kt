@@ -1259,4 +1259,380 @@ class TypeCheckerTest {
 
         assertEquals(listOf<Diagnostic>(TypeCheckingError.YieldInNonGeneratorFunction(generatorYield)), diagnosticsList)
     }
+
+    // czynność f() -> Nic {
+    //     zm x: [Liczba] = ciąg Liczba[5](0)
+    // }
+
+    @Test
+    fun `test array allocation has array type`() {
+        val arrayCreation = Expression.ArrayAllocation(
+            Type.Number,
+            Expression.NumberLiteral(5),
+            listOf(Expression.NumberLiteral(0)),
+            Expression.ArrayAllocation.InitializationType.ONE_VALUE,
+        )
+
+        val program = Program(
+            listOf(
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "f",
+                        listOf(),
+                        Type.Unit,
+                        listOf(
+                            Statement.VariableDefinition(
+                                Variable(
+                                    Variable.Kind.VARIABLE,
+                                    "x",
+                                    Type.Array(Type.Number),
+                                    arrayCreation
+                                )
+                            )
+                        ),
+                    )
+                )
+            )
+        )
+
+        val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
+
+        assertEquals(Type.Array(Type.Number), types[Ref(arrayCreation)])
+    }
+
+    // czynność f() {
+    //     zm x: [[Czy]] = ciąg [Czy] {
+    //         ciąg Czy[3](fałsz),
+    //         ciąg Czy[3](prawda),
+    //     }
+    // }
+
+    @Test
+    fun `test array of arrays has a correct type`() {
+        val arrayCreation = Expression.ArrayAllocation(
+            Type.Array(Type.Boolean),
+            Expression.NumberLiteral(2),
+            listOf(
+                Expression.ArrayAllocation(
+                    Type.Boolean,
+                    Expression.NumberLiteral(1),
+                    listOf(Expression.BooleanLiteral(false)),
+                    Expression.ArrayAllocation.InitializationType.ONE_VALUE
+                ),
+                Expression.ArrayAllocation(
+                    Type.Boolean,
+                    Expression.NumberLiteral(1),
+                    listOf(Expression.BooleanLiteral(true)),
+                    Expression.ArrayAllocation.InitializationType.ONE_VALUE
+                )
+            ),
+            Expression.ArrayAllocation.InitializationType.ALL_VALUES,
+        )
+
+        val program = Program(
+            listOf(
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "f",
+                        listOf(),
+                        Type.Unit,
+                        listOf(
+                            Statement.VariableDefinition(
+                                Variable(
+                                    Variable.Kind.VARIABLE,
+                                    "x",
+                                    Type.Array(Type.Array(Type.Boolean)),
+                                    arrayCreation
+                                )
+                            )
+                        ),
+                    )
+                )
+            )
+        )
+
+        val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
+
+        assertEquals(Type.Array(Type.Array(Type.Boolean)), types[Ref(arrayCreation)])
+    }
+
+    // czynność f() {
+    //     zm x: [Liczba] = ciąg Liczba[5](0)
+    //     zm y: Liczba = x[1]
+    // }
+
+    @Test
+    fun `test array element has correct type`() {
+        val arrayElement = Expression.ArrayElement(
+            Expression.Variable("x"),
+            Expression.NumberLiteral(1)
+        )
+
+        val xDef = Statement.VariableDefinition(
+            Variable(
+                Variable.Kind.VARIABLE,
+                "x",
+                Type.Array(Type.Number),
+                Expression.ArrayAllocation(
+                    Type.Number,
+                    Expression.NumberLiteral(5),
+                    listOf(Expression.NumberLiteral(0)),
+                    Expression.ArrayAllocation.InitializationType.ONE_VALUE,
+                )
+            )
+        )
+
+        val program = Program(
+            listOf(
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "f",
+                        listOf(),
+                        Type.Unit,
+                        listOf(
+                            xDef,
+                            Statement.VariableDefinition(
+                                Variable(
+                                    Variable.Kind.VARIABLE,
+                                    "y",
+                                    Type.Number,
+                                    arrayElement
+                                )
+                            )
+                        ),
+                    )
+                )
+            )
+        )
+
+        nameResolution[Ref(arrayElement.expression)] = Ref(xDef.variable)
+
+        val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
+
+        assertEquals(Type.Number, types[Ref(arrayElement)])
+    }
+
+    // czynność f() {
+    //     zm x: [Liczba] = ciąg Liczba[5](0)
+    //     zm y: Liczba = długość x
+    // }
+
+    @Test
+    fun `test array length has Number type`() {
+        val arrayLength = Expression.ArrayLength(
+            Expression.Variable("x"),
+        )
+
+        val xDef = Statement.VariableDefinition(
+            Variable(
+                Variable.Kind.VARIABLE,
+                "x",
+                Type.Array(Type.Number),
+                Expression.ArrayAllocation(
+                    Type.Number,
+                    Expression.NumberLiteral(5),
+                    listOf(Expression.NumberLiteral(0)),
+                    Expression.ArrayAllocation.InitializationType.ONE_VALUE,
+                )
+            )
+        )
+
+        val program = Program(
+            listOf(
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "f",
+                        listOf(),
+                        Type.Unit,
+                        listOf(
+                            xDef,
+                            Statement.VariableDefinition(
+                                Variable(
+                                    Variable.Kind.VARIABLE,
+                                    "y",
+                                    Type.Number,
+                                    arrayLength
+                                )
+                            )
+                        ),
+                    )
+                )
+            )
+        )
+
+        nameResolution[Ref(arrayLength.expression)] = Ref(xDef.variable)
+
+        val types = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
+
+        assertEquals(Type.Number, types[Ref(arrayLength)])
+    }
+
+    // czynność f() -> Nic {
+    //     zm x: Czy = fałsz
+    //     zm y: Czy = x[0]
+    // }
+
+    @Test
+    fun `test extraction from non-array type fails`() {
+        val xDef = Statement.VariableDefinition(
+            Variable(
+                Variable.Kind.VARIABLE,
+                "x",
+                Type.Boolean,
+                Expression.BooleanLiteral(false)
+            )
+        )
+
+        val arrayElement = Expression.ArrayElement(Expression.Variable("x"), Expression.NumberLiteral(0))
+
+        val program = Program(
+            listOf(
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "f",
+                        listOf(),
+                        Type.Unit,
+                        listOf(
+                            xDef,
+                            Statement.VariableDefinition(
+                                Variable(
+                                    Variable.Kind.VARIABLE,
+                                    "y",
+                                    Type.Boolean,
+                                    arrayElement,
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
+
+        nameResolution[Ref(arrayElement.expression)] = Ref(xDef.variable)
+
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
+        }
+
+        assertEquals(
+            listOf<Diagnostic>(TypeCheckingError.AccessFromNonArrayType(arrayElement.expression, Type.Boolean)),
+            diagnosticsList
+        )
+    }
+
+    // czynność f() -> Nic {
+    //     zm x: Czy = fałsz
+    //     zm y: Liczba = długość x
+    // }
+
+    @Test
+    fun `test taking length of non-array type fails`() {
+        val xDef = Statement.VariableDefinition(
+            Variable(
+                Variable.Kind.VARIABLE,
+                "x",
+                Type.Boolean,
+                Expression.BooleanLiteral(false)
+            )
+        )
+
+        val lengthOfX = Expression.ArrayLength(Expression.Variable("x"))
+
+        val program = Program(
+            listOf(
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "f",
+                        listOf(),
+                        Type.Unit,
+                        listOf(
+                            xDef,
+                            Statement.VariableDefinition(
+                                Variable(
+                                    Variable.Kind.VARIABLE,
+                                    "y",
+                                    Type.Boolean,
+                                    lengthOfX
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
+
+        nameResolution[Ref(lengthOfX.expression)] = Ref(xDef.variable)
+
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
+        }
+
+        assertEquals(
+            listOf<Diagnostic>(TypeCheckingError.LengthOfNonArrayType(lengthOfX.expression, Type.Boolean)),
+            diagnosticsList
+        )
+    }
+
+    // czynność f() {
+    //     zm x: [Czy] = ciąg Czy[2](prawda)
+    //     zm y: Czy = x[fałsz]
+    // }
+
+    @Test
+    fun `test accessing array element with non-Number index fails`() {
+        val xDef = Statement.VariableDefinition(
+            Variable(
+                Variable.Kind.VARIABLE,
+                "x",
+                Type.Array(Type.Boolean),
+                Expression.ArrayAllocation(
+                    Type.Boolean,
+                    Expression.NumberLiteral(2),
+                    listOf(Expression.BooleanLiteral(true)),
+                    Expression.ArrayAllocation.InitializationType.ONE_VALUE,
+                )
+            )
+        )
+
+        val badArrayAccess = Expression.ArrayElement(
+            Expression.Variable("x"),
+            Expression.BooleanLiteral(false),
+        )
+
+        val program = Program(
+            listOf(
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "f",
+                        listOf(),
+                        Type.Unit,
+                        listOf(
+                            xDef,
+                            Statement.VariableDefinition(
+                                Variable(
+                                    Variable.Kind.VARIABLE,
+                                    "y",
+                                    Type.Boolean,
+                                    badArrayAccess,
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
+
+        nameResolution[Ref(badArrayAccess.expression)] = Ref(xDef.variable)
+
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
+        }
+
+        println(diagnosticsList[0].message)
+
+        assertEquals(
+            listOf<Diagnostic>(TypeCheckingError.InvalidType(badArrayAccess.index, Type.Boolean, Type.Number)),
+            diagnosticsList
+        )
+    }
 }

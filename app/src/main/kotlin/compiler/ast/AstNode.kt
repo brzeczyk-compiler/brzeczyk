@@ -28,7 +28,7 @@ sealed interface AstNode {
                     is Expression.ArrayAllocation -> {
                         var arrayValues = this.initialization.joinToString { it.toSimpleString() }
                         if (this.initializationType == Expression.ArrayAllocation.InitializationType.ONE_VALUE) arrayValues += "..."
-                        "ciąg ${this.type}[${this.size.toSimpleString()}]{ $arrayValues }"
+                        "ciąg ${this.elementType}[${this.size.toSimpleString()}]{ $arrayValues }"
                     }
                 }
 

@@ -265,9 +265,19 @@ object NameResolver {
                     analyzeNode(node.resultWhenTrue, currentScope)
                     analyzeNode(node.resultWhenFalse, currentScope)
                 }
-                is Expression.ArrayElement -> TODO()
-                is Expression.ArrayLength -> TODO()
-                is Expression.ArrayAllocation -> TODO()
+
+                is Expression.ArrayElement -> {
+                    analyzeNode(node.index, currentScope)
+                    analyzeNode(node.expression, currentScope)
+                }
+
+                is Expression.ArrayLength -> {
+                    analyzeNode(node.expression, currentScope)
+                }
+
+                is Expression.ArrayAllocation -> {
+                    node.initialization.forEach { analyzeNode(it, currentScope) }
+                }
 
                 // Statements
 
@@ -291,7 +301,10 @@ object NameResolver {
                                 analyzeNode(node.value, currentScope)
                             }
                         }
-                        is Statement.Assignment.LValue.ArrayElement -> TODO()
+                        is Statement.Assignment.LValue.ArrayElement -> {
+                            // There's no way to resolve name for an arbitrary expression
+                            analyzeNode(node.value, currentScope)
+                        }
                     }
                 }
 

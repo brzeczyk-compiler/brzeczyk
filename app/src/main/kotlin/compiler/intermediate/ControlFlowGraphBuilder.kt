@@ -66,8 +66,8 @@ class ControlFlowGraphBuilder(@JvmField var entryTreeRoot: IFTNode? = null) {
             setEntryTreeRoot(to)
     }
 
-    fun addAllFrom(cfg: ControlFlowGraph) {
-        if (entryTreeRoot == null)
+    fun addAllFrom(cfg: ControlFlowGraph, setEntryPoint: Boolean = true): ControlFlowGraphBuilder {
+        if (entryTreeRoot == null && setEntryPoint)
             entryTreeRoot = cfg.entryTreeRoot
         for (treeRoot in cfg.treeRoots) {
             if (Ref(treeRoot) !in treeRootsSet) {
@@ -79,6 +79,7 @@ class ControlFlowGraphBuilder(@JvmField var entryTreeRoot: IFTNode? = null) {
         unconditionalLinks.putAll(cfg.unconditionalLinks)
         conditionalTrueLinks.putAll(cfg.conditionalTrueLinks)
         conditionalFalseLinks.putAll(cfg.conditionalFalseLinks)
+        return this
     }
 
     fun mergeUnconditionally(cfg: ControlFlowGraph): ControlFlowGraphBuilder {

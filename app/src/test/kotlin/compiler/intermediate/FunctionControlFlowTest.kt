@@ -14,7 +14,6 @@ import compiler.diagnostics.Diagnostics
 import compiler.intermediate.generators.FunctionDetailsGenerator
 import compiler.intermediate.generators.GeneratorDetailsGenerator
 import compiler.utils.Ref
-import compiler.utils.keyRefMapOf
 import compiler.utils.mutableKeyRefMapOf
 import compiler.utils.mutableRefMapOf
 import compiler.utils.refMapOf
@@ -36,12 +35,25 @@ class FunctionControlFlowTest {
         return node
     }
 
-    private fun getExpressionCFG(expression: Expression, variable: Variable?, function: Function, accessNodeConsumer: ((ControlFlowGraph, IFTNode) -> Unit)?): ControlFlowGraph {
-        val node = expressionNodes[Ref(expression)]?.get(Ref(variable))
-        val nodeList = node?.let { listOf(it.value) } ?: emptyList()
-        return ControlFlowGraph(nodeList, node?.value, refMapOf(), refMapOf(), refMapOf()).also {
-            if (accessNodeConsumer != null) {
-                accessNodeConsumer(it, expressionAccessNodes[Ref(expression)]!![Ref(variable)]!!.value)
+    private fun getExpressionCFG(
+        expression: Expression,
+        target: ControlFlow.AssignmentTarget?,
+        function: Function,
+        accessNodeConsumer: ((ControlFlowGraph, IFTNode) -> Unit)?
+    ): ControlFlowGraph {
+        return when (target) {
+            is ControlFlow.AssignmentTarget.VariableTarget? -> {
+                val node = expressionNodes[Ref(expression)]?.get(Ref(target?.variable))
+                val nodeList = node?.let { listOf(it.value) } ?: emptyList()
+                ControlFlowGraph(nodeList, node?.value, refMapOf(), refMapOf(), refMapOf()).also {
+                    if (accessNodeConsumer != null) {
+                        accessNodeConsumer(it, expressionAccessNodes[Ref(expression)]!![Ref(target?.variable)]!!.value)
+                    }
+                }
+            }
+
+            else -> {
+                ControlFlowGraphBuilder().build()
             }
         }
     }
@@ -52,17 +64,26 @@ class FunctionControlFlowTest {
             override fun genInitCall(args: List<IFTNode>): FunctionDetailsGenerator.FunctionCallIntermediateForm {
                 val generatorId = IFTNode.DummyCallResult()
                 return FunctionDetailsGenerator.FunctionCallIntermediateForm(
-                    IFTNode.DummyCall(it.copy(name = it.name + "_init"), args, generatorId, IFTNode.DummyCallResult()).toCfg(),
+                    IFTNode.DummyCall(it.copy(name = it.name + "_init"), args, generatorId, IFTNode.DummyCallResult())
+                        .toCfg(),
                     generatorId,
                     null
                 )
             }
 
-            override fun genResumeCall(framePointer: IFTNode, savedState: IFTNode): FunctionDetailsGenerator.FunctionCallIntermediateForm {
+            override fun genResumeCall(
+                framePointer: IFTNode,
+                savedState: IFTNode
+            ): FunctionDetailsGenerator.FunctionCallIntermediateForm {
                 val nextValue = IFTNode.DummyCallResult()
                 val nextState = IFTNode.DummyCallResult()
                 return FunctionDetailsGenerator.FunctionCallIntermediateForm(
-                    IFTNode.DummyCall(it.copy(name = it.name + "_resume"), listOf(framePointer, savedState), nextValue, nextState).toCfg(),
+                    IFTNode.DummyCall(
+                        it.copy(name = it.name + "_resume"),
+                        listOf(framePointer, savedState),
+                        nextValue,
+                        nextState
+                    ).toCfg(),
                     nextValue,
                     nextState
                 )
@@ -70,7 +91,12 @@ class FunctionControlFlowTest {
 
             override fun genFinalizeCall(framePointer: IFTNode): FunctionDetailsGenerator.FunctionCallIntermediateForm {
                 return FunctionDetailsGenerator.FunctionCallIntermediateForm(
-                    IFTNode.DummyCall(it.copy(name = it.name + "_finalize"), listOf(framePointer), IFTNode.DummyCallResult(), IFTNode.DummyCallResult()).toCfg(),
+                    IFTNode.DummyCall(
+                        it.copy(name = it.name + "_finalize"),
+                        listOf(framePointer),
+                        IFTNode.DummyCallResult(),
+                        IFTNode.DummyCallResult()
+                    ).toCfg(),
                     null,
                     null
                 )
@@ -85,11 +111,22 @@ class FunctionControlFlowTest {
             }
 
             override fun genYield(value: IFTNode): ControlFlowGraph {
-                return IFTNode.DummyCall(it.copy(name = it.name + "_yield"), listOf(value), IFTNode.DummyCallResult(), IFTNode.DummyCallResult()).toCfg()
+                return IFTNode.DummyCall(
+                    it.copy(name = it.name + "_yield"),
+                    listOf(value),
+                    IFTNode.DummyCallResult(),
+                    IFTNode.DummyCallResult()
+                ).toCfg()
             }
 
             override fun getNestedForeachFramePointerAddress(foreachLoop: Statement.ForeachLoop): IFTNode? {
-                return if (genForeachFramePointerAddress) IFTNode.Dummy(listOf("foreach frame pointer address", it, foreachLoop)) else null
+                return if (genForeachFramePointerAddress) IFTNode.Dummy(
+                    listOf(
+                        "foreach frame pointer address",
+                        it,
+                        foreachLoop
+                    )
+                ) else null
             }
 
             override fun genFinalize(): ControlFlowGraph {
@@ -128,9 +165,13 @@ class FunctionControlFlowTest {
                 throw RuntimeException("This method shouldn't be called")
             }
         },
+        { variable, _ -> IFTNode.MemoryRead(IFTNode.MemoryLabel(variable.name)) },
         { node, variable, _ -> IFTNode.MemoryWrite(IFTNode.MemoryLabel(variable.name), node) },
-        dummyGeneratorDetailsGenerator
+        dummyGeneratorDetailsGenerator,
+        TestArrayMemoryManagement()
     )
+
+    private val mainNoOpNode = IFTNode.NoOp()
 
     // czynność f() { }
 
@@ -141,8 +182,8 @@ class FunctionControlFlowTest {
 
         val result = test(program)
 
-        val cfg = ControlFlowGraph(listOf(), null, refMapOf(), refMapOf(), refMapOf())
-        assertEquals(keyRefMapOf(function to cfg), result)
+        val cfg = ControlFlowGraph(listOf(mainNoOpNode), mainNoOpNode, refMapOf(), refMapOf(), refMapOf())
+        cfg assertHasSameStructureAs result[Ref(function)]!!
     }
 
     // czynność f() { 123 }
@@ -158,8 +199,8 @@ class FunctionControlFlowTest {
 
         val result = test(program)
 
-        val cfg = ControlFlowGraph(listOf(node), node, refMapOf(), refMapOf(), refMapOf())
-        assertEquals(keyRefMapOf(function to cfg), result)
+        val cfg = ControlFlowGraph(listOf(mainNoOpNode, node), node, refMapOf(), refMapOf(), refMapOf())
+        cfg assertHasSameStructureAs result[Ref(function)]!!
     }
 
     // czynność f() {
@@ -182,14 +223,14 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2),
+            listOf(mainNoOpNode, node1, node2),
             node1,
             refMapOf(node1 to node2),
             refMapOf(),
             refMapOf()
         )
 
-        assertEquals(keyRefMapOf(function to cfg), result)
+        cfg assertHasSameStructureAs result[Ref(function)]!!
     }
 
     // czynność f() { wart x: Liczba = 123 }
@@ -206,8 +247,8 @@ class FunctionControlFlowTest {
 
         val result = test(program)
 
-        val cfg = ControlFlowGraph(listOf(node), node, refMapOf(), refMapOf(), refMapOf())
-        assertEquals(keyRefMapOf(function to cfg), result)
+        val cfg = ControlFlowGraph(listOf(mainNoOpNode, node), node, refMapOf(), refMapOf(), refMapOf())
+        cfg assertHasSameStructureAs result[Ref(function)]!!
     }
 
     // czynność f() {
@@ -229,9 +270,10 @@ class FunctionControlFlowTest {
 
         val result = test(program)
 
-        val cfg = ControlFlowGraph(listOf(node), node, refMapOf(), refMapOf(), refMapOf())
-        val nestedCfg = ControlFlowGraph(listOf(), null, refMapOf(), refMapOf(), refMapOf())
-        assertEquals(keyRefMapOf(function to cfg, nestedFunction to nestedCfg), result)
+        val cfg = ControlFlowGraph(listOf(mainNoOpNode, node), node, refMapOf(), refMapOf(), refMapOf())
+        val nestedCfg = ControlFlowGraph(listOf(mainNoOpNode), mainNoOpNode, refMapOf(), refMapOf(), refMapOf())
+        cfg assertHasSameStructureAs result[Ref(function)]!!
+        nestedCfg assertHasSameStructureAs result[Ref(nestedFunction)]!!
     }
 
     // czynność f() {
@@ -253,8 +295,8 @@ class FunctionControlFlowTest {
 
         val result = test(program)
 
-        val cfg = ControlFlowGraph(listOf(node), node, refMapOf(), refMapOf(), refMapOf())
-        assertEquals(keyRefMapOf(function to cfg), result)
+        val cfg = ControlFlowGraph(listOf(mainNoOpNode, node), node, refMapOf(), refMapOf(), refMapOf())
+        cfg assertHasSameStructureAs result[Ref(function)]!!
     }
 
     // czynność f() { { 123 } }
@@ -271,8 +313,8 @@ class FunctionControlFlowTest {
 
         val result = test(program)
 
-        val cfg = ControlFlowGraph(listOf(node), node, refMapOf(), refMapOf(), refMapOf())
-        assertEquals(keyRefMapOf(function to cfg), result)
+        val cfg = ControlFlowGraph(listOf(mainNoOpNode, node), node, refMapOf(), refMapOf(), refMapOf())
+        cfg assertHasSameStructureAs result[Ref(function)]!!
     }
 
     // czynność f() {
@@ -298,19 +340,19 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2, node3),
+            listOf(mainNoOpNode, node1, node2, node3),
             node1,
             refMapOf(node2 to node3),
             refMapOf(node1 to node2),
             refMapOf(node1 to node3)
         )
 
-        assertEquals(keyRefMapOf(function to cfg), result)
+        cfg assertHasSameStructureAs result[Ref(function)]!!
     }
 
     // czynność f() {
     //     jeśli (prawda) 123
-    //     wpw 456
+    //     wpp 456
     //     789
     // }
 
@@ -335,14 +377,14 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2, node3, node4),
+            listOf(mainNoOpNode, node1, node2, node3, node4),
             node1,
             refMapOf(node2 to node4, node3 to node4),
             refMapOf(node1 to node2),
             refMapOf(node1 to node3)
         )
 
-        assertEquals(keyRefMapOf(function to cfg), result)
+        cfg assertHasSameStructureAs result[Ref(function)]!!
     }
 
     // czynność f() {
@@ -364,18 +406,19 @@ class FunctionControlFlowTest {
         val node1 = addExpressionNode(condition, null)
         val node2 = addExpressionNode(value1, null)
         val node3 = addExpressionNode(value2, null)
+        val loopBreakNode = IFTNode.NoOp()
 
         val result = test(program)
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2, node3),
+            listOf(mainNoOpNode, loopBreakNode, node1, node2, node3),
             node1,
-            refMapOf(node2 to node1),
+            refMapOf(node2 to node1, loopBreakNode to node3),
             refMapOf(node1 to node2),
-            refMapOf(node1 to node3)
+            refMapOf(node1 to loopBreakNode)
         )
 
-        assertEquals(keyRefMapOf(function to cfg), result)
+        cfg assertHasSameStructureAs result[Ref(function)]!!
     }
 
     // czynność f() {
@@ -403,18 +446,19 @@ class FunctionControlFlowTest {
         val node2 = addExpressionNode(condition2, null)
         val node3 = addExpressionNode(value1, null)
         val node4 = addExpressionNode(value2, null)
+        val loopBreakNode = IFTNode.NoOp()
 
         val result = test(program)
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2, node3, node4),
+            listOf(mainNoOpNode, loopBreakNode, node1, node2, node3, node4),
             node1,
-            refMapOf(node3 to node1),
-            refMapOf(node1 to node2, node2 to node4),
-            refMapOf(node1 to node4, node2 to node3)
+            refMapOf(node3 to node1, loopBreakNode to node4),
+            refMapOf(node1 to node2, node2 to loopBreakNode),
+            refMapOf(node1 to loopBreakNode, node2 to node3)
         )
 
-        assertEquals(keyRefMapOf(function to cfg), result)
+        cfg assertHasSameStructureAs result[Ref(function)]!!
     }
 
     // czynność f() {
@@ -442,18 +486,19 @@ class FunctionControlFlowTest {
         val node2 = addExpressionNode(condition2, null)
         val node3 = addExpressionNode(value1, null)
         val node4 = addExpressionNode(value2, null)
+        val loopBreakNode = IFTNode.NoOp()
 
         val result = test(program)
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2, node3, node4),
+            listOf(mainNoOpNode, loopBreakNode, node1, node2, node3, node4),
             node1,
-            refMapOf(node3 to node1),
+            refMapOf(node3 to node1, loopBreakNode to node4),
             refMapOf(node1 to node2, node2 to node1),
-            refMapOf(node1 to node4, node2 to node3)
+            refMapOf(node1 to loopBreakNode, node2 to node3)
         )
 
-        assertEquals(keyRefMapOf(function to cfg), result)
+        cfg assertHasSameStructureAs result[Ref(function)]!!
     }
 
     // czynność f() {
@@ -485,18 +530,19 @@ class FunctionControlFlowTest {
         val node3 = addExpressionNode(condition3, null)
         val node4 = addExpressionNode(value1, null)
         val node5 = addExpressionNode(value2, null)
+        val loopBreakNode = IFTNode.NoOp()
 
         val result = test(program)
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2, node3, node4, node5),
+            listOf(mainNoOpNode, loopBreakNode, node1, node2, node3, node4, node5),
             node1,
-            refMapOf(node4 to node1),
-            refMapOf(node1 to node2, node2 to node5, node3 to node1),
-            refMapOf(node1 to node5, node2 to node3, node3 to node4)
+            refMapOf(node4 to node1, loopBreakNode to node5),
+            refMapOf(node1 to node2, node2 to loopBreakNode, node3 to node1),
+            refMapOf(node1 to loopBreakNode, node2 to node3, node3 to node4)
         )
 
-        assertEquals(keyRefMapOf(function to cfg), result)
+        cfg assertHasSameStructureAs result[Ref(function)]!!
     }
 
     // czynność f() {
@@ -541,18 +587,46 @@ class FunctionControlFlowTest {
         val node6 = addExpressionNode(value1, null)
         val node7 = addExpressionNode(condition6, null)
         val node8 = addExpressionNode(value2, null)
+        val innerLoopBreakNode = IFTNode.NoOp()
+        val outerLoopBreakNode = IFTNode.NoOp()
 
         val result = test(program)
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2, node3, node4, node5, node6, node7, node8),
+            listOf(
+                mainNoOpNode,
+                innerLoopBreakNode,
+                outerLoopBreakNode,
+                node1,
+                node2,
+                node3,
+                node4,
+                node5,
+                node6,
+                node7,
+                node8
+            ),
             node1,
-            refMapOf(node6 to node3),
-            refMapOf(node1 to node2, node2 to node1, node3 to node4, node4 to node3, node5 to node7, node7 to node8),
-            refMapOf(node1 to node8, node2 to node3, node3 to node7, node4 to node5, node5 to node6, node7 to node1)
+            refMapOf(node6 to node3, outerLoopBreakNode to node8, innerLoopBreakNode to node7),
+            refMapOf(
+                node1 to node2,
+                node2 to node1,
+                node3 to node4,
+                node4 to node3,
+                node5 to innerLoopBreakNode,
+                node7 to outerLoopBreakNode
+            ),
+            refMapOf(
+                node1 to outerLoopBreakNode,
+                node2 to node3,
+                node3 to innerLoopBreakNode,
+                node4 to node5,
+                node5 to node6,
+                node7 to node1
+            )
         )
 
-        assertEquals(keyRefMapOf(function to cfg), result)
+        cfg assertHasSameStructureAs result[Ref(function)]!!
     }
 
     // czynność f() {
@@ -576,14 +650,14 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2),
+            listOf(mainNoOpNode, node1, node2),
             node1,
             refMapOf(),
             refMapOf(),
             refMapOf(node1 to node2)
         )
 
-        assertEquals(keyRefMapOf(function to cfg), result)
+        cfg assertHasSameStructureAs result[Ref(function)]!!
     }
 
     // czynność f() { przerwij }
@@ -609,7 +683,10 @@ class FunctionControlFlowTest {
 
         test(program)
 
-        assertEquals(listOf<Diagnostic>(ControlFlowDiagnostic.Errors.ContinuationOutsideOfLoop(loopContinuation)), diagnostics)
+        assertEquals(
+            listOf<Diagnostic>(ControlFlowDiagnostic.Errors.ContinuationOutsideOfLoop(loopContinuation)),
+            diagnostics
+        )
     }
 
     // czynność f() {
@@ -680,10 +757,10 @@ class FunctionControlFlowTest {
         assertEquals(listOf<Diagnostic>(ControlFlowDiagnostic.Warnings.UnreachableStatement(evaluation)), diagnostics)
     }
 
-    //    przekaźnik generator() {}
-    //    f() {
-    //        otrzymując x: Liczba od generator() {123}
-    //    }
+    // przekaźnik generator() {}
+    // f() {
+    //     otrzymując x: Liczba od generator() {123}
+    // }
 
     @Test
     fun `simple foreach`() {
@@ -733,21 +810,42 @@ class FunctionControlFlowTest {
                 merge IFTNode.RegisterWrite(idRegister, generatorId)
                 merge IFTNode.RegisterWrite(stateRegister, IFTNode.Const(0))
                 merge mergeCFGsInLoop(
-                    IFTNode.DummyCall(generatorResume, listOf(idRegisterRead, IFTNode.RegisterRead(stateRegister)), valueResult, stateResult)
+                    IFTNode.DummyCall(
+                        generatorResume,
+                        listOf(idRegisterRead, IFTNode.RegisterRead(stateRegister)),
+                        valueResult,
+                        stateResult
+                    )
                         merge IFTNode.NotEquals(stateResult, IFTNode.Const(0)),
                     IFTNode.RegisterWrite(stateRegister, stateResult)
                         merge IFTNode.MemoryWrite(IFTNode.MemoryLabel(variable.name), valueResult)
                         merge IFTNode.Const(FixedConstant(123)),
-                    IFTNode.DummyCall(generatorFinalize, listOf(idRegisterRead), IFTNode.DummyCallResult(), IFTNode.DummyCallResult()).toCfg()
+                    IFTNode.NoOp()
+                        merge IFTNode.DummyCall(
+                            generatorFinalize,
+                            listOf(idRegisterRead),
+                            IFTNode.DummyCallResult(),
+                            IFTNode.DummyCallResult()
+                        ).toCfg()
                 )
+                merge mainNoOpNode
+                add ( // unreachable return tree
+                    IFTNode.DummyCall(
+                        generatorFinalize,
+                        listOf(idRegisterRead),
+                        IFTNode.DummyCallResult(),
+                        IFTNode.DummyCallResult()
+                    )
+                        merge mainNoOpNode
+                    )
             )
-        resultCfg assertHasSameStructureAs expectedCfg
+        expectedCfg assertHasSameStructureAs resultCfg
     }
 
-    //    przekaźnik generator() {}
-    //    przekaźnik f() {
-    //        otrzymując x: Liczba od generator() {123}
-    //    }
+    // przekaźnik generator() {}
+    // przekaźnik f() {
+    //     otrzymując x: Liczba od generator() {123}
+    // }
 
     @Test
     fun `nested foreach`() {
@@ -799,36 +897,58 @@ class FunctionControlFlowTest {
                 merge IFTNode.MemoryWrite(frameMemoryAddress, generatorId)
                 merge IFTNode.RegisterWrite(stateRegister, IFTNode.Const(0))
                 merge mergeCFGsInLoop(
-                    IFTNode.DummyCall(generatorResume, listOf(idRegisterRead, IFTNode.RegisterRead(stateRegister)), valueResult, stateResult)
+                    IFTNode.DummyCall(
+                        generatorResume,
+                        listOf(idRegisterRead, IFTNode.RegisterRead(stateRegister)),
+                        valueResult,
+                        stateResult
+                    )
                         merge IFTNode.NotEquals(stateResult, IFTNode.Const(0)),
                     IFTNode.RegisterWrite(stateRegister, stateResult)
                         merge IFTNode.MemoryWrite(IFTNode.MemoryLabel(variable.name), valueResult)
                         merge IFTNode.Const(FixedConstant(123)),
-                    IFTNode.DummyCall(generatorFinalize, listOf(idRegisterRead), IFTNode.DummyCallResult(), IFTNode.DummyCallResult())
+                    IFTNode.NoOp()
+                        merge IFTNode.DummyCall(
+                            generatorFinalize,
+                            listOf(idRegisterRead),
+                            IFTNode.DummyCallResult(),
+                            IFTNode.DummyCallResult()
+                        )
                         merge IFTNode.MemoryWrite(frameMemoryAddress, IFTNode.Const(0))
                 )
+                merge mainNoOpNode
+                add ( // unreachable return tree
+                    IFTNode.DummyCall(
+                        generatorFinalize,
+                        listOf(idRegisterRead),
+                        IFTNode.DummyCallResult(),
+                        IFTNode.DummyCallResult()
+                    )
+                        merge IFTNode.MemoryWrite(frameMemoryAddress, IFTNode.Const(0))
+                        merge mainNoOpNode
+                    )
             )
-        resultCfg assertHasSameStructureAs expectedCfg
+        expectedCfg assertHasSameStructureAs resultCfg
     }
 
-    //    przekaźnik generator() {}
-    //    f() {
-    //        otrzymując x: Liczba od generator() {
-    //            jeśli (prawda) {
-    //                123
-    //                przerwij
-    //            }
-    //            wpw {
-    //                jeśli(prawda) {
-    //                    123
-    //                    pomiń
-    //                } wpw {
-    //                    123
-    //                    zwróć
-    //                }
-    //            }
-    //        }
-    //    }
+    // przekaźnik generator() {}
+    // f() {
+    //     otrzymując x: Liczba od generator() {
+    //         jeśli (prawda) {
+    //             123
+    //             przerwij
+    //         }
+    //         wpp {
+    //             jeśli(prawda) {
+    //                 123
+    //                 pomiń
+    //             } wpp {
+    //                 123
+    //                 zwróć
+    //             }
+    //         }
+    //     }
+    // }
 
     @Test
     fun `foreach - break, continue, return`() {
@@ -908,12 +1028,19 @@ class FunctionControlFlowTest {
         val valueResult = IFTNode.DummyCallResult()
         val idRegisterRead = IFTNode.RegisterRead(idRegister)
 
+        val loopBreakNode = IFTNode.NoOp()
+
         val expectedCfg = (
             IFTNode.DummyCall(generatorInit, emptyList(), generatorId, IFTNode.DummyCallResult())
                 merge IFTNode.RegisterWrite(idRegister, generatorId)
                 merge IFTNode.RegisterWrite(stateRegister, IFTNode.Const(0))
                 merge mergeCFGsInLoop(
-                    IFTNode.DummyCall(generatorResume, listOf(idRegisterRead, IFTNode.RegisterRead(stateRegister)), valueResult, stateResult)
+                    IFTNode.DummyCall(
+                        generatorResume,
+                        listOf(idRegisterRead, IFTNode.RegisterRead(stateRegister)),
+                        valueResult,
+                        stateResult
+                    ) // 3
                         merge IFTNode.NotEquals(stateResult, IFTNode.Const(0)),
                     IFTNode.RegisterWrite(stateRegister, stateResult)
                         merge IFTNode.MemoryWrite(IFTNode.MemoryLabel(variable.name), valueResult)
@@ -925,28 +1052,40 @@ class FunctionControlFlowTest {
                                 IFTNode.Const(123).toCfg(),
                                 IFTNode.Const(123)
                                     merge IFTNode.Const(0)
-                                    merge IFTNode.DummyCall(generatorFinalize, listOf(idRegisterRead), IFTNode.DummyCallResult(), IFTNode.DummyCallResult()).toCfg()
+                                    merge IFTNode.DummyCall(
+                                        generatorFinalize,
+                                        listOf(idRegisterRead),
+                                        IFTNode.DummyCallResult(),
+                                        IFTNode.DummyCallResult()
+                                    )
+                                    merge mainNoOpNode
                             )
                         ),
-                    IFTNode.DummyCall(generatorFinalize, listOf(idRegisterRead), IFTNode.DummyCallResult(), IFTNode.DummyCallResult()).toCfg()
+                    loopBreakNode // 15
+                        merge IFTNode.DummyCall(
+                            generatorFinalize,
+                            listOf(idRegisterRead),
+                            IFTNode.DummyCallResult(),
+                            IFTNode.DummyCallResult()
+                        )
                 )
+                merge mainNoOpNode
             ).let {
             val builder = ControlFlowGraphBuilder()
             builder.addAllFrom(it)
-            builder.addLink(Pair(it.treeRoots[8], CFGLinkType.UNCONDITIONAL), it.treeRoots[14]) // break
+            builder.addLink(Pair(it.treeRoots[8], CFGLinkType.UNCONDITIONAL), it.treeRoots[15]) // break
             builder.addLink(Pair(it.treeRoots[10], CFGLinkType.UNCONDITIONAL), it.treeRoots[3]) // continue
             builder.build()
         }
         resultCfg assertHasSameStructureAs expectedCfg
     }
 
-//    przekaźnik generator() {
-//        przekaż 123
-//    }
+    // przekaźnik generator() {
+    //     przekaż 123
+    // }
 
     @Test
     fun `yield test`() {
-
         val value = Expression.NumberLiteral(123)
         expressionAccessNodes[Ref(value)] = mutableMapOf(Ref(null) to Ref(IFTNode.Const(123)))
 
@@ -959,8 +1098,326 @@ class FunctionControlFlowTest {
         )
         val program = Program(listOf(Program.Global.FunctionDefinition(generator)))
         val result = test(program)
-        val resultCfg = result.values.first()
 
-        resultCfg assertHasSameStructureAs IFTNode.DummyCall(generator.copy(name = generator.name + "_yield"), listOf(IFTNode.Const(123)), IFTNode.DummyCallResult()).toCfg()
+        val expectedCFG = IFTNode.DummyCall(
+            generator.copy(name = generator.name + "_yield"),
+            listOf(IFTNode.Const(123)),
+            IFTNode.DummyCallResult()
+        ) merge mainNoOpNode
+        expectedCFG assertHasSameStructureAs result[Ref(generator)]!!
+    }
+
+    // czynność f() {
+    //     wart x: [Liczba]
+    //     123
+    // }
+
+    @Test
+    fun `array variable in main block`() {
+        val variable = Variable(Variable.Kind.VALUE, "x", Type.Array(Type.Number), null)
+        val variableDefinition = Statement.VariableDefinition(variable)
+
+        val valueExpression = Expression.NumberLiteral(123)
+        val valueEvaluation = Statement.Evaluation(valueExpression)
+        val valueNode = addExpressionNode(valueExpression, null)
+
+        val function = Function("f", listOf(), Type.Unit, listOf(variableDefinition, valueEvaluation))
+        val program = Program(listOf(Program.Global.FunctionDefinition(function)))
+
+        val result = test(program)
+
+        val expectedCfg = (
+            IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0))
+                merge valueNode
+                merge IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("x")), Type.Array(Type.Number))
+                merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0))
+                merge mainNoOpNode
+                add ( // unreachable return tree
+                    IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("x")), Type.Array(Type.Number))
+                        merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0))
+                        merge mainNoOpNode
+                    )
+            )
+        expectedCfg assertHasSameStructureAs result[Ref(function)]!!
+    }
+
+    // czynność f() {
+    //     {
+    //         wart x: [Liczba]
+    //     }
+    //     123
+    //     {
+    //         wart y: [Liczba]
+    //     }
+    // }
+
+    @Test
+    fun `array variables in nested blocks`() {
+        val variableX = Variable(Variable.Kind.VALUE, "x", Type.Array(Type.Number), null)
+        val variableXDefinition = Statement.VariableDefinition(variableX)
+        val blockX = Statement.Block(listOf(variableXDefinition))
+
+        val valueExpression = Expression.NumberLiteral(123)
+        val valueEvaluation = Statement.Evaluation(valueExpression)
+        val valueNode = addExpressionNode(valueExpression, null)
+
+        val variableY = Variable(Variable.Kind.VALUE, "y", Type.Array(Type.Number), null)
+        val variableYDefinition = Statement.VariableDefinition(variableY)
+        val blockY = Statement.Block(listOf(variableYDefinition))
+
+        val function = Function("f", listOf(), Type.Unit, listOf(blockX, valueEvaluation, blockY))
+        val program = Program(listOf(Program.Global.FunctionDefinition(function)))
+
+        val result = test(program)
+
+        val expectedCfg = (
+            IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0))
+                merge IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("x")), Type.Array(Type.Number))
+                merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0))
+                merge valueNode
+                merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("y"), IFTNode.Const(0))
+                merge IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("y")), Type.Array(Type.Number))
+                merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("y"), IFTNode.Const(0))
+                merge mainNoOpNode
+                add ( // unreachable return tree - branch from block X
+                    IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("x")), Type.Array(Type.Number))
+                        merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0))
+                        merge mainNoOpNode
+                    )
+                add ( // unreachable return tree - branch from block Y
+                    IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("y")), Type.Array(Type.Number))
+                        merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("y"), IFTNode.Const(0))
+                        merge mainNoOpNode
+                    )
+            )
+        expectedCfg assertHasSameStructureAs result[Ref(function)]!!
+    }
+
+    // czynność f() {
+    //     wart x: [Liczba]
+    //     wart y: [Liczba]
+    //     wart z: [Liczba]
+    //     123
+    // }
+
+    @Test
+    fun `multiple array variables in one block`() {
+        val variableX = Variable(Variable.Kind.VALUE, "x", Type.Array(Type.Number), null)
+        val variableXDefinition = Statement.VariableDefinition(variableX)
+        val variableY = Variable(Variable.Kind.VALUE, "y", Type.Array(Type.Number), null)
+        val variableYDefinition = Statement.VariableDefinition(variableY)
+        val variableZ = Variable(Variable.Kind.VALUE, "z", Type.Array(Type.Number), null)
+        val variableZDefinition = Statement.VariableDefinition(variableZ)
+
+        val valueExpression = Expression.NumberLiteral(123)
+        val valueEvaluation = Statement.Evaluation(valueExpression)
+        val valueNode = addExpressionNode(valueExpression, null)
+
+        val function = Function("f", listOf(), Type.Unit, listOf(variableXDefinition, variableYDefinition, variableZDefinition, valueEvaluation))
+        val program = Program(listOf(Program.Global.FunctionDefinition(function)))
+
+        val result = test(program)
+
+        val expectedCfg = (
+            IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0))
+                merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("y"), IFTNode.Const(0))
+                merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("z"), IFTNode.Const(0))
+                merge valueNode
+                merge IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("z")), Type.Array(Type.Number))
+                merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("z"), IFTNode.Const(0))
+                merge IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("y")), Type.Array(Type.Number))
+                merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("y"), IFTNode.Const(0))
+                merge IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("x")), Type.Array(Type.Number))
+                merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0))
+                merge mainNoOpNode
+                add ( // unreachable return tree
+                    IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("z")), Type.Array(Type.Number))
+                        merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("z"), IFTNode.Const(0))
+                        merge IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("y")), Type.Array(Type.Number))
+                        merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("y"), IFTNode.Const(0))
+                        merge IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("x")), Type.Array(Type.Number))
+                        merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0))
+                        merge mainNoOpNode
+                    )
+            )
+        expectedCfg assertHasSameStructureAs result[Ref(function)]!!
+    }
+
+    // czynność f() {
+    //     dopóki (prawda) {
+    //         wart x: [Liczba]
+    //     }
+    // }
+
+    @Test
+    fun `array variable in loop block`() {
+        val variable = Variable(Variable.Kind.VALUE, "x", Type.Array(Type.Number), null)
+        val variableDefinition = Statement.VariableDefinition(variable)
+
+        val conditionExpression = Expression.BooleanLiteral(true)
+        val conditionNode = addExpressionNode(conditionExpression, null)
+        val loop = Statement.Loop(conditionExpression, listOf(variableDefinition))
+        val function = Function("f", listOf(), Type.Unit, listOf(loop))
+        val program = Program(listOf(Program.Global.FunctionDefinition(function)))
+
+        val loopEndNoOpNode = IFTNode.NoOp()
+
+        val result = test(program)
+
+        val expectedCfg = (
+            mergeCFGsInLoop(
+                conditionNode.toCfg(),
+                IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0))
+                    merge IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("x")), Type.Array(Type.Number))
+                    merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0)),
+                loopEndNoOpNode
+                    merge mainNoOpNode
+            )
+                add ( // unreachable return tree
+                    IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("x")), Type.Array(Type.Number))
+                        merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0))
+                        merge mainNoOpNode
+                    )
+                add ( // unreachable break tree
+                    IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("x")), Type.Array(Type.Number))
+                        merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0))
+                        merge loopEndNoOpNode
+                    )
+                add ( // unreachable continue tree
+                    IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("x")), Type.Array(Type.Number))
+                        merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0))
+                        merge conditionNode
+                    )
+            )
+        expectedCfg assertHasSameStructureAs result[Ref(function)]!!
+    }
+
+    // czynność f() {
+    //     dopóki (prawda) {
+    //         wart x: [Liczba]
+    //         jeśli (prawda)
+    //             przerwij
+    //         wart y: [Liczba]
+    //         jeśli (prawda)
+    //             pomiń
+    //         wart z: [Liczba]
+    //         jeśli (prawda)
+    //             zakończ
+    //         wart t: [Liczba]
+    //     }
+    // }
+
+    @Test
+    fun `array variables in loop with break, continue and return`() {
+        val variableX = Variable(Variable.Kind.VALUE, "x", Type.Array(Type.Number), null)
+        val variableXDefinition = Statement.VariableDefinition(variableX)
+        val variableY = Variable(Variable.Kind.VALUE, "y", Type.Array(Type.Number), null)
+        val variableYDefinition = Statement.VariableDefinition(variableY)
+        val variableZ = Variable(Variable.Kind.VALUE, "z", Type.Array(Type.Number), null)
+        val variableZDefinition = Statement.VariableDefinition(variableZ)
+        val variableT = Variable(Variable.Kind.VALUE, "t", Type.Array(Type.Number), null)
+        val variableTDefinition = Statement.VariableDefinition(variableT)
+
+        val loopConditionExpression = Expression.BooleanLiteral(true)
+        val loopConditionNode = addExpressionNode(loopConditionExpression, null)
+        val breakConditionExpression = Expression.BooleanLiteral(true)
+        val breakConditionNode = addExpressionNode(breakConditionExpression, null)
+        val continueConditionExpression = Expression.BooleanLiteral(true)
+        val continueConditionNode = addExpressionNode(continueConditionExpression, null)
+        val returnConditionExpression = Expression.BooleanLiteral(true)
+        val returnConditionNode = addExpressionNode(returnConditionExpression, null)
+
+        val breakConditional = Statement.Conditional(breakConditionExpression, listOf(Statement.LoopBreak()), null)
+        val continueConditional = Statement.Conditional(continueConditionExpression, listOf(Statement.LoopContinuation()), null)
+        val returnConditional = Statement.Conditional(returnConditionExpression, listOf(Statement.FunctionReturn(Expression.UnitLiteral(), true)), null)
+
+        val breakEscapeTreeEntry = IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("x")), Type.Array(Type.Number))
+        val continueEscapeTreeEntry = IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("y")), Type.Array(Type.Number))
+        val returnEscapeTreeEntry = IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("z")), Type.Array(Type.Number))
+
+        val loop = Statement.Loop(
+            loopConditionExpression,
+            listOf(
+                variableXDefinition,
+                breakConditional,
+                variableYDefinition,
+                continueConditional,
+                variableZDefinition,
+                returnConditional,
+                variableTDefinition
+            )
+        )
+        val function = Function("f", listOf(), Type.Unit, listOf(loop))
+        val program = Program(listOf(Program.Global.FunctionDefinition(function)))
+
+        val loopEndNoOpNode = IFTNode.NoOp()
+
+        val result = test(program)
+
+        val expectedCfg = (
+            mergeCFGsInLoop(
+                loopConditionNode.toCfg(),
+                IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0))
+                    merge mergeCFGsConditionally( // break if
+                        breakConditionNode.toCfg(),
+                        breakEscapeTreeEntry.toCfg(),
+                        IFTNode.MemoryWrite(IFTNode.MemoryLabel("y"), IFTNode.Const(0))
+                            merge mergeCFGsConditionally( // continue if
+                                continueConditionNode.toCfg(),
+                                continueEscapeTreeEntry.toCfg(),
+                                IFTNode.MemoryWrite(IFTNode.MemoryLabel("z"), IFTNode.Const(0))
+                                    merge mergeCFGsConditionally( // return if
+                                        returnConditionNode.toCfg(),
+                                        returnEscapeTreeEntry.toCfg(),
+                                        IFTNode.MemoryWrite(IFTNode.MemoryLabel("t"), IFTNode.Const(0))
+                                            merge IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("t")), Type.Array(Type.Number))
+                                            merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("t"), IFTNode.Const(0))
+                                            merge IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("z")), Type.Array(Type.Number))
+                                            merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("z"), IFTNode.Const(0))
+                                            merge IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("y")), Type.Array(Type.Number))
+                                            merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("y"), IFTNode.Const(0))
+                                            merge IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("x")), Type.Array(Type.Number))
+                                            merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0))
+                                    )
+                            )
+                    ),
+                loopEndNoOpNode
+                    merge mainNoOpNode
+            )
+                add ( // partially unreachable return tree
+                    IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("t")), Type.Array(Type.Number))
+                        merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("t"), IFTNode.Const(0))
+                        merge returnEscapeTreeEntry
+                        merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("z"), IFTNode.Const(0))
+                        merge IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("y")), Type.Array(Type.Number))
+                        merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("y"), IFTNode.Const(0))
+                        merge IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("x")), Type.Array(Type.Number))
+                        merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0))
+                        merge mainNoOpNode
+                    )
+                add ( // partially unreachable break tree
+                    IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("t")), Type.Array(Type.Number))
+                        merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("t"), IFTNode.Const(0))
+                        merge IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("z")), Type.Array(Type.Number))
+                        merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("z"), IFTNode.Const(0))
+                        merge IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("y")), Type.Array(Type.Number))
+                        merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("y"), IFTNode.Const(0))
+                        merge breakEscapeTreeEntry
+                        merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0))
+                        merge loopEndNoOpNode
+                    )
+                add ( // partially unreachable continue tree
+                    IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("t")), Type.Array(Type.Number))
+                        merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("t"), IFTNode.Const(0))
+                        merge IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("z")), Type.Array(Type.Number))
+                        merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("z"), IFTNode.Const(0))
+                        merge continueEscapeTreeEntry
+                        merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("y"), IFTNode.Const(0))
+                        merge IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("x")), Type.Array(Type.Number))
+                        merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0))
+                        merge loopConditionNode
+                    )
+            )
+        expectedCfg assertHasSameStructureAs result[Ref(function)]!!
     }
 }

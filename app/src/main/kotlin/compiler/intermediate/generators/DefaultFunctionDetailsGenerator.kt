@@ -265,6 +265,9 @@ data class DefaultFunctionDetailsGenerator(
     override fun genWrite(namedNode: NamedNode, value: IFTNode, isDirect: Boolean): IFTNode =
         genAccess(namedNode, isDirect, { IFTNode.RegisterWrite(it, value) }, { IFTNode.MemoryWrite(it, value) }, Register.RBP)
 
+    fun genDirectReadWithCustomBase(namedNode: NamedNode, baseRegister: Register) =
+        genAccess(namedNode, true, { IFTNode.RegisterRead(it) }, { IFTNode.MemoryRead(it) }, baseRegister)
+
     fun genDirectWriteWithCustomBase(namedNode: NamedNode, value: IFTNode, baseRegister: Register) =
         genAccess(namedNode, true, { IFTNode.RegisterWrite(it, value) }, { IFTNode.MemoryWrite(it, value) }, baseRegister)
 

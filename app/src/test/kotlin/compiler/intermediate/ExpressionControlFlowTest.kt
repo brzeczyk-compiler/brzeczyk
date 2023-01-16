@@ -9,6 +9,7 @@ import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.intermediate.generators.FunctionDetailsGenerator
 import compiler.intermediate.generators.VariableAccessGenerator
+import compiler.intermediate.generators.memoryUnitSize
 import compiler.utils.Ref
 import compiler.utils.keyRefMapOf
 import compiler.utils.mutableKeyRefMapOf
@@ -104,12 +105,13 @@ class ExpressionControlFlowTest {
                 variableProperties[namedNode] = VariablePropertiesAnalyzer.fixVariableProperties(mutableVP)
         }
 
-        fun createCfg(expr: Expression, targetVariable: Variable? = null): ControlFlowGraph {
+        fun createCfg(expr: Expression, targetVariable: Variable? = null, expressionTypes: Map<Ref<Expression>, Type> = emptyMap()): ControlFlowGraph {
             return ControlFlow.createGraphForExpression(
                 expr,
-                targetVariable,
+                targetVariable?.let { ControlFlow.AssignmentTarget.VariableTarget(it) },
                 currentFunction,
                 nameResolution,
+                expressionTypes,
                 variableProperties,
                 finalCallGraph,
                 functionDetailsGenerators,
@@ -122,7 +124,8 @@ class ExpressionControlFlowTest {
 
                     override fun genWrite(namedNode: NamedNode, value: IFTNode, isDirect: Boolean): IFTNode =
                         IFTNode.DummyWrite(namedNode, value, isDirect, true)
-                }
+                },
+                TestArrayMemoryManagement()
             )
         }
     }
@@ -241,7 +244,7 @@ class ExpressionControlFlowTest {
     }
 
     @Test
-    fun `assignment`() {
+    fun `assignment to variables`() {
         val context = ExpressionContext(
             setOf("x", "y")
         )
@@ -373,7 +376,7 @@ class ExpressionControlFlowTest {
     }
 
     @Test
-    fun `conditionals`() {
+    fun `conditional expressions`() {
         val context = ExpressionContext(
             setOf("x", "y", "z")
         )
@@ -672,5 +675,90 @@ class ExpressionControlFlowTest {
                     )
                 )
             )
+    }
+
+    private fun Int.toLiteral() = Expression.NumberLiteral(this.toLong())
+    private fun Int.toConst() = IFTNode.Const(this.toLong())
+
+    @Test
+    fun `simple array`() {
+        val context = ExpressionContext(setOf("a"))
+        val init = Expression.ArrayAllocation(Type.Number, 5.toLiteral(), listOf(6.toLiteral()), Expression.ArrayAllocation.InitializationType.ONE_VALUE)
+        val type = Type.Array(Type.Number)
+        val cfgAssign = context.createCfg(init, "a" asVarIn context, expressionTypes = mapOf(Ref(init) to type)) // a = new int[5](6)
+        val cfgNotAssign = context.createCfg(init, expressionTypes = mapOf(Ref(init) to type)) // new int[5](6)
+        val address = dummyArrayAddress(0)
+
+        cfgAssign assertHasSameStructureAs (
+            IFTNode.DummyArrayAllocation(5.toConst(), listOf(6.toConst()), type, Expression.ArrayAllocation.InitializationType.ONE_VALUE)
+                merge IFTNode.DummyWrite("a" asVarIn context, address, true)
+            )
+        cfgNotAssign assertHasSameStructureAs (
+            IFTNode.DummyArrayAllocation(5.toConst(), listOf(6.toConst()), type, Expression.ArrayAllocation.InitializationType.ONE_VALUE)
+                merge IFTNode.DummyArrayRefCountDec(address, type)
+                merge address
+            )
+    }
+
+    @Test
+    fun `array of arrays`() {
+        val context = ExpressionContext(setOf("a"))
+        val alloc1 = Expression.ArrayAllocation(Type.Number, 1.toLiteral(), listOf(1.toLiteral()), Expression.ArrayAllocation.InitializationType.ONE_VALUE)
+        val alloc2 = Expression.ArrayAllocation(Type.Array(Type.Number), 1.toLiteral(), listOf(alloc1), Expression.ArrayAllocation.InitializationType.ONE_VALUE)
+        val type1 = Type.Array(Type.Number)
+        val type2 = Type.Array(type1)
+        val expressionTypes = mapOf(
+            Ref(alloc1 as Expression) to type1,
+            Ref(alloc2 as Expression) to type2
+        )
+        val cfgAssign = context.createCfg(alloc2, "a" asVarIn context, expressionTypes = expressionTypes) // a = new array<int>[1](new int[1](1))
+        val cfgNotAssign = context.createCfg(alloc2, expressionTypes = expressionTypes) // new array<int>[1](new int[1](1))
+        val address0 = dummyArrayAddress(0)
+        val address1 = dummyArrayAddress(1)
+
+        cfgAssign assertHasSameStructureAs (
+            IFTNode.DummyArrayAllocation(1.toConst(), listOf(1.toConst()), type1, Expression.ArrayAllocation.InitializationType.ONE_VALUE)
+                merge IFTNode.DummyArrayAllocation(1.toConst(), listOf(address0), type2, Expression.ArrayAllocation.InitializationType.ONE_VALUE)
+                merge IFTNode.DummyArrayRefCountDec(address0, type1) // asserts refcount will be increased while allocation of second array
+                merge IFTNode.DummyWrite("a" asVarIn context, address1, true)
+            )
+        cfgNotAssign assertHasSameStructureAs (
+            IFTNode.DummyArrayAllocation(1.toConst(), listOf(1.toConst()), type1, Expression.ArrayAllocation.InitializationType.ONE_VALUE)
+                merge IFTNode.DummyArrayAllocation(1.toConst(), listOf(address0), type2, Expression.ArrayAllocation.InitializationType.ONE_VALUE)
+                merge IFTNode.DummyArrayRefCountDec(address0, type1)
+                merge IFTNode.DummyArrayRefCountDec(address1, type2)
+                merge address1
+            )
+    }
+
+    @Test
+    fun `arrays - access element and length`() {
+        val context = ExpressionContext(emptySet())
+        val init = Expression.ArrayAllocation(Type.Number, 5.toLiteral(), listOf(6.toLiteral()), Expression.ArrayAllocation.InitializationType.ONE_VALUE)
+        val type = Type.Array(Type.Number)
+        val getElement = Expression.ArrayElement(init, 3.toLiteral())
+        val getLength = Expression.ArrayLength(init)
+        val cfgElement = context.createCfg(getElement, expressionTypes = mapOf(Ref(init) to type)) // (new int[5](6))[3]
+        val cfgLength = context.createCfg(getLength, expressionTypes = mapOf(Ref(init) to type)) // length(new int[5](6))
+        val address = dummyArrayAddress(0)
+        val resultRegister = Register()
+        val arrayTempRegister = Register()
+
+        val expectedCfgElement = (
+            IFTNode.DummyArrayAllocation(5.toConst(), listOf(6.toConst()), type, Expression.ArrayAllocation.InitializationType.ONE_VALUE)
+                merge IFTNode.RegisterWrite(arrayTempRegister, address)
+                merge IFTNode.RegisterWrite(resultRegister, IFTNode.MemoryRead(IFTNode.Add(IFTNode.RegisterRead(arrayTempRegister), IFTNode.Multiply(3.toConst(), memoryUnitSize.toInt().toConst()))))
+                merge IFTNode.DummyArrayRefCountDec(IFTNode.RegisterRead(arrayTempRegister), type)
+                merge IFTNode.RegisterRead(resultRegister)
+            )
+        expectedCfgElement assertHasSameStructureAs cfgElement
+
+        val expectedCfgLength = (
+            IFTNode.DummyArrayAllocation(5.toConst(), listOf(6.toConst()), type, Expression.ArrayAllocation.InitializationType.ONE_VALUE)
+                merge IFTNode.RegisterWrite(resultRegister, IFTNode.MemoryRead(IFTNode.Subtract(address, memoryUnitSize.toInt().toConst())))
+                merge IFTNode.DummyArrayRefCountDec(address, type)
+                merge IFTNode.RegisterRead(resultRegister)
+            )
+        expectedCfgLength assertHasSameStructureAs cfgLength
     }
 }

@@ -27,6 +27,36 @@ void* _$checked_malloc(size_t size) {
     return address;
 }
 
+void _$populate_dynamic_array(uint64_t* address, uint64_t value, int64_t should_increment_refcount) {
+    if (address == 0)
+        return;
+
+    uint64_t length = *(address - 1);
+    uint64_t* valueRefCount = ((uint64_t*) value) - 2;
+
+    for (uint64_t i = 0; i<length; i++) {
+        address[i] = value;
+        if (should_increment_refcount) ++(*valueRefCount);
+    }
+}
+
+void _$array_ref_count_decrement(uint64_t* address, int64_t level) { // simple array has level 1
+    if (address == 0)
+        return;
+
+    uint64_t* ref_count = address - 2;
+    uint64_t* length = address - 1;
+
+    if (--*ref_count == 0) {
+        if (level > 1) {
+            for (size_t i = 0; i < *length; i++) {
+                _$array_ref_count_decrement(((uint64_t**)address)[i], level - 1);
+            }
+        }
+        free(ref_count); // reference counter is the first field of the memory block we want to deallocate
+    }
+}
+
 // generators
 
 typedef int64_t generator_id_t;

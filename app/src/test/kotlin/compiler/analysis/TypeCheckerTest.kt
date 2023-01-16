@@ -1692,4 +1692,44 @@ class TypeCheckerTest {
             diagnosticsList
         )
     }
+
+    // czynność f() {
+    //     zm x: [Czy] = ciąg Czy[prawda](prawda)
+    // }
+    @Test
+    fun `test allocation of array with non-number size fails`() {
+        val sizeExpr = Expression.BooleanLiteral(true)
+        val xDef = Statement.VariableDefinition(
+            Variable(
+                Variable.Kind.VARIABLE,
+                "x",
+                Type.Array(Type.Boolean),
+                Expression.ArrayAllocation(
+                    Type.Boolean,
+                    sizeExpr,
+                    listOf(Expression.BooleanLiteral(true)),
+                    Expression.ArrayAllocation.InitializationType.ONE_VALUE,
+                )
+            )
+        )
+
+        val program = Program(
+            listOf(
+                Program.Global.FunctionDefinition(
+                    Function("f", listOf(), Type.Unit, listOf(xDef))
+                )
+            )
+        )
+
+        assertFailsWith<TypeChecker.TypeCheckingFailed> {
+            TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
+        }
+
+        assertEquals(
+            listOf<Diagnostic>(
+                TypeCheckingError.InvalidType(sizeExpr, Type.Number, Type.Boolean)
+            ),
+            diagnosticsList
+        )
+    }
 }

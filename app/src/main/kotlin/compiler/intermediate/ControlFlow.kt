@@ -174,8 +174,9 @@ object ControlFlow {
                 is Expression.NumberLiteral -> modifiedUnderCurrentBase
 
                 is Expression.Variable -> {
-                    if (nameResolution[Ref(astNode)] in modifiedUnderCurrentBase)
+                    if (nameResolution[Ref(astNode)] in modifiedUnderCurrentBase) {
                         usagesThatRequireTempRegisters.add(Ref(astNode))
+                    }
                     modifiedUnderCurrentBase
                 }
 
@@ -233,10 +234,11 @@ object ControlFlow {
         }
 
         gatherVariableUsageInfo(expression, refSetOf()).let {
-            if (target is AssignmentTarget.ArrayElementTarget)
+            if (target is AssignmentTarget.ArrayElementTarget) {
                 gatherVariableUsageInfo(target.element.index, it).let {
                     gatherVariableUsageInfo(target.element.expression, it)
                 }
+            }
         }
 
         // second stage is to actually produce CFG
@@ -274,6 +276,10 @@ object ControlFlow {
 
                 is Expression.Variable -> {
                     val readableNode = nameResolution[Ref(astNode)]!!.value
+
+                    // if variable is an array, we want to increase its refcount
+                    // it will be then decreased after passing it as 'length' or other function's argument, or when reading its element
+                    // it will be also decreased if it isn't assigned to any variable at the end of evaluation
                     if (readableNode.hasArrayType()) {
                         cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountIncrement(makeReadNode(readableNode)))
                     }
@@ -371,8 +377,9 @@ object ControlFlow {
                                 explicitParametersToNodes[Ref(it)]!!
                         } else { // default arguments
                             val readNode = makeReadNode(defaultParameterMapping[Ref(it)]!!)
-                            if (it.hasArrayType())
+                            if (it.hasArrayType()) {
                                 cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountIncrement(readNode))
+                            }
                             readNode
                         }
                     }
@@ -390,7 +397,9 @@ object ControlFlow {
 
                     // decrease reference counters of array-type arguments
                     for ((param, readIFTNode) in function.parameters zip parameterValues) {
-                        if (param.hasArrayType()) cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountDecrement(readIFTNode, param.type))
+                        if (param.hasArrayType()) {
+                            cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountDecrement(readIFTNode, param.type))
+                        }
                     }
 
                     // retrieve the result
@@ -475,9 +484,9 @@ object ControlFlow {
             }
         }
 
-        val (targetArray, index) = if (target is AssignmentTarget.ArrayElementTarget)
+        val (targetArray, index) = if (target is AssignmentTarget.ArrayElementTarget) {
             Pair(makeCFGForSubtree(target.element.expression), makeCFGForSubtree(target.element.index))
-        else Pair(null, null)
+        } else Pair(null, null)
         val result = makeCFGForSubtree(expression)
 
         // build last tree into CFG, possibly wrapped in variable write operation
@@ -523,8 +532,9 @@ object ControlFlow {
                     cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountDecrement(result, it))
                 }
             }
-            if (accessNodeConsumer == null)
+            if (accessNodeConsumer == null) {
                 cfgBuilder.addNextTree(result)
+            }
         }
 
         return cfgBuilder.build().also {

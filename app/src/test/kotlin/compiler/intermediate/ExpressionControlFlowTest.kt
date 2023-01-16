@@ -683,7 +683,7 @@ class ExpressionControlFlowTest {
     @Test
     fun `simple array`() {
         val context = ExpressionContext(setOf("a"))
-        val init = Expression.ArrayAllocation("", 5.toLiteral(), listOf(6.toLiteral()), Expression.ArrayAllocation.InitializationType.ONE_VALUE)
+        val init = Expression.ArrayAllocation(Type.Number, 5.toLiteral(), listOf(6.toLiteral()), Expression.ArrayAllocation.InitializationType.ONE_VALUE)
         val type = Type.Array(Type.Number)
         val cfgAssign = context.createCfg(init, "a" asVarIn context, expressionTypes = mapOf(Ref(init) to type)) // a = new int[5](6)
         val cfgNotAssign = context.createCfg(init, expressionTypes = mapOf(Ref(init) to type)) // new int[5](6)
@@ -703,8 +703,8 @@ class ExpressionControlFlowTest {
     @Test
     fun `array of arrays`() {
         val context = ExpressionContext(setOf("a"))
-        val alloc1 = Expression.ArrayAllocation("", 1.toLiteral(), listOf(1.toLiteral()), Expression.ArrayAllocation.InitializationType.ONE_VALUE)
-        val alloc2 = Expression.ArrayAllocation("", 1.toLiteral(), listOf(alloc1), Expression.ArrayAllocation.InitializationType.ONE_VALUE)
+        val alloc1 = Expression.ArrayAllocation(Type.Number, 1.toLiteral(), listOf(1.toLiteral()), Expression.ArrayAllocation.InitializationType.ONE_VALUE)
+        val alloc2 = Expression.ArrayAllocation(Type.Array(Type.Number), 1.toLiteral(), listOf(alloc1), Expression.ArrayAllocation.InitializationType.ONE_VALUE)
         val type1 = Type.Array(Type.Number)
         val type2 = Type.Array(type1)
         val expressionTypes = mapOf(
@@ -734,7 +734,7 @@ class ExpressionControlFlowTest {
     @Test
     fun `arrays - access element and length`() {
         val context = ExpressionContext(emptySet())
-        val init = Expression.ArrayAllocation("", 5.toLiteral(), listOf(6.toLiteral()), Expression.ArrayAllocation.InitializationType.ONE_VALUE)
+        val init = Expression.ArrayAllocation(Type.Number, 5.toLiteral(), listOf(6.toLiteral()), Expression.ArrayAllocation.InitializationType.ONE_VALUE)
         val type = Type.Array(Type.Number)
         val getElement = Expression.ArrayElement(init, 3.toLiteral())
         val getLength = Expression.ArrayLength(init)

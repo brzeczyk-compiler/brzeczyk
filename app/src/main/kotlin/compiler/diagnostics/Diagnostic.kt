@@ -283,7 +283,7 @@ sealed interface Diagnostic {
                 type: Type,
                 expectedType: Type,
             ) : TypeCheckingError(listOf(expression)) {
-                override val errorMessage = "The type of the expression is $expectedType (expected $type)."
+                override val errorMessage = "The type of the expression is $type (expected $expectedType)."
             }
 
             class MissingReturnStatement(
@@ -302,6 +302,20 @@ sealed interface Diagnostic {
                 yieldStatement: Statement.GeneratorYield,
             ) : TypeCheckingError(listOf(yieldStatement)) {
                 override val errorMessage = "The yield occurs in non-generator function."
+            }
+
+            class AccessFromNonArrayType(
+                expression: Expression,
+                type: Type,
+            ) : TypeCheckingError(listOf(expression)) {
+                override val errorMessage = "Extracting value from a non-array type: $type."
+            }
+
+            class LengthOfNonArrayType(
+                expression: Expression,
+                type: Type,
+            ) : TypeCheckingError(listOf(expression)) {
+                override val errorMessage = "Accessing length of a non-array type: $type."
             }
         }
 

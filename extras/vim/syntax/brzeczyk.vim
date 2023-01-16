@@ -24,7 +24,7 @@ syn keyword nnKeywordOtherLiteral nic
 syn keyword nnKeywordCondition jeśli wpp
 syn match   nnKeywordElif '\<zaś gdy\>'
 syn keyword nnKeywordLoop dopóki otrzymując od
-syn keyword nnKeywordOperator nie lub oraz wtw albo
+syn keyword nnKeywordOperator nie lub oraz wtw albo długość ciąg
 syn keyword nnKeywordOther zm wart stała przerwij pomiń zwróć zakończ czynność zewnętrzna zewnętrzny jako przekaźnik przekaż
 
 " Ranges
@@ -32,6 +32,8 @@ syn match nnParenthesisError ')'
 syn region nnParenthesisRange start='(' end=')' transparent contains=TOP,nnParenthesisError
 syn match nnBracesError '}'
 syn region nnBracesRange start='{' end='}' transparent fold contains=TOP,nnBracesError
+syn match nnBracketsError '\]'
+syn region nnBracketsRange start='\[' end='\]' transparent fold contains=TOP,nnBracketsError
 
 " Comments
 syn keyword nnSpecialCommentWord contained TODO FIXME
@@ -58,6 +60,7 @@ hi def link nnKeywordOther Keyword
 
 hi def link nnParenthesisError Error
 hi def link nnBracesError Error
+hi def link nnBracketsError Error
 
 hi def link nnSpecialCommentWord Todo
 hi def link nnComment Comment

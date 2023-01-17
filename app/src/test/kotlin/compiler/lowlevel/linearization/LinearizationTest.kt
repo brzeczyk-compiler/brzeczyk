@@ -477,7 +477,7 @@ class LinearizationTest {
             refMapOf()
         )
 
-        val result = Linearization.linearize(cfg, covering)
+        val result = Linearization(covering).linearize(cfg)
 
         assertLinearizationMatches(
             listOf(
@@ -504,7 +504,7 @@ class LinearizationTest {
             refMapOf()
         )
 
-        val result = Linearization.linearize(cfg, covering)
+        val result = Linearization(covering).linearize(cfg)
 
         assertLinearizationMatches(
             listOf(
@@ -529,7 +529,7 @@ class LinearizationTest {
             refMapOf()
         )
 
-        val result = Linearization.linearize(cfg, covering)
+        val result = Linearization(covering).linearize(cfg)
 
         assertLinearizationMatches(
             listOf(

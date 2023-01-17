@@ -53,7 +53,7 @@ class AstFactory(private val diagnostics: Diagnostics) {
     }
 
     private fun extractLValue(parseTree: ParseTree.Branch<Symbol>, diagnostics: Diagnostics): Statement.Assignment.LValue {
-        return when (val expr = processExpression(parseTree, diagnostics)) {
+        return when (val expr = processExpression(parseTree)) {
             is Expression.Variable -> Statement.Assignment.LValue.Variable(expr.name)
             is Expression.ArrayElement -> Statement.Assignment.LValue.ArrayElement(expr.expression, expr.index)
             else -> {
@@ -326,23 +326,23 @@ class AstFactory(private val diagnostics: Diagnostics) {
             in listOf(Productions.expr4096Parenthesis, Productions.eExpr4096Parenthesis) ->
                 processExpression(children[1])
             in listOf(Productions.expr2048ArrayAccess, Productions.eExpr2048ArrayAccess) -> {
-                var expr = processExpression(children[0], diagnostics)
+                var expr = processExpression(children[0])
                 var i = 2
                 while (i < children.size) {
-                    val index = processExpression(children[i], diagnostics)
+                    val index = processExpression(children[i])
                     expr = Expression.ArrayElement(expr, index, combineLocations(children.subList(0, i + 2)))
                     i += 3
                 }
                 return expr
             }
             in listOf(Productions.expr2048ArrayLength, Productions.eExpr2048ArrayLength) ->
-                Expression.ArrayLength(processExpression(children[1], diagnostics), combineLocations(children))
+                Expression.ArrayLength(processExpression(children[1]), combineLocations(children))
             in listOf(Productions.expr4096ArrayListAllocation, Productions.eExpr4096ArrayListAllocation) -> {
                 val type = processType(children[1])
                 val expressions = mutableListOf<Expression>()
                 var i = 3
                 while (i < children.size) {
-                    expressions.add(processExpression(children[i], diagnostics))
+                    expressions.add(processExpression(children[i]))
                     i += 2
                 }
                 val size = Expression.NumberLiteral(expressions.size.toLong())
@@ -350,8 +350,8 @@ class AstFactory(private val diagnostics: Diagnostics) {
             }
             in listOf(Productions.expr4096ArrayDefaultAllocation, Productions.eExpr4096ArrayDefaultAllocation) -> {
                 val type = processType(children[1])
-                val size = processExpression(children[3], diagnostics)
-                val defaultValue = processExpression(children[6], diagnostics)
+                val size = processExpression(children[3])
+                val defaultValue = processExpression(children[6])
                 Expression.ArrayAllocation(type, size, listOf(defaultValue), Expression.ArrayAllocation.InitializationType.ONE_VALUE, combineLocations(children))
             }
             else -> throw IllegalArgumentException()
@@ -438,7 +438,7 @@ class AstFactory(private val diagnostics: Diagnostics) {
             Productions.atomicExpr ->
                 Statement.Evaluation(processExpression(children[0]), combineLocations(children))
             Productions.atomicAssignment -> {
-                val lhsLValue = extractLValue(children[0] as ParseTree.Branch)
+                val lhsLValue = extractLValue(children[0] as ParseTree.Branch, diagnostics)
                 val rhsExpr = processExpression(children[2])
                 Statement.Assignment(lhsLValue, rhsExpr, combineLocations(children))
             }

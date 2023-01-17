@@ -720,7 +720,7 @@ class AstFactoryTest {
             )
         )
 
-        val resultAst = AstFactory.createFromParseTree(parseTree, dummyDiagnostics)
+        val resultAst = astFactory.createFromParseTree(parseTree)
         assertEquals(expectedAst, resultAst)
     }
 
@@ -782,7 +782,7 @@ class AstFactoryTest {
             )
         )
 
-        val resultAst = AstFactory.createFromParseTree(parseTree, dummyDiagnostics)
+        val resultAst = astFactory.createFromParseTree(parseTree)
         assertEquals(expectedAst, resultAst)
     }
 
@@ -839,7 +839,7 @@ class AstFactoryTest {
             )
         )
 
-        val resultAst = AstFactory.createFromParseTree(parseTree, dummyDiagnostics)
+        val resultAst = astFactory.createFromParseTree(parseTree)
         assertEquals(expectedAst, resultAst)
     }
 
@@ -892,7 +892,7 @@ class AstFactoryTest {
             )
         )
 
-        val resultAst = AstFactory.createFromParseTree(parseTree, dummyDiagnostics)
+        val resultAst = astFactory.createFromParseTree(parseTree)
         assertEquals(expectedAst, resultAst)
     }
 

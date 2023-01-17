@@ -108,7 +108,7 @@ class ExpressionControlFlowPlannerTest {
         fun createCfg(expr: Expression, targetVariable: Variable? = null, expressionTypes: Map<Ref<Expression>, Type> = emptyMap()): ControlFlowGraph {
             return ControlFlowPlanner(mockk()).createGraphForExpression(
                 expr,
-                targetVariable?.let { ControlFlow.AssignmentTarget.VariableTarget(it) },
+                targetVariable?.let { ControlFlowPlanner.AssignmentTarget.VariableTarget(it) },
                 currentFunction,
                 nameResolution,
                 expressionTypes,

@@ -37,12 +37,12 @@ class FunctionControlFlowPlannerTest {
 
     private fun getExpressionCFG(
         expression: Expression,
-        target: ControlFlow.AssignmentTarget?,
+        target: ControlFlowPlanner.AssignmentTarget?,
         function: Function,
         accessNodeConsumer: ((ControlFlowGraph, IFTNode) -> Unit)?
     ): ControlFlowGraph {
         return when (target) {
-            is ControlFlow.AssignmentTarget.VariableTarget? -> {
+            is ControlFlowPlanner.AssignmentTarget.VariableTarget? -> {
                 val node = expressionNodes[Ref(expression)]?.get(Ref(target?.variable))
                 val nodeList = node?.let { listOf(it.value) } ?: emptyList()
                 ControlFlowGraph(nodeList, node?.value, refMapOf(), refMapOf(), refMapOf()).also {
@@ -184,7 +184,7 @@ class FunctionControlFlowPlannerTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(listOf(mainNoOpNode), mainNoOpNode, refMapOf(), refMapOf(), refMapOf())
-        cfg assertHasSameStructureAs result[Ref(function)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() { 123 }
@@ -201,7 +201,7 @@ class FunctionControlFlowPlannerTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(listOf(mainNoOpNode, node), node, refMapOf(), refMapOf(), refMapOf())
-        cfg assertHasSameStructureAs result[Ref(function)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() {
@@ -231,7 +231,7 @@ class FunctionControlFlowPlannerTest {
             refMapOf()
         )
 
-        cfg assertHasSameStructureAs result[Ref(function)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() { wart x: Liczba = 123 }
@@ -249,7 +249,7 @@ class FunctionControlFlowPlannerTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(listOf(mainNoOpNode, node), node, refMapOf(), refMapOf(), refMapOf())
-        cfg assertHasSameStructureAs result[Ref(function)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() {
@@ -273,8 +273,8 @@ class FunctionControlFlowPlannerTest {
 
         val cfg = ControlFlowGraph(listOf(mainNoOpNode, node), node, refMapOf(), refMapOf(), refMapOf())
         val nestedCfg = ControlFlowGraph(listOf(mainNoOpNode), mainNoOpNode, refMapOf(), refMapOf(), refMapOf())
-        cfg assertHasSameStructureAs result[Ref(function)]!!
-        nestedCfg assertHasSameStructureAs result[Ref(nestedFunction)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
+        nestedCfg assertHasSameStructureAs result.toMap()[Ref(nestedFunction)]!!
     }
 
     // czynność f() {
@@ -297,7 +297,7 @@ class FunctionControlFlowPlannerTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(listOf(mainNoOpNode, node), node, refMapOf(), refMapOf(), refMapOf())
-        cfg assertHasSameStructureAs result[Ref(function)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() { { 123 } }
@@ -315,7 +315,7 @@ class FunctionControlFlowPlannerTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(listOf(mainNoOpNode, node), node, refMapOf(), refMapOf(), refMapOf())
-        cfg assertHasSameStructureAs result[Ref(function)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() {
@@ -348,7 +348,7 @@ class FunctionControlFlowPlannerTest {
             refMapOf(node1 to node3)
         )
 
-        cfg assertHasSameStructureAs result[Ref(function)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() {
@@ -385,7 +385,7 @@ class FunctionControlFlowPlannerTest {
             refMapOf(node1 to node3)
         )
 
-        cfg assertHasSameStructureAs result[Ref(function)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() {
@@ -419,7 +419,7 @@ class FunctionControlFlowPlannerTest {
             refMapOf(node1 to loopBreakNode)
         )
 
-        cfg assertHasSameStructureAs result[Ref(function)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() {
@@ -459,7 +459,7 @@ class FunctionControlFlowPlannerTest {
             refMapOf(node1 to loopBreakNode, node2 to node3)
         )
 
-        cfg assertHasSameStructureAs result[Ref(function)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() {
@@ -499,7 +499,7 @@ class FunctionControlFlowPlannerTest {
             refMapOf(node1 to loopBreakNode, node2 to node3)
         )
 
-        cfg assertHasSameStructureAs result[Ref(function)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() {
@@ -543,7 +543,7 @@ class FunctionControlFlowPlannerTest {
             refMapOf(node1 to loopBreakNode, node2 to node3, node3 to node4)
         )
 
-        cfg assertHasSameStructureAs result[Ref(function)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() {
@@ -627,7 +627,7 @@ class FunctionControlFlowPlannerTest {
             )
         )
 
-        cfg assertHasSameStructureAs result[Ref(function)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() {
@@ -658,7 +658,7 @@ class FunctionControlFlowPlannerTest {
             refMapOf(node1 to node2)
         )
 
-        cfg assertHasSameStructureAs result[Ref(function)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() { przerwij }
@@ -1105,7 +1105,7 @@ class FunctionControlFlowPlannerTest {
             listOf(IFTNode.Const(123)),
             IFTNode.DummyCallResult()
         ) merge mainNoOpNode
-        expectedCFG assertHasSameStructureAs result[Ref(generator)]!!
+        expectedCFG assertHasSameStructureAs result.toMap()[Ref(generator)]!!
     }
 
     // czynność f() {
@@ -1139,7 +1139,7 @@ class FunctionControlFlowPlannerTest {
                         merge mainNoOpNode
                     )
             )
-        expectedCfg assertHasSameStructureAs result[Ref(function)]!!
+        expectedCfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() {
@@ -1191,7 +1191,7 @@ class FunctionControlFlowPlannerTest {
                         merge mainNoOpNode
                     )
             )
-        expectedCfg assertHasSameStructureAs result[Ref(function)]!!
+        expectedCfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() {
@@ -1241,7 +1241,7 @@ class FunctionControlFlowPlannerTest {
                         merge mainNoOpNode
                     )
             )
-        expectedCfg assertHasSameStructureAs result[Ref(function)]!!
+        expectedCfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() {
@@ -1290,7 +1290,7 @@ class FunctionControlFlowPlannerTest {
                         merge conditionNode
                     )
             )
-        expectedCfg assertHasSameStructureAs result[Ref(function)]!!
+        expectedCfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() {
@@ -1419,6 +1419,6 @@ class FunctionControlFlowPlannerTest {
                         merge loopConditionNode
                     )
             )
-        expectedCfg assertHasSameStructureAs result[Ref(function)]!!
+        expectedCfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 }

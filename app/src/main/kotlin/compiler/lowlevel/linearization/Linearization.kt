@@ -54,7 +54,8 @@ class Linearization(private val covering: Covering) {
             if (Ref(node) in cfg.unconditionalLinks) {
                 val target = cfg.unconditionalLinks[Ref(node)]!!.value
 
-                addUnconditional()
+                if (node !is IFTNode.NoOp)
+                    addUnconditional()
 
                 if (Ref(target) in labels)
                     addJump(labels[Ref(target)]!!)

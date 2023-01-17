@@ -66,18 +66,21 @@ object VariablePropertiesAnalyzer {
                 is Statement.FunctionDefinition -> analyzeVariables(node.function, currentFunction)
                 is Global.FunctionDefinition -> analyzeVariables(node.function, currentFunction)
                 is Statement.Assignment -> {
-                    val resolvedVariable: NamedNode = nameResolution[Ref(node)]!!.value
-                    mutableVariableProperties[Ref(resolvedVariable)]!!.writtenIn.add(Ref(currentFunction!!))
-                    if (resolvedVariable is Function.Parameter) {
-                        diagnostics.report( // FIXME: this is also reported by the type checker
-                            AssignmentToFunctionParameter(
-                                resolvedVariable,
-                                mutableVariableProperties[Ref(resolvedVariable)]!!.owner as Function,
-                                currentFunction
+                    if (node.lvalue is Statement.Assignment.LValue.Variable) {
+                        val resolvedVariable: NamedNode = nameResolution[Ref(node)]!!.value
+                        mutableVariableProperties[Ref(resolvedVariable)]!!.writtenIn.add(Ref(currentFunction!!))
+                        if (resolvedVariable is Function.Parameter) {
+                            diagnostics.report( // FIXME: this is also reported by the type checker
+                                AssignmentToFunctionParameter(
+                                    resolvedVariable,
+                                    mutableVariableProperties[Ref(resolvedVariable)]!!.owner as Function,
+                                    currentFunction
+                                )
                             )
-                        )
-                        failed = true
+                            failed = true
+                        }
                     }
+                    // TODO how meticulously do we want to handle array assignments?
                     analyzeVariables(node.value, currentFunction)
                 }
                 is Statement.Block -> node.block.forEach { analyzeVariables(it, currentFunction) }
@@ -132,6 +135,15 @@ object VariablePropertiesAnalyzer {
                     }
                 }
                 is Variable -> node.value?.let { analyzeVariables(it, currentFunction) }
+                is Expression.ArrayElement -> {
+                    analyzeVariables(node.expression, currentFunction)
+                    analyzeVariables(node.index, currentFunction)
+                }
+                is Expression.ArrayLength -> analyzeVariables(node.expression, currentFunction)
+                is Expression.ArrayAllocation -> {
+                    analyzeVariables(node.size, currentFunction)
+                    node.initialization.forEach { analyzeVariables(it, currentFunction) }
+                }
                 else -> {}
             }
         }

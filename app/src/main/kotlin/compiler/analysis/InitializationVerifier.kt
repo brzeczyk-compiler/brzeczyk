@@ -104,8 +104,11 @@ object InitializationVerifier {
                 is Global.FunctionDefinition -> verifyInitialization(node.function, state)
                 is Statement.Assignment -> {
                     verifyInitialization(node.value, state)
-                    // the variable will be initialized after assignment, not before
-                    state.initializedVariables.add(nameResolution[Ref(node)]!!)
+                    if (node.lvalue is Statement.Assignment.LValue.Variable) {
+                        // the variable will be initialized after assignment, not before
+                        state.initializedVariables.add(nameResolution[Ref(node)]!!)
+                    }
+                    // assignment to one field in array will not affect it's initalization state
                     null
                 }
                 is Statement.Block -> handleInstructionBlock(node.block, state)
@@ -186,6 +189,17 @@ object InitializationVerifier {
                         verifyInitialization(node.value, state)
                         state.initializedVariables.add(Ref(node))
                     }
+                    null
+                }
+                is Expression.ArrayElement -> {
+                    verifyInitialization(node.expression, state)
+                    verifyInitialization(node.index, state)
+                }
+                is Expression.ArrayLength -> verifyInitialization(node.expression, state)
+                is Expression.ArrayAllocation -> {
+                    verifyInitialization(node.size, state)
+                    node.initialization.forEach { verifyInitialization(it, state) }
+                    // no top-level returns in initialization values
                     null
                 }
                 else -> null

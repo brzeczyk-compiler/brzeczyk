@@ -218,6 +218,9 @@ object FunctionDependenciesAnalyzer {
                 is Expression.Conditional -> getCalledFunctions(expression.condition) +
                     getCalledFunctions(expression.resultWhenTrue) +
                     getCalledFunctions(expression.resultWhenFalse)
+                is Expression.ArrayLength -> getCalledFunctions(expression.expression)
+                is Expression.ArrayElement -> getCalledFunctions(expression.expression) + getCalledFunctions(expression.index)
+                is Expression.ArrayAllocation -> getCalledFunctions(expression.size) + expression.initialization.flatMap { getCalledFunctions(it) }
             }
 
             fun getCalledFunctions(statement: Statement): Set<Ref<Function>> {

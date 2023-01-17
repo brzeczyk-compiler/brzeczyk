@@ -1,10 +1,15 @@
 package compiler.intermediate
 
+import compiler.ast.Expression
+import compiler.ast.Type
+import compiler.intermediate.generators.ArrayMemoryManagement
 import compiler.utils.Ref
 import compiler.utils.mutableKeyRefMapOf
 import kotlin.test.assertEquals
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
+
+// CFG comparison tools
 
 infix fun ControlFlowGraph.assertHasSameStructureAs(cfg: ControlFlowGraph) {
     val registersMap = mutableKeyRefMapOf<Register, Register>()
@@ -51,11 +56,26 @@ infix fun ControlFlowGraph.assertHasSameStructureAs(cfg: ControlFlowGraph) {
                 assertEquals(this.address, (iftNode as IFTNode.MemoryWrite).address)
                 this.value assertHasSameStructureAs iftNode.value
             }
+            is IFTNode.MemoryRead -> {
+                this.address assertHasSameStructureAs (iftNode as IFTNode.MemoryRead).address
+            }
             is IFTNode.RegisterWrite -> {
                 registersMap.ensurePairSymmetrical(this.register, (iftNode as IFTNode.RegisterWrite).register)
                 this.node assertHasSameStructureAs iftNode.node
             }
             is IFTNode.RegisterRead -> registersMap.ensurePairSymmetrical(this.register, (iftNode as IFTNode.RegisterRead).register)
+            is IFTNode.DummyArrayAllocation -> {
+                assertEquals(this.size, (iftNode as IFTNode.DummyArrayAllocation).size)
+                assertEquals(this.type, iftNode.type)
+                assertEquals(this.initList.size, iftNode.initList.size)
+                (this.initList zip iftNode.initList).forEach { it.first assertHasSameStructureAs it.second }
+            }
+            is IFTNode.DummyArrayRefCountInc -> this.address assertHasSameStructureAs (iftNode as IFTNode.DummyArrayRefCountInc).address
+            is IFTNode.DummyArrayRefCountDec -> {
+                assertEquals(this.type, (iftNode as IFTNode.DummyArrayRefCountDec).type)
+                this.address assertHasSameStructureAs iftNode.address
+            }
+            is IFTNode.Dummy -> assertEquals(this.info, (iftNode as IFTNode.Dummy).info)
             else -> {
                 assertEquals(this, iftNode)
             }
@@ -107,6 +127,8 @@ infix fun ControlFlowGraph.assertHasSameStructureAs(cfg: ControlFlowGraph) {
         dfs(this.entryTreeRoot!!, cfg.entryTreeRoot!!)
 }
 
+// CFG construction tools
+
 fun IFTNode.toCfg(): ControlFlowGraph =
     ControlFlowGraphBuilder().addSingleTree(this).build()
 
@@ -121,6 +143,9 @@ infix fun ControlFlowGraph.merge(iftNode: IFTNode): ControlFlowGraph =
 
 infix fun IFTNode.merge(iftNode: IFTNode): ControlFlowGraph =
     this.toCfg() merge iftNode.toCfg()
+
+infix fun ControlFlowGraph.add(cfg: ControlFlowGraph) =
+    ControlFlowGraphBuilder().mergeUnconditionally(this).addAllFrom(cfg).build()
 
 fun mergeCFGsConditionally(condition: ControlFlowGraph, cfgTrue: ControlFlowGraph, cfgFalse: ControlFlowGraph): ControlFlowGraph {
     return ControlFlowGraphBuilder().mergeUnconditionally(condition).mergeConditionally(cfgTrue, cfgFalse).build()
@@ -139,4 +164,21 @@ fun mergeCFGsInLoop(condition: ControlFlowGraph, cfgLoop: ControlFlowGraph, cfgE
             addLink(Pair(it.first, CFGLinkType.UNCONDITIONAL), condition.entryTreeRoot!!)
         }
     }.build()
+}
+
+// dummy ArrayMemoryManagement implementation
+
+fun dummyArrayAddress(id: Int) = IFTNode.Dummy("address of array $id")
+
+class TestArrayMemoryManagement : ArrayMemoryManagement {
+    private var arrayId = 0
+    override fun genAllocation(size: IFTNode, initialization: List<IFTNode>, type: Type, mode: Expression.ArrayAllocation.InitializationType): Pair<ControlFlowGraph, IFTNode> =
+        Pair(
+            IFTNode.DummyArrayAllocation(size, initialization, type, mode).toCfg(),
+            dummyArrayAddress(arrayId++)
+        )
+
+    override fun genRefCountIncrement(address: IFTNode): ControlFlowGraph = IFTNode.DummyArrayRefCountInc(address).toCfg()
+
+    override fun genRefCountDecrement(address: IFTNode, type: Type): ControlFlowGraph = IFTNode.DummyArrayRefCountDec(address, type).toCfg()
 }

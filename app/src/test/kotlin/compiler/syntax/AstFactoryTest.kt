@@ -62,13 +62,13 @@ class AstFactoryTest {
 
     private infix fun ParseTree<Symbol>.wrapUpTo(topLevel: NonTerminalType): ParseTree<Symbol> {
         val levelSequence = listOf(
-            NonTerminalType.EXPR2048, NonTerminalType.EXPR1024, NonTerminalType.EXPR512,
+            NonTerminalType.EXPR4096, NonTerminalType.EXPR2048, NonTerminalType.EXPR1024, NonTerminalType.EXPR512,
             NonTerminalType.EXPR256, NonTerminalType.EXPR128, NonTerminalType.EXPR64, NonTerminalType.EXPR32,
             NonTerminalType.EXPR16, NonTerminalType.EXPR8, NonTerminalType.EXPR4, NonTerminalType.EXPR2,
             NonTerminalType.EXPR
         )
         val productionSequence = listOf(
-            Productions.expr1024PassThrough, Productions.expr512PassThrough,
+            Productions.expr2048PassThrough, Productions.expr1024PassThrough, Productions.expr512PassThrough,
             Productions.expr256PassThrough, Productions.expr128PassThrough, Productions.expr64PassThrough, Productions.expr32PassThrough,
             Productions.expr16PassThrough, Productions.expr8PassThrough, Productions.expr4PassThrough, Productions.expr2PassThrough,
             Productions.exprPassThrough
@@ -437,12 +437,12 @@ class AstFactoryTest {
     @Test fun `test correctly translates constants literals`() {
         val parseTree = makeProgramWithExpressionsEvaluation(
             makeNTNode(
-                NonTerminalType.EXPR2048, Productions.expr2048Const,
+                NonTerminalType.EXPR4096, Productions.expr4096Const,
                 makeNTNode(NonTerminalType.CONST, Productions.const, makeTNode(TokenType.INTEGER, "42"))
             ) wrapUpTo NonTerminalType.EXPR,
 
             makeNTNode(
-                NonTerminalType.EXPR2048, Productions.expr2048Const,
+                NonTerminalType.EXPR4096, Productions.expr4096Const,
                 makeNTNode(NonTerminalType.CONST, Productions.const, makeTNode(TokenType.TRUE_CONSTANT, "prawda"))
             ) wrapUpTo NonTerminalType.EXPR
         )
@@ -472,7 +472,7 @@ class AstFactoryTest {
     @Test fun `test reports error on integer overflow`() {
         val parseTree = makeProgramWithExpressionsEvaluation(
             makeNTNode(
-                NonTerminalType.EXPR2048, Productions.expr2048Const,
+                NonTerminalType.EXPR4096, Productions.expr4096Const,
                 makeNTNode(NonTerminalType.CONST, Productions.const, makeTNode(TokenType.INTEGER, "9223372036854775808"))
             ) wrapUpTo NonTerminalType.EXPR
         )
@@ -487,13 +487,13 @@ class AstFactoryTest {
             makeNTNode(
                 NonTerminalType.EXPR2048, Productions.expr2048UnaryBoolNot,
                 makeTNode(TokenType.NOT, "nie"),
-                makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "x"))
+                makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "x"))
             ) wrapUpTo NonTerminalType.EXPR,
 
             makeNTNode(
                 NonTerminalType.EXPR2048, Productions.expr2048UnaryMinus,
                 makeTNode(TokenType.MINUS, "-"),
-                makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "y"))
+                makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "y"))
             ) wrapUpTo NonTerminalType.EXPR
         )
         val expectedAst = Program(
@@ -530,17 +530,17 @@ class AstFactoryTest {
         val parseTree = makeProgramWithExpressionsEvaluation(
             makeNTNode(
                 NonTerminalType.EXPR512, Productions.expr512Plus,
-                makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR1024,
+                makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR1024,
                 makeTNode(TokenType.PLUS, "+"),
                 makeNTNode(
                     NonTerminalType.EXPR512, Productions.expr512Plus,
-                    makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "y")) wrapUpTo NonTerminalType.EXPR1024,
+                    makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "y")) wrapUpTo NonTerminalType.EXPR1024,
                     makeTNode(TokenType.PLUS, "+"),
                     makeNTNode(
                         NonTerminalType.EXPR1024, Productions.expr1024Multiply,
-                        makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "z")),
+                        makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "z")),
                         makeTNode(TokenType.MULTIPLY, "*"),
-                        makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "t")) wrapUpTo NonTerminalType.EXPR1024,
+                        makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "t")) wrapUpTo NonTerminalType.EXPR1024,
                     ) wrapUpTo NonTerminalType.EXPR512
                 )
             ) wrapUpTo NonTerminalType.EXPR
@@ -579,11 +579,11 @@ class AstFactoryTest {
         val parseTree = makeProgramWithExpressionsEvaluation(
             makeNTNode(
                 NonTerminalType.EXPR, Productions.exprTernary,
-                makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR2,
+                makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR2,
                 makeTNode(TokenType.QUESTION_MARK, "?"),
-                makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "y")) wrapUpTo NonTerminalType.EXPR2,
+                makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "y")) wrapUpTo NonTerminalType.EXPR2,
                 makeTNode(TokenType.COLON, ":"),
-                makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "z")) wrapUpTo NonTerminalType.EXPR,
+                makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "z")) wrapUpTo NonTerminalType.EXPR,
             ) wrapUpTo NonTerminalType.EXPR
         )
         val expectedAst = Program(
@@ -627,12 +627,12 @@ class AstFactoryTest {
                         NonTerminalType.ATOMIC_STATEMENT, Productions.atomicAssignment,
                         makeNTNode(
                             NonTerminalType.EXPR512, Productions.expr512Plus,
-                            makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR1024,
+                            makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR1024,
                             makeTNode(TokenType.PLUS, "+"),
-                            makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR512
+                            makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR512
                         ) wrapUpTo NonTerminalType.EXPR,
                         makeTNode(TokenType.ASSIGNMENT, "="),
-                        makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "y")) wrapUpTo NonTerminalType.EXPR
+                        makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "y")) wrapUpTo NonTerminalType.EXPR
                     )
                 )
             )
@@ -645,16 +645,16 @@ class AstFactoryTest {
     @Test fun `test correctly translates function call`() {
         val parseTree = makeProgramWithExpressionsEvaluation(
             makeNTNode(
-                NonTerminalType.EXPR2048, Productions.expr2048Call,
+                NonTerminalType.EXPR4096, Productions.expr4096Call,
                 makeTNode(TokenType.IDENTIFIER, "f"),
                 makeTNode(TokenType.LEFT_PAREN, "("),
                 makeNTNode(
                     NonTerminalType.CALL_ARGS, Productions.callArgs1,
-                    makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR,
+                    makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR,
                     makeTNode(TokenType.COMMA, ","),
-                    makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "y")) wrapUpTo NonTerminalType.EXPR,
+                    makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "y")) wrapUpTo NonTerminalType.EXPR,
                     makeTNode(TokenType.ASSIGNMENT, "="),
-                    makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "z")) wrapUpTo NonTerminalType.EXPR,
+                    makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "z")) wrapUpTo NonTerminalType.EXPR,
                 ),
                 makeTNode(TokenType.RIGHT_PAREN, ")")
             ) wrapUpTo NonTerminalType.EXPR
@@ -691,20 +691,226 @@ class AstFactoryTest {
         assertEquals(expectedAst, resultAst)
     }
 
+    @Test fun `test correctly translates array length`() {
+        val parseTree = makeProgramWithExpressionsEvaluation(
+            makeNTNode(
+                NonTerminalType.EXPR2048, Productions.expr2048ArrayLength,
+                makeTNode(TokenType.LENGTH, "długość"),
+                makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR,
+            ) wrapUpTo NonTerminalType.EXPR
+        )
+        val expectedAst = Program(
+            listOf(
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "główna",
+                        listOf(),
+                        Type.Unit,
+                        listOf(
+                            Statement.Evaluation(
+                                Expression.ArrayLength(Expression.Variable("x", dummyLocationRange), dummyLocationRange),
+                                dummyLocationRange
+                            )
+                        ),
+                        false,
+                        dummyLocationRange
+                    ),
+                    dummyLocationRange
+                )
+            )
+        )
+
+        val resultAst = astFactory.createFromParseTree(parseTree)
+        assertEquals(expectedAst, resultAst)
+    }
+
+    @Test fun `test correctly translates array allocation`() {
+        val parseTree = makeProgramWithExpressionsEvaluation(
+            makeNTNode(
+                NonTerminalType.EXPR4096, Productions.expr4096ArrayListAllocation,
+                makeTNode(TokenType.ARRAY_ALLOCATION, "ciąg"),
+                makeNTNode(
+                    NonTerminalType.TYPE, Productions.type,
+                    makeTNode(TokenType.TYPE_INTEGER, "Liczba")
+                ),
+                makeTNode(TokenType.LEFT_BRACE, "{"),
+                makeNTNode(
+                    NonTerminalType.EXPR4096, Productions.expr4096Const,
+                    makeNTNode(NonTerminalType.CONST, Productions.const, makeTNode(TokenType.INTEGER, "1"))
+                ) wrapUpTo NonTerminalType.EXPR,
+                makeTNode(TokenType.COMMA, ","),
+                makeNTNode(
+                    NonTerminalType.EXPR4096, Productions.expr4096Const,
+                    makeNTNode(NonTerminalType.CONST, Productions.const, makeTNode(TokenType.INTEGER, "2"))
+                ) wrapUpTo NonTerminalType.EXPR,
+                makeTNode(TokenType.COMMA, ","),
+                makeNTNode(
+                    NonTerminalType.EXPR4096, Productions.expr4096Const,
+                    makeNTNode(NonTerminalType.CONST, Productions.const, makeTNode(TokenType.INTEGER, "3"))
+                ) wrapUpTo NonTerminalType.EXPR,
+                makeTNode(TokenType.RIGHT_BRACE, "}"),
+            ) wrapUpTo NonTerminalType.EXPR
+        )
+        val expectedAst = Program(
+            listOf(
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "główna",
+                        listOf(),
+                        Type.Unit,
+                        listOf(
+                            Statement.Evaluation(
+                                Expression.ArrayAllocation(
+                                    Type.Number,
+                                    Expression.NumberLiteral(3),
+                                    listOf(
+                                        Expression.NumberLiteral(1, dummyLocationRange),
+                                        Expression.NumberLiteral(2, dummyLocationRange),
+                                        Expression.NumberLiteral(3, dummyLocationRange),
+                                    ),
+                                    Expression.ArrayAllocation.InitializationType.ALL_VALUES,
+                                    dummyLocationRange
+                                ),
+                                dummyLocationRange
+                            )
+                        ),
+                        false,
+                        dummyLocationRange
+                    ),
+                    dummyLocationRange
+                )
+            )
+        )
+
+        val resultAst = astFactory.createFromParseTree(parseTree)
+        assertEquals(expectedAst, resultAst)
+    }
+
+    @Test fun `test correctly translates default value array allocation`() {
+        val parseTree = makeProgramWithExpressionsEvaluation(
+            makeNTNode(
+                NonTerminalType.EXPR4096, Productions.expr4096ArrayDefaultAllocation,
+                makeTNode(TokenType.ARRAY_ALLOCATION, "ciąg"),
+                makeNTNode(
+                    NonTerminalType.TYPE, Productions.type,
+                    makeTNode(TokenType.TYPE_BOOLEAN, "Czy")
+                ),
+                makeTNode(TokenType.LEFT_BRACKET, "["),
+                makeNTNode(
+                    NonTerminalType.EXPR4096, Productions.expr4096Const,
+                    makeNTNode(NonTerminalType.CONST, Productions.const, makeTNode(TokenType.INTEGER, "123"))
+                ) wrapUpTo NonTerminalType.EXPR,
+                makeTNode(TokenType.RIGHT_BRACKET, "]"),
+                makeTNode(TokenType.LEFT_PAREN, "("),
+                makeNTNode(
+                    NonTerminalType.EXPR4096, Productions.expr4096Const,
+                    makeNTNode(NonTerminalType.CONST, Productions.const, makeTNode(TokenType.FALSE_CONSTANT, "fałsz"))
+                ) wrapUpTo NonTerminalType.EXPR,
+                makeTNode(TokenType.RIGHT_PAREN, ")"),
+            ) wrapUpTo NonTerminalType.EXPR
+        )
+
+        val expectedAst = Program(
+            listOf(
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "główna",
+                        listOf(),
+                        Type.Unit,
+                        listOf(
+                            Statement.Evaluation(
+                                Expression.ArrayAllocation(
+                                    Type.Boolean,
+                                    Expression.NumberLiteral(123, dummyLocationRange),
+                                    listOf(
+                                        Expression.BooleanLiteral(false, dummyLocationRange),
+                                    ),
+                                    Expression.ArrayAllocation.InitializationType.ONE_VALUE,
+                                    dummyLocationRange
+                                ),
+                                dummyLocationRange
+                            )
+                        ),
+                        false,
+                        dummyLocationRange
+                    ),
+                    dummyLocationRange
+                )
+            )
+        )
+
+        val resultAst = astFactory.createFromParseTree(parseTree)
+        assertEquals(expectedAst, resultAst)
+    }
+
+    @Test fun `test correctly translates array access`() {
+        val parseTree = makeProgramWithExpressionsEvaluation(
+            makeNTNode(
+                NonTerminalType.EXPR2048, Productions.expr2048ArrayAccess,
+                makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR,
+                makeTNode(TokenType.LEFT_BRACKET, "["),
+                makeNTNode(
+                    NonTerminalType.EXPR4096, Productions.expr4096Const,
+                    makeNTNode(NonTerminalType.CONST, Productions.const, makeTNode(TokenType.INTEGER, "7"))
+                ) wrapUpTo NonTerminalType.EXPR,
+                makeTNode(TokenType.RIGHT_BRACKET, "]"),
+                makeTNode(TokenType.LEFT_PAREN, "["),
+                makeNTNode(
+                    NonTerminalType.EXPR4096, Productions.expr4096Const,
+                    makeNTNode(NonTerminalType.CONST, Productions.const, makeTNode(TokenType.INTEGER, "13"))
+                ) wrapUpTo NonTerminalType.EXPR,
+                makeTNode(TokenType.RIGHT_PAREN, "]"),
+            ) wrapUpTo NonTerminalType.EXPR
+        )
+
+        val expectedAst = Program(
+            listOf(
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "główna",
+                        listOf(),
+                        Type.Unit,
+                        listOf(
+                            Statement.Evaluation(
+                                Expression.ArrayElement(
+                                    Expression.ArrayElement(
+                                        Expression.Variable("x", dummyLocationRange),
+                                        Expression.NumberLiteral(7, dummyLocationRange),
+                                        dummyLocationRange
+                                    ),
+                                    Expression.NumberLiteral(13, dummyLocationRange),
+                                    dummyLocationRange
+                                ),
+                                dummyLocationRange
+                            )
+                        ),
+                        false,
+                        dummyLocationRange
+                    ),
+                    dummyLocationRange
+                )
+            )
+        )
+
+        val resultAst = astFactory.createFromParseTree(parseTree)
+        assertEquals(expectedAst, resultAst)
+    }
+
     @Test fun `test reports error on incorrect call argument name`() {
         val parseTree = makeProgramWithExpressionsEvaluation(
             makeNTNode(
-                NonTerminalType.EXPR2048, Productions.expr2048Call,
+                NonTerminalType.EXPR4096, Productions.expr4096Call,
                 makeTNode(TokenType.IDENTIFIER, "f"),
                 makeTNode(TokenType.LEFT_PAREN, "("),
                 makeNTNode(
                     NonTerminalType.CALL_ARGS, Productions.callArgs2,
                     makeNTNode(
                         NonTerminalType.EXPR2048, Productions.expr2048UnaryMinus,
-                        makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "y"))
+                        makeTNode(TokenType.MINUS, "-"),
+                        makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "y"))
                     ) wrapUpTo NonTerminalType.EXPR,
                     makeTNode(TokenType.ASSIGNMENT, "="),
-                    makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "z")) wrapUpTo NonTerminalType.EXPR,
+                    makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "z")) wrapUpTo NonTerminalType.EXPR,
                 ),
                 makeTNode(TokenType.RIGHT_PAREN, ")")
             ) wrapUpTo NonTerminalType.EXPR
@@ -722,7 +928,7 @@ class AstFactoryTest {
                     NonTerminalType.NON_BRACE_STATEMENT, Productions.nonBraceStatementIf,
                     makeTNode(TokenType.IF, "jeśli"),
                     makeTNode(TokenType.LEFT_PAREN, "("),
-                    makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR,
+                    makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR,
                     makeTNode(TokenType.RIGHT_PAREN, ")"),
                     makeNTNode(
                         NonTerminalType.NON_IF_MAYBE_BLOCK, Productions.nonIfMaybeBlockNonBrace,
@@ -772,9 +978,9 @@ class AstFactoryTest {
                     makeTNode(TokenType.LEFT_PAREN, "("),
                     makeNTNode(
                         NonTerminalType.EXPR16, Productions.expr16Equal,
-                        makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR32,
+                        makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR32,
                         makeTNode(TokenType.EQUAL, "=="),
-                        makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "y")) wrapUpTo NonTerminalType.EXPR16
+                        makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "y")) wrapUpTo NonTerminalType.EXPR16
                     ) wrapUpTo NonTerminalType.EXPR,
                     makeTNode(TokenType.RIGHT_PAREN, ")"),
                     makeNTNode(
@@ -790,9 +996,9 @@ class AstFactoryTest {
                     makeTNode(TokenType.LEFT_PAREN, "("),
                     makeNTNode(
                         NonTerminalType.EXPR16, Productions.expr16Equal,
-                        makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "y")) wrapUpTo NonTerminalType.EXPR32,
+                        makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "y")) wrapUpTo NonTerminalType.EXPR32,
                         makeTNode(TokenType.EQUAL, "=="),
-                        makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR16
+                        makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR16
                     ) wrapUpTo NonTerminalType.EXPR,
                     makeTNode(TokenType.RIGHT_PAREN, ")"),
                     makeNTNode(
@@ -808,9 +1014,9 @@ class AstFactoryTest {
                     makeTNode(TokenType.LEFT_PAREN, "("),
                     makeNTNode(
                         NonTerminalType.EXPR16, Productions.expr16NotEqual,
-                        makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR32,
+                        makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR32,
                         makeTNode(TokenType.NOT_EQUAL, "!="),
-                        makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "y")) wrapUpTo NonTerminalType.EXPR16
+                        makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "y")) wrapUpTo NonTerminalType.EXPR16
                     ) wrapUpTo NonTerminalType.EXPR,
                     makeTNode(TokenType.RIGHT_PAREN, ")"),
                     makeNTNode(
@@ -830,7 +1036,7 @@ class AstFactoryTest {
                             makeNTNode(
                                 NonTerminalType.ATOMIC_STATEMENT, Productions.atomicReturn,
                                 makeTNode(TokenType.RETURN, "zwróć"),
-                                makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "z")) wrapUpTo NonTerminalType.EXPR
+                                makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "z")) wrapUpTo NonTerminalType.EXPR
                             ),
                             makeTNode(TokenType.NEWLINE, "\n")
                         )
@@ -887,7 +1093,7 @@ class AstFactoryTest {
                     NonTerminalType.NON_BRACE_STATEMENT, Productions.nonBraceStatementWhile,
                     makeTNode(TokenType.WHILE, "dopóki"),
                     makeTNode(TokenType.LEFT_PAREN, "("),
-                    makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR,
+                    makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR,
                     makeTNode(TokenType.RIGHT_PAREN, ")"),
                     makeNTNode(
                         NonTerminalType.NON_IF_MAYBE_BLOCK, Productions.nonIfMaybeBlockNonBrace,
@@ -941,11 +1147,11 @@ class AstFactoryTest {
                     makeTNode(TokenType.LEFT_PAREN, "("),
                     makeNTNode(
                         NonTerminalType.CALL_ARGS, Productions.callArgs1,
-                        makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "a")) wrapUpTo NonTerminalType.EXPR,
+                        makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "a")) wrapUpTo NonTerminalType.EXPR,
                         makeTNode(TokenType.COMMA, ","),
-                        makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "b")) wrapUpTo NonTerminalType.EXPR,
+                        makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "b")) wrapUpTo NonTerminalType.EXPR,
                         makeTNode(TokenType.ASSIGNMENT, "="),
-                        makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "c")) wrapUpTo NonTerminalType.EXPR,
+                        makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "c")) wrapUpTo NonTerminalType.EXPR,
                     ),
                     makeTNode(TokenType.RIGHT_PAREN, ")"),
                     makeNTNode(
@@ -955,7 +1161,7 @@ class AstFactoryTest {
                             makeNTNode(
                                 NonTerminalType.ATOMIC_STATEMENT, Productions.atomicYield,
                                 makeTNode(TokenType.YIELD, "przekaż"),
-                                makeNTNode(NonTerminalType.EXPR2048, Productions.expr2048Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR,
+                                makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR,
                             ),
                             makeTNode(TokenType.NEWLINE, "\n")
                         ),

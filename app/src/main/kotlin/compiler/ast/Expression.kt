@@ -23,6 +23,30 @@ sealed class Expression : AstNode {
         override val location: LocationRange? = null,
     ) : Expression()
 
+    data class ArrayElement(
+        val expression: Expression,
+        val index: Expression,
+        override val location: LocationRange? = null
+    ) : Expression()
+
+    data class ArrayLength(
+        val expression: Expression,
+        override val location: LocationRange? = null
+    ) : Expression()
+
+    data class ArrayAllocation(
+        val elementType: Type,
+        val size: Expression,
+        val initialization: List<Expression>,
+        val initializationType: InitializationType,
+        override val location: LocationRange? = null
+    ) : Expression() {
+        enum class InitializationType {
+            ONE_VALUE,
+            ALL_VALUES
+        }
+    }
+
     data class FunctionCall(
         val name: String,
         val arguments: List<Argument>,

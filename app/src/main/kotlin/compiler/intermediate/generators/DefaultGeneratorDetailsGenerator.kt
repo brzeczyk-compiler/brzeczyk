@@ -77,6 +77,11 @@ class DefaultGeneratorDetailsGenerator(
             cfgBuilder.addSingleTree(IFTNode.MemoryWrite(getNestedForeachFramePointerAddressWithCustomBase(it.value, customBaseRegister)!!, IFTNode.Const(0)))
         }
 
+        // clear array variables
+        arrayVariables.map { it.value as Variable }.forEach {
+            cfgBuilder.addSingleTree(innerFDG.genDirectWriteWithCustomBase(it, IFTNode.Const(0), customBaseRegister))
+        }
+
         // generate the epilogue
         cfgBuilder.mergeUnconditionally(initFDG.genEpilogue())
 
@@ -187,6 +192,16 @@ class DefaultGeneratorDetailsGenerator(
             cfgBuilder.addLink(Pair(checkNode, CFGLinkType.CONDITIONAL_FALSE), callCFG.entryTreeRoot!!)
         }
 
+        // decrease reference counters of all array variables (function parameters are not included)
+        arrayVariables.map { it.value as Variable }.forEach {
+            cfgBuilder.mergeUnconditionally(
+                DefaultArrayMemoryManagement.genRefCountDecrement(
+                    innerFDG.genDirectReadWithCustomBase(it, customBaseRegister),
+                    it.type
+                )
+            )
+        }
+
         // free the frame
         cfgBuilder.mergeUnconditionally(
             freeFDG.genCall(listOf(finalizeFDG.genRead(finalizeFramePointerParameter, true))).callGraph
@@ -210,13 +225,17 @@ class DefaultGeneratorDetailsGenerator(
         val freeFDG = ForeignFunctionDetailsGenerator(IFTNode.MemoryLabel("free"), 0)
     }
 
+    private val arrayVariables = variablesLocationTypes.keys // this is inefficient but probably temporary solution
+        .filter { it.value is Variable && it.value.type is Type.Array }
+
     private val innerFDG = DefaultFunctionDetailsGenerator(
         parameters,
         null,
         resumeLabel,
         depth,
         variablesLocationTypes +
-            parameters.associate { Ref(it) to VariableLocationType.MEMORY },
+            parameters.associate { Ref(it) to VariableLocationType.MEMORY } +
+            arrayVariables.associateWith { VariableLocationType.MEMORY },
         displayAddress
     )
 

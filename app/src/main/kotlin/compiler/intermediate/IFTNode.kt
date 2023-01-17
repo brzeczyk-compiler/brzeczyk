@@ -1,7 +1,9 @@
 package compiler.intermediate
 
+import compiler.ast.Expression
 import compiler.ast.Function
 import compiler.ast.NamedNode
+import compiler.ast.Type
 
 sealed class IFTNode {
     companion object {
@@ -10,6 +12,9 @@ sealed class IFTNode {
 
     // valid only as root, used to pass label information to linearization phase
     data class LabeledNode(val label: String, val node: IFTNode) : IFTNode()
+
+    // valid only as root, has to have unconditional link at output
+    data class NoOp(private val dummy: Unit = Unit) : IFTNode()
 
     data class MemoryRead(val address: IFTNode) : IFTNode()
     data class MemoryLabel(val label: String) : IFTNode()
@@ -64,4 +69,7 @@ sealed class IFTNode {
     data class DummyWrite(val namedNode: NamedNode, val value: IFTNode, val isDirect: Boolean, val isGlobal: Boolean = false) : IFTNode()
     data class DummyCallResult(val dummy: Unit = Unit) : IFTNode()
     data class DummyCall(val function: Function, val args: List<IFTNode>, val callResult1: DummyCallResult, val callResult2: DummyCallResult = DummyCallResult()) : IFTNode()
+    data class DummyArrayAllocation(val size: IFTNode, val initList: List<IFTNode>, val type: Type, val mode: Expression.ArrayAllocation.InitializationType) : IFTNode()
+    data class DummyArrayRefCountInc(val address: IFTNode) : IFTNode()
+    data class DummyArrayRefCountDec(val address: IFTNode, val type: Type) : IFTNode()
 }

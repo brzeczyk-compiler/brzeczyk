@@ -47,6 +47,11 @@ sealed class Expression : AstNode {
         }
     }
 
+    data class ArrayGeneration(
+        val generatorCall: FunctionCall,
+        override val location: LocationRange? = null
+    ) : Expression()
+
     data class FunctionCall(
         val name: String,
         val arguments: List<Argument>,

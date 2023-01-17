@@ -20,7 +20,7 @@ import compiler.utils.refMapOf
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class FunctionControlFlowTest {
+class FunctionControlFlowPlannerTest {
     private val expressionNodes = mutableKeyRefMapOf<Expression, MutableMap<Ref<Variable?>, Ref<IFTNode>>>()
     private val expressionAccessNodes = mutableKeyRefMapOf<Expression, MutableMap<Ref<Variable?>, Ref<IFTNode>>>()
     private val nameResolution = mutableRefMapOf<AstNode, NamedNode>()
@@ -37,12 +37,12 @@ class FunctionControlFlowTest {
 
     private fun getExpressionCFG(
         expression: Expression,
-        target: ControlFlow.AssignmentTarget?,
+        target: ControlFlowPlanner.AssignmentTarget?,
         function: Function,
         accessNodeConsumer: ((ControlFlowGraph, IFTNode) -> Unit)?
     ): ControlFlowGraph {
         return when (target) {
-            is ControlFlow.AssignmentTarget.VariableTarget? -> {
+            is ControlFlowPlanner.AssignmentTarget.VariableTarget? -> {
                 val node = expressionNodes[Ref(expression)]?.get(Ref(target?.variable))
                 val nodeList = node?.let { listOf(it.value) } ?: emptyList()
                 ControlFlowGraph(nodeList, node?.value, refMapOf(), refMapOf(), refMapOf()).also {
@@ -150,21 +150,22 @@ class FunctionControlFlowTest {
         }
     }
 
-    private fun test(program: Program) = ControlFlow.createGraphForEachFunction(
+    private val testDiagnostics = object : Diagnostics {
+        override fun report(diagnostic: Diagnostic) {
+            diagnostics.add(diagnostic)
+        }
+
+        override fun hasAnyErrors(): Boolean {
+            throw NotImplementedError("This method shouldn't be called")
+        }
+    }
+
+    private fun test(program: Program) = ControlFlowPlanner(testDiagnostics).createGraphsForFunctions(
         program,
         this::getExpressionCFG,
         nameResolution,
         defaultParameterValues,
         functionReturnedValueVariables,
-        object : Diagnostics {
-            override fun report(diagnostic: Diagnostic) {
-                diagnostics.add(diagnostic)
-            }
-
-            override fun hasAnyError(): Boolean {
-                throw RuntimeException("This method shouldn't be called")
-            }
-        },
         { variable, _ -> IFTNode.MemoryRead(IFTNode.MemoryLabel(variable.name)) },
         { node, variable, _ -> IFTNode.MemoryWrite(IFTNode.MemoryLabel(variable.name), node) },
         dummyGeneratorDetailsGenerator,
@@ -183,7 +184,7 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(listOf(mainNoOpNode), mainNoOpNode, refMapOf(), refMapOf(), refMapOf())
-        cfg assertHasSameStructureAs result[Ref(function)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() { 123 }
@@ -200,7 +201,7 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(listOf(mainNoOpNode, node), node, refMapOf(), refMapOf(), refMapOf())
-        cfg assertHasSameStructureAs result[Ref(function)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() {
@@ -230,7 +231,7 @@ class FunctionControlFlowTest {
             refMapOf()
         )
 
-        cfg assertHasSameStructureAs result[Ref(function)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() { wart x: Liczba = 123 }
@@ -248,7 +249,7 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(listOf(mainNoOpNode, node), node, refMapOf(), refMapOf(), refMapOf())
-        cfg assertHasSameStructureAs result[Ref(function)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() {
@@ -272,8 +273,8 @@ class FunctionControlFlowTest {
 
         val cfg = ControlFlowGraph(listOf(mainNoOpNode, node), node, refMapOf(), refMapOf(), refMapOf())
         val nestedCfg = ControlFlowGraph(listOf(mainNoOpNode), mainNoOpNode, refMapOf(), refMapOf(), refMapOf())
-        cfg assertHasSameStructureAs result[Ref(function)]!!
-        nestedCfg assertHasSameStructureAs result[Ref(nestedFunction)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
+        nestedCfg assertHasSameStructureAs result.toMap()[Ref(nestedFunction)]!!
     }
 
     // czynność f() {
@@ -296,7 +297,7 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(listOf(mainNoOpNode, node), node, refMapOf(), refMapOf(), refMapOf())
-        cfg assertHasSameStructureAs result[Ref(function)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() { { 123 } }
@@ -314,7 +315,7 @@ class FunctionControlFlowTest {
         val result = test(program)
 
         val cfg = ControlFlowGraph(listOf(mainNoOpNode, node), node, refMapOf(), refMapOf(), refMapOf())
-        cfg assertHasSameStructureAs result[Ref(function)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() {
@@ -347,7 +348,7 @@ class FunctionControlFlowTest {
             refMapOf(node1 to node3)
         )
 
-        cfg assertHasSameStructureAs result[Ref(function)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() {
@@ -384,7 +385,7 @@ class FunctionControlFlowTest {
             refMapOf(node1 to node3)
         )
 
-        cfg assertHasSameStructureAs result[Ref(function)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() {
@@ -418,7 +419,7 @@ class FunctionControlFlowTest {
             refMapOf(node1 to loopBreakNode)
         )
 
-        cfg assertHasSameStructureAs result[Ref(function)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() {
@@ -458,7 +459,7 @@ class FunctionControlFlowTest {
             refMapOf(node1 to loopBreakNode, node2 to node3)
         )
 
-        cfg assertHasSameStructureAs result[Ref(function)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() {
@@ -498,7 +499,7 @@ class FunctionControlFlowTest {
             refMapOf(node1 to loopBreakNode, node2 to node3)
         )
 
-        cfg assertHasSameStructureAs result[Ref(function)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() {
@@ -542,7 +543,7 @@ class FunctionControlFlowTest {
             refMapOf(node1 to loopBreakNode, node2 to node3, node3 to node4)
         )
 
-        cfg assertHasSameStructureAs result[Ref(function)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() {
@@ -626,7 +627,7 @@ class FunctionControlFlowTest {
             )
         )
 
-        cfg assertHasSameStructureAs result[Ref(function)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() {
@@ -657,7 +658,7 @@ class FunctionControlFlowTest {
             refMapOf(node1 to node2)
         )
 
-        cfg assertHasSameStructureAs result[Ref(function)]!!
+        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() { przerwij }
@@ -796,7 +797,7 @@ class FunctionControlFlowTest {
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
         val result = test(program)
-        val resultCfg = result.values.first()
+        val resultCfg = result.map { it.second }.first()
 
         val idRegister = Register()
         val stateRegister = Register()
@@ -883,7 +884,7 @@ class FunctionControlFlowTest {
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
         val result = test(program)
-        val resultCfg = result.values.first()
+        val resultCfg = result.map { it.second }.first()
 
         val stateRegister = Register()
         val frameMemoryAddress = IFTNode.Dummy(listOf("foreach frame pointer address", function, foreach))
@@ -1019,7 +1020,7 @@ class FunctionControlFlowTest {
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
         val result = test(program)
-        val resultCfg = result.values.first()
+        val resultCfg = result.map { it.second }.first()
 
         val idRegister = Register()
         val stateRegister = Register()
@@ -1104,7 +1105,7 @@ class FunctionControlFlowTest {
             listOf(IFTNode.Const(123)),
             IFTNode.DummyCallResult()
         ) merge mainNoOpNode
-        expectedCFG assertHasSameStructureAs result[Ref(generator)]!!
+        expectedCFG assertHasSameStructureAs result.toMap()[Ref(generator)]!!
     }
 
     // czynność f() {
@@ -1138,7 +1139,7 @@ class FunctionControlFlowTest {
                         merge mainNoOpNode
                     )
             )
-        expectedCfg assertHasSameStructureAs result[Ref(function)]!!
+        expectedCfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() {
@@ -1190,7 +1191,7 @@ class FunctionControlFlowTest {
                         merge mainNoOpNode
                     )
             )
-        expectedCfg assertHasSameStructureAs result[Ref(function)]!!
+        expectedCfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() {
@@ -1240,7 +1241,7 @@ class FunctionControlFlowTest {
                         merge mainNoOpNode
                     )
             )
-        expectedCfg assertHasSameStructureAs result[Ref(function)]!!
+        expectedCfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() {
@@ -1289,7 +1290,7 @@ class FunctionControlFlowTest {
                         merge conditionNode
                     )
             )
-        expectedCfg assertHasSameStructureAs result[Ref(function)]!!
+        expectedCfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 
     // czynność f() {
@@ -1418,6 +1419,6 @@ class FunctionControlFlowTest {
                         merge loopConditionNode
                     )
             )
-        expectedCfg assertHasSameStructureAs result[Ref(function)]!!
+        expectedCfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
     }
 }

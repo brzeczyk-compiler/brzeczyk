@@ -1,0 +1,29 @@
+czynność fib_czynność(a: Liczba) -> Liczba {
+    jeśli(a <= 2)
+        zwróć 1
+
+    // does the same thing, yields exactly once
+    przekaźnik fib_przekaźnik(a: Liczba) -> Liczba {
+        jeśli(a <= 2) {
+            przekaż 1
+            zakończ
+        }
+        otrzymując x: Liczba od fib_przekaźnik(a-1) {
+            przekaż x + fib_czynność(a-2)
+            przerwij
+        }
+    }
+
+    zm wynik: Liczba = fib_czynność(a-2)
+    otrzymując x: Liczba od fib_przekaźnik(a-1) {
+        wynik = wynik + x
+        zwróć wynik
+    }
+    // unreachable branch
+    zwróć 1234
+}
+
+czynność główna() {
+    zm n: Liczba = wczytaj()
+    napisz(fib_czynność(n))
+}

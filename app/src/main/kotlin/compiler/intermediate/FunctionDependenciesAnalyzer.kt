@@ -14,6 +14,7 @@ import compiler.diagnostics.Diagnostic
 import compiler.diagnostics.Diagnostics
 import compiler.intermediate.generators.DISPLAY_LABEL_IN_MEMORY
 import compiler.intermediate.generators.DefaultFunctionDetailsGenerator
+import compiler.intermediate.generators.DefaultGeneratorDetailsGenerator
 import compiler.intermediate.generators.ForeignFunctionDetailsGenerator
 import compiler.intermediate.generators.ForeignGeneratorDetailsGenerator
 import compiler.intermediate.generators.FunctionDetailsGenerator
@@ -45,7 +46,7 @@ object FunctionDependenciesAnalyzer {
             when (node) {
                 is Program.Global.FunctionDefinition -> { analyze(node.function, pathSoFar) }
                 is Statement.FunctionDefinition -> { analyze(node.function, pathSoFar) }
-                is Function -> if (node.implementation is Function.Implementation.Local) {
+                is Function -> if (node.isLocal) {
                     val newPrefix = nameFunction(node, pathSoFar)
                     var blockNumber = 0
                     fun handleNestedBlock(statements: List<Statement>) = statements.forEach { analyze(it, newPrefix + "@block" + blockNumber++) }
@@ -75,7 +76,7 @@ object FunctionDependenciesAnalyzer {
     fun extractMainFunction(program: Program, diagnostics: Diagnostics): Function? {
         val mainFunction = (
             program.globals.find {
-                it is Program.Global.FunctionDefinition && it.function.name == MAIN_FUNCTION_IDENTIFIER
+                it is Program.Global.FunctionDefinition && it.function.name == MAIN_FUNCTION_IDENTIFIER && it.function.isLocal && !it.function.isGenerator
             } as Program.Global.FunctionDefinition?
             )?.function
         if (mainFunction == null) {
@@ -86,7 +87,9 @@ object FunctionDependenciesAnalyzer {
 
     fun createCallablesDetailsGenerators(
         program: Program,
+        nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
         variableProperties: Map<Ref<AstNode>, VariablePropertiesAnalyzer.VariableProperties>,
+        foreachLoopsInGenerators: Map<Ref<Function>, List<Ref<Statement.ForeachLoop>>>,
         functionReturnedValueVariables: Map<Ref<Function>, Variable>,
         allowInconsistentNamingErrors: Boolean = false
     ): Pair<Map<Ref<Function>, FunctionDetailsGenerator>, Map<Ref<Function>, GeneratorDetailsGenerator>> {
@@ -95,42 +98,69 @@ object FunctionDependenciesAnalyzer {
         val functionIdentifiers = createUniqueIdentifiers(program, allowInconsistentNamingErrors)
 
         fun createDetailsGenerator(function: Function, depth: ULong) {
-            if (function.isGenerator && function.implementation is Function.Implementation.Foreign) { // TODO: implement local gdg
-                generatorDGs[Ref(function)] =
-                    function.implementation.foreignName.let {
+            val identifier = when (function.implementation) {
+                is Function.Implementation.Foreign -> function.implementation.foreignName
+                is Function.Implementation.Local -> functionIdentifiers[Ref(function)]!!.value
+            }
+
+            fun calculateVariableLocationTypes(): Map<Ref<NamedNode>, VariableLocationType> {
+                val variableLocationTypes = mutableKeyRefMapOf<NamedNode, VariableLocationType>()
+
+                variableProperties
+                    .filter { (_, properties) -> Ref(properties.owner) == Ref(function) }
+                    .forEach { (variable, properties) ->
+                        variableLocationTypes[Ref(variable.value as NamedNode)] =
+                            if (properties.accessedIn.any { it != Ref(function) } || properties.writtenIn.any { it != Ref(function) })
+                                VariableLocationType.MEMORY
+                            else
+                                VariableLocationType.REGISTER
+                    }
+
+                return variableLocationTypes
+            }
+
+            val getGDGForNestedLoop = { foreachLoop: Statement.ForeachLoop -> generatorDGs[nameResolution[Ref(foreachLoop.generatorCall)]!!]!! }
+
+            if (function.isGenerator) {
+                generatorDGs[Ref(function)] = when (function.implementation) {
+                    is Function.Implementation.Foreign -> {
                         ForeignGeneratorDetailsGenerator(
-                            IFTNode.MemoryLabel(it + "_init"),
-                            IFTNode.MemoryLabel(it + "_resume"),
-                            IFTNode.MemoryLabel(it + "_finalize")
+                            IFTNode.MemoryLabel(identifier + "_init"),
+                            IFTNode.MemoryLabel(identifier + "_resume"),
+                            IFTNode.MemoryLabel(identifier + "_finalize")
                         )
                     }
+
+                    is Function.Implementation.Local -> {
+                        DefaultGeneratorDetailsGenerator(
+                            function.parameters,
+                            IFTNode.MemoryLabel(identifier + "_init"),
+                            IFTNode.MemoryLabel(identifier + "_resume"),
+                            IFTNode.MemoryLabel(identifier + "_finalize"),
+                            depth,
+                            calculateVariableLocationTypes(),
+                            IFTNode.MemoryLabel(DISPLAY_LABEL_IN_MEMORY),
+                            foreachLoopsInGenerators[Ref(function)]!!,
+                            getGDGForNestedLoop
+                        )
+                    }
+                }
             } else {
                 functionDGs[Ref(function)] = when (function.implementation) {
-
                     is Function.Implementation.Foreign -> {
                         ForeignFunctionDetailsGenerator(
-                            IFTNode.MemoryLabel(function.implementation.foreignName),
+                            IFTNode.MemoryLabel(identifier),
                             if (function.returnType !is Type.Unit) 1 else 0
                         )
                     }
 
                     is Function.Implementation.Local -> {
-                        val variablesLocationTypes = mutableKeyRefMapOf<NamedNode, VariableLocationType>()
-                        variableProperties
-                            .filter { (_, properties) -> properties.owner === function }
-                            .forEach { (variable, properties) ->
-                                variablesLocationTypes[Ref(variable.value as NamedNode)] =
-                                    if (properties.accessedIn.any { it != Ref(function) } || properties.writtenIn.any { it != Ref(function) })
-                                        VariableLocationType.MEMORY
-                                    else VariableLocationType.REGISTER
-                            }
-
                         DefaultFunctionDetailsGenerator(
                             function.parameters,
                             functionReturnedValueVariables[Ref(function)],
-                            IFTNode.MemoryLabel(functionIdentifiers[Ref(function)]!!.value),
+                            IFTNode.MemoryLabel(identifier),
                             depth,
-                            variablesLocationTypes,
+                            calculateVariableLocationTypes(),
                             IFTNode.MemoryLabel(DISPLAY_LABEL_IN_MEMORY)
                         )
                     }

@@ -29,16 +29,15 @@ import compiler.utils.mutableRefSetOf
 import compiler.utils.refSetOf
 import java.util.Stack
 
-object ControlFlow {
+class ControlFlowPlanner(private val diagnostics: Diagnostics) {
     private fun mapLinkType(list: List<Pair<IFTNode, CFGLinkType>?>, type: CFGLinkType) = list.map { it?.copy(second = type) }
 
-    fun createGraphForProgram(
+    fun createGraphsForProgram(
         program: Program,
         programProperties: ProgramAnalyzer.ProgramProperties,
         functionDetailsGenerators: Map<Ref<Function>, FunctionDetailsGenerator>,
-        generatorDetailsGenerators: Map<Ref<Function>, GeneratorDetailsGenerator>,
-        diagnostics: Diagnostics,
-    ): Map<Ref<Function>, ControlFlowGraph> {
+        generatorDetailsGenerators: Map<Ref<Function>, GeneratorDetailsGenerator>
+    ): List<Pair<Ref<Function>, ControlFlowGraph>> {
         val globalVariableAccessGenerator = GlobalVariableAccessGenerator(programProperties.variableProperties)
         val callGraph = createCallGraph(program, programProperties.nameResolution)
 
@@ -76,26 +75,17 @@ object ControlFlow {
         fun getGeneratorDetailsGenerator(generator: Function) =
             generatorDetailsGenerators[Ref(generator)]!!
 
-        val cfgForEachFunction = createGraphForEachFunction(
+        return createGraphsForFunctions(
             program,
             ::partiallyAppliedCreateGraphForExpression,
             programProperties.nameResolution,
             programProperties.defaultParameterMapping,
             programProperties.functionReturnedValueVariables,
-            diagnostics,
             ::createReadFromVariable,
             ::createWriteToVariable,
             ::getGeneratorDetailsGenerator,
             DefaultArrayMemoryManagement
         )
-
-        return cfgForEachFunction.mapValues { (function, bodyCFG) ->
-            attachPrologueAndEpilogue(
-                bodyCFG,
-                functionDetailsGenerators[function]!!.genPrologue(),
-                functionDetailsGenerators[function]!!.genEpilogue()
-            )
-        } // TODO: add initialization and finalization of generators
     }
 
     fun attachPrologueAndEpilogue(body: ControlFlowGraph, prologue: ControlFlowGraph, epilogue: ControlFlowGraph): ControlFlowGraph {
@@ -547,19 +537,18 @@ object ControlFlow {
     private data class EscapeTreeHead(var value: IFTNode) // wrapper class allowing to modify arguments value
     private fun EscapeTreeHead?.copy() = this?.copy()
 
-    fun createGraphForEachFunction(
+    fun createGraphsForFunctions(
         program: Program,
         createGraphForExpression: (Expression, AssignmentTarget?, Function, ((ControlFlowGraph, IFTNode) -> Unit)?) -> ControlFlowGraph,
         nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
         defaultParameterValues: Map<Ref<Function.Parameter>, Variable>,
         functionReturnedValueVariables: Map<Ref<Function>, Variable>,
-        diagnostics: Diagnostics,
         createReadFromVariable: (Variable, Function) -> IFTNode,
         createWriteToVariable: (IFTNode, Variable, Function) -> IFTNode,
         getGeneratorDetailsGenerator: (Function) -> GeneratorDetailsGenerator,
         arrayMemoryManagement: ArrayMemoryManagement
-    ): Map<Ref<Function>, ControlFlowGraph> {
-        val controlFlowGraphs = mutableKeyRefMapOf<Function, ControlFlowGraph>()
+    ): List<Pair<Ref<Function>, ControlFlowGraph>> {
+        val controlFlowGraphs = mutableListOf<Pair<Ref<Function>, ControlFlowGraph>>()
 
         fun Variable?.asTarget() = this?.let { AssignmentTarget.VariableTarget(it) }
 
@@ -679,7 +668,7 @@ object ControlFlow {
                                 }
                             }
 
-                            if (nestedFunction.implementation is Function.Implementation.Local)
+                            if (nestedFunction.isLocal)
                                 processFunction(nestedFunction)
                         }
 
@@ -809,12 +798,12 @@ object ControlFlow {
             processStatementBlock(function.body, EscapeTreeHead(returnTreeRoot), null, null)
             addNode(returnTreeRoot)
 
-            controlFlowGraphs[Ref(function)] = cfgBuilder.build()
+            controlFlowGraphs.add(Pair(Ref(function), cfgBuilder.build()))
         }
 
         program.globals
             .filterIsInstance<Program.Global.FunctionDefinition>()
-            .filter { it.function.implementation is Function.Implementation.Local }
+            .filter { it.function.isLocal }
             .forEach { processFunction(it.function) }
 
         return controlFlowGraphs

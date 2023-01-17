@@ -1,9 +1,11 @@
 package compiler.intermediate
 
+import io.mockk.mockk
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class ProgramControlFlowTest {
+class ProgramControlFlowPlannerTest {
+    private val controlFlowPlanner = ControlFlowPlanner(mockk())
 
     @Test
     fun `test attachPrologueAndEpilogue for empty function`() {
@@ -11,7 +13,7 @@ class ProgramControlFlowTest {
         val bodyCFG = ControlFlowGraphBuilder().build()
         val epilogue = IFTNode.MemoryLabel("prologue")
 
-        val result = ControlFlow.attachPrologueAndEpilogue(
+        val result = controlFlowPlanner.attachPrologueAndEpilogue(
             bodyCFG,
             ControlFlowGraphBuilder(prologue).build(),
             ControlFlowGraphBuilder(epilogue).build(),
@@ -34,7 +36,7 @@ class ProgramControlFlowTest {
 
         val bodyCFG = ControlFlowGraphBuilder(middleNode).build()
 
-        val result = ControlFlow.attachPrologueAndEpilogue(
+        val result = controlFlowPlanner.attachPrologueAndEpilogue(
             bodyCFG,
             ControlFlowGraphBuilder(prologue).build(),
             ControlFlowGraphBuilder(epilogue).build(),
@@ -64,7 +66,7 @@ class ProgramControlFlowTest {
         bodyCFGBuilder.addLink(Pair(node3, CFGLinkType.CONDITIONAL_FALSE), node4F)
         bodyCFGBuilder.addLink(Pair(node3, CFGLinkType.CONDITIONAL_TRUE), node4T)
 
-        val result = ControlFlow.attachPrologueAndEpilogue(
+        val result = controlFlowPlanner.attachPrologueAndEpilogue(
             bodyCFGBuilder.build(),
             ControlFlowGraphBuilder(prologue).build(),
             ControlFlowGraphBuilder(epilogue).build(),

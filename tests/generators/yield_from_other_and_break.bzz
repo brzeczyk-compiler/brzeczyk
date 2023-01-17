@@ -1,0 +1,33 @@
+przekaźnik g2() -> Liczba {
+    napisz(1)
+    przekaż 1
+    napisz(2)
+    przekaż 0
+    napisz(3)
+    przekaż 1
+    napisz(4)
+    przekaż 0
+    napisz(5)
+    przekaż 0
+    napisz(6)
+    przekaż 1
+    napisz(7)
+}
+
+przekaźnik g1() -> Liczba {
+    otrzymując x: Liczba od g2() { 
+        jeśli(x == 0)
+            przekaż 0
+    }
+}
+
+czynność główna() {
+    zm lim: Liczba = wczytaj()
+    zm cnt: Liczba = 0
+    otrzymując x: Liczba od g1() { 
+        jeśli (x == 0)
+            cnt = cnt+1
+        jeśli(cnt == lim)
+            zakończ
+    }
+}

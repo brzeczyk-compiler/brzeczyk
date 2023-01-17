@@ -6,13 +6,15 @@ import java.io.PrintWriter
 class CodeSection(
     private val mainFunctionLabel: String,
     private val ignoreMainReturnValue: Boolean,
-    private val foreignFunctionIdentifiers: List<String>,
-    val functions: Map<String, FunctionCode>
+    private val foreignIdentifiers: List<String>,
+    val functions: List<FunctionCode>
 ) {
-    data class FunctionCode(val instructions: List<Asmable>, val registerAllocation: Map<Register, Register>)
+    data class FunctionCode(val label: String, val instructions: List<Asmable>, val registerAllocation: Map<Register, Register>)
 
     fun writeAsm(output: PrintWriter) {
-        foreignFunctionIdentifiers.forEach { output.println("extern $it") }
+        foreignIdentifiers.forEach { output.println("extern $it") }
+
+        output.println()
 
         output.println(
             """
@@ -24,15 +26,15 @@ class CodeSection(
                     ${if (ignoreMainReturnValue) "xor rax, rax" else "" }
                     pop rbp
                     ret
-                
+
             """.trimIndent()
         )
 
-        functions.forEach { function ->
-            output.println("${function.key}:")
-            function.value.instructions.forEach {
+        functions.forEach { (label, instructions, registerAllocation) ->
+            output.println("$label:")
+            instructions.forEach {
                 output.print("    ")
-                it.writeAsm(output, function.value.registerAllocation)
+                it.writeAsm(output, registerAllocation)
                 output.println()
             }
             output.println()

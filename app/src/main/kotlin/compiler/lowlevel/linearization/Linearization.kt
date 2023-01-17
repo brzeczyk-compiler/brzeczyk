@@ -8,11 +8,8 @@ import compiler.lowlevel.Label
 import compiler.utils.Ref
 import compiler.utils.mutableKeyRefMapOf
 
-object Linearization {
-    fun linearize(
-        cfg: ControlFlowGraph,
-        covering: Covering,
-    ): List<Asmable> {
+class Linearization(private val covering: Covering) {
+    fun linearize(cfg: ControlFlowGraph): List<Asmable> {
         if (cfg.entryTreeRoot == null)
             return emptyList()
 

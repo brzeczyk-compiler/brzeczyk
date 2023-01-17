@@ -283,9 +283,9 @@ object InstructionSet {
                 listOf(
                     Instruction.InPlaceInstruction.TestRR(inRegisters[0], inRegisters[0]), //       TEST reg0, reg0
                     if (args["invert"] as Boolean)
-                        Instruction.ConditionalJumpInstruction.JmpZ(args["target"] as String) //    JZ   target        ; inverted
+                        Instruction.ConditionalJumpInstruction.JmpNZ(args["target"] as String) //    JNZ   target        ; inverted,  but we have negation, so this cancels out
                     else
-                        Instruction.ConditionalJumpInstruction.JmpNZ(args["target"] as String) //   JNZ  target
+                        Instruction.ConditionalJumpInstruction.JmpZ(args["target"] as String) //   JZ  target
                 )
             },
             InstructionPattern(IFTPattern.BinaryOperator(IFTNode.LogicalXor::class)) {

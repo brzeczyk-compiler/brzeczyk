@@ -16,7 +16,7 @@ import compiler.regex.RegexDfa
 import compiler.syntax.LanguageGrammar.Productions
 import compiler.syntax.utils.TokenRegexParser
 
-object AstFactory {
+class AstFactory(private val diagnostics: Diagnostics) {
     class AstCreationFailed : CompilationFailed()
 
     // helper methods
@@ -37,7 +37,7 @@ object AstFactory {
             skipPassThroughExpressions(parseTree.children.first() as ParseTree.Branch)
     }
 
-    private fun extractIdentifier(parseTree: ParseTree.Branch<Symbol>, diagnostics: Diagnostics): String {
+    private fun extractIdentifier(parseTree: ParseTree.Branch<Symbol>): String {
         val properNode = skipPassThroughExpressions(parseTree)
         if (properNode.production !in listOf(Productions.expr4096Identifier, Productions.eExpr4096Identifier)) {
             diagnostics.report(
@@ -71,7 +71,7 @@ object AstFactory {
 
     private val identifierRegexDfa = RegexDfa(TokenRegexParser.parseStringToRegex("""\l[\l\u\d_]*"""))
 
-    private fun extractForeignName(parseTree: ParseTree.Leaf<Symbol>, diagnostics: Diagnostics, asIdentifier: Boolean): String {
+    private fun extractForeignName(parseTree: ParseTree.Leaf<Symbol>, asIdentifier: Boolean): String {
         return when (parseTree.token()) {
             TokenType.IDENTIFIER -> parseTree.content
             TokenType.FOREIGN_NAME -> {
@@ -107,13 +107,13 @@ object AstFactory {
     }
 
     // node processor methods
-    fun createFromParseTree(parseTree: ParseTree<Symbol>, diagnostics: Diagnostics): Program {
+    fun createFromParseTree(parseTree: ParseTree<Symbol>): Program {
         val children = (parseTree as ParseTree.Branch).getFilteredChildren()
         val globals = children.map {
             when (it.nonTerm()) {
-                NonTerminalType.VAR_DECL -> Program.Global.VariableDefinition(processVariableDeclaration(it, diagnostics), it.location)
-                NonTerminalType.FUNC_DEF -> Program.Global.FunctionDefinition(processFunctionDefinition(it, diagnostics), it.location)
-                NonTerminalType.FOREIGN_DECL -> Program.Global.FunctionDefinition(processForeignFunctionDeclaration(it, diagnostics), it.location)
+                NonTerminalType.VAR_DECL -> Program.Global.VariableDefinition(processVariableDeclaration(it), it.location)
+                NonTerminalType.FUNC_DEF -> Program.Global.FunctionDefinition(processFunctionDefinition(it), it.location)
+                NonTerminalType.FOREIGN_DECL -> Program.Global.FunctionDefinition(processForeignFunctionDeclaration(it), it.location)
                 else -> throw IllegalArgumentException()
             }
         }
@@ -132,7 +132,7 @@ object AstFactory {
         }
     }
 
-    private fun processConst(parseTree: ParseTree<Symbol>, diagnostics: Diagnostics): Expression {
+    private fun processConst(parseTree: ParseTree<Symbol>): Expression {
         val child = (parseTree as ParseTree.Branch).children[0]
 
         return when (child.token()) {
@@ -155,7 +155,7 @@ object AstFactory {
         }
     }
 
-    private fun processVariableDeclaration(parseTree: ParseTree<Symbol>, diagnostics: Diagnostics): Variable {
+    private fun processVariableDeclaration(parseTree: ParseTree<Symbol>): Variable {
         val children = (parseTree as ParseTree.Branch).getFilteredChildren()
 
         val kind = when (children[0].token()) {
@@ -166,37 +166,37 @@ object AstFactory {
         }
         val name = (children[1] as ParseTree.Leaf).content
         val type = processType(children[3])
-        val value = if (children.lastIndex == 5) processExpression(children[5], diagnostics) else null
+        val value = if (children.lastIndex == 5) processExpression(children[5]) else null
 
         return Variable(kind, name, type, value, combineLocations(children))
     }
 
-    private fun processFunctionDefinition(parseTree: ParseTree<Symbol>, diagnostics: Diagnostics): Function {
+    private fun processFunctionDefinition(parseTree: ParseTree<Symbol>): Function {
         val children = (parseTree as ParseTree.Branch).getFilteredChildren()
 
         val isGenerator = children[0].token() == TokenType.GENERATOR
         val name = (children[1] as ParseTree.Leaf).content
-        val parameters = processFunctionDefinitionParameters(children[3], diagnostics)
+        val parameters = processFunctionDefinitionParameters(children[3])
         val returnType = if (children[5].token() == TokenType.ARROW) processType(children[6]) else Type.Unit
-        val body = processManyStatements(children[children.lastIndex - 1], diagnostics)
+        val body = processManyStatements(children[children.lastIndex - 1])
         return Function(name, parameters, returnType, body, isGenerator, combineLocations(children))
     }
 
-    private fun processForeignFunctionDeclaration(parseTree: ParseTree<Symbol>, diagnostics: Diagnostics): Function {
+    private fun processForeignFunctionDeclaration(parseTree: ParseTree<Symbol>): Function {
         val children = (parseTree as ParseTree.Branch).getFilteredChildren()
 
         val isGenerator = children[1].token() == TokenType.GENERATOR
-        val foreignName = extractForeignName(children[2] as ParseTree.Leaf<Symbol>, diagnostics, false)
-        val parameters = processFunctionDefinitionParameters(children[4], diagnostics)
+        val foreignName = extractForeignName(children[2] as ParseTree.Leaf<Symbol>, false)
+        val parameters = processFunctionDefinitionParameters(children[4])
         val returnType = if (children.size > 6 && children[6].token() == TokenType.ARROW) processType(children[7]) else Type.Unit
         val localName = if (children.size > 6 && children[children.size - 2].token() == TokenType.AS)
             (children[children.size - 1] as ParseTree.Leaf).content
         else
-            extractForeignName(children[2] as ParseTree.Leaf<Symbol>, diagnostics, true)
+            extractForeignName(children[2] as ParseTree.Leaf<Symbol>, true)
         return Function(localName, parameters, returnType, Function.Implementation.Foreign(foreignName), isGenerator, parseTree.location)
     }
 
-    private fun processFunctionDefinitionParameters(parseTree: ParseTree<Symbol>, diagnostics: Diagnostics): List<Function.Parameter> {
+    private fun processFunctionDefinitionParameters(parseTree: ParseTree<Symbol>): List<Function.Parameter> {
         val children = (parseTree as ParseTree.Branch).getFilteredChildren()
         val parameters = ArrayList<Function.Parameter>()
         var it = 0
@@ -206,7 +206,7 @@ object AstFactory {
             val type = processType(grandchildren[2])
             val defaultValue = if (it + 1 < children.size && children[it + 1].token() == TokenType.ASSIGNMENT) {
                 it += 4
-                processExpression(children[it - 2], diagnostics)
+                processExpression(children[it - 2])
             } else {
                 it += 2
                 null
@@ -217,19 +217,19 @@ object AstFactory {
         return parameters
     }
 
-    private fun processFunctionCallArguments(parseTree: ParseTree<Symbol>, diagnostics: Diagnostics): List<Expression.FunctionCall.Argument> {
+    private fun processFunctionCallArguments(parseTree: ParseTree<Symbol>): List<Expression.FunctionCall.Argument> {
         val children = (parseTree as ParseTree.Branch).getFilteredChildren()
         val arguments = ArrayList<Expression.FunctionCall.Argument>()
 
         var it = 0
         while (it < children.size) {
             if (it + 1 < children.size && children[it + 1].token() == TokenType.ASSIGNMENT) {
-                val name = extractIdentifier(children[it] as ParseTree.Branch, diagnostics)
-                val value = processExpression(children[it + 2], diagnostics)
+                val name = extractIdentifier(children[it] as ParseTree.Branch)
+                val value = processExpression(children[it + 2])
                 arguments.add(Expression.FunctionCall.Argument(name, value, combineLocations(children[it], children[it + 2])))
                 it += 4
             } else {
-                val value = processExpression(children[it], diagnostics)
+                val value = processExpression(children[it])
                 arguments.add(Expression.FunctionCall.Argument(null, value, children[it].location))
                 it += 2
             }
@@ -292,39 +292,39 @@ object AstFactory {
         Productions.eExpr1024Modulo to Expression.BinaryOperation.Kind.MODULO
     )
 
-    private fun processExpression(parseTree: ParseTree<Symbol>, diagnostics: Diagnostics): Expression {
+    private fun processExpression(parseTree: ParseTree<Symbol>): Expression {
         val properNode = skipPassThroughExpressions(parseTree as ParseTree.Branch)
         val children = properNode.getFilteredChildren()
 
         return when (properNode.production) {
             in listOf(Productions.exprTernary, Productions.eExprTernary) -> {
-                val conditionExpr = processExpression(children[0], diagnostics)
-                val trueBranchExpr = processExpression(children[2], diagnostics)
-                val falseBranchExpr = processExpression(children[4], diagnostics)
+                val conditionExpr = processExpression(children[0])
+                val trueBranchExpr = processExpression(children[2])
+                val falseBranchExpr = processExpression(children[4])
                 Expression.Conditional(conditionExpr, trueBranchExpr, falseBranchExpr, combineLocations(children))
             }
             in binaryOperations.keys -> {
                 val rotatedNode = rotateExpressionLeft(properNode)
                 val newChildren = rotatedNode.getFilteredChildren()
-                val leftExpr = processExpression(newChildren[0], diagnostics)
-                val rightExpr = processExpression(newChildren[2], diagnostics)
+                val leftExpr = processExpression(newChildren[0])
+                val rightExpr = processExpression(newChildren[2])
                 Expression.BinaryOperation(binaryOperations.getValue(rotatedNode.production), leftExpr, rightExpr, combineLocations(children))
             }
             in unaryOperations.keys -> {
-                val subExpr = processExpression(children[1], diagnostics)
+                val subExpr = processExpression(children[1])
                 Expression.UnaryOperation(unaryOperations.getValue(properNode.production), subExpr, combineLocations(children))
             }
             in listOf(Productions.expr4096Call, Productions.eExpr4096Call) -> {
                 val name = (children[0] as ParseTree.Leaf).content
-                val args = processFunctionCallArguments(children[2], diagnostics)
+                val args = processFunctionCallArguments(children[2])
                 Expression.FunctionCall(name, args, combineLocations(children))
             }
             in listOf(Productions.expr4096Identifier, Productions.eExpr4096Identifier) ->
                 Expression.Variable((children[0] as ParseTree.Leaf).content, combineLocations(children))
             in listOf(Productions.expr4096Const, Productions.eExpr4096Const) ->
-                processConst(children[0], diagnostics)
+                processConst(children[0])
             in listOf(Productions.expr4096Parenthesis, Productions.eExpr4096Parenthesis) ->
-                processExpression(children[1], diagnostics)
+                processExpression(children[1])
             in listOf(Productions.expr2048ArrayAccess, Productions.eExpr2048ArrayAccess) -> {
                 var expr = processExpression(children[0], diagnostics)
                 var i = 2
@@ -358,55 +358,55 @@ object AstFactory {
         }
     }
 
-    private fun processManyStatements(parseTree: ParseTree<Symbol>, diagnostics: Diagnostics): StatementBlock {
-        return (parseTree as ParseTree.Branch).getFilteredChildren().map { processStatement(it, diagnostics) }
+    private fun processManyStatements(parseTree: ParseTree<Symbol>): StatementBlock {
+        return (parseTree as ParseTree.Branch).getFilteredChildren().map { processStatement(it) }
     }
 
-    private fun processMaybeBlock(parseTree: ParseTree<Symbol>, diagnostics: Diagnostics): StatementBlock {
+    private fun processMaybeBlock(parseTree: ParseTree<Symbol>): StatementBlock {
         val children = (parseTree as ParseTree.Branch).getFilteredChildren()
 
         return when (parseTree.production) {
             in listOf(Productions.maybeBlockNonBrace, Productions.nonIfMaybeBlockNonBrace) ->
-                listOf(processStatement(children[0], diagnostics))
+                listOf(processStatement(children[0]))
             in listOf(Productions.maybeBlockBraces, Productions.nonIfMaybeBlockBraces) ->
-                processManyStatements(children[1], diagnostics)
+                processManyStatements(children[1])
             else -> throw IllegalArgumentException()
         }
     }
 
-    private fun processIfStatement(parseTree: ParseTree<Symbol>, diagnostics: Diagnostics): Statement {
+    private fun processIfStatement(parseTree: ParseTree<Symbol>): Statement {
         val children = (parseTree as ParseTree.Branch).getFilteredChildren()
 
         val segments = ArrayList<Pair<Expression, StatementBlock>>()
         var it = 0
         while (it < children.size && children[it].token() in listOf(TokenType.IF, TokenType.ELSE_IF)) {
-            val conditionExpr = processExpression(children[it + 2], diagnostics)
-            val bodyBlock = processMaybeBlock(children[it + 4], diagnostics)
+            val conditionExpr = processExpression(children[it + 2])
+            val bodyBlock = processMaybeBlock(children[it + 4])
             segments.add(Pair(conditionExpr, bodyBlock))
             it += 5
         }
-        val elseSegment = if (it < children.size) processMaybeBlock(children[it + 1], diagnostics) else null
+        val elseSegment = if (it < children.size) processMaybeBlock(children[it + 1]) else null
 
         return segments.slice(0 until segments.lastIndex).foldRight(
             Statement.Conditional(segments.last().first, segments.last().second, elseSegment, combineLocations(children))
         ) { segment, elseBranch -> Statement.Conditional(segment.first, segment.second, listOf(elseBranch), combineLocations(children)) }
     }
 
-    private fun processStatement(parseTree: ParseTree<Symbol>, diagnostics: Diagnostics): Statement {
+    private fun processStatement(parseTree: ParseTree<Symbol>): Statement {
         val children = (parseTree as ParseTree.Branch).getFilteredChildren()
 
         return when (parseTree.production) {
             Productions.statementNonBrace ->
-                processStatement(children[0], diagnostics)
+                processStatement(children[0])
             Productions.statementBraces ->
-                Statement.Block(processManyStatements(children[1], diagnostics), combineLocations(children))
+                Statement.Block(processManyStatements(children[1]), combineLocations(children))
             in listOf(Productions.nonBraceStatementAtomic, Productions.nonIfNonBraceStatementAtomic) ->
-                processAtomicStatement(children[0], diagnostics)
+                processAtomicStatement(children[0])
             Productions.nonBraceStatementIf ->
-                processIfStatement(parseTree, diagnostics)
+                processIfStatement(parseTree)
             in listOf(Productions.nonBraceStatementWhile, Productions.nonIfNonBraceStatementWhile) -> {
-                val conditionExpr = processExpression(children[2], diagnostics)
-                val bodyBlock = processMaybeBlock(children[4], diagnostics)
+                val conditionExpr = processExpression(children[2])
+                val bodyBlock = processMaybeBlock(children[4])
                 Statement.Loop(conditionExpr, bodyBlock, combineLocations(children))
             }
             in listOf(Productions.nonBraceStatementForEach, Productions.nonIfNonBraceStatementForEach) -> {
@@ -419,27 +419,27 @@ object AstFactory {
                 )
                 val generatorCall = Expression.FunctionCall(
                     (children[5] as ParseTree.Leaf).content,
-                    processFunctionCallArguments(children[7], diagnostics),
+                    processFunctionCallArguments(children[7]),
                     combineLocations(children.subList(5, 9)),
                 )
-                val action = processMaybeBlock(children[9], diagnostics)
+                val action = processMaybeBlock(children[9])
                 Statement.ForeachLoop(receivingVariable, generatorCall, action, combineLocations(children))
             }
             in listOf(Productions.nonBraceStatementFuncDef, Productions.nonIfNonBraceStatementFuncDef) ->
-                Statement.FunctionDefinition(processFunctionDefinition(children[0], diagnostics), combineLocations(children))
+                Statement.FunctionDefinition(processFunctionDefinition(children[0]), combineLocations(children))
             else -> throw IllegalArgumentException()
         }
     }
 
-    private fun processAtomicStatement(parseTree: ParseTree<Symbol>, diagnostics: Diagnostics): Statement {
+    private fun processAtomicStatement(parseTree: ParseTree<Symbol>): Statement {
         val children = (parseTree as ParseTree.Branch).getFilteredChildren()
 
         return when (parseTree.production) {
             Productions.atomicExpr ->
-                Statement.Evaluation(processExpression(children[0], diagnostics), combineLocations(children))
+                Statement.Evaluation(processExpression(children[0]), combineLocations(children))
             Productions.atomicAssignment -> {
-                val lhsLValue = extractLValue(children[0] as ParseTree.Branch, diagnostics)
-                val rhsExpr = processExpression(children[2], diagnostics)
+                val lhsLValue = extractLValue(children[0] as ParseTree.Branch)
+                val rhsExpr = processExpression(children[2])
                 Statement.Assignment(lhsLValue, rhsExpr, combineLocations(children))
             }
             Productions.atomicBreak ->
@@ -449,13 +449,13 @@ object AstFactory {
             Productions.atomicReturnUnit ->
                 Statement.FunctionReturn(Expression.UnitLiteral(combineLocations(children)), true, combineLocations(children))
             Productions.atomicReturn ->
-                Statement.FunctionReturn(processExpression(children[1], diagnostics), false, combineLocations(children))
+                Statement.FunctionReturn(processExpression(children[1]), false, combineLocations(children))
             Productions.atomicYield ->
-                Statement.GeneratorYield(processExpression(children[1], diagnostics), combineLocations(children))
+                Statement.GeneratorYield(processExpression(children[1]), combineLocations(children))
             Productions.atomicVarDef ->
-                Statement.VariableDefinition(processVariableDeclaration(children[0], diagnostics), combineLocations(children))
+                Statement.VariableDefinition(processVariableDeclaration(children[0]), combineLocations(children))
             Productions.atomicForeignDecl ->
-                Statement.FunctionDefinition(processForeignFunctionDeclaration(children[0], diagnostics), combineLocations(children))
+                Statement.FunctionDefinition(processForeignFunctionDeclaration(children[0]), combineLocations(children))
             else -> throw IllegalArgumentException()
         }
     }

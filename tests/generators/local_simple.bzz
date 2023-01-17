@@ -1,0 +1,10 @@
+przekaźnik p()-> Liczba {
+    przekaż 1
+}
+
+czynność główna() {
+    otrzymując x: Liczba od p()
+        napisz(x)
+    otrzymując x: Liczba od p() 
+        napisz(x)
+}

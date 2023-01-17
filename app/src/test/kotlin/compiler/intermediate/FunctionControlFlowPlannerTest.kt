@@ -20,7 +20,7 @@ import compiler.utils.refMapOf
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class FunctionControlFlowTest {
+class FunctionControlFlowPlannerTest {
     private val expressionNodes = mutableKeyRefMapOf<Expression, MutableMap<Ref<Variable?>, Ref<IFTNode>>>()
     private val expressionAccessNodes = mutableKeyRefMapOf<Expression, MutableMap<Ref<Variable?>, Ref<IFTNode>>>()
     private val nameResolution = mutableRefMapOf<AstNode, NamedNode>()
@@ -150,21 +150,22 @@ class FunctionControlFlowTest {
         }
     }
 
-    private fun test(program: Program) = ControlFlow.createGraphForEachFunction(
+    private val testDiagnostics = object : Diagnostics {
+        override fun report(diagnostic: Diagnostic) {
+            diagnostics.add(diagnostic)
+        }
+
+        override fun hasAnyErrors(): Boolean {
+            throw NotImplementedError("This method shouldn't be called")
+        }
+    }
+
+    private fun test(program: Program) = ControlFlowPlanner(testDiagnostics).createGraphsForFunctions(
         program,
         this::getExpressionCFG,
         nameResolution,
         defaultParameterValues,
         functionReturnedValueVariables,
-        object : Diagnostics {
-            override fun report(diagnostic: Diagnostic) {
-                diagnostics.add(diagnostic)
-            }
-
-            override fun hasAnyError(): Boolean {
-                throw RuntimeException("This method shouldn't be called")
-            }
-        },
         { variable, _ -> IFTNode.MemoryRead(IFTNode.MemoryLabel(variable.name)) },
         { node, variable, _ -> IFTNode.MemoryWrite(IFTNode.MemoryLabel(variable.name), node) },
         dummyGeneratorDetailsGenerator,
@@ -796,7 +797,7 @@ class FunctionControlFlowTest {
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
         val result = test(program)
-        val resultCfg = result.values.first()
+        val resultCfg = result.map { it.second }.first()
 
         val idRegister = Register()
         val stateRegister = Register()
@@ -883,7 +884,7 @@ class FunctionControlFlowTest {
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
         val result = test(program)
-        val resultCfg = result.values.first()
+        val resultCfg = result.map { it.second }.first()
 
         val stateRegister = Register()
         val frameMemoryAddress = IFTNode.Dummy(listOf("foreach frame pointer address", function, foreach))
@@ -1019,7 +1020,7 @@ class FunctionControlFlowTest {
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
         val result = test(program)
-        val resultCfg = result.values.first()
+        val resultCfg = result.map { it.second }.first()
 
         val idRegister = Register()
         val stateRegister = Register()

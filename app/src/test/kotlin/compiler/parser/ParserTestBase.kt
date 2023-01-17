@@ -19,7 +19,7 @@ abstract class ParserTestBase {
             else
                 loggedWarnings += 1
         }
-        override fun hasAnyError() = loggedErrors > 0
+        override fun hasAnyErrors() = loggedErrors > 0
     }
 
     fun getMockedDiagnostics(): TestDiagnostics {

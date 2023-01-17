@@ -1,0 +1,26 @@
+czynność główna() {
+    przekaźnik liczby_naturalne() -> Liczba {
+        zm x: Liczba = 0
+        dopóki(prawda) {
+            przekaż x
+            x = x+1
+        }
+    }
+
+    zm wynik: Liczba = 0
+    zm m: Liczba = wczytaj()
+    otrzymując x: Liczba od liczby_naturalne() {
+        jeśli(x > m) przerwij
+        otrzymując y: Liczba od liczby_naturalne() {
+            jeśli(y > m) przerwij
+            otrzymując z: Liczba od przedziału(m+1) {
+                otrzymując w: Liczba od liczby_naturalne() {
+                    jeśli(w > m) przerwij
+                    wynik = wynik + x*y*z*w
+                }
+            }
+        }
+    }
+    //(1+2+3+..+m)^4
+    napisz(wynik)
+}

@@ -1,6 +1,5 @@
 package compiler.e2e
 
-import org.junit.Ignore
 import kotlin.test.Test
 
 class CorrectProgramsE2eTest {
@@ -251,10 +250,8 @@ class CorrectProgramsE2eTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test arrays list initialization`() {
-        // TODO: unignore when arrays are implemented
         E2eTestUtils.assertProgramCorrect(
             """
             czynność główna() {
@@ -271,10 +268,8 @@ class CorrectProgramsE2eTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test arrays default value initialization`() {
-        // TODO: unignore when arrays are implemented
         E2eTestUtils.assertProgramCorrect(
             """
             czynność główna() {
@@ -294,10 +289,8 @@ class CorrectProgramsE2eTest {
         )
     }
 
-    @Ignore
     @Test
     fun `test arrays`() {
-        // TODO: unignore when arrays are implemented
         E2eTestUtils.assertProgramCorrect(
             """
             czynność jedynki(n: Liczba) -> [Liczba] {

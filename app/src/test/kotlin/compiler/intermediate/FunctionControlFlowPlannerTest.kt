@@ -60,7 +60,6 @@ class FunctionControlFlowPlannerTest {
         TestGeneratorDetailsGenerator(function, genForeachFramePointerAddress)
     }
 
-
     private val testDiagnostics = object : Diagnostics {
         override fun report(diagnostic: Diagnostic) {
             diagnostics.add(diagnostic)

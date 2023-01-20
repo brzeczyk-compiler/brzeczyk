@@ -1,5 +1,6 @@
 #!/bin/bash
 IGNORE_HEADER="// INTEGRATION TESTS IGNORE"
+VALGRIND_HEADER="// USE VALGRIND"
 COMPILER_PATH="./app/build/install/app/bin/app"
 TEMP_TEST_CASE_PREFIX="test_case"
 TEMP_SPLIT_TEST_CASE_PREFIX="current_case"
@@ -26,10 +27,11 @@ run_test_case() {
     expected_output=$(tail +2 "${TEMP_SPLIT_TEST_CASE_PREFIX}02")
     actual_output=$(./a.out <<< "$input")
     actual_exit_code=$?
+    test_name="TEST $2::$(basename $1)"
 
     if [[ $actual_output != "$expected_output" || $expected_exit_code != "$actual_exit_code" ]]; then
         print_multiline_message "
-        TEST $2::$(basename "$1") FAILED!!!!
+        $test_name FAILED!!!!
         Input:
         $input
         Expected output:
@@ -39,6 +41,10 @@ run_test_case() {
         Expected exit code: $expected_exit_code
         Actual exit code: $actual_exit_code
         "
+        ((FAILED_CASES++))
+    elif [[ "$3" = true && ! $(valgrind --error-exitcode=1 --leak-check=full -s ./a.out <<< "$input" 2>/dev/null) ]]; then
+        print_multiline_message "
+        $test_name has upset Valgrind!"
         ((FAILED_CASES++))
     else
         ((SUCCESSFUL_CASES++))
@@ -50,7 +56,7 @@ run_test_case() {
 run_test_cases() {
     csplit --suppress-matched -f "$TEMP_TEST_CASE_PREFIX" -z "$1" "/^-*$/" '{*}' 1>/dev/null
     for test_case in $(find . -name "$TEMP_TEST_CASE_PREFIX*"); do
-        run_test_case "$test_case" "$2"
+        run_test_case "$test_case" "$2" "$3"
         rm "$test_case"
     done
 }
@@ -67,6 +73,10 @@ for tested_program in $(find . -path "./tests/*.bzz"); do
         update
         continue
     fi
+    use_valgrind=false
+    if [[ $(head -1 "$tested_program") == "$VALGRIND_HEADER" ]]; then
+        use_valgrind=true
+    fi
 
     $COMPILER_PATH "$tested_program" -o a.out -l stdlib/stdlib.c 1>/dev/null
     if [[ ! -f a.out ]]; then
@@ -76,7 +86,7 @@ for tested_program in $(find . -path "./tests/*.bzz"); do
         continue
     fi
 
-    run_test_cases "${tested_program%%bzz}tests" "${tested_program%%.bzz}"
+    run_test_cases "${tested_program%%bzz}tests" "${tested_program%%.bzz}" "$use_valgrind"
     # clean up
     rm a.o a.out a.asm
 done

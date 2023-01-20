@@ -30,6 +30,9 @@ jobs:
               mv ~/gradle-build-caches/* ~/.gradle/caches/
             fi
       - run:
+          name: Install valgrind
+          command: sudo apt install valgrind
+      - run:
           name: Test project
           command: |
             ./test_all.sh --no-daemon

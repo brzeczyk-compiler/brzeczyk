@@ -5,6 +5,7 @@ import compiler.ast.Type
 import compiler.intermediate.ControlFlowGraph
 import compiler.intermediate.ControlFlowGraphBuilder
 import compiler.intermediate.IFTNode
+import compiler.intermediate.Register
 
 object DefaultArrayMemoryManagement : ArrayMemoryManagement {
 
@@ -20,17 +21,20 @@ object DefaultArrayMemoryManagement : ArrayMemoryManagement {
 
         val mallocCall = mallocFDG.genCall(listOf(sizeArg))
         cfgBuilder.mergeUnconditionally(mallocCall.callGraph)
+        val temporaryResultRegister = Register()
+        cfgBuilder.addSingleTree(IFTNode.RegisterWrite(temporaryResultRegister, mallocCall.result!!))
 
         fun writeAt(index: Long, value: IFTNode) {
             cfgBuilder.addSingleTree(
                 IFTNode.MemoryWrite(
-                    IFTNode.Add(mallocCall.result!!, IFTNode.Const(index * memoryUnitSize.toLong())),
+                    IFTNode.Add(IFTNode.RegisterRead(temporaryResultRegister), IFTNode.Const(index * memoryUnitSize.toLong())),
                     value
                 )
             )
         }
 
         writeAt(0L, IFTNode.Const(1L))
+        println(tableSize)
         writeAt(1L, tableSize)
 
         when (mode) {
@@ -46,11 +50,24 @@ object DefaultArrayMemoryManagement : ArrayMemoryManagement {
             Expression.ArrayAllocation.InitializationType.ONE_VALUE -> {
                 val initElement = initialization.first()
                 val shouldIncrementElements = if (elementType is Type.Array) 1L else 0L
-                cfgBuilder.mergeUnconditionally(dynamicPopulateFDG.genCall(listOf(mallocCall.result!!, initElement, IFTNode.Const(shouldIncrementElements))).callGraph)
+                cfgBuilder.mergeUnconditionally(
+                    dynamicPopulateFDG.genCall(
+                        listOf(
+                            IFTNode.RegisterRead(temporaryResultRegister),
+                            initElement, IFTNode.Const(shouldIncrementElements)
+                        )
+                    ).callGraph
+                )
             }
         }
 
-        return Pair(cfgBuilder.build(), IFTNode.Add(mallocCall.result!!, IFTNode.Const(2 * memoryUnitSize.toLong())))
+        return Pair(
+            cfgBuilder.build(),
+            IFTNode.Add(
+                IFTNode.RegisterRead(temporaryResultRegister),
+                IFTNode.Const(2 * memoryUnitSize.toLong())
+            )
+        )
     }
 
     override fun genRefCountIncrement(address: IFTNode): ControlFlowGraph {

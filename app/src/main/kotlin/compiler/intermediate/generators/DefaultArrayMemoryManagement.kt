@@ -34,7 +34,6 @@ object DefaultArrayMemoryManagement : ArrayMemoryManagement {
         }
 
         writeAt(0L, IFTNode.Const(1L))
-        println(tableSize)
         writeAt(1L, tableSize)
 
         when (mode) {

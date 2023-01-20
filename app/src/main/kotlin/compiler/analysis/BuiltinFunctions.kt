@@ -53,5 +53,11 @@ object BuiltinFunctions {
         return Program(builtinFunctions.filter { it.key !in globalNames }.map { Program.Global.FunctionDefinition(it.value) } + program.globals)
     }
 
-    val internallyUsedExternalSymbols: List<String> = listOf("_\$checked_malloc", "free")
+    val internallyUsedExternalSymbols: List<String> = listOf(
+        "_\$checked_malloc",
+        "_\$populate_dynamic_array",
+        "_\$array_ref_count_decrement",
+        "_\$make_array_from_generator",
+        "free"
+    )
 }

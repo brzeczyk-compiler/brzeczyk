@@ -430,7 +430,10 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                     cfgBuilder.addNextTree(
                         IFTNode.RegisterWrite(
                             resultReg,
-                            IFTNode.MemoryRead(IFTNode.Subtract(array, IFTNode.Const(memoryUnitSize.toLong())))
+                            IFTNode.Subtract(
+                                IFTNode.MemoryRead(IFTNode.Subtract(array, IFTNode.Const(memoryUnitSize.toLong()))),
+                                IFTNode.Const(2)
+                            ),
                         )
                     )
                     cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountDecrement(array, expressionTypes[Ref(astNode.expression)]!!))

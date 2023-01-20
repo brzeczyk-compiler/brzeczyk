@@ -1,3 +1,4 @@
+// INTEGRATION TESTS IGNORE
 // USE VALGRIND
 czynność główna() {
     wart dynamiczny_ciąg: [Liczba] = ciąg Liczba[wczytaj()](0)

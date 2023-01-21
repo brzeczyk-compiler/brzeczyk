@@ -47,10 +47,9 @@ void _$array_ref_count_decrement(uint64_t* address, int64_t level) { // simple a
     uint64_t* ref_count = address - 2;
     uint64_t* length = address - 1;
 
-
     if (--*ref_count == 0) {
         if (level > 1) {
-            for (size_t i = 0; i < *length; i++) {
+            for (size_t i = 0; i < *length - 2; i++) {
                 _$array_ref_count_decrement(((uint64_t**)address)[i], level - 1);
             }
         }

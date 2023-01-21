@@ -88,10 +88,6 @@ class ParserE2eTest {
                             
                         """,
                 """
-                            czynność f(jaki: Napis) -> Liczba { }
-                            
-                        """,
-                """
                             czynność f(nie_wiadomo) -> Liczba { }
                             
                         """,

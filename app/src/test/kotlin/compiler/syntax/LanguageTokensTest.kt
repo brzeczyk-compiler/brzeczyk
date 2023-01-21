@@ -122,6 +122,21 @@ class LanguageTokensTest {
         assertNotEquals(firstMatch(tokens, "1,000,000"), TokenType.INTEGER)
     }
 
+    @Test fun `test string literals`() {
+        assertEquals(firstMatch(tokens, "„”"), TokenType.STRING)
+        assertEquals(firstMatch(tokens, "„Witaj świecie!\\n”"), TokenType.STRING)
+        assertEquals(firstMatch(tokens, "„aąbcćdeęfghijklłmnńoópqrsśtuvwxyzźż”"), TokenType.STRING)
+        assertEquals(firstMatch(tokens, "„AĄBCĆDEĘFGHIJKLŁMNŃOÓPQRSŚTUVWXYZŹŻ”"), TokenType.STRING)
+        assertEquals(firstMatch(tokens, "„0123456789”"), TokenType.STRING)
+        assertEquals(firstMatch(tokens, "„{}(),.<>:;?/+=-_!%^&*|~”"), TokenType.STRING)
+        assertEquals(firstMatch(tokens, "„\\””"), TokenType.STRING)
+        assertEquals(firstMatch(tokens, "„\\t”"), TokenType.STRING)
+        assertEquals(firstMatch(tokens, "„\\b”"), TokenType.STRING)
+        assertEquals(firstMatch(tokens, "„\\r”"), TokenType.STRING)
+        assertEquals(firstMatch(tokens, "„\\n”"), TokenType.STRING)
+        assertEquals(firstMatch(tokens, "„\\\\”"), TokenType.STRING)
+    }
+
     @Test fun `test identifiers and built-in types`() {
         assertEquals(firstMatch(tokens, "x"), TokenType.IDENTIFIER)
         assertEquals(firstMatch(tokens, "i"), TokenType.IDENTIFIER)

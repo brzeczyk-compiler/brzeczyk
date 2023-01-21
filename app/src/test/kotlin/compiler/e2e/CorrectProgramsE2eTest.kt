@@ -314,4 +314,17 @@ class CorrectProgramsE2eTest {
             """
         )
     }
+
+    @Test
+    fun `test strings`() {
+        E2eTestUtils.assertProgramCorrect(
+            """
+            czynność główna() {
+                wart hello_world: Napis = „Witaj świecie!”;
+                
+                wypisz(hello_world); // Witaj świecie!
+            }   
+            """
+        )
+    }
 }

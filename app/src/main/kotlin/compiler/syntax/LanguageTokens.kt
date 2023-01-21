@@ -93,8 +93,10 @@ object LanguageTokens {
             Pair(TokenType.UNIT_CONSTANT, "nic"),
 
             // Integer literals
-            // Only includes nonnegative integers
             Pair(TokenType.INTEGER, """\d\d*"""),
+
+            // String literals
+            Pair(TokenType.STRING, "„([\\\\\\l\\u\\d\\c„ \t]|(\\\\”))*”"),
 
             // Identifiers - names for functions and variables
             // Have to start with a lowercase letter
@@ -106,19 +108,16 @@ object LanguageTokens {
             Pair(TokenType.FOREIGN_NAME, """`[\l\u_][\l\u\d_]*`"""),
 
             // Type identifiers - names of types
-            // Includes built in types Liczba, Czy and Nic
+            // Includes built in types Liczba, Czy, Nic and Napis
             Pair(TokenType.TYPE_INTEGER, "Liczba"),
             Pair(TokenType.TYPE_BOOLEAN, "Czy"),
             Pair(TokenType.TYPE_UNIT, "Nic"),
-            // User defined types have to start with uppercase letter
-            // Can include alphanumeric characters and underscore
-            // Currently unused as there are no user defined types
-            // Pair(TokenType.TYPE_IDENTIFIER, """\u[\l\u\d_]*"""),
+            Pair(TokenType.TYPE_STRING, "Napis"),
 
             // Whitespace and comments
             // Technically not real tokens
             // Should be filtered out before syntax analysis
-            Pair(TokenType.TO_IGNORE, "([ \t]*)|(//[ \t\\l\\u\\d\\c]*)")
+            Pair(TokenType.TO_IGNORE, "([ \t]*)|(//[ \t\\l\\u\\d\\c„”]*)")
         )
 
         return list.map {

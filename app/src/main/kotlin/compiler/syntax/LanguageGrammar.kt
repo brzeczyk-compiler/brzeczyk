@@ -18,9 +18,9 @@ object LanguageGrammar {
     object Productions {
         val program = getProduction("PROGRAM", "({nFUNC_DEF}|(({nVAR_DECL}|{nFOREIGN_DECL})({tNEWLINE}|{tSEMICOLON}))|{tNEWLINE})*")
 
-        val type = getProduction("TYPE", "{tTYPE_INTEGER}|{tTYPE_BOOLEAN}|{tTYPE_UNIT}")
+        val type = getProduction("TYPE", "{tTYPE_INTEGER}|{tTYPE_BOOLEAN}|{tTYPE_UNIT}|{tTYPE_STRING}")
         val tableType = getProduction("TYPE", "{tLEFT_BRACKET}$NLS{nTYPE}$NLS{tRIGHT_BRACKET}")
-        val const = getProduction("CONST", "{tINTEGER}|{tTRUE_CONSTANT}|{tFALSE_CONSTANT}|{tUNIT_CONSTANT}")
+        val const = getProduction("CONST", "{tINTEGER}|{tSTRING}|{tTRUE_CONSTANT}|{tFALSE_CONSTANT}|{tUNIT_CONSTANT}")
 
         val varDecl = getProduction("VAR_DECL", "({tVARIABLE}|{tVALUE}|{tCONSTANT})$NLS{tIDENTIFIER}$NLS{tCOLON}$NLS{nTYPE}({tASSIGNMENT}$NLS{nEXPR})?")
         val funcDef = getProduction("FUNC_DEF", "({tFUNCTION}|{tGENERATOR})$NLS{tIDENTIFIER}$NLS{tLEFT_PAREN}$NLS{nDEF_ARGS}{tRIGHT_PAREN}($NLS{tARROW}$NLS{nTYPE})?{tLEFT_BRACE}{nMANY_STATEMENTS}{tRIGHT_BRACE}")

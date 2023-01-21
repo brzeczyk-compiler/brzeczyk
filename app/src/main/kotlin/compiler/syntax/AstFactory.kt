@@ -125,6 +125,7 @@ class AstFactory(private val diagnostics: Diagnostics) {
             TokenType.TYPE_INTEGER -> Type.Number
             TokenType.TYPE_BOOLEAN -> Type.Boolean
             TokenType.TYPE_UNIT -> Type.Unit
+            TokenType.TYPE_STRING -> Type.Array(Type.Number)
             TokenType.LEFT_BRACKET -> Type.Array(
                 processType(parseTree.children[1])
             )
@@ -147,6 +148,48 @@ class AstFactory(private val diagnostics: Diagnostics) {
                 },
                 child.location,
             )
+
+            TokenType.STRING -> {
+                val characters: MutableList<Long> = mutableListOf()
+                val string = (child as ParseTree.Leaf).content
+
+                var i = 1
+                while (i < string.length - 1) {
+                    if (string[i] == '\\') {
+                        characters.add(
+                            when (string[i + 1]) {
+                                'n' -> '\n'
+                                't' -> '\t'
+                                '\\' -> '\\'
+                                'b' -> '\b'
+                                'r' -> '\r'
+                                '”' -> '”'
+                                else -> {
+                                    diagnostics.report(
+                                        Diagnostic.ParserError.UnexpectedToken(
+                                            parseTree.symbol,
+                                            parseTree.location,
+                                            listOf(Symbol.Terminal(TokenType.STRING)),
+                                        )
+                                    )
+                                    throw AstCreationFailed()
+                                }
+                            }.code.toLong()
+                        )
+                        i += 2
+                    } else {
+                        characters.add(string[i].code.toLong())
+                        i += 1
+                    }
+                }
+
+                Expression.ArrayAllocation(
+                    Type.Number,
+                    Expression.NumberLiteral(characters.size.toLong()),
+                    characters.map { char -> Expression.NumberLiteral(char) },
+                    Expression.ArrayAllocation.InitializationType.ALL_VALUES
+                )
+            }
 
             TokenType.TRUE_CONSTANT -> Expression.BooleanLiteral(true, child.location)
             TokenType.FALSE_CONSTANT -> Expression.BooleanLiteral(false, child.location)

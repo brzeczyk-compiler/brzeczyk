@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <wchar.h>
+#include <locale.h>
 
 // type definitions
 
@@ -33,6 +35,16 @@ typedef void(*finalize_func_t)(generator_id_t);
 
 void print_int64(int64_t value) {
     printf("%" PRId64 "\n", value);
+}
+
+void print_string(uint64_t* address) {
+    array_t* string = get_array_ptr(address);
+
+    setlocale(LC_CTYPE, "");
+    for (int i = 0; i < string->length; ++ i) {
+        wprintf(L"%lc", (wchar_t) string->values[i]);
+    }
+    wprintf(L"\n");
 }
 
 int64_t read_int64() {

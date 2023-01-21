@@ -511,6 +511,14 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                 is AssignmentTarget.VariableTarget -> {
                     val owner = variableProperties[Ref(target.variable)]!!.owner
                     val accessGenerator = variableAccessGenerators[Ref(owner)]!!
+                    target.variable.type.takeIf { it is Type.Array }?.let {
+                        cfgBuilder.addNextCFG(
+                            arrayMemoryManagement.genRefCountDecrement(
+                                accessGenerator.genRead(target.variable, owner === currentFunction),
+                                it
+                            )
+                        )
+                    }
                     cfgBuilder.addNextTree(accessGenerator.genWrite(target.variable, result, owner === currentFunction))
                 }
                 is AssignmentTarget.ArrayElementTarget -> {

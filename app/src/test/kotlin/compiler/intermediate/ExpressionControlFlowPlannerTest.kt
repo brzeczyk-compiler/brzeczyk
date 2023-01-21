@@ -755,13 +755,7 @@ class ExpressionControlFlowPlannerTest {
 
         val expectedCfgLength = (
             IFTNode.DummyArrayAllocation(5.toConst(), listOf(6.toConst()), type, Expression.ArrayAllocation.InitializationType.ONE_VALUE)
-                merge IFTNode.RegisterWrite(
-                    resultRegister,
-                    IFTNode.Subtract(
-                        IFTNode.MemoryRead(IFTNode.Subtract(address, memoryUnitSize.toInt().toConst())),
-                        IFTNode.Const(2)
-                    )
-                )
+                merge IFTNode.RegisterWrite(resultRegister, IFTNode.MemoryRead(IFTNode.Subtract(address, memoryUnitSize.toInt().toConst())))
                 merge IFTNode.DummyArrayRefCountDec(address, type)
                 merge IFTNode.RegisterRead(resultRegister)
             )

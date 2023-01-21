@@ -429,11 +429,7 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                     val resultReg = Register()
                     cfgBuilder.addNextTree(
                         IFTNode.RegisterWrite(
-                            resultReg,
-                            IFTNode.Subtract(
-                                IFTNode.MemoryRead(IFTNode.Subtract(array, IFTNode.Const(memoryUnitSize.toLong()))),
-                                IFTNode.Const(2)
-                            ),
+                            resultReg, IFTNode.MemoryRead(IFTNode.Subtract(array, IFTNode.Const(memoryUnitSize.toLong()))),
                         )
                     )
                     cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountDecrement(array, expressionTypes[Ref(astNode.expression)]!!))

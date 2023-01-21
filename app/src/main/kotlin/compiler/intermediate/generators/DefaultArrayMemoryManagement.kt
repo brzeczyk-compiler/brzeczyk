@@ -13,11 +13,11 @@ object DefaultArrayMemoryManagement : ArrayMemoryManagement {
     override fun genAllocation(size: IFTNode, initialization: List<IFTNode>, type: Type, mode: Expression.ArrayAllocation.InitializationType): Pair<ControlFlowGraph, IFTNode> {
         val cfgBuilder = ControlFlowGraphBuilder()
         val elementType = (type as Type.Array).elementType
-        val tableSize = when (mode) {
+        val totalTableSize = when (mode) {
             Expression.ArrayAllocation.InitializationType.ONE_VALUE -> IFTNode.Add(size, IFTNode.Const(2))
             Expression.ArrayAllocation.InitializationType.ALL_VALUES -> IFTNode.Const(initialization.size + 2L)
         }
-        val sizeArg = IFTNode.Multiply(tableSize, IFTNode.Const(memoryUnitSize.toLong()))
+        val sizeArg = IFTNode.Multiply(totalTableSize, IFTNode.Const(memoryUnitSize.toLong()))
 
         val mallocCall = mallocFDG.genCall(listOf(sizeArg))
         cfgBuilder.mergeUnconditionally(mallocCall.callGraph)
@@ -34,7 +34,7 @@ object DefaultArrayMemoryManagement : ArrayMemoryManagement {
         }
 
         writeAt(0L, IFTNode.Const(1L))
-        writeAt(1L, tableSize)
+        writeAt(1L, IFTNode.Subtract(totalTableSize, IFTNode.Const(2)))
         val publicArrayAddress = IFTNode.Add(
             IFTNode.RegisterRead(temporaryResultRegister),
             IFTNode.Const(2 * memoryUnitSize.toLong())

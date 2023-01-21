@@ -144,6 +144,7 @@ object VariablePropertiesAnalyzer {
                     analyzeVariables(node.size, currentFunction)
                     node.initialization.forEach { analyzeVariables(it, currentFunction) }
                 }
+                is Expression.ArrayGeneration -> analyzeVariables(node.generatorCall, currentFunction)
                 else -> {}
             }
         }

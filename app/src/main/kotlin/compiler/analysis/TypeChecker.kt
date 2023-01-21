@@ -211,6 +211,11 @@ class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
                     return Type.Array(expression.elementType)
                 }
 
+                is Expression.ArrayGeneration -> {
+                    val elementType = checkExpression(expression.generatorCall)!!
+                    return Type.Array(elementType)
+                }
+
                 is Expression.FunctionCall -> {
                     when (val node = nameResolution[Ref(expression)]!!.value) {
                         is Variable -> report(TypeCheckingError.VariableCall(expression, node))

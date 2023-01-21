@@ -8,7 +8,10 @@ import compiler.ast.NamedNode
 import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.intermediate.generators.FunctionDetailsGenerator
+import compiler.intermediate.generators.GeneratorDetailsGenerator
 import compiler.intermediate.generators.VariableAccessGenerator
+import compiler.intermediate.generators.argPositionToRegister
+import compiler.intermediate.generators.callerSavedRegisters
 import compiler.intermediate.generators.memoryUnitSize
 import compiler.utils.Ref
 import compiler.utils.keyRefMapOf
@@ -19,44 +22,13 @@ import io.mockk.mockk
 import kotlin.test.Test
 
 class ExpressionControlFlowPlannerTest {
-    private class TestFunctionDetailsGenerator(val function: Function) :
-        FunctionDetailsGenerator {
-        override fun genCall(args: List<IFTNode>): FunctionDetailsGenerator.FunctionCallIntermediateForm {
-            val callResult = IFTNode.DummyCallResult()
-            return FunctionDetailsGenerator.FunctionCallIntermediateForm(
-                ControlFlowGraphBuilder().addSingleTree(IFTNode.DummyCall(function, args, callResult)).build(),
-                callResult,
-                null
-            )
-        }
-
-        override fun genPrologue(): ControlFlowGraph {
-            throw NotImplementedError()
-        }
-
-        override fun genEpilogue(): ControlFlowGraph {
-            throw NotImplementedError()
-        }
-
-        override val spilledRegistersRegionOffset get() = throw NotImplementedError()
-        override val spilledRegistersRegionSize get() = throw NotImplementedError()
-        override val identifier: String get() = throw NotImplementedError()
-
-        override fun genRead(namedNode: NamedNode, isDirect: Boolean): IFTNode {
-            return IFTNode.DummyRead(namedNode, isDirect)
-        }
-
-        override fun genWrite(namedNode: NamedNode, value: IFTNode, isDirect: Boolean): IFTNode {
-            return IFTNode.DummyWrite(namedNode, value, isDirect)
-        }
-    }
-
     private class ExpressionContext(
         varNames: Set<String>,
         functions: Map<String, Pair<Type, List<Type>>> = emptyMap(), // first element is return type
         funToAffectedVar: Map<String, Set<String>> = emptyMap(),
         val currentFunction: Function = Function("dummy", emptyList(), Type.Unit, emptyList()),
-        val globals: Set<String> = emptySet()
+        val globals: Set<String> = emptySet(),
+        generators: Set<String> = emptySet()
     ) {
         val nameResolution: MutableMap<Ref<AstNode>, Ref<NamedNode>> = mutableRefMapOf()
         var nameToVarMap: Map<String, Variable>
@@ -64,6 +36,7 @@ class ExpressionControlFlowPlannerTest {
         var nameToFunMap: Map<String, Function>
 
         val functionDetailsGenerators = mutableKeyRefMapOf<Function, FunctionDetailsGenerator>()
+        val generatorDetailsGenerators = mutableKeyRefMapOf<Function, GeneratorDetailsGenerator>()
         val variableProperties = mutableKeyRefMapOf<AstNode, VariablePropertiesAnalyzer.VariableProperties>()
         val finalCallGraph = mutableKeyRefMapOf<Function, Set<Ref<Function>>>()
         val argumentResolution: MutableMap<Ref<Expression.FunctionCall.Argument>, Ref<Function.Parameter>> = mutableRefMapOf()
@@ -86,14 +59,18 @@ class ExpressionControlFlowPlannerTest {
                     it,
                     functions[it]!!.second.map { paramType -> Function.Parameter("", paramType, null) },
                     functions[it]!!.first,
-                    emptyList()
+                    emptyList(),
+                    it in generators
                 )
             }
             for (name in functions.keys) {
                 finalCallGraph[Ref(nameToFunMap[name]!!)] = refSetOf(nameToFunMap[name]!!)
             }
             for (function in nameToFunMap.values union setOf(currentFunction)) {
-                functionDetailsGenerators[Ref(function)] = TestFunctionDetailsGenerator(function)
+                if (function.isGenerator)
+                    generatorDetailsGenerators[Ref(function)] = TestGeneratorDetailsGenerator(function, false)
+                else
+                    functionDetailsGenerators[Ref(function)] = TestFunctionDetailsGenerator(function)
             }
             funToAffectedVar.forEach {
                 for (variable in it.value) {
@@ -115,7 +92,7 @@ class ExpressionControlFlowPlannerTest {
                 variableProperties,
                 finalCallGraph,
                 functionDetailsGenerators,
-                emptyMap(),
+                generatorDetailsGenerators,
                 argumentResolution,
                 keyRefMapOf(),
                 object : VariableAccessGenerator {
@@ -760,5 +737,38 @@ class ExpressionControlFlowPlannerTest {
                 merge IFTNode.RegisterRead(resultRegister)
             )
         expectedCfgLength assertHasSameStructureAs cfgLength
+    }
+
+    @Test
+    fun `array generation`() {
+        val context = ExpressionContext(
+            emptySet(),
+            mapOf("g" to Pair(Type.Number, emptyList())),
+            mapOf("g" to emptySet()),
+            generators = setOf("g")
+        )
+
+        val generator = "g" asFunIn context
+        val generatorInit = generator.copy(name = "g_init")
+        val generatorType = Type.Array(Type.Number)
+
+        val generationExpression = Expression.ArrayGeneration("g" asFunCallIn context)
+        val generatorId = IFTNode.DummyCallResult()
+        val generatorIdRegister = Register()
+        val arrayRegister = Register()
+        val cfg = context.createCfg(generationExpression, expressionTypes = mapOf(Ref(generationExpression) to generatorType))
+
+        val expectedCfg = (
+            IFTNode.DummyCall(generatorInit, emptyList(), generatorId)
+                merge IFTNode.RegisterWrite(generatorIdRegister, generatorId)
+                merge IFTNode.RegisterWrite(argPositionToRegister[0], IFTNode.MemoryLabel("g_resume"))
+                merge IFTNode.RegisterWrite(argPositionToRegister[1], IFTNode.MemoryLabel("g_finalize"))
+                merge IFTNode.RegisterWrite(argPositionToRegister[2], IFTNode.RegisterRead(generatorIdRegister))
+                merge IFTNode.Call(IFTNode.MemoryLabel("_\$make_array_from_generator"), argPositionToRegister.take(3), callerSavedRegisters)
+                merge IFTNode.RegisterWrite(arrayRegister, IFTNode.RegisterRead(Register.RAX))
+                merge IFTNode.DummyArrayRefCountDec(IFTNode.RegisterRead(arrayRegister), Type.Array(Type.Number))
+                merge IFTNode.RegisterRead(arrayRegister)
+            )
+        expectedCfg assertHasSameStructureAs cfg
     }
 }

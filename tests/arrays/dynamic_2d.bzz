@@ -1,4 +1,3 @@
-// INTEGRATION TESTS IGNORE
 // USE VALGRIND
 czynność główna() {
     wart ilość_wierszy: Liczba = wczytaj()

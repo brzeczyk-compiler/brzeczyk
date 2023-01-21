@@ -1,5 +1,5 @@
 #!/bin/bash
-./gradlew "$@" test install
+./gradlew "$@" test install || { echo "Tests failed!"; exit 1; }
 echo "----------------------------------------"
 echo "Running integration tests!"
 echo "----------------------------------------"

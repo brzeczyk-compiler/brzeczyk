@@ -30,6 +30,7 @@ sealed interface AstNode {
                         if (this.initializationType == Expression.ArrayAllocation.InitializationType.ONE_VALUE) arrayValues += "..."
                         "ciąg ${this.elementType}[${this.size.toSimpleString()}]{ $arrayValues }"
                     }
+                    is Expression.ArrayGeneration -> "ułożenie ${this.generatorCall.toSimpleString()}"
                 }
 
                 is Variable -> "${this.kind} ${this.name}: ${this.type}${if (this.value != null) "= ${this.value.toSimpleString()}" else ""}"

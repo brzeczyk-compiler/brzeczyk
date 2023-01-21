@@ -1,10 +1,17 @@
 package compiler.intermediate
 
 import compiler.ast.Expression
+import compiler.ast.Function
+import compiler.ast.NamedNode
+import compiler.ast.Statement
 import compiler.ast.Type
 import compiler.intermediate.generators.ArrayMemoryManagement
+import compiler.intermediate.generators.FunctionDetailsGenerator
+import compiler.intermediate.generators.GeneratorDetailsGenerator
 import compiler.utils.Ref
 import compiler.utils.mutableKeyRefMapOf
+import io.mockk.every
+import io.mockk.mockk
 import kotlin.test.assertEquals
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
@@ -181,4 +188,126 @@ class TestArrayMemoryManagement : ArrayMemoryManagement {
     override fun genRefCountIncrement(address: IFTNode): ControlFlowGraph = IFTNode.DummyArrayRefCountInc(address).toCfg()
 
     override fun genRefCountDecrement(address: IFTNode, type: Type): ControlFlowGraph = IFTNode.DummyArrayRefCountDec(address, type).toCfg()
+}
+
+// dummy Function- and GeneratorDetailsGenerator
+
+class TestFunctionDetailsGenerator(val function: Function) : FunctionDetailsGenerator {
+    override fun genCall(args: List<IFTNode>): FunctionDetailsGenerator.FunctionCallIntermediateForm {
+        val callResult = IFTNode.DummyCallResult()
+        return FunctionDetailsGenerator.FunctionCallIntermediateForm(
+            ControlFlowGraphBuilder().addSingleTree(IFTNode.DummyCall(function, args, callResult)).build(),
+            callResult,
+            null
+        )
+    }
+
+    override fun genPrologue(): ControlFlowGraph {
+        throw NotImplementedError()
+    }
+
+    override fun genEpilogue(): ControlFlowGraph {
+        throw NotImplementedError()
+    }
+
+    override val spilledRegistersRegionOffset get() = throw NotImplementedError()
+    override val spilledRegistersRegionSize get() = throw NotImplementedError()
+    override val identifier: String get() = function.name
+
+    override fun genRead(namedNode: NamedNode, isDirect: Boolean): IFTNode {
+        return IFTNode.DummyRead(namedNode, isDirect)
+    }
+
+    override fun genWrite(namedNode: NamedNode, value: IFTNode, isDirect: Boolean): IFTNode {
+        return IFTNode.DummyWrite(namedNode, value, isDirect)
+    }
+}
+
+class TestGeneratorDetailsGenerator(
+    private val function: Function,
+    private val genForeachFramePointerAddress: Boolean
+) : GeneratorDetailsGenerator {
+    override fun genInitCall(args: List<IFTNode>): FunctionDetailsGenerator.FunctionCallIntermediateForm {
+        val generatorId = IFTNode.DummyCallResult()
+        return FunctionDetailsGenerator.FunctionCallIntermediateForm(
+            IFTNode.DummyCall(function.copy(name = function.name + "_init"), args, generatorId, IFTNode.DummyCallResult())
+                .toCfg(),
+            generatorId,
+            null
+        )
+    }
+
+    override fun genResumeCall(
+        framePointer: IFTNode,
+        savedState: IFTNode
+    ): FunctionDetailsGenerator.FunctionCallIntermediateForm {
+        val nextValue = IFTNode.DummyCallResult()
+        val nextState = IFTNode.DummyCallResult()
+        return FunctionDetailsGenerator.FunctionCallIntermediateForm(
+            IFTNode.DummyCall(
+                function.copy(name = function.name + "_resume"),
+                listOf(framePointer, savedState),
+                nextValue,
+                nextState
+            ).toCfg(),
+            nextValue,
+            nextState
+        )
+    }
+
+    override fun genFinalizeCall(framePointer: IFTNode): FunctionDetailsGenerator.FunctionCallIntermediateForm {
+        return FunctionDetailsGenerator.FunctionCallIntermediateForm(
+            IFTNode.DummyCall(
+                function.copy(name = function.name + "_finalize"),
+                listOf(framePointer),
+                IFTNode.DummyCallResult(),
+                IFTNode.DummyCallResult()
+            ).toCfg(),
+            null,
+            null
+        )
+    }
+
+    override fun genInit(): ControlFlowGraph {
+        throw NotImplementedError()
+    }
+
+    override fun genResume(mainBody: ControlFlowGraph): ControlFlowGraph {
+        throw NotImplementedError()
+    }
+
+    override fun genYield(value: IFTNode): ControlFlowGraph {
+        return IFTNode.DummyCall(
+            function.copy(name = function.name + "_yield"),
+            listOf(value),
+            IFTNode.DummyCallResult(),
+            IFTNode.DummyCallResult()
+        ).toCfg()
+    }
+
+    override fun getNestedForeachFramePointerAddress(foreachLoop: Statement.ForeachLoop): IFTNode? {
+        return if (genForeachFramePointerAddress) IFTNode.Dummy(
+            listOf(
+                "foreach frame pointer address",
+                function,
+                foreachLoop
+            )
+        ) else null
+    }
+
+    override fun genFinalize(): ControlFlowGraph {
+        throw NotImplementedError()
+    }
+
+    override val initFDG = mockk<FunctionDetailsGenerator>().also { every { it.identifier } returns "${function.name}_init" }
+    override val resumeFDG = mockk<FunctionDetailsGenerator>().also { every { it.identifier } returns "${function.name}_resume" }
+    override val finalizeFDG = mockk<FunctionDetailsGenerator>().also { every { it.identifier } returns "${function.name}_finalize" }
+
+    override fun genRead(namedNode: NamedNode, isDirect: Boolean): IFTNode {
+        throw NotImplementedError()
+    }
+
+    override fun genWrite(namedNode: NamedNode, value: IFTNode, isDirect: Boolean): IFTNode {
+        throw NotImplementedError()
+    }
 }

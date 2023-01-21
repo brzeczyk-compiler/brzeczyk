@@ -202,6 +202,7 @@ object InitializationVerifier {
                     // no top-level returns in initialization values
                     null
                 }
+                is Expression.ArrayGeneration -> verifyInitialization(node.generatorCall, state)
                 else -> null
             }
         }

@@ -129,10 +129,15 @@ class ArgumentResolver(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNo
                     processExpression(expression.expression)
                     processExpression(expression.index)
                 }
-                is Expression.ArrayLength -> processExpression(expression.expression)
+                is Expression.ArrayLength -> {
+                    processExpression(expression.expression)
+                }
                 is Expression.ArrayAllocation -> {
                     processExpression(expression.size)
                     expression.initialization.forEach { processExpression(it) }
+                }
+                is Expression.ArrayGeneration -> {
+                    processExpression(expression.generatorCall)
                 }
                 else -> {}
             }

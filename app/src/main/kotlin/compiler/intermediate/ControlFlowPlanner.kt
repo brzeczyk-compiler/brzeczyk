@@ -18,6 +18,7 @@ import compiler.diagnostics.Diagnostics
 import compiler.intermediate.FunctionDependenciesAnalyzer.createCallGraph
 import compiler.intermediate.generators.ArrayMemoryManagement
 import compiler.intermediate.generators.DefaultArrayMemoryManagement
+import compiler.intermediate.generators.ForeignFunctionDetailsGenerator
 import compiler.intermediate.generators.FunctionDetailsGenerator
 import compiler.intermediate.generators.GeneratorDetailsGenerator
 import compiler.intermediate.generators.GlobalVariableAccessGenerator
@@ -31,6 +32,8 @@ import java.util.Stack
 
 class ControlFlowPlanner(private val diagnostics: Diagnostics) {
     private fun mapLinkType(list: List<Pair<IFTNode, CFGLinkType>?>, type: CFGLinkType) = list.map { it?.copy(second = type) }
+
+    private val makeArrayFromGeneratorFDG = ForeignFunctionDetailsGenerator(IFTNode.MemoryLabel("_\$make_array_from_generator"), 1)
 
     fun createGraphsForProgram(
         program: Program,
@@ -205,6 +208,7 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                     invalidatedVariables[Ref(astNode)] = modifiedInTrueBranch + modifiedInFalseBranch
                     modifiedUnderCurrentBase + modifiedInCondition + modifiedInTrueBranch + modifiedInFalseBranch
                 }
+
                 is Expression.ArrayLength ->
                     gatherVariableUsageInfo(astNode.expression, modifiedUnderCurrentBase)
 
@@ -212,6 +216,7 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                     val modifiedAfterIndexEval = gatherVariableUsageInfo(astNode.index, modifiedUnderCurrentBase)
                     gatherVariableUsageInfo(astNode.expression, modifiedAfterIndexEval)
                 }
+
                 is Expression.ArrayAllocation -> {
                     var modifiedInInitList: Set<Ref<Variable>> = refSetOf()
                     astNode.initialization.reversed().forEach { expression ->
@@ -220,6 +225,9 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                     val modifiedInSize = gatherVariableUsageInfo(astNode.size, modifiedInInitList)
                     modifiedUnderCurrentBase + modifiedInInitList + modifiedInSize
                 }
+
+                is Expression.ArrayGeneration ->
+                    gatherVariableUsageInfo(astNode.generatorCall, modifiedUnderCurrentBase)
             }
         }
 
@@ -469,6 +477,25 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                         }
                     }
                     allocation.second
+                }
+
+                is Expression.ArrayGeneration -> {
+                    val function = nameResolution[Ref(astNode.generatorCall)]!!.value as Function
+                    val gdg = generatorDetailsGenerators[Ref(function)]!!
+
+                    val generatorIdNode = makeCFGForSubtree(astNode.generatorCall)
+                    val makeArrayCall = makeArrayFromGeneratorFDG.genCall(
+                        listOf(
+                            IFTNode.MemoryLabel(gdg.resumeFDG.identifier),
+                            IFTNode.MemoryLabel(gdg.finalizeFDG.identifier),
+                            generatorIdNode
+                        )
+                    )
+                    cfgBuilder.addNextCFG(makeArrayCall.callGraph)
+
+                    val resultRegister = Register()
+                    cfgBuilder.addNextTree(IFTNode.RegisterWrite(resultRegister, makeArrayCall.result!!))
+                    IFTNode.RegisterRead(resultRegister)
                 }
             }
         }

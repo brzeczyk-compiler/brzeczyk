@@ -1,0 +1,23 @@
+// INTEGRATION TESTS IGNORE
+// USE VALGRIND
+czynność główna() {
+    wart ilość_wierszy: Liczba = wczytaj()
+    wart ilość_kolumn: Liczba = wczytaj()
+    wart macierz: [[Liczba]] = ciąg [Liczba][ilość_wierszy](ciąg Liczba[ilość_kolumn](0))
+    zm wiersz: Liczba = 0
+    dopóki (wiersz < ilość_wierszy) {
+        macierz[wiersz] = ciąg Liczba[ilość_kolumn](0)
+        zm kolumna: Liczba = 0
+        dopóki (kolumna < ilość_kolumn) {
+            macierz[wiersz][kolumna] = wczytaj()
+            kolumna = kolumna + 1
+        }
+        wiersz = wiersz + 1
+    }
+    wart powtórzenia: Liczba = wczytaj()
+    zm i: Liczba = 0
+    dopóki (i < powtórzenia) {
+        napisz(macierz[wczytaj()][wczytaj()])
+        i = i + 1
+    }
+}

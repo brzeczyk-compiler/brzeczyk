@@ -1,0 +1,27 @@
+// INTEGRATION TESTS IGNORE
+// USE VALGRIND
+czynność główna() {
+    wart cudowny_ciąg: [[[Liczba]]] = ciąg [[Liczba]] {
+        ciąg [Liczba] { ciąg Liczba { 1, 3, -100 }, ciąg Liczba { 0, 0 } },
+        ciąg [Liczba] { ciąg Liczba { -419, 419, 420, 123123 }, ciąg Liczba { 68, 54, -54 } },
+        ciąg [Liczba] { ciąg Liczba { 2 }, ciąg Liczba[1000](-2), ciąg Liczba[123](23), ciąg Liczba[11](2023) }
+    }
+    napisz(cudowny_ciąg[0][0][0])
+    napisz(cudowny_ciąg[0][0][2])
+    napisz(cudowny_ciąg[0][1][1])
+    napisz(cudowny_ciąg[1][0][0])
+    napisz(cudowny_ciąg[1][0][1])
+    napisz(cudowny_ciąg[1][0][2])
+    napisz(cudowny_ciąg[1][0][3])
+    napisz(cudowny_ciąg[1][1][0])
+    napisz(cudowny_ciąg[1][1][1])
+    napisz(cudowny_ciąg[1][1][2])
+    napisz(cudowny_ciąg[2][0][0])
+    napisz(cudowny_ciąg[2][1][0])
+    napisz(cudowny_ciąg[2][1][321])
+    napisz(cudowny_ciąg[2][1][231])
+    napisz(cudowny_ciąg[2][1][999])
+    napisz(cudowny_ciąg[2][2][100])
+    napisz(cudowny_ciąg[2][3][5])
+    napisz(cudowny_ciąg[2][3][10])
+}

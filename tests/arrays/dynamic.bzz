@@ -1,0 +1,16 @@
+// INTEGRATION TESTS IGNORE
+// USE VALGRIND
+czynność główna() {
+    wart dynamiczny_ciąg: [Liczba] = ciąg Liczba[wczytaj()](0)
+    zm i: Liczba = 0
+    dopóki (i < długość dynamiczny_ciąg) {
+        dynamiczny_ciąg[i] = wczytaj()
+        i = i + 1
+    }
+    wart powtórzenia: Liczba = wczytaj()
+    i = 0
+    dopóki (i < powtórzenia) {
+        napisz(dynamiczny_ciąg[wczytaj()])
+        i = i + 1
+    }
+}

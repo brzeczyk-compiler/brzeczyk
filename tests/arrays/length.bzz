@@ -1,0 +1,8 @@
+// INTEGRATION TESTS IGNORE
+// USE VALGRIND
+czynność główna() {
+    zm przykładowy_ciąg: [Liczba] = ciąg Liczba[5](1)
+    zm przykładowy_ciąg2: [Liczba] = ciąg Liczba { 1, 68, 419 }
+    napisz(długość przykładowy_ciąg)
+    napisz(długość przykładowy_ciąg2)
+}

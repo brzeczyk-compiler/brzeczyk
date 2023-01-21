@@ -12,6 +12,12 @@ typedef struct {
     uint64_t values[];
 } array_t;
 
+#define ARRAY_OFFSET 2
+
+array_t* get_array_ptr(uint64_t *address) {
+    return (array_t*)(address - ARRAY_OFFSET);
+}
+
 typedef int64_t generator_id_t;
 typedef int64_t generator_state_t;
 
@@ -59,20 +65,20 @@ void* _$checked_realloc(void* address, size_t new_size) {
 void _$populate_dynamic_array(uint64_t* address, uint64_t value, int64_t should_increment_refcount) {
     if (address == 0)
         return;
-    array_t* array = (array_t*)(address - 2);
-
-    uint64_t* value_ref_count = ((uint64_t*) value) - 2;
+    array_t* array = get_array_ptr(address);
 
     for (uint64_t i = 0; i < array->length; i++) {
         array->values[i] = value; 
-        if (should_increment_refcount) ++(*value_ref_count);
     }
+
+    if (should_increment_refcount)
+        get_array_ptr((uint64_t*)value)->ref_count += array->length;
 }
 
 void _$array_ref_count_decrement(uint64_t* address, int64_t level) { // simple array has level 1
     if (address == 0)
         return;
-    array_t* array = (array_t*)(address - 2);
+    array_t* array = get_array_ptr(address);
 
     if (--array->ref_count == 0) {
         if (level > 1) {
@@ -86,7 +92,7 @@ void _$array_ref_count_decrement(uint64_t* address, int64_t level) { // simple a
 
 uint64_t* _$make_array_from_generator(resume_func_t resume, finalize_func_t finalize, generator_id_t id) {
     // the generator should be initialized, but never resumed
-    array_t *array = _$checked_malloc((2 + 4) * 8); // initial size = 4
+    array_t *array = _$checked_malloc((ARRAY_OFFSET + 4) * 8); // initial size = 4
     generator_state_t state = 0;
 
     for (size_t i = 0, size = 4; ; i++) {
@@ -99,13 +105,13 @@ uint64_t* _$make_array_from_generator(resume_func_t resume, finalize_func_t fina
 
         if (i == size) {
             size *= 2;
-            array = _$checked_realloc(array, (2 + size) * 8);
+            array = _$checked_realloc(array, (ARRAY_OFFSET + size) * 8);
         }
         array->values[i] = result.value;
     }
 
     finalize(id);
-    array = _$checked_realloc(array, (2 + array->length) * 8);
+    array = _$checked_realloc(array, (ARRAY_OFFSET + array->length) * 8);
     array->ref_count = 1;
     return array->values;
 }

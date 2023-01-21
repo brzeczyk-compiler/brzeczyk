@@ -35,6 +35,10 @@ object DefaultArrayMemoryManagement : ArrayMemoryManagement {
 
         writeAt(0L, IFTNode.Const(1L))
         writeAt(1L, tableSize)
+        val publicArrayAddress = IFTNode.Add(
+            IFTNode.RegisterRead(temporaryResultRegister),
+            IFTNode.Const(2 * memoryUnitSize.toLong())
+        )
 
         when (mode) {
             Expression.ArrayAllocation.InitializationType.ALL_VALUES -> {
@@ -51,22 +55,13 @@ object DefaultArrayMemoryManagement : ArrayMemoryManagement {
                 val shouldIncrementElements = if (elementType is Type.Array) 1L else 0L
                 cfgBuilder.mergeUnconditionally(
                     dynamicPopulateFDG.genCall(
-                        listOf(
-                            IFTNode.RegisterRead(temporaryResultRegister),
-                            initElement, IFTNode.Const(shouldIncrementElements)
-                        )
+                        listOf(publicArrayAddress, initElement, IFTNode.Const(shouldIncrementElements))
                     ).callGraph
                 )
             }
         }
 
-        return Pair(
-            cfgBuilder.build(),
-            IFTNode.Add(
-                IFTNode.RegisterRead(temporaryResultRegister),
-                IFTNode.Const(2 * memoryUnitSize.toLong())
-            )
-        )
+        return Pair(cfgBuilder.build(), publicArrayAddress)
     }
 
     override fun genRefCountIncrement(address: IFTNode): ControlFlowGraph {

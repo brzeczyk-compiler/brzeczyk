@@ -31,10 +31,10 @@ void _$populate_dynamic_array(uint64_t* address, uint64_t value, int64_t should_
     if (address == 0)
         return;
 
-    uint64_t length = *(address + 1);
+    uint64_t length = *(address - 1);
     uint64_t* valueRefCount = ((uint64_t*) value) - 2;
 
-    for (uint64_t i = 2; i<length; i++) {
+    for (uint64_t i = 0; i<length - 2; i++) {
         address[i] = value;
         if (should_increment_refcount) ++(*valueRefCount);
     }

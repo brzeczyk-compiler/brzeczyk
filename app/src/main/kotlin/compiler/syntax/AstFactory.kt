@@ -150,7 +150,7 @@ class AstFactory(private val diagnostics: Diagnostics) {
             )
 
             TokenType.STRING -> {
-                val characters: MutableList<Long> = mutableListOf()
+                val characters: MutableList<Char> = mutableListOf()
                 val string = (child as ParseTree.Leaf).content
 
                 var i = 1
@@ -174,11 +174,11 @@ class AstFactory(private val diagnostics: Diagnostics) {
                                     )
                                     throw AstCreationFailed()
                                 }
-                            }.code.toLong()
+                            }
                         )
                         i += 2
                     } else {
-                        characters.add(string[i].code.toLong())
+                        characters.add(string[i])
                         i += 1
                     }
                 }
@@ -186,7 +186,7 @@ class AstFactory(private val diagnostics: Diagnostics) {
                 Expression.ArrayAllocation(
                     Type.Number,
                     Expression.NumberLiteral(characters.size.toLong()),
-                    characters.map { char -> Expression.NumberLiteral(char) },
+                    characters.map { char -> Expression.NumberLiteral(char.code.toLong()) },
                     Expression.ArrayAllocation.InitializationType.ALL_VALUES
                 )
             }

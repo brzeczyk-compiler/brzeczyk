@@ -314,4 +314,18 @@ class CorrectProgramsE2eTest {
             """
         )
     }
+
+    @Test
+    fun `test looping over arrays`() {
+        E2eTestUtils.assertProgramCorrect(
+            """
+            czynność główna() {
+                zm tab: [Liczba] = ciąg Liczba {0, 1, 1, 2, 3, 5, 8}
+                dla (x: Liczba wewnątrz tab) {
+                    napisz(x)
+                }
+            }
+            """
+        )
+    }
 }

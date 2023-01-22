@@ -19,6 +19,8 @@ import compiler.syntax.utils.TokenRegexParser
 class AstFactory(private val diagnostics: Diagnostics) {
     class AstCreationFailed : CompilationFailed()
 
+    // We maintain the following counter to generate unique names of variables introduced by the associated syntactic sugar.
+
     // helper methods
     private fun ParseTree<Symbol>.token(): TokenType? = (symbol as? Symbol.Terminal)?.tokenType
     private fun ParseTree<Symbol>.nonTerm(): NonTerminalType? = (symbol as? Symbol.NonTerminal)?.nonTerminal
@@ -408,6 +410,60 @@ class AstFactory(private val diagnostics: Diagnostics) {
                 val conditionExpr = processExpression(children[2])
                 val bodyBlock = processMaybeBlock(children[4])
                 Statement.Loop(conditionExpr, bodyBlock, combineLocations(children))
+            }
+            in listOf(Productions.nonBraceStatementArrayLoop, Productions.nonIfNonBraceStatementArrayLoop) -> {
+                val arrayExpression = processExpression(children[6])
+                val bodyBlock = processMaybeBlock(children[8])
+                val fullLocation = combineLocations(children)
+
+                val iter = Variable(
+                    Variable.Kind.VARIABLE,
+                    "@iter", // unique name unavailable to the user
+                    Type.Number,
+                    Expression.NumberLiteral(0, fullLocation),
+                    fullLocation, // hidden statements & expressions are given the full location
+                )
+
+                val receivingVariable = Variable(
+                    Variable.Kind.VALUE,
+                    (children[2] as ParseTree.Leaf).content,
+                    processType(children[4]),
+                    Expression.ArrayElement(
+                        arrayExpression,
+                        Expression.Variable("@iter"),
+                        fullLocation,
+                    ),
+                    combineLocations(children.subList(2, 5)),
+                )
+
+                val arrayLength = Expression.ArrayLength(arrayExpression, fullLocation)
+
+                Statement.Block(
+                    listOf(
+                        Statement.VariableDefinition(iter, fullLocation),
+                        Statement.Loop(
+                            Expression.BinaryOperation(
+                                Expression.BinaryOperation.Kind.LESS_THAN,
+                                Expression.Variable("@iter"),
+                                arrayLength,
+                                fullLocation,
+                            ),
+                            listOf(Statement.VariableDefinition(receivingVariable, fullLocation)) + bodyBlock + listOf(
+                                Statement.Assignment(
+                                    Statement.Assignment.LValue.Variable("@iter"),
+                                    Expression.BinaryOperation(
+                                        Expression.BinaryOperation.Kind.ADD,
+                                        Expression.Variable("@iter", fullLocation),
+                                        Expression.NumberLiteral(1, fullLocation),
+                                    ),
+                                    fullLocation,
+                                )
+                            ),
+                            fullLocation
+                        )
+                    ),
+                    fullLocation,
+                )
             }
             in listOf(Productions.nonBraceStatementForEach, Productions.nonIfNonBraceStatementForEach) -> {
                 val receivingVariable = Variable(

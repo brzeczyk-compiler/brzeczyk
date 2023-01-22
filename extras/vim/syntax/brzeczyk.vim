@@ -23,7 +23,7 @@ syn keyword nnKeywordBoolLiteral fałsz prawda
 syn keyword nnKeywordOtherLiteral nic
 syn keyword nnKeywordCondition jeśli wpp
 syn match   nnKeywordElif '\<zaś gdy\>'
-syn keyword nnKeywordLoop dopóki otrzymując od
+syn keyword nnKeywordLoop dopóki otrzymując od dla 
 syn keyword nnKeywordOperator nie lub oraz wtw albo długość ciąg
 syn keyword nnKeywordOther zm wart stała przerwij pomiń zwróć zakończ czynność zewnętrzna zewnętrzny jako przekaźnik przekaż
 

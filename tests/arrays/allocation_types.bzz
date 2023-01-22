@@ -1,4 +1,3 @@
-// INTEGRATION TESTS IGNORE
 // USE VALGRIND
 czynność główna() {
     zm przykładowy_ciąg: [Liczba] = ciąg Liczba[10](111)

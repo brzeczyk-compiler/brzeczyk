@@ -1,0 +1,11 @@
+// USE VALGRIND
+czynność główna() {
+    zm p: Liczba = wczytaj()
+    zm b: [Liczba] = ciąg Liczba (x*10+y otrzymując x: Liczba od przedziału(4) otrzymując y: Liczba od przedziału(x) jeśli x != p oraz x != y)
+
+    zm i: Liczba = 0
+    dopóki(i < długość b) {
+        napisz(b[i])
+        i = i+1
+    }
+}

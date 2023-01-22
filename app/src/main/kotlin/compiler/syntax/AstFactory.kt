@@ -152,7 +152,15 @@ class AstFactory(private val diagnostics: Diagnostics) {
             TokenType.STRING -> {
                 val characters: MutableList<Char> = mutableListOf()
                 val string = (child as ParseTree.Leaf).content
-
+                fun reportFail() {
+                    diagnostics.report(
+                        Diagnostic.ParserError.UnexpectedToken(
+                            parseTree.symbol,
+                            parseTree.location,
+                            listOf(Symbol.Terminal(TokenType.STRING)),
+                        )
+                    )
+                }
                 var i = 1
                 while (i < string.length - 1) {
                     if (string[i] == '\\') {
@@ -164,14 +172,23 @@ class AstFactory(private val diagnostics: Diagnostics) {
                                 'b' -> '\b'
                                 'r' -> '\r'
                                 '”' -> '”'
+                                'u' -> {
+                                    if (i + 6 >= string.length) {
+                                        reportFail()
+                                        throw AstCreationFailed()
+                                    }
+
+                                    val code = string.substring(i + 2, i + 6)
+                                    i += 4
+                                    try {
+                                        code.toInt(16).toChar()
+                                    } catch (err: NumberFormatException) {
+                                        reportFail()
+                                        throw AstCreationFailed()
+                                    }
+                                }
                                 else -> {
-                                    diagnostics.report(
-                                        Diagnostic.ParserError.UnexpectedToken(
-                                            parseTree.symbol,
-                                            parseTree.location,
-                                            listOf(Symbol.Terminal(TokenType.STRING)),
-                                        )
-                                    )
+                                    reportFail()
                                     throw AstCreationFailed()
                                 }
                             }

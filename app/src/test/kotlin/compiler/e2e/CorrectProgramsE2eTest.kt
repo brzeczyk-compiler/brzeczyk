@@ -320,9 +320,11 @@ class CorrectProgramsE2eTest {
         E2eTestUtils.assertProgramCorrect(
             """
             czynność główna() {
-                wart hello_world: Napis = „Witaj świecie!”;
+                wart hello_world: Napis = „Witaj świecie!”
+                wart unicode: Napis = „\u0057\u0069\u0074\u0061\u006A\u0020\u015B\u0077\u0069\u0065\u0063\u0069\u0065\u0021”
                 
-                wypisz(hello_world); // Witaj świecie!
+                wypisz(hello_world) // Witaj świecie!
+                wypisz(unicode) // Witaj świecie!
             }   
             """
         )

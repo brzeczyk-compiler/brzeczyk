@@ -39,7 +39,7 @@ object LanguageTokens {
             // Array related keywords
             Pair(TokenType.LENGTH, "długość"),
             Pair(TokenType.ARRAY_ALLOCATION, "ciąg"),
-            Pair(TokenType.LOOP, "dla"),
+            Pair(TokenType.ARRAY_FOR_EACH, "dla"),
             Pair(TokenType.IN, "wewnątrz"),
 
             // Generators related keywords

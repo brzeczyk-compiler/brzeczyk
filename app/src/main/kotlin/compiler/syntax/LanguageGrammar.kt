@@ -168,12 +168,12 @@ object LanguageGrammar {
         val nonBraceStatementForEach = getProduction("NON_BRACE_STATEMENT", "{tFOR_EACH}$NLS{tIDENTIFIER}$NLS{tCOLON}$NLS{nTYPE}$NLS{tFROM}$NLS{tIDENTIFIER}{tLEFT_PAREN}$NLS{nCALL_ARGS}{tRIGHT_PAREN}{nMAYBE_BLOCK}")
         val nonBraceStatementFuncDef = getProduction("NON_BRACE_STATEMENT", "{nFUNC_DEF}$NLS")
         val nonIfNonBraceStatementAtomic = getProduction("NON_IF_NON_BRACE_STATEMENT", "{nATOMIC_STATEMENT}({tNEWLINE}|{tSEMICOLON})$NLS")
-        val nonBraceStatementArrayLoop = getProduction("NON_BRACE_STATEMENT", "{tLOOP}$NLS{tLEFT_PAREN}$NLS{tIDENTIFIER}$NLS{tCOLON}$NLS{nTYPE}$NLS{tIN}$NLS{nE_EXPR}{tRIGHT_PAREN}{nMAYBE_BLOCK}")
+        val nonBraceStatementArrayLoop = getProduction("NON_BRACE_STATEMENT", "{tARRAY_FOR_EACH}$NLS{tLEFT_PAREN}$NLS{tIDENTIFIER}$NLS{tCOLON}$NLS{nTYPE}$NLS{tIN}$NLS{nE_EXPR}{tRIGHT_PAREN}{nMAYBE_BLOCK}")
 
         val nonIfNonBraceStatementWhile = getProduction("NON_IF_NON_BRACE_STATEMENT", "{tWHILE}$NLS{tLEFT_PAREN}$NLS{nE_EXPR}{tRIGHT_PAREN}{nNON_IF_MAYBE_BLOCK}")
         val nonIfNonBraceStatementForEach = getProduction("NON_IF_NON_BRACE_STATEMENT", "{tFOR_EACH}$NLS{tIDENTIFIER}$NLS{tCOLON}$NLS{nTYPE}$NLS{tFROM}$NLS{tIDENTIFIER}{tLEFT_PAREN}$NLS{nCALL_ARGS}{tRIGHT_PAREN}{nNON_IF_MAYBE_BLOCK}")
         val nonIfNonBraceStatementFuncDef = getProduction("NON_IF_NON_BRACE_STATEMENT", "{nFUNC_DEF}$NLS")
-        val nonIfNonBraceStatementArrayLoop = getProduction("NON_IF_NON_BRACE_STATEMENT", "{tLOOP}$NLS{tLEFT_PAREN}$NLS{tIDENTIFIER}$NLS{tCOLON}$NLS{nTYPE}$NLS{tIN}$NLS{nE_EXPR}{tRIGHT_PAREN}{nNON_IF_MAYBE_BLOCK}")
+        val nonIfNonBraceStatementArrayLoop = getProduction("NON_IF_NON_BRACE_STATEMENT", "{tARRAY_FOR_EACH}$NLS{tLEFT_PAREN}$NLS{tIDENTIFIER}$NLS{tCOLON}$NLS{nTYPE}$NLS{tIN}$NLS{nE_EXPR}{tRIGHT_PAREN}{nNON_IF_MAYBE_BLOCK}")
 
         val atomicExpr = getProduction("ATOMIC_STATEMENT", "{nEXPR}")
         val atomicAssignment = getProduction("ATOMIC_STATEMENT", "{nEXPR}{tASSIGNMENT}$NLS{nEXPR}")

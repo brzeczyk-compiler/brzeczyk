@@ -48,7 +48,7 @@ class Cli : CliktCommand() {
         }
 
         runCommand("nasm -f elf64 $assemblyFile -o $objectFile")
-        runCommand("gcc -static $objectFile $stdlibLocation -o $outputFile")
+        runCommand("gcc -no-pie $objectFile $stdlibLocation -o $outputFile")
     }
 }
 

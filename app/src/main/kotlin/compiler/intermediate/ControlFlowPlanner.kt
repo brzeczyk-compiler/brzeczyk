@@ -437,8 +437,7 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                     val resultReg = Register()
                     cfgBuilder.addNextTree(
                         IFTNode.RegisterWrite(
-                            resultReg,
-                            IFTNode.MemoryRead(IFTNode.Subtract(array, IFTNode.Const(memoryUnitSize.toLong())))
+                            resultReg, IFTNode.MemoryRead(IFTNode.Subtract(array, IFTNode.Const(memoryUnitSize.toLong()))),
                         )
                     )
                     cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountDecrement(array, expressionTypes[Ref(astNode.expression)]!!))
@@ -512,7 +511,6 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                 is AssignmentTarget.VariableTarget -> {
                     val owner = variableProperties[Ref(target.variable)]!!.owner
                     val accessGenerator = variableAccessGenerators[Ref(owner)]!!
-
                     target.variable.type.takeIf { it is Type.Array }?.let {
                         cfgBuilder.addNextCFG(
                             arrayMemoryManagement.genRefCountDecrement(
@@ -544,12 +542,12 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                 }
             }
         } else {
-            expressionTypes[Ref(expression)]?.let {
-                if (it is Type.Array) {
-                    cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountDecrement(result, it))
-                }
-            }
             if (accessNodeConsumer == null) {
+                expressionTypes[Ref(expression)]?.let {
+                    if (it is Type.Array) {
+                        cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountDecrement(result, it))
+                    }
+                }
                 cfgBuilder.addNextTree(result)
             }
         }

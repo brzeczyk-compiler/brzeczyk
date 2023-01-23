@@ -33,10 +33,8 @@ object LanguageGrammar {
         val callArgs2 = getProduction("CALL_ARGS", "{nE_EXPR}{tASSIGNMENT}$NLS{nE_EXPR}({tCOMMA}$NLS{nE_EXPR}{tASSIGNMENT}$NLS{nE_EXPR})*")
 
         // TODO: add "wewnątrz" handling.
-        // val generatorIteration = getProduction("GENERATOR_ITERATION", "{tFOR_EACH}$NLS{tIDENTIFIER}$NLS{tCOLON}$NLS{nTYPE}$NLS{tFROM}$NLS{tIDENTIFIER}{tLEFT_PAREN}$NLS{nCALL_ARGS}{tRIGHT_PAREN}")
-        // val manyGeneratorIterations = getProduction("MANY_GENERATOR_ITERATIONS", "{nGENERATOR_ITERATION}$NLS({nGENERATOR_ITERATION}$NLS)*")
-        val generatorIteration = getProduction("GENERATOR_ITERATION", "{tFOR_EACH}{tIDENTIFIER}{tCOLON}{nTYPE}{tFROM}{tIDENTIFIER}{tLEFT_PAREN}{nCALL_ARGS}{tRIGHT_PAREN}")
-        val manyGeneratorIterations = getProduction("MANY_GENERATOR_ITERATIONS", "{nGENERATOR_ITERATION}({nGENERATOR_ITERATION})*")
+        val generatorIteration = getProduction("GENERATOR_ITERATION", "{tFOR_EACH}$NLS{tIDENTIFIER}$NLS{tCOLON}$NLS{nTYPE}$NLS{tFROM}$NLS{tIDENTIFIER}{tLEFT_PAREN}$NLS{nCALL_ARGS}{tRIGHT_PAREN}")
+        val manyGeneratorIterations = getProduction("MANY_GENERATOR_ITERATIONS", "{nGENERATOR_ITERATION}($NLS{nGENERATOR_ITERATION})*")
 
         // expressions
         val expr4096Parenthesis = getProduction("EXPR4096", "{tLEFT_PAREN}$NLS{nE_EXPR}{tRIGHT_PAREN}")
@@ -45,8 +43,7 @@ object LanguageGrammar {
         val expr4096Call = getProduction("EXPR4096", "{tIDENTIFIER}{tLEFT_PAREN}$NLS{nCALL_ARGS}{tRIGHT_PAREN}")
         val expr4096ArrayDefaultAllocation = getProduction("EXPR4096", "{tARRAY_ALLOCATION}{nTYPE}{tLEFT_BRACKET}$NLS{nE_EXPR}{tRIGHT_BRACKET}{tLEFT_PAREN}$NLS{nE_EXPR}{tRIGHT_PAREN}")
         val expr4096ArrayListAllocation = getProduction("EXPR4096", "{tARRAY_ALLOCATION}{nTYPE}{tLEFT_BRACE}$NLS{nE_EXPR}({tCOMMA}$NLS{nE_EXPR})*{tRIGHT_BRACE}")
-        // val expr4096ArrayGeneratorAllocation = getProduction("EXPR4096", "{tARRAY_ALLOCATION}{nTYPE}{tLEFT_PAREN}$NLS{nE_EXPR}$NLS{nMANY_GENERATOR_ITERATIONS}({tIF}$NLS{nE_EXPR}{tRIGHT_PAREN}|{tRIGHT_PAREN})")
-        val expr4096ArrayGeneratorAllocation = getProduction("EXPR4096", "{tARRAY_ALLOCATION}{nTYPE}{tLEFT_PAREN}{nE_EXPR}{nMANY_GENERATOR_ITERATIONS}({tIF}{nE_EXPR}{tRIGHT_PAREN}|{tRIGHT_PAREN})")
+        val expr4096ArrayGeneratorAllocation = getProduction("EXPR4096", "{tARRAY_ALLOCATION}{nTYPE}{tLEFT_PAREN}$NLS{nE_EXPR}{nMANY_GENERATOR_ITERATIONS}({tIF}$NLS{nE_EXPR}{tRIGHT_PAREN}|{tRIGHT_PAREN})")
 
         val expr2048PassThrough = getProduction("EXPR2048", "{nEXPR4096}")
         val expr2048ArrayAccess = getProduction("EXPR2048", "{nEXPR4096}{tLEFT_BRACKET}$NLS{nE_EXPR}{tRIGHT_BRACKET}({tLEFT_BRACKET}$NLS{nE_EXPR}{tRIGHT_BRACKET})*")
@@ -106,9 +103,8 @@ object LanguageGrammar {
         val eExpr4096Call = getProduction("E_EXPR4096", "{tIDENTIFIER}$NLS{tLEFT_PAREN}$NLS{nCALL_ARGS}{tRIGHT_PAREN}$NLS")
         val eExpr4096ArrayDefaultAllocation = getProduction("E_EXPR4096", "{tARRAY_ALLOCATION}{nTYPE}{tLEFT_BRACKET}$NLS{nE_EXPR}{tRIGHT_BRACKET}{tLEFT_PAREN}$NLS{nE_EXPR}{tRIGHT_PAREN}$NLS")
         val eExpr4096ArrayListAllocation = getProduction("E_EXPR4096", "{tARRAY_ALLOCATION}{nTYPE}{tLEFT_BRACE}$NLS{nE_EXPR}({tCOMMA}$NLS{nE_EXPR})*{tRIGHT_BRACE}$NLS")
-        // val eExpr4096ArrayGeneratorAllocation = getProduction("E_EXPR4096", "{tARRAY_ALLOCATION}{nTYPE}{tLEFT_PAREN}$NLS{nE_EXPR}$NLS{nMANY_GENERATOR_ITERATIONS}({tIF}$NLS{nE_EXPR}{tRIGHT_PAREN}|{tRIGHT_PAREN})$NLS")
-        val eExpr4096ArrayGeneratorAllocation = getProduction("E_EXPR4096", "{tARRAY_ALLOCATION}{nTYPE}{tLEFT_PAREN}{nE_EXPR}{nMANY_GENERATOR_ITERATIONS}({tIF}{nE_EXPR}{tRIGHT_PAREN}|{tRIGHT_PAREN})")
-
+        val eExpr4096ArrayGeneratorAllocation = getProduction("E_EXPR4096", "{tARRAY_ALLOCATION}{nTYPE}{tLEFT_PAREN}$NLS{nE_EXPR}{nMANY_GENERATOR_ITERATIONS}({tIF}$NLS{nE_EXPR}{tRIGHT_PAREN}|{tRIGHT_PAREN})$NLS")
+        
         val eExpr2048PassThrough = getProduction("E_EXPR2048", "{nE_EXPR4096}")
         val eExpr2048ArrayAccess = getProduction("E_EXPR2048", "{nE_EXPR4096}{tLEFT_BRACKET}$NLS{nE_EXPR}{tRIGHT_BRACKET}({tLEFT_BRACKET}$NLS{nE_EXPR}{tRIGHT_BRACKET})*$NLS")
         val eExpr2048ArrayLength = getProduction("E_EXPR2048", "{tLENGTH}$NLS{nE_EXPR2048}")

@@ -316,6 +316,43 @@ class CorrectProgramsE2eTest {
     }
 
     @Test
+    fun `test arrays comprehension`() {
+        E2eTestUtils.assertProgramCorrect(
+            """
+            przekaźnik g1(n: Liczba) -> Liczba {
+                zm x: Liczba = 1
+                dopóki (x <= n) {
+                    przekaż x
+                    x = x + 1
+                }
+                zakończ
+            }
+            przekaźnik g2(n: Liczba) -> Liczba {
+                zm x: Liczba = 1
+                dopóki (x <= n) {
+                    przekaż x + 10
+                    x = x + 1
+                }
+                zakończ
+            }
+            
+            czynność f(warunek: Czy) { }
+            
+            czynność główna() {
+                // w should be accessible in ciąg Liczba (...)
+                zm w: Liczba = 15
+                f(długość(ciąg Liczba (x + y + z + w otrzymując x: Liczba od g1(17) otrzymując y: Liczba od g2(x) otrzymując z: Liczba od g1(y - x) jeśli y > x)) > 42)
+                f(długość(ciąg Liczba (w otrzymując x: Liczba od g1(17))) > 42)
+                ciąg Liczba (w otrzymując x: Liczba od g1(17))
+                
+                zm v: Liczba = 30
+                ciąg Liczba (x + v otrzymując x: Liczba od g1(długość(ciąg Liczba (y + v otrzymując y: Liczba od g2(17)))))
+            }   
+            """
+        )
+    }
+
+    @Test
     fun `test looping over arrays`() {
         E2eTestUtils.assertProgramCorrect(
             """

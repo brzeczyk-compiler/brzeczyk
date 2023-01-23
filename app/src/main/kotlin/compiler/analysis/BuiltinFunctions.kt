@@ -15,6 +15,15 @@ object BuiltinFunctions {
             false
         ),
 
+        // Prints a unicode string followed by a newline to output
+        "powiedz" to Function(
+            "powiedz",
+            listOf(Function.Parameter("wypowiedź", Type.Array(Type.Number), null)),
+            Type.Unit,
+            Function.Implementation.Foreign("print_string"),
+            false
+        ),
+
         // Reads a single number from input
         "wczytaj" to Function(
             "wczytaj",

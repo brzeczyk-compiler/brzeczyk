@@ -30,14 +30,12 @@ enum class TokenType {
     NOT, OR, AND, IFF, XOR,
     // Named constants
     TRUE_CONSTANT, FALSE_CONSTANT, UNIT_CONSTANT,
-    // Integers
-    INTEGER,
+    // Integer and string literals
+    INTEGER, STRING,
     // Identifiers
     IDENTIFIER, FOREIGN_NAME,
     // Built in types
-    TYPE_INTEGER, TYPE_BOOLEAN, TYPE_UNIT,
-    // Currently, there are no user defined types
-    // TYPE_IDENTIFIER,
+    TYPE_INTEGER, TYPE_BOOLEAN, TYPE_UNIT, TYPE_STRING,
 
     // Whitespace and comments
     // Technically not real tokens

@@ -1,0 +1,4 @@
+// USE VALGRIND
+czynność główna() {
+    powiedz(„Witaj świecie!”)
+}

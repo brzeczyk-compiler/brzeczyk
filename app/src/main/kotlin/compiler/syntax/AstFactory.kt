@@ -159,6 +159,7 @@ class AstFactory(private val diagnostics: Diagnostics) {
             TokenType.TYPE_INTEGER -> Type.Number
             TokenType.TYPE_BOOLEAN -> Type.Boolean
             TokenType.TYPE_UNIT -> Type.Unit
+            TokenType.TYPE_STRING -> Type.Array(Type.Number)
             TokenType.LEFT_BRACKET -> Type.Array(
                 processType(parseTree.children[1])
             )
@@ -181,6 +182,65 @@ class AstFactory(private val diagnostics: Diagnostics) {
                 },
                 child.location,
             )
+
+            TokenType.STRING -> {
+                val characters: MutableList<Char> = mutableListOf()
+                val string = (child as ParseTree.Leaf).content
+                fun reportFail() {
+                    diagnostics.report(
+                        Diagnostic.ParserError.UnexpectedToken(
+                            parseTree.symbol,
+                            parseTree.location,
+                            listOf(Symbol.Terminal(TokenType.STRING)),
+                        )
+                    )
+                }
+                var i = 1
+                while (i < string.length - 1) {
+                    if (string[i] == '\\') {
+                        characters.add(
+                            when (string[i + 1]) {
+                                'n' -> '\n'
+                                't' -> '\t'
+                                '\\' -> '\\'
+                                'b' -> '\b'
+                                'r' -> '\r'
+                                '”' -> '”'
+                                'u' -> {
+                                    if (i + 6 >= string.length) {
+                                        reportFail()
+                                        throw AstCreationFailed()
+                                    }
+
+                                    val code = string.substring(i + 2, i + 6)
+                                    i += 4
+                                    try {
+                                        code.toInt(16).toChar()
+                                    } catch (err: NumberFormatException) {
+                                        reportFail()
+                                        throw AstCreationFailed()
+                                    }
+                                }
+                                else -> {
+                                    reportFail()
+                                    throw AstCreationFailed()
+                                }
+                            }
+                        )
+                        i += 2
+                    } else {
+                        characters.add(string[i])
+                        i += 1
+                    }
+                }
+
+                Expression.ArrayAllocation(
+                    Type.Number,
+                    Expression.NumberLiteral(characters.size.toLong()),
+                    characters.map { char -> Expression.NumberLiteral(char.code.toLong()) },
+                    Expression.ArrayAllocation.InitializationType.ALL_VALUES
+                )
+            }
 
             TokenType.TRUE_CONSTANT -> Expression.BooleanLiteral(true, child.location)
             TokenType.FALSE_CONSTANT -> Expression.BooleanLiteral(false, child.location)

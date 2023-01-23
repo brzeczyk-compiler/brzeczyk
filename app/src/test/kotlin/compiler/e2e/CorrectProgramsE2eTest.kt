@@ -316,6 +316,21 @@ class CorrectProgramsE2eTest {
     }
 
     @Test
+    fun `test strings`() {
+        E2eTestUtils.assertProgramCorrect(
+            """
+            czynność główna() {
+                wart hello_world: Wypowiedź = „Witaj świecie!”
+                wart unicode: Wypowiedź = „\u0057\u0069\u0074\u0061\u006A\u0020\u015B\u0077\u0069\u0065\u0063\u0069\u0065\u0021”
+                
+                powiedz(hello_world) // Witaj świecie!
+                powiedz(unicode) // Witaj świecie!
+            }
+            """
+        )
+    }
+
+    @Test
     fun `test arrays comprehension`() {
         E2eTestUtils.assertProgramCorrect(
             """

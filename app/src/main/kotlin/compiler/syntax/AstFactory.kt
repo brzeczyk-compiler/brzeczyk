@@ -28,7 +28,7 @@ class AstFactory(private val diagnostics: Diagnostics) {
     }
 
     private var auxiliaryGeneratorsCounter = 0
-    private fun getUniqueLabel(): String = "_pomocniczyPrzekaźnik${auxiliaryGeneratorsCounter++}"
+    private fun getUniqueLabel(): String = "@auxGen${auxiliaryGeneratorsCounter++}"
 
     // helper methods
     private fun produceAncestorObject(statementBlock: MutableStatementBlock) =
@@ -123,63 +123,6 @@ class AstFactory(private val diagnostics: Diagnostics) {
         val newTopLevelNode = ParseTree.Branch(combineLocations(leftChild, rightGrandchild), rightChild.symbol, listOf(newLeftChild, grandchildren[1], rightGrandchild), rightChild.production)
 
         return rotateExpressionLeft(newTopLevelNode)
-    }
-
-    fun makeArrayLoop(parseTree: ParseTree<Symbol>): Statement {
-        val children = (parseTree as ParseTree.Branch).getFilteredChildren()
-
-        val arrayExpression = processExpression(children[6])
-        val bodyBlock = processMaybeBlock(children[8])
-        val fullLocation = combineLocations(children)
-
-        val iter = Variable(
-            Variable.Kind.VARIABLE,
-            "@iter", // unique name unavailable to the user
-            Type.Number,
-            Expression.NumberLiteral(0, fullLocation),
-            fullLocation, // hidden statements & expressions are given the full location
-        )
-
-        val receivingVariable = Variable(
-            Variable.Kind.VALUE,
-            (children[2] as ParseTree.Leaf).content,
-            processType(children[4]),
-            Expression.ArrayElement(
-                arrayExpression,
-                Expression.Variable("@iter"),
-                fullLocation,
-            ),
-            combineLocations(children.subList(2, 5)),
-        )
-
-        val arrayLength = Expression.ArrayLength(arrayExpression, fullLocation)
-
-        return Statement.Block(
-            listOf(
-                Statement.VariableDefinition(iter, fullLocation),
-                Statement.Loop(
-                    Expression.BinaryOperation(
-                        Expression.BinaryOperation.Kind.LESS_THAN,
-                        Expression.Variable("@iter"),
-                        arrayLength,
-                        fullLocation,
-                    ),
-                    listOf(Statement.VariableDefinition(receivingVariable, fullLocation)) + bodyBlock + listOf(
-                        Statement.Assignment(
-                            Statement.Assignment.LValue.Variable("@iter"),
-                            Expression.BinaryOperation(
-                                Expression.BinaryOperation.Kind.ADD,
-                                Expression.Variable("@iter", fullLocation),
-                                Expression.NumberLiteral(1, fullLocation),
-                            ),
-                            fullLocation,
-                        )
-                    ),
-                    fullLocation
-                )
-            ),
-            fullLocation,
-        )
     }
 
     // node processor methods
@@ -461,7 +404,7 @@ class AstFactory(private val diagnostics: Diagnostics) {
                     location,
                 )
 
-                fun isAuxGenerator(function: Function): Boolean = function.name.startsWith("_pomocniczyPrzekaźnik")
+                fun isAuxGenerator(function: Function): Boolean = function.name.startsWith("@auxGen")
 
                 when (ancestorBlock) {
                     is LowestAncestorBlock.AncestorGlobalBlock -> {
@@ -568,6 +511,63 @@ class AstFactory(private val diagnostics: Diagnostics) {
         }
     }
 
+    private fun processArrayLoop(parseTree: ParseTree<Symbol>, ancestorBlock: LowestAncestorBlock): Statement {
+        val children = (parseTree as ParseTree.Branch).getFilteredChildren()
+
+        val arrayExpression = processExpression(children[6], ancestorBlock)
+        val bodyBlock = processMaybeBlock(children[8])
+        val fullLocation = combineLocations(children)
+
+        val iter = Variable(
+            Variable.Kind.VARIABLE,
+            "@iter", // unique name unavailable to the user
+            Type.Number,
+            Expression.NumberLiteral(0, fullLocation),
+            fullLocation, // hidden statements & expressions are given the full location
+        )
+
+        val receivingVariable = Variable(
+            Variable.Kind.VALUE,
+            (children[2] as ParseTree.Leaf).content,
+            processType(children[4]),
+            Expression.ArrayElement(
+                arrayExpression,
+                Expression.Variable("@iter"),
+                fullLocation,
+            ),
+            combineLocations(children.subList(2, 5)),
+        )
+
+        val arrayLength = Expression.ArrayLength(arrayExpression, fullLocation)
+
+        return Statement.Block(
+            listOf(
+                Statement.VariableDefinition(iter, fullLocation),
+                Statement.Loop(
+                    Expression.BinaryOperation(
+                        Expression.BinaryOperation.Kind.LESS_THAN,
+                        Expression.Variable("@iter"),
+                        arrayLength,
+                        fullLocation,
+                    ),
+                    listOf(Statement.VariableDefinition(receivingVariable, fullLocation)) + bodyBlock + listOf(
+                        Statement.Assignment(
+                            Statement.Assignment.LValue.Variable("@iter"),
+                            Expression.BinaryOperation(
+                                Expression.BinaryOperation.Kind.ADD,
+                                Expression.Variable("@iter", fullLocation),
+                                Expression.NumberLiteral(1, fullLocation),
+                            ),
+                            fullLocation,
+                        )
+                    ),
+                    fullLocation
+                )
+            ),
+            fullLocation,
+        )
+    }
+
     private fun processManyForEachLoops(parseTree: ParseTree<Symbol>, ancestorBlock: LowestAncestorBlock): List<Statement.ForeachLoop> {
         val children = (parseTree as ParseTree.Branch).getFilteredChildren()
         // TODO: handle also "wewnątrz" syntax
@@ -596,7 +596,7 @@ class AstFactory(private val diagnostics: Diagnostics) {
             in listOf(Productions.nonBraceStatementFuncDef, Productions.nonIfNonBraceStatementFuncDef) ->
                 Statement.FunctionDefinition(processFunctionDefinition(children[0], ancestorBlock), combineLocations(children))
             in listOf(Productions.nonBraceStatementArrayLoop, Productions.nonIfNonBraceStatementArrayLoop) ->
-                makeArrayLoop(parseTree)
+                processArrayLoop(parseTree, ancestorBlock)
             else -> throw IllegalArgumentException()
         }
     }

@@ -1351,7 +1351,7 @@ class AstFactoryTest {
                             Statement.Evaluation(Expression.FunctionCall("f2", listOf(), dummyLocationRange), dummyLocationRange),
                             Statement.FunctionDefinition(
                                 Function(
-                                    "_pomocniczyPrzekaźnik0",
+                                    "@auxGen0",
                                     listOf(),
                                     Type.Number,
                                     Function.Implementation.Local(
@@ -1408,7 +1408,7 @@ class AstFactoryTest {
                                     listOf(
                                         Expression.FunctionCall.Argument(
                                             null,
-                                            Expression.ArrayGeneration(Expression.FunctionCall("_pomocniczyPrzekaźnik0", listOf(), dummyLocationRange), dummyLocationRange),
+                                            Expression.ArrayGeneration(Expression.FunctionCall("@auxGen0", listOf(), dummyLocationRange), dummyLocationRange),
                                             dummyLocationRange,
                                         )
                                     ),

@@ -11,8 +11,6 @@ import compiler.ast.Variable
 import compiler.diagnostics.Diagnostic
 import compiler.diagnostics.Diagnostic.ResolutionDiagnostic.ControlFlowDiagnostic
 import compiler.diagnostics.Diagnostics
-import compiler.intermediate.generators.FunctionDetailsGenerator
-import compiler.intermediate.generators.GeneratorDetailsGenerator
 import compiler.utils.Ref
 import compiler.utils.mutableKeyRefMapOf
 import compiler.utils.mutableRefMapOf
@@ -58,96 +56,8 @@ class FunctionControlFlowPlannerTest {
         }
     }
 
-    private val dummyGeneratorDetailsGenerator = { it: Function ->
-        object : GeneratorDetailsGenerator {
-
-            override fun genInitCall(args: List<IFTNode>): FunctionDetailsGenerator.FunctionCallIntermediateForm {
-                val generatorId = IFTNode.DummyCallResult()
-                return FunctionDetailsGenerator.FunctionCallIntermediateForm(
-                    IFTNode.DummyCall(it.copy(name = it.name + "_init"), args, generatorId, IFTNode.DummyCallResult())
-                        .toCfg(),
-                    generatorId,
-                    null
-                )
-            }
-
-            override fun genResumeCall(
-                framePointer: IFTNode,
-                savedState: IFTNode
-            ): FunctionDetailsGenerator.FunctionCallIntermediateForm {
-                val nextValue = IFTNode.DummyCallResult()
-                val nextState = IFTNode.DummyCallResult()
-                return FunctionDetailsGenerator.FunctionCallIntermediateForm(
-                    IFTNode.DummyCall(
-                        it.copy(name = it.name + "_resume"),
-                        listOf(framePointer, savedState),
-                        nextValue,
-                        nextState
-                    ).toCfg(),
-                    nextValue,
-                    nextState
-                )
-            }
-
-            override fun genFinalizeCall(framePointer: IFTNode): FunctionDetailsGenerator.FunctionCallIntermediateForm {
-                return FunctionDetailsGenerator.FunctionCallIntermediateForm(
-                    IFTNode.DummyCall(
-                        it.copy(name = it.name + "_finalize"),
-                        listOf(framePointer),
-                        IFTNode.DummyCallResult(),
-                        IFTNode.DummyCallResult()
-                    ).toCfg(),
-                    null,
-                    null
-                )
-            }
-
-            override fun genInit(): ControlFlowGraph {
-                throw NotImplementedError()
-            }
-
-            override fun genResume(mainBody: ControlFlowGraph): ControlFlowGraph {
-                throw NotImplementedError()
-            }
-
-            override fun genYield(value: IFTNode): ControlFlowGraph {
-                return IFTNode.DummyCall(
-                    it.copy(name = it.name + "_yield"),
-                    listOf(value),
-                    IFTNode.DummyCallResult(),
-                    IFTNode.DummyCallResult()
-                ).toCfg()
-            }
-
-            override fun getNestedForeachFramePointerAddress(foreachLoop: Statement.ForeachLoop): IFTNode? {
-                return if (genForeachFramePointerAddress) IFTNode.Dummy(
-                    listOf(
-                        "foreach frame pointer address",
-                        it,
-                        foreachLoop
-                    )
-                ) else null
-            }
-
-            override fun genFinalize(): ControlFlowGraph {
-                throw NotImplementedError()
-            }
-
-            override val initFDG: FunctionDetailsGenerator
-                get() = throw NotImplementedError()
-            override val resumeFDG: FunctionDetailsGenerator
-                get() = throw NotImplementedError()
-            override val finalizeFDG: FunctionDetailsGenerator
-                get() = throw NotImplementedError()
-
-            override fun genRead(namedNode: NamedNode, isDirect: Boolean): IFTNode {
-                throw NotImplementedError()
-            }
-
-            override fun genWrite(namedNode: NamedNode, value: IFTNode, isDirect: Boolean): IFTNode {
-                throw NotImplementedError()
-            }
-        }
+    private val getDummyGeneratorDetailsGenerator = { function: Function ->
+        TestGeneratorDetailsGenerator(function, genForeachFramePointerAddress)
     }
 
     private val testDiagnostics = object : Diagnostics {
@@ -168,7 +78,7 @@ class FunctionControlFlowPlannerTest {
         functionReturnedValueVariables,
         { variable, _ -> IFTNode.MemoryRead(IFTNode.MemoryLabel(variable.name)) },
         { node, variable, _ -> IFTNode.MemoryWrite(IFTNode.MemoryLabel(variable.name), node) },
-        dummyGeneratorDetailsGenerator,
+        getDummyGeneratorDetailsGenerator,
         TestArrayMemoryManagement()
     )
 
@@ -777,7 +687,7 @@ class FunctionControlFlowPlannerTest {
         val generatorFinalize = generator.copy(name = "generator_finalize")
 
         val genCall = Expression.FunctionCall("generator", emptyList(), null)
-        val genCallResult = dummyGeneratorDetailsGenerator(generator).genInitCall(emptyList())
+        val genCallResult = getDummyGeneratorDetailsGenerator(generator).genInitCall(emptyList())
 
         expressionNodes[Ref(genCall)] = mutableMapOf(Ref(null) to Ref(genCallResult.callGraph.entryTreeRoot!!))
         expressionAccessNodes[Ref(genCall)] = mutableMapOf(Ref(null) to Ref(genCallResult.result!!))
@@ -864,7 +774,7 @@ class FunctionControlFlowPlannerTest {
         val generatorFinalize = generator.copy(name = "generator_finalize")
 
         val genCall = Expression.FunctionCall("generator", emptyList(), null)
-        val genCallResult = dummyGeneratorDetailsGenerator(generator).genInitCall(emptyList())
+        val genCallResult = getDummyGeneratorDetailsGenerator(generator).genInitCall(emptyList())
 
         expressionNodes[Ref(genCall)] = mutableMapOf(Ref(null) to Ref(genCallResult.callGraph.entryTreeRoot!!))
         expressionAccessNodes[Ref(genCall)] = mutableMapOf(Ref(null) to Ref(genCallResult.result!!))
@@ -965,7 +875,7 @@ class FunctionControlFlowPlannerTest {
         val generatorFinalize = generator.copy(name = "generator_finalize")
 
         val genCall = Expression.FunctionCall("generator", emptyList(), null)
-        val genCallResult = dummyGeneratorDetailsGenerator(generator).genInitCall(emptyList())
+        val genCallResult = getDummyGeneratorDetailsGenerator(generator).genInitCall(emptyList())
 
         expressionNodes[Ref(genCall)] = mutableMapOf(Ref(null) to Ref(genCallResult.callGraph.entryTreeRoot!!))
         expressionAccessNodes[Ref(genCall)] = mutableMapOf(Ref(null) to Ref(genCallResult.result!!))

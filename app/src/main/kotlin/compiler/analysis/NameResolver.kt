@@ -280,6 +280,17 @@ object NameResolver {
                     node.initialization.forEach { analyzeNode(it, currentScope) }
                 }
 
+                is Expression.ArrayGeneration -> {
+                    // resolve name for generator call.
+                    if (!checkGeneratorUsage(node.generatorCall)) {
+                        nameDefinitions[Ref(node.generatorCall)] =
+                            Ref(visibleNames[node.generatorCall.name]!!.topGenerator())
+                    }
+                    // skip analysing generatorCall because it would resolve the name again, but treating it as a regular function call
+                    // instead move on to analysing its arguments directly
+                    node.generatorCall.arguments.forEach { analyzeNode(it, currentScope) }
+                }
+
                 // Statements
 
                 is Statement.Evaluation -> {

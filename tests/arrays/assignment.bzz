@@ -1,0 +1,11 @@
+// USE VALGRIND
+czynność główna() {
+    zm przykładowy_ciąg: [Liczba] = ciąg Liczba[1](1)
+    przykładowy_ciąg = ciąg Liczba { 32, -18, 14, 29, 342423, 556565 }
+    napisz(przykładowy_ciąg[0])
+    napisz(przykładowy_ciąg[1])
+    napisz(przykładowy_ciąg[2])
+    napisz(przykładowy_ciąg[3])
+    napisz(przykładowy_ciąg[4])
+    napisz(przykładowy_ciąg[5])
+}

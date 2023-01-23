@@ -1732,4 +1732,44 @@ class TypeCheckerTest {
             diagnosticsList
         )
     }
+
+    // przekaźnik g1() -> Liczba {}
+    // przekaźnik g2() -> Czy {}
+    // czynność f() {
+    //     ułożenie g1()
+    //     ułożenie g2()
+    // }
+    @Test
+    fun `test array generation has proper type`() {
+        val generator1 = Function("g1", listOf(), Type.Number, listOf(), true)
+        val generator2 = Function("g2", listOf(), Type.Boolean, listOf(), true)
+        val generator1Call = Expression.FunctionCall("g1", listOf())
+        val generator2Call = Expression.FunctionCall("g2", listOf())
+        nameResolution[Ref(generator1Call)] = Ref(generator1)
+        nameResolution[Ref(generator2Call)] = Ref(generator2)
+        val arrayGeneration1 = Expression.ArrayGeneration(generator1Call)
+        val arrayGeneration2 = Expression.ArrayGeneration(generator2Call)
+
+        val program = Program(
+            listOf(
+                Program.Global.FunctionDefinition(generator1),
+                Program.Global.FunctionDefinition(generator2),
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "f",
+                        listOf(),
+                        Type.Unit,
+                        listOf(
+                            Statement.Evaluation(arrayGeneration1),
+                            Statement.Evaluation(arrayGeneration2)
+                        )
+                    )
+                )
+            )
+        )
+
+        val typeMapping = TypeChecker.calculateTypes(program, nameResolution, argumentResolution, diagnostics)
+        assertEquals(Type.Array(Type.Number), typeMapping[Ref(arrayGeneration1)]!!)
+        assertEquals(Type.Array(Type.Boolean), typeMapping[Ref(arrayGeneration2)]!!)
+    }
 }

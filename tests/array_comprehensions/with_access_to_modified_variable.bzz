@@ -3,14 +3,14 @@
 czynność główna() {
     zm n: Liczba = 0
 
-    przekaźnik przekaźnika_zwiększającego_n(): Liczba {
+    przekaźnik przekaźnika_zwiększającego_n() -> Liczba {
         dopóki (n < 6) {
             n = n+1
             przekaż n
         }
     }
 
-    zm z: [Liczba] = ciąg [Liczba] (n*10+m otrzymując m: Liczba od przekaźnika_zwiększającego_n())
+    zm z: [Liczba] = ciąg Liczba (n*10+m otrzymując m: Liczba od przekaźnika_zwiększającego_n())
     
     dla (x: Liczba wewnątrz z) {
         napisz(x)

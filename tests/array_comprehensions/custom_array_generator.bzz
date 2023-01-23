@@ -1,5 +1,5 @@
 // USE VALGRIND
-przekaźnik trójek_pitagorejskich(górna_granica: Liczba): [Liczba] {
+przekaźnik trójek_pitagorejskich(górna_granica: Liczba) -> [Liczba] {
     otrzymując a: Liczba od przedziału(górna_granica) {
         otrzymując b: Liczba od przedziału(górna_granica) {
             otrzymując c: Liczba od przedziału(górna_granica) {
@@ -12,14 +12,12 @@ przekaźnik trójek_pitagorejskich(górna_granica: Liczba): [Liczba] {
 
 czynność główna() {
     zm n: Liczba = wczytaj()
-    zm trójki: [[Liczba]] = ciąg [[Liczba]] (t  otrzymując t: [Liczba] od trójek_pitagorejskich(n) jeśli 0 < t[0] oraz t[0] <= t[1] oraz t[1] <= t[2])
+    zm trójki: [[Liczba]] = ciąg [Liczba] (t  otrzymując t: [Liczba] od trójek_pitagorejskich(n) jeśli 0 < t[0] oraz t[0] <= t[1] oraz t[1] <= t[2])
     
     dla (t: [Liczba] wewnątrz trójki) {
-        jeśli (t[2] < 10) {
-            napisz(t[0]*100+t[1]*10+t[2])
-        }
-        wpp {
-            napisz(t[0]*10000+t[1]*100+t[2])
-        }
+        zm w: Liczba = 0
+        otrzymując i: Liczba od przedziału(długość(t))
+            w = w*100 + t[i]
+        napisz(w)
     }
 }

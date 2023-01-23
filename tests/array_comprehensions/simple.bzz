@@ -1,7 +1,7 @@
 // USE VALGRIND
 czynność główna() {
     zm a: [Liczba] = ciąg Liczba {-1, 1}
-    zm b: [Liczba] = ciąg Liczba (x*y dla x: Liczba wewnątrz a otrzymując y: Liczba od przedziału(3))
+    zm b: [Liczba] = ciąg Liczba (x*y dla (x: Liczba wewnątrz a) otrzymując y: Liczba od przedziału(3))
 
     zm i: Liczba = 0
     dopóki(i < długość b) {

@@ -3,14 +3,14 @@ Input:
 Exit code:
 0
 Output:
-345
+30405
 ----------
 Input:
 11
 Exit code:
 0
 Output:
-345
+30405
 60810
 ----------
 Input:
@@ -18,7 +18,7 @@ Input:
 Exit code:
 0
 Output:
-345
+30405
 51213
 60810
 91215

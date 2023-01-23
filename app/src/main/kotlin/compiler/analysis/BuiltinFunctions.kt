@@ -16,9 +16,9 @@ object BuiltinFunctions {
         ),
 
         // Prints a unicode string followed by a newline to output
-        "wypisz" to Function(
-            "wypisz",
-            listOf(Function.Parameter("napis", Type.Array(Type.Number), null)),
+        "powiedz" to Function(
+            "powiedz",
+            listOf(Function.Parameter("wypowiedź", Type.Array(Type.Number), null)),
             Type.Unit,
             Function.Implementation.Foreign("print_string"),
             false

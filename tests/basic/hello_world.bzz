@@ -1,4 +1,4 @@
 // USE VALGRIND
 czynność główna() {
-    wypisz(„Witaj świecie!”)
+    powiedz(„Witaj świecie!”)
 }

@@ -112,7 +112,7 @@ object LanguageTokens {
             Pair(TokenType.TYPE_INTEGER, "Liczba"),
             Pair(TokenType.TYPE_BOOLEAN, "Czy"),
             Pair(TokenType.TYPE_UNIT, "Nic"),
-            Pair(TokenType.TYPE_STRING, "Napis"),
+            Pair(TokenType.TYPE_STRING, "Wypowiedź"),
 
             // Whitespace and comments
             // Technically not real tokens

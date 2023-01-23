@@ -10,6 +10,7 @@ enum class NonTerminalType {
     CALL_ARGS,
     // generators related
     GENERATOR_ITERATION, MANY_GENERATOR_ITERATIONS,
+    ARRAY_ITERATION, MANY_ARRAY_ITERATIONS,
     // variable/function declaration
     VAR_DECL, FUNC_DEF, FOREIGN_DECL,
     // normal expression categories

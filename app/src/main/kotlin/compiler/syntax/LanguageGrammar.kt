@@ -32,9 +32,11 @@ object LanguageGrammar {
         val callArgs1 = getProduction("CALL_ARGS", "({nE_EXPR}({tCOMMA}$NLS{nE_EXPR})*({tCOMMA}$NLS{nE_EXPR}{tASSIGNMENT}$NLS{nE_EXPR})*)?")
         val callArgs2 = getProduction("CALL_ARGS", "{nE_EXPR}{tASSIGNMENT}$NLS{nE_EXPR}({tCOMMA}$NLS{nE_EXPR}{tASSIGNMENT}$NLS{nE_EXPR})*")
 
-        // TODO: add "wewnątrz" handling.
         val generatorIteration = getProduction("GENERATOR_ITERATION", "{tFOR_EACH}$NLS{tIDENTIFIER}$NLS{tCOLON}$NLS{nTYPE}$NLS{tFROM}$NLS{tIDENTIFIER}{tLEFT_PAREN}$NLS{nCALL_ARGS}{tRIGHT_PAREN}")
         val manyGeneratorIterations = getProduction("MANY_GENERATOR_ITERATIONS", "{nGENERATOR_ITERATION}($NLS{nGENERATOR_ITERATION})*")
+
+        val arrayIteration = getProduction("ARRAY_ITERATION", "{tARRAY_FOR_EACH}$NLS{tLEFT_PAREN}$NLS{tIDENTIFIER}$NLS{tCOLON}$NLS{nTYPE}$NLS{tIN}$NLS{nE_EXPR}{tRIGHT_PAREN}")
+        val manyArrayIterations = getProduction("MANY_ARRAY_ITERATIONS", "{nARRAY_ITERATION}($NLS{nARRAY_ITERATION})*")
 
         // expressions
         val expr4096Parenthesis = getProduction("EXPR4096", "{tLEFT_PAREN}$NLS{nE_EXPR}{tRIGHT_PAREN}")
@@ -104,7 +106,7 @@ object LanguageGrammar {
         val eExpr4096ArrayDefaultAllocation = getProduction("E_EXPR4096", "{tARRAY_ALLOCATION}{nTYPE}{tLEFT_BRACKET}$NLS{nE_EXPR}{tRIGHT_BRACKET}{tLEFT_PAREN}$NLS{nE_EXPR}{tRIGHT_PAREN}$NLS")
         val eExpr4096ArrayListAllocation = getProduction("E_EXPR4096", "{tARRAY_ALLOCATION}{nTYPE}{tLEFT_BRACE}$NLS{nE_EXPR}({tCOMMA}$NLS{nE_EXPR})*{tRIGHT_BRACE}$NLS")
         val eExpr4096ArrayGeneratorAllocation = getProduction("E_EXPR4096", "{tARRAY_ALLOCATION}{nTYPE}{tLEFT_PAREN}$NLS{nE_EXPR}{nMANY_GENERATOR_ITERATIONS}({tIF}$NLS{nE_EXPR}{tRIGHT_PAREN}|{tRIGHT_PAREN})$NLS")
-        
+
         val eExpr2048PassThrough = getProduction("E_EXPR2048", "{nE_EXPR4096}")
         val eExpr2048ArrayAccess = getProduction("E_EXPR2048", "{nE_EXPR4096}{tLEFT_BRACKET}$NLS{nE_EXPR}{tRIGHT_BRACKET}({tLEFT_BRACKET}$NLS{nE_EXPR}{tRIGHT_BRACKET})*$NLS")
         val eExpr2048ArrayLength = getProduction("E_EXPR2048", "{tLENGTH}$NLS{nE_EXPR2048}")
@@ -174,12 +176,12 @@ object LanguageGrammar {
         val nonBraceStatementForEach = getProduction("NON_BRACE_STATEMENT", "{nGENERATOR_ITERATION}{nMAYBE_BLOCK}")
         val nonBraceStatementFuncDef = getProduction("NON_BRACE_STATEMENT", "{nFUNC_DEF}$NLS")
         val nonIfNonBraceStatementAtomic = getProduction("NON_IF_NON_BRACE_STATEMENT", "{nATOMIC_STATEMENT}({tNEWLINE}|{tSEMICOLON})$NLS")
-        val nonBraceStatementArrayLoop = getProduction("NON_BRACE_STATEMENT", "{tARRAY_FOR_EACH}$NLS{tLEFT_PAREN}$NLS{tIDENTIFIER}$NLS{tCOLON}$NLS{nTYPE}$NLS{tIN}$NLS{nE_EXPR}{tRIGHT_PAREN}{nMAYBE_BLOCK}")
+        val nonBraceStatementArrayLoop = getProduction("NON_BRACE_STATEMENT", "{nARRAY_ITERATION}{nMAYBE_BLOCK}")
 
         val nonIfNonBraceStatementWhile = getProduction("NON_IF_NON_BRACE_STATEMENT", "{tWHILE}$NLS{tLEFT_PAREN}$NLS{nE_EXPR}{tRIGHT_PAREN}{nNON_IF_MAYBE_BLOCK}")
         val nonIfNonBraceStatementForEach = getProduction("NON_IF_NON_BRACE_STATEMENT", "{nGENERATOR_ITERATION}{nNON_IF_MAYBE_BLOCK}")
         val nonIfNonBraceStatementFuncDef = getProduction("NON_IF_NON_BRACE_STATEMENT", "{nFUNC_DEF}$NLS")
-        val nonIfNonBraceStatementArrayLoop = getProduction("NON_IF_NON_BRACE_STATEMENT", "{tARRAY_FOR_EACH}$NLS{tLEFT_PAREN}$NLS{tIDENTIFIER}$NLS{tCOLON}$NLS{nTYPE}$NLS{tIN}$NLS{nE_EXPR}{tRIGHT_PAREN}{nNON_IF_MAYBE_BLOCK}")
+        val nonIfNonBraceStatementArrayLoop = getProduction("NON_IF_NON_BRACE_STATEMENT", "{nARRAY_ITERATION}{nNON_IF_MAYBE_BLOCK}")
 
         val atomicExpr = getProduction("ATOMIC_STATEMENT", "{nEXPR}")
         val atomicAssignment = getProduction("ATOMIC_STATEMENT", "{nEXPR}{tASSIGNMENT}$NLS{nEXPR}")
@@ -198,6 +200,7 @@ object LanguageGrammar {
                 varDecl, funcDef, foreignDecl,
                 defArgs1, defArgs2, defArg, callArgs1, callArgs2,
                 generatorIteration, manyGeneratorIterations,
+                arrayIteration, manyArrayIterations,
 
                 expr4096Parenthesis, expr4096Const, expr4096Identifier, expr4096Call, expr4096ArrayDefaultAllocation, expr4096ArrayListAllocation, expr4096ArrayGeneratorAllocation,
                 expr2048PassThrough, expr2048ArrayLength, expr2048ArrayAccess, expr2048UnaryPlus, expr2048UnaryMinus, expr2048UnaryBoolNot, expr2048UnaryBitNot,

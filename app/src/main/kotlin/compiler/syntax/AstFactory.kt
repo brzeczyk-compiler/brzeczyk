@@ -511,12 +511,12 @@ class AstFactory(private val diagnostics: Diagnostics) {
         }
     }
 
-    private fun processArrayLoop(parseTree: ParseTree<Symbol>, ancestorBlock: LowestAncestorBlock): Statement {
+    private fun processArrayLoop(parseTree: ParseTree<Symbol>, action: ParseTree<Symbol>?, ancestorBlock: LowestAncestorBlock): Statement.Block {
         val children = (parseTree as ParseTree.Branch).getFilteredChildren()
 
         val arrayExpression = processExpression(children[6], ancestorBlock)
-        val bodyBlock = processMaybeBlock(children[8])
-        val fullLocation = combineLocations(children)
+        val bodyBlock = if (action != null) processMaybeBlock(action) else listOf()
+        val fullLocation = combineLocations(if (action != null) children + listOf(action) else children)
 
         val iter = Variable(
             Variable.Kind.VARIABLE,
@@ -596,7 +596,7 @@ class AstFactory(private val diagnostics: Diagnostics) {
             in listOf(Productions.nonBraceStatementFuncDef, Productions.nonIfNonBraceStatementFuncDef) ->
                 Statement.FunctionDefinition(processFunctionDefinition(children[0], ancestorBlock), combineLocations(children))
             in listOf(Productions.nonBraceStatementArrayLoop, Productions.nonIfNonBraceStatementArrayLoop) ->
-                processArrayLoop(parseTree, ancestorBlock)
+                processArrayLoop(children[0], children[1], ancestorBlock)
             else -> throw IllegalArgumentException()
         }
     }

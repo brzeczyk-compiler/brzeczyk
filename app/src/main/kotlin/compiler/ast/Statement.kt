@@ -34,7 +34,7 @@ sealed class Statement : AstNode {
     data class Block(
         val block: StatementBlock,
         override val location: LocationRange? = null,
-    ) : Statement()
+    ) : Statement(), IterationResult
 
     data class Conditional(
         val condition: Expression,
@@ -62,7 +62,7 @@ sealed class Statement : AstNode {
         val generatorCall: Expression.FunctionCall,
         val action: StatementBlock,
         override val location: LocationRange? = null,
-    ) : Statement()
+    ) : Statement(), IterationResult
 
     data class FunctionReturn(
         val value: Expression,

@@ -325,7 +325,61 @@ class CorrectProgramsE2eTest {
                 
                 powiedz(hello_world) // Witaj świecie!
                 powiedz(unicode) // Witaj świecie!
+            }
+            """
+        )
+    }
+
+    @Test
+    fun `test arrays comprehension`() {
+        E2eTestUtils.assertProgramCorrect(
+            """
+            przekaźnik g1(n: Liczba) -> Liczba {
+                zm x: Liczba = 1
+                dopóki (x <= n) {
+                    przekaż x
+                    x = x + 1
+                }
+                zakończ
+            }
+            przekaźnik g2(n: Liczba) -> Liczba {
+                zm x: Liczba = 1
+                dopóki (x <= n) {
+                    przekaż x + 10
+                    x = x + 1
+                }
+                zakończ
+            }
+            
+            czynność f(warunek: Czy) { }
+            
+            czynność główna() {
+                // w should be accessible in ciąg Liczba (...)
+                zm w: Liczba = 15
+                f(długość(ciąg Liczba (x + y + z + w otrzymując x: Liczba od g1(17) otrzymując y: Liczba od g2(x) otrzymując z: Liczba od g1(y - x) jeśli y > x)) > 42)
+                f(długość(ciąg Liczba (w otrzymując x: Liczba od g1(17))) > 42)
+                ciąg Liczba (w otrzymując x: Liczba od g1(17))
+                
+                zm v: Liczba = 30
+                ciąg Liczba (x + v otrzymując x: Liczba od g1(długość(ciąg Liczba (y + v otrzymując y: Liczba od g2(17)))))
+                
+                wart tablica: [Liczba] = ciąg Liczba{1,2,3,4} 
+                ciąg Liczba (x + y + z + w otrzymując x: Liczba od g1(17) dla (y: Liczba wewnątrz tablica) otrzymując z: Liczba od g2(17) dla (w: Liczba wewnątrz tablica) jeśli x + z > y + w)
             }   
+            """
+        )
+    }
+
+    @Test
+    fun `test looping over arrays`() {
+        E2eTestUtils.assertProgramCorrect(
+            """
+            czynność główna() {
+                zm tab: [Liczba] = ciąg Liczba {0, 1, 1, 2, 3, 5, 8}
+                dla (x: Liczba wewnątrz tab) {
+                    napisz(x)
+                }
+            }
             """
         )
     }

@@ -1,0 +1,17 @@
+// USE VALGRIND
+czynność główna() {
+    zm ciąg1: [Liczba] = ciąg Liczba[5](1)
+    dla (x: Liczba wewnątrz ciąg1) {
+        napisz(x + x)
+    }
+
+    zm ciąg2: [Liczba] = ciąg Liczba { 0, 1, 1, 2, 3, 5, 8 }
+    dla (x: Liczba wewnątrz ciąg2)
+        napisz(x)
+
+    dla (x: Liczba wewnątrz ciąg2) {
+        dla (y: Liczba wewnątrz ciąg1) {
+            napisz(x * y)
+        }
+    }
+}

@@ -1138,22 +1138,25 @@ class AstFactoryTest {
                 NonTerminalType.STATEMENT, Productions.statementNonBrace,
                 makeNTNode(
                     NonTerminalType.NON_BRACE_STATEMENT, Productions.nonBraceStatementForEach,
-                    makeTNode(TokenType.FOR_EACH, "otrzymując"),
-                    makeTNode(TokenType.IDENTIFIER, "x"),
-                    makeTNode(TokenType.COLON, ":"),
-                    makeNTNode(NonTerminalType.TYPE, Productions.type, makeTNode(TokenType.TYPE_INTEGER, "Liczba")),
-                    makeTNode(TokenType.FROM, "od"),
-                    makeTNode(TokenType.IDENTIFIER, "f"),
-                    makeTNode(TokenType.LEFT_PAREN, "("),
                     makeNTNode(
-                        NonTerminalType.CALL_ARGS, Productions.callArgs1,
-                        makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "a")) wrapUpTo NonTerminalType.EXPR,
-                        makeTNode(TokenType.COMMA, ","),
-                        makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "b")) wrapUpTo NonTerminalType.EXPR,
-                        makeTNode(TokenType.ASSIGNMENT, "="),
-                        makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "c")) wrapUpTo NonTerminalType.EXPR,
+                        NonTerminalType.GENERATOR_ITERATION, Productions.generatorIteration,
+                        makeTNode(TokenType.FOR_EACH, "otrzymując"),
+                        makeTNode(TokenType.IDENTIFIER, "x"),
+                        makeTNode(TokenType.COLON, ":"),
+                        makeNTNode(NonTerminalType.TYPE, Productions.type, makeTNode(TokenType.TYPE_INTEGER, "Liczba")),
+                        makeTNode(TokenType.FROM, "od"),
+                        makeTNode(TokenType.IDENTIFIER, "f"),
+                        makeTNode(TokenType.LEFT_PAREN, "("),
+                        makeNTNode(
+                            NonTerminalType.CALL_ARGS, Productions.callArgs1,
+                            makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "a")) wrapUpTo NonTerminalType.EXPR,
+                            makeTNode(TokenType.COMMA, ","),
+                            makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "b")) wrapUpTo NonTerminalType.EXPR,
+                            makeTNode(TokenType.ASSIGNMENT, "="),
+                            makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "c")) wrapUpTo NonTerminalType.EXPR,
+                        ),
+                        makeTNode(TokenType.RIGHT_PAREN, ")"),
                     ),
-                    makeTNode(TokenType.RIGHT_PAREN, ")"),
                     makeNTNode(
                         NonTerminalType.NON_IF_MAYBE_BLOCK, Productions.nonIfMaybeBlockNonBrace,
                         makeNTNode(
@@ -1190,6 +1193,231 @@ class AstFactoryTest {
                                 listOf(Statement.GeneratorYield(Expression.Variable("x", dummyLocationRange), dummyLocationRange)),
                                 dummyLocationRange,
                             )
+                        ),
+                        false,
+                        dummyLocationRange
+                    ),
+                    dummyLocationRange
+                )
+            )
+        )
+
+        val resultAst = astFactory.createFromParseTree(parseTree)
+        assertEquals(expectedAst, resultAst)
+    }
+
+    @Test fun `test list comprehension`() {
+        val parseTree = makeProgramWithMainFunction(
+            makeNTNode(
+                NonTerminalType.STATEMENT, Productions.statementNonBrace,
+                makeNTNode(
+                    NonTerminalType.NON_BRACE_STATEMENT, Productions.nonBraceStatementAtomic,
+                    makeNTNode(
+                        NonTerminalType.ATOMIC_STATEMENT, Productions.atomicExpr,
+                        makeNTNode(
+                            NonTerminalType.EXPR4096, Productions.expr4096Call,
+                            makeTNode(TokenType.IDENTIFIER, "f1"),
+                            makeTNode(TokenType.LEFT_PAREN, "("),
+                            makeNTNode(NonTerminalType.CALL_ARGS, Productions.callArgs1),
+                            makeTNode(TokenType.RIGHT_PAREN, ")"),
+                        ) wrapUpTo NonTerminalType.EXPR,
+                    ),
+                    makeTNode(TokenType.NEWLINE, "\n")
+                ),
+            ),
+            makeNTNode(
+                NonTerminalType.STATEMENT, Productions.statementNonBrace,
+                makeNTNode(
+                    NonTerminalType.NON_BRACE_STATEMENT, Productions.nonBraceStatementAtomic,
+                    makeNTNode(
+                        NonTerminalType.ATOMIC_STATEMENT, Productions.atomicExpr,
+                        makeNTNode(
+                            NonTerminalType.EXPR4096, Productions.expr4096Call,
+                            makeTNode(TokenType.IDENTIFIER, "f2"),
+                            makeTNode(TokenType.LEFT_PAREN, "("),
+                            makeNTNode(NonTerminalType.CALL_ARGS, Productions.callArgs1),
+                            makeTNode(TokenType.RIGHT_PAREN, ")"),
+                        ) wrapUpTo NonTerminalType.EXPR,
+                    ),
+                    makeTNode(TokenType.NEWLINE, "\n")
+                ),
+            ),
+            makeNTNode(
+                NonTerminalType.STATEMENT, Productions.statementNonBrace,
+                makeNTNode(
+                    NonTerminalType.NON_BRACE_STATEMENT, Productions.nonBraceStatementAtomic,
+                    makeNTNode(
+                        NonTerminalType.ATOMIC_STATEMENT, Productions.atomicExpr,
+                        makeNTNode(
+                            NonTerminalType.EXPR4096, Productions.expr4096Call,
+                            makeTNode(TokenType.IDENTIFIER, "f3"),
+                            makeTNode(TokenType.LEFT_PAREN, "("),
+                            makeNTNode(
+                                NonTerminalType.CALL_ARGS, Productions.callArgs1,
+                                makeNTNode(
+                                    NonTerminalType.EXPR4096, Productions.expr4096ArrayGeneratorAllocation,
+                                    makeTNode(TokenType.ARRAY_ALLOCATION, "ciąg"),
+                                    makeNTNode(NonTerminalType.TYPE, Productions.type, makeTNode(TokenType.TYPE_INTEGER, "Liczba")),
+                                    makeTNode(TokenType.LEFT_PAREN, "("),
+                                    makeNTNode(
+                                        NonTerminalType.EXPR4096, Productions.expr4096Call,
+                                        makeTNode(TokenType.IDENTIFIER, "expr"),
+                                        makeTNode(TokenType.LEFT_PAREN, "("),
+                                        makeNTNode(
+                                            NonTerminalType.CALL_ARGS, Productions.callArgs1,
+                                            makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR,
+                                            makeTNode(TokenType.COMMA, ","),
+                                            makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "y")) wrapUpTo NonTerminalType.EXPR,
+                                        ),
+                                        makeTNode(TokenType.RIGHT_PAREN, ")"),
+                                    ) wrapUpTo NonTerminalType.EXPR,
+                                    makeNTNode(
+                                        NonTerminalType.MANY_ITERATIONS, Productions.manyIterations,
+                                        makeNTNode(
+                                            NonTerminalType.GENERATOR_ITERATION, Productions.generatorIteration,
+                                            makeTNode(TokenType.FOR_EACH, "otrzymując"),
+                                            makeTNode(TokenType.IDENTIFIER, "x"),
+                                            makeTNode(TokenType.COLON, ":"),
+                                            makeNTNode(NonTerminalType.TYPE, Productions.type, makeTNode(TokenType.TYPE_INTEGER, "Liczba")),
+                                            makeTNode(TokenType.FROM, "od"),
+                                            makeTNode(TokenType.IDENTIFIER, "g1"),
+                                            makeTNode(TokenType.LEFT_PAREN, "("),
+                                            makeNTNode(NonTerminalType.CALL_ARGS, Productions.callArgs1),
+                                            makeTNode(TokenType.RIGHT_PAREN, ")"),
+                                        ),
+                                        makeNTNode(
+                                            NonTerminalType.GENERATOR_ITERATION, Productions.generatorIteration,
+                                            makeTNode(TokenType.FOR_EACH, "otrzymując"),
+                                            makeTNode(TokenType.IDENTIFIER, "y"),
+                                            makeTNode(TokenType.COLON, ":"),
+                                            makeNTNode(NonTerminalType.TYPE, Productions.type, makeTNode(TokenType.TYPE_INTEGER, "Liczba")),
+                                            makeTNode(TokenType.FROM, "od"),
+                                            makeTNode(TokenType.IDENTIFIER, "g2"),
+                                            makeTNode(TokenType.LEFT_PAREN, "("),
+                                            makeNTNode(NonTerminalType.CALL_ARGS, Productions.callArgs1),
+                                            makeTNode(TokenType.RIGHT_PAREN, ")"),
+                                        ),
+                                    ),
+                                    makeTNode(TokenType.IF, "jeśli"),
+                                    makeNTNode(
+                                        NonTerminalType.EXPR4096, Productions.expr4096Call,
+                                        makeTNode(TokenType.IDENTIFIER, "cond"),
+                                        makeTNode(TokenType.LEFT_PAREN, "("),
+                                        makeNTNode(
+                                            NonTerminalType.CALL_ARGS, Productions.callArgs1,
+                                            makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "x")) wrapUpTo NonTerminalType.EXPR,
+                                            makeTNode(TokenType.COMMA, ","),
+                                            makeNTNode(NonTerminalType.EXPR4096, Productions.expr4096Identifier, makeTNode(TokenType.IDENTIFIER, "y")) wrapUpTo NonTerminalType.EXPR,
+                                        ),
+                                        makeTNode(TokenType.RIGHT_PAREN, ")"),
+                                    ) wrapUpTo NonTerminalType.EXPR,
+                                    makeTNode(TokenType.RIGHT_PAREN, ")"),
+                                ) wrapUpTo NonTerminalType.EXPR
+                            ),
+                            makeTNode(TokenType.RIGHT_PAREN, ")"),
+                        ) wrapUpTo NonTerminalType.EXPR,
+                    ),
+                    makeTNode(TokenType.NEWLINE, "\n")
+                ),
+            ),
+            makeNTNode(
+                NonTerminalType.STATEMENT, Productions.statementNonBrace,
+                makeNTNode(
+                    NonTerminalType.NON_BRACE_STATEMENT, Productions.nonBraceStatementAtomic,
+                    makeNTNode(
+                        NonTerminalType.ATOMIC_STATEMENT, Productions.atomicExpr,
+                        makeNTNode(
+                            NonTerminalType.EXPR4096, Productions.expr4096Call,
+                            makeTNode(TokenType.IDENTIFIER, "f4"),
+                            makeTNode(TokenType.LEFT_PAREN, "("),
+                            makeNTNode(NonTerminalType.CALL_ARGS, Productions.callArgs1),
+                            makeTNode(TokenType.RIGHT_PAREN, ")"),
+                        ) wrapUpTo NonTerminalType.EXPR,
+                    ),
+                    makeTNode(TokenType.NEWLINE, "\n")
+                ),
+            ),
+        )
+
+        val expectedAst = Program(
+            listOf(
+                Program.Global.FunctionDefinition(
+                    Function(
+                        "główna",
+                        listOf(),
+                        Type.Unit,
+                        listOf(
+                            Statement.Evaluation(Expression.FunctionCall("f1", listOf(), dummyLocationRange), dummyLocationRange),
+                            Statement.Evaluation(Expression.FunctionCall("f2", listOf(), dummyLocationRange), dummyLocationRange),
+                            Statement.FunctionDefinition(
+                                Function(
+                                    "@auxGen0",
+                                    listOf(),
+                                    Type.Number,
+                                    Function.Implementation.Local(
+                                        listOf(
+                                            Statement.ForeachLoop(
+                                                Variable(Variable.Kind.VALUE, "x", Type.Number, null, dummyLocationRange),
+                                                Expression.FunctionCall("g1", listOf(), dummyLocationRange),
+                                                listOf(
+                                                    Statement.ForeachLoop(
+                                                        Variable(Variable.Kind.VALUE, "y", Type.Number, null, dummyLocationRange),
+                                                        Expression.FunctionCall("g2", listOf(), dummyLocationRange),
+                                                        listOf(
+                                                            Statement.Conditional(
+                                                                Expression.FunctionCall(
+                                                                    "cond",
+                                                                    listOf(
+                                                                        Expression.FunctionCall.Argument(null, Expression.Variable("x", dummyLocationRange), dummyLocationRange),
+                                                                        Expression.FunctionCall.Argument(null, Expression.Variable("y", dummyLocationRange), dummyLocationRange),
+                                                                    ),
+                                                                    dummyLocationRange,
+                                                                ),
+                                                                listOf(
+                                                                    Statement.GeneratorYield(
+                                                                        Expression.FunctionCall(
+                                                                            "expr",
+                                                                            listOf(
+                                                                                Expression.FunctionCall.Argument(null, Expression.Variable("x", dummyLocationRange), dummyLocationRange),
+                                                                                Expression.FunctionCall.Argument(null, Expression.Variable("y", dummyLocationRange), dummyLocationRange),
+                                                                            ),
+                                                                            dummyLocationRange,
+                                                                        ),
+                                                                        dummyLocationRange,
+                                                                    ),
+                                                                ),
+                                                                null,
+                                                                dummyLocationRange,
+                                                            )
+                                                        ),
+                                                        dummyLocationRange
+                                                    )
+                                                ),
+                                                dummyLocationRange
+                                            )
+                                        )
+                                    ),
+                                    true,
+                                    dummyLocationRange,
+                                ),
+                                dummyLocationRange,
+                            ),
+                            Statement.Evaluation(
+                                Expression.FunctionCall(
+                                    "f3",
+                                    listOf(
+                                        Expression.FunctionCall.Argument(
+                                            null,
+                                            Expression.ArrayGeneration(Expression.FunctionCall("@auxGen0", listOf(), dummyLocationRange), dummyLocationRange),
+                                            dummyLocationRange,
+                                        )
+                                    ),
+                                    dummyLocationRange,
+                                ),
+                                dummyLocationRange,
+                            ),
+                            Statement.Evaluation(Expression.FunctionCall("f4", listOf(), dummyLocationRange), dummyLocationRange),
+
                         ),
                         false,
                         dummyLocationRange

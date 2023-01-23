@@ -1272,7 +1272,7 @@ class AstFactoryTest {
                                         makeTNode(TokenType.RIGHT_PAREN, ")"),
                                     ) wrapUpTo NonTerminalType.EXPR,
                                     makeNTNode(
-                                        NonTerminalType.MANY_GENERATOR_ITERATIONS, Productions.manyGeneratorIterations,
+                                        NonTerminalType.MANY_ITERATIONS, Productions.manyIterations,
                                         makeNTNode(
                                             NonTerminalType.GENERATOR_ITERATION, Productions.generatorIteration,
                                             makeTNode(TokenType.FOR_EACH, "otrzymując"),

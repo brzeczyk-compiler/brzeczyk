@@ -3,6 +3,7 @@ package compiler.syntax
 import compiler.Compiler.CompilationFailed
 import compiler.ast.Expression
 import compiler.ast.Function
+import compiler.ast.IterationResult
 import compiler.ast.Program
 import compiler.ast.Statement
 import compiler.ast.StatementBlock
@@ -36,8 +37,19 @@ class AstFactory(private val diagnostics: Diagnostics) {
     private fun produceAncestorObject(globalBlock: MutableGlobalBlock) =
         LowestAncestorBlock.AncestorGlobalBlock(globalBlock, globalBlock.lastOrNull())
 
-    private fun forEachWithAction(forEach: Statement.ForeachLoop, action: StatementBlock): Statement.ForeachLoop =
-        Statement.ForeachLoop(forEach.receivingVariable, forEach.generatorCall, action, forEach.location)
+    private fun forEachWithAction(forEach: Statement.ForeachLoop, action: Statement): Statement.ForeachLoop =
+        Statement.ForeachLoop(forEach.receivingVariable, forEach.generatorCall, listOf(action), forEach.location)
+
+    private fun arrayIterationWithAction(arrayIteration: Statement.Block, action: Statement): Statement.Block {
+        val location = arrayIteration.location
+        val iterDefinition = arrayIteration.block[0]
+        val loop = arrayIteration.block[1] as Statement.Loop
+        val loopAction = listOf(loop.action[0], action, loop.action[1])
+        return Statement.Block(
+            listOf(iterDefinition, Statement.Loop(loop.condition, loopAction, location)),
+            arrayIteration.location,
+        )
+    }
 
     private fun ParseTree<Symbol>.token(): TokenType? = (symbol as? Symbol.Terminal)?.tokenType
     private fun ParseTree<Symbol>.nonTerm(): NonTerminalType? = (symbol as? Symbol.NonTerminal)?.nonTerminal
@@ -382,7 +394,7 @@ class AstFactory(private val diagnostics: Diagnostics) {
                 val generatorReturnType = processType(children[1])
 
                 val generatorExpression = processExpression(children[3], ancestorBlock)
-                val forEachLoops = processManyForEachLoops(children[4], ancestorBlock).reversed().toMutableList()
+                val manyGenerations = processManyIterations(children[4], ancestorBlock).reversed().toMutableList()
                 val generationCondition = if (children[5].token() == TokenType.IF) processExpression(children[6], ancestorBlock) else Expression.BooleanLiteral(true)
 
                 val conditionalYield = Statement.Conditional(
@@ -392,14 +404,24 @@ class AstFactory(private val diagnostics: Diagnostics) {
                     generationCondition.location,
                 )
 
-                forEachLoops[0] = forEachWithAction(forEachLoops[0], listOf(conditionalYield))
-                val generatorBody = forEachLoops.reduce { acc, forEach -> forEachWithAction(forEach, listOf(acc)) }
+                val firstGeneration = manyGenerations[0]
+                manyGenerations[0] = when (firstGeneration) {
+                    is Statement.Block -> arrayIterationWithAction(firstGeneration, conditionalYield)
+                    is Statement.ForeachLoop -> forEachWithAction(firstGeneration, conditionalYield)
+                }
+
+                val generatorBody = manyGenerations.reduce { acc, generation ->
+                    when (generation) {
+                        is Statement.Block -> arrayIterationWithAction(generation, acc as Statement)
+                        is Statement.ForeachLoop -> forEachWithAction(generation, acc as Statement)
+                    }
+                }
 
                 val generator = Function(
                     auxGeneratorName,
                     listOf(),
                     generatorReturnType,
-                    Function.Implementation.Local(listOf(generatorBody)),
+                    Function.Implementation.Local(listOf(generatorBody as Statement)),
                     true,
                     location,
                 )
@@ -568,10 +590,15 @@ class AstFactory(private val diagnostics: Diagnostics) {
         )
     }
 
-    private fun processManyForEachLoops(parseTree: ParseTree<Symbol>, ancestorBlock: LowestAncestorBlock): List<Statement.ForeachLoop> {
+    private fun processManyIterations(parseTree: ParseTree<Symbol>, ancestorBlock: LowestAncestorBlock): List<IterationResult> {
         val children = (parseTree as ParseTree.Branch).getFilteredChildren()
-        // TODO: handle also "wewnątrz" syntax
-        return children.map { processForEachLoop(it, null, ancestorBlock) }
+        return children.map {
+            when ((it as ParseTree.Branch).production) {
+                Productions.generatorIteration -> processForEachLoop(it, null, ancestorBlock)
+                Productions.arrayIteration -> processArrayLoop(it, null, ancestorBlock)
+                else -> throw IllegalArgumentException()
+            }
+        }
     }
 
     private fun processStatement(parseTree: ParseTree<Symbol>, ancestorBlock: LowestAncestorBlock): Statement {

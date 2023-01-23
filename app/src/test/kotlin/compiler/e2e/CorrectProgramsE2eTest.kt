@@ -347,6 +347,9 @@ class CorrectProgramsE2eTest {
                 
                 zm v: Liczba = 30
                 ciąg Liczba (x + v otrzymując x: Liczba od g1(długość(ciąg Liczba (y + v otrzymując y: Liczba od g2(17)))))
+                
+                wart tablica: [Liczba] = ciąg Liczba{1,2,3,4} 
+                ciąg Liczba (x + y + z + w otrzymując x: Liczba od g1(17) dla (y: Liczba wewnątrz tablica) otrzymując z: Liczba od g2(17) dla (w: Liczba wewnątrz tablica) jeśli x + z > y + w)
             }   
             """
         )

@@ -37,6 +37,7 @@ sealed interface AstNode {
                 is Function -> "czynność ${this.name}(${this.parameters.joinToString { it.toSimpleString() }}) -> ${this.returnType}"
                 is Function.Parameter -> "${this.name}: ${this.type}${if (this.defaultValue != null) " = ${this.defaultValue.toSimpleString()}" else ""}"
                 is Expression.FunctionCall.Argument -> "${if (this.name != null) "${this.name} = " else ""}${this.value.toSimpleString()}"
+                else -> ""
             }
         )
 

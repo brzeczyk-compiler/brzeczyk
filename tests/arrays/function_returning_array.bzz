@@ -1,0 +1,10 @@
+// INTEGRATION TESTS IGNORE
+// USE VALGRIND
+czynność id(x: [Liczba]) -> [Liczba] {
+    zwróć x
+}
+
+czynność główna() {
+    zm x : [Liczba] = ciąg Liczba {1,2}
+    napisz(długość id(x));
+}

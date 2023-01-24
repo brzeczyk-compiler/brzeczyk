@@ -1,0 +1,26 @@
+// INTEGRATION TESTS IGNORE
+// USE VALGRIND
+czynność główna() {
+    zm c4d: [[[[Liczba]]]] = ciąg [[[Liczba]]] (
+        ciąg [[Liczba]] (
+            ciąg [Liczba] (
+                ciąg Liczba (
+                    (w+1)*1000+(x+1)*100+(y+1)*10+(z+1) otrzymując z: Liczba od przedziału(2))
+                otrzymując y: Liczba od przedziału(2))
+            otrzymując x: Liczba od przedziału(2))
+        otrzymując w: Liczba od przedziału(2))
+
+    jeśli(wczytaj() == 1) {
+        c4d[0][1][0][1] = 9
+    }
+
+    dla (c3d: [[[Liczba]]] wewnątrz c4d) {
+        dla(c2d: [[Liczba]] wewnątrz c3d) {
+            dla(c1d: [Liczba] wewnątrz c2d) {
+                dla(c0d: Liczba wewnątrz c1d) {
+                    napisz(c0d)
+                }
+            }
+        }
+    }
+}

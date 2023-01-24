@@ -1,0 +1,39 @@
+// INTEGRATION TESTS IGNORE
+// USE VALGRIND
+
+czynność dodaj_na_początku_ciągu(v: Liczba, c: [Liczba]) -> [Liczba] {
+    przekaźnik tmp() -> Liczba {
+        przekaż v
+        dla (x: Liczba wewnątrz c)
+            przekaż x
+    }
+    zwróć ciąg Liczba (x otrzymując x: Liczba od tmp())
+}
+
+przekaźnik coraz_dłuższych_ciągów_do(n: Liczba) -> [Liczba] {
+    jeśli (n == 1) {
+        przekaż ciąg Liczba {1}
+        zakończ
+    }
+    zm c: [[Liczba]] = ciąg [Liczba] (dodaj_na_początku_ciągu(1, x) otrzymując x: [Liczba] od coraz_dłuższych_ciągów_do(n-1))
+
+    otrzymując x: [Liczba] od coraz_dłuższych_ciągów_do(1234) {
+        przekaż x
+        przerwij
+    }
+    
+    dla (x: [Liczba] wewnątrz c) {
+        przekaż x
+    }
+}
+
+czynność główna() {
+    zm n: Liczba = wczytaj()
+    otrzymując x: [Liczba] od coraz_dłuższych_ciągów_do(n) {
+        zm v: Liczba = 0
+        dla (y: Liczba wewnątrz x) {
+            v = v*10+y
+        }
+        napisz(v)
+    }
+}

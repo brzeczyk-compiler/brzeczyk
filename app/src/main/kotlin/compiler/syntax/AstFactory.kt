@@ -37,14 +37,14 @@ class AstFactory(private val diagnostics: Diagnostics) {
     private fun produceAncestorObject(globalBlock: MutableGlobalBlock) =
         LowestAncestorBlock.AncestorGlobalBlock(globalBlock, globalBlock.lastOrNull())
 
-    private fun forEachWithAction(forEach: Statement.ForeachLoop, action: Statement): Statement.ForeachLoop =
-        Statement.ForeachLoop(forEach.receivingVariable, forEach.generatorCall, listOf(action), forEach.location)
+    private fun forEachWithAction(forEach: Statement.ForeachLoop, action: StatementBlock): Statement.ForeachLoop =
+        Statement.ForeachLoop(forEach.receivingVariable, forEach.generatorCall, action, forEach.location)
 
-    private fun arrayIterationWithAction(arrayIteration: Statement.Block, action: Statement): Statement.Block {
+    private fun arrayIterationWithAction(arrayIteration: Statement.Block, action: StatementBlock): Statement.Block {
         val location = arrayIteration.location
         val iterDefinition = arrayIteration.block[0]
         val loop = arrayIteration.block[1] as Statement.Loop
-        val loopAction = listOf(loop.action[0], action, loop.action[1])
+        val loopAction = listOf(loop.action[0]) + action + listOf(loop.action[1])
         return Statement.Block(
             listOf(iterDefinition, Statement.Loop(loop.condition, loopAction, location)),
             arrayIteration.location,
@@ -453,27 +453,32 @@ class AstFactory(private val diagnostics: Diagnostics) {
                 val auxGeneratorName = getUniqueLabel()
                 val generatorReturnType = processType(children[1])
 
-                val generatorExpression = processExpression(children[3], ancestorBlock)
                 val manyGenerations = processManyIterations(children[4], ancestorBlock).reversed().toMutableList()
-                val generationCondition = if (children[5].token() == TokenType.IF) processExpression(children[6], ancestorBlock) else Expression.BooleanLiteral(true)
+
+                val auxGeneratorsCondition: MutableStatementBlock = mutableListOf()
+                val generationCondition =
+                    if (children[5].token() == TokenType.IF)
+                        processExpression(children[6], produceAncestorObject(auxGeneratorsCondition))
+                    else
+                        Expression.BooleanLiteral(true)
+
+                val auxGeneratorsExpression: MutableStatementBlock = mutableListOf()
+                val generatorExpression = processExpression(children[3], produceAncestorObject(auxGeneratorsExpression))
 
                 val conditionalYield = Statement.Conditional(
                     generationCondition,
-                    listOf(Statement.GeneratorYield(generatorExpression, generatorExpression.location)),
+                    auxGeneratorsExpression + listOf(Statement.GeneratorYield(generatorExpression, generatorExpression.location)),
                     null,
                     generationCondition.location,
                 )
 
-                val firstGeneration = manyGenerations[0]
-                manyGenerations[0] = when (firstGeneration) {
-                    is Statement.Block -> arrayIterationWithAction(firstGeneration, conditionalYield)
-                    is Statement.ForeachLoop -> forEachWithAction(firstGeneration, conditionalYield)
-                }
+                val initialAction = auxGeneratorsCondition + listOf(conditionalYield)
 
-                val generatorBody = manyGenerations.reduce { acc, generation ->
+                val generatorBody: StatementBlock = manyGenerations.fold(initialAction) {
+                    acc: StatementBlock, (generation: IterationResult, auxGenerators: StatementBlock) ->
                     when (generation) {
-                        is Statement.Block -> arrayIterationWithAction(generation, acc as Statement)
-                        is Statement.ForeachLoop -> forEachWithAction(generation, acc as Statement)
+                        is Statement.Block -> auxGenerators + listOf(arrayIterationWithAction(generation, acc))
+                        is Statement.ForeachLoop -> auxGenerators + listOf(forEachWithAction(generation, acc))
                     }
                 }
 
@@ -481,7 +486,7 @@ class AstFactory(private val diagnostics: Diagnostics) {
                     auxGeneratorName,
                     listOf(),
                     generatorReturnType,
-                    Function.Implementation.Local(listOf(generatorBody as Statement)),
+                    Function.Implementation.Local(generatorBody),
                     true,
                     location,
                 )
@@ -650,12 +655,13 @@ class AstFactory(private val diagnostics: Diagnostics) {
         )
     }
 
-    private fun processManyIterations(parseTree: ParseTree<Symbol>, ancestorBlock: LowestAncestorBlock): List<IterationResult> {
+    private fun processManyIterations(parseTree: ParseTree<Symbol>, ancestorBlock: LowestAncestorBlock): List<Pair<IterationResult, MutableStatementBlock>> {
         val children = (parseTree as ParseTree.Branch).getFilteredChildren()
         return children.map {
+            val auxGenerators: MutableStatementBlock = mutableListOf()
             when ((it as ParseTree.Branch).production) {
-                Productions.generatorIteration -> processForEachLoop(it, null, ancestorBlock)
-                Productions.arrayIteration -> processArrayLoop(it, null, ancestorBlock)
+                Productions.generatorIteration -> Pair(processForEachLoop(it, null, produceAncestorObject(auxGenerators)), auxGenerators)
+                Productions.arrayIteration -> Pair(processArrayLoop(it, null, produceAncestorObject(auxGenerators)), auxGenerators)
                 else -> throw IllegalArgumentException()
             }
         }

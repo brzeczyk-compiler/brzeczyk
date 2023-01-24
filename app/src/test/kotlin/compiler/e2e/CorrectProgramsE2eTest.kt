@@ -367,6 +367,11 @@ class CorrectProgramsE2eTest {
                 ciąg Liczba (x + y + z + w otrzymując x: Liczba od g1(17) dla (y: Liczba wewnątrz tablica) otrzymując z: Liczba od g2(17) dla (w: Liczba wewnątrz tablica) jeśli x + z > y + w)
             }   
             """
+            // TODO
+            // When above I add
+            // wart a: [[Liczba]] = ciąg [Liczba] (ciąg Liczba (x + y otrzymując y: Liczba od przedziału(2)) otrzymując x: Liczba od przedziału(2))
+            // it passes all the analysis phases up to "ControlFlowPlanner".
+            // To investigate what is wrong there.
         )
     }
 

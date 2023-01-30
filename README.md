@@ -1,4 +1,4 @@
-# Compiler
+# Brzeczyk
 A compiler implemented by TCS UJ students at "Compilers" course in the 2022/23 winter semester.
 
 ## Building

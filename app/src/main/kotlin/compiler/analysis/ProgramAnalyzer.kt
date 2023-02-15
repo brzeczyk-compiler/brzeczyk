@@ -8,7 +8,9 @@ import compiler.ast.Program
 import compiler.ast.Statement
 import compiler.ast.Type
 import compiler.ast.Variable
+import compiler.diagnostics.Diagnostic
 import compiler.diagnostics.Diagnostics
+import compiler.intermediate.MAIN_FUNCTION_IDENTIFIER
 import compiler.utils.Ref
 
 class ProgramAnalyzer(private val diagnostics: Diagnostics) {
@@ -44,5 +46,17 @@ class ProgramAnalyzer(private val diagnostics: Diagnostics) {
             foreachLoopsInGenerators,
             nameResolutionResult.programStaticDepth,
         )
+    }
+
+    fun extractMainFunction(program: Program): Function? {
+        val mainFunction = (
+            program.globals.find {
+                it is Program.Global.FunctionDefinition && it.function.name == MAIN_FUNCTION_IDENTIFIER && it.function.isLocal && !it.function.isGenerator
+            } as Program.Global.FunctionDefinition?
+            )?.function
+        if (mainFunction == null) {
+            diagnostics.report(Diagnostic.ResolutionDiagnostic.MainFunctionNotFound)
+        }
+        return mainFunction
     }
 }

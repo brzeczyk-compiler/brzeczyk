@@ -14,7 +14,6 @@ import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.diagnostics.Diagnostic.ResolutionDiagnostic.ControlFlowDiagnostic
 import compiler.diagnostics.Diagnostics
-import compiler.intermediate.FunctionDependenciesAnalyzer.createCallGraph
 import compiler.intermediate.generators.ArrayMemoryManagement
 import compiler.intermediate.generators.DefaultArrayMemoryManagement
 import compiler.intermediate.generators.ForeignFunctionDetailsGenerator
@@ -41,7 +40,6 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
         generatorDetailsGenerators: Map<Ref<Function>, GeneratorDetailsGenerator>
     ): List<Pair<Ref<Function>, ControlFlowGraph>> {
         val globalVariableAccessGenerator = GlobalVariableAccessGenerator(programProperties.variableProperties)
-        val callGraph = createCallGraph(program, programProperties.nameResolution)
 
         fun partiallyAppliedCreateGraphForExpression(expression: Expression, target: AssignmentTarget?, currentFunction: Function, accessNodeConsumer: ((ControlFlowGraph, IFTNode) -> Unit)?): ControlFlowGraph {
             return createGraphForExpression(
@@ -51,7 +49,7 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                 programProperties.nameResolution,
                 programProperties.expressionTypes,
                 programProperties.variableProperties,
-                callGraph,
+                programProperties.callGraph,
                 functionDetailsGenerators,
                 generatorDetailsGenerators,
                 programProperties.argumentResolution,

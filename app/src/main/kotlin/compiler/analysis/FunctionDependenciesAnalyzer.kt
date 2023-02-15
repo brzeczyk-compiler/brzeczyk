@@ -1,4 +1,4 @@
-package compiler.intermediate
+package compiler.analysis
 
 import compiler.ast.AstNode
 import compiler.ast.Expression

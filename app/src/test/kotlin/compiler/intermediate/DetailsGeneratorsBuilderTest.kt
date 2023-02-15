@@ -301,6 +301,7 @@ class DetailsGeneratorsBuilderTest {
             emptyMap(),
             variableProperties,
             emptyMap(),
+            emptyMap(),
             0
         )
 
@@ -359,6 +360,7 @@ class DetailsGeneratorsBuilderTest {
             emptyMap(),
             keyRefMapOf(functionF to returnVariable),
             variableProperties,
+            emptyMap(),
             emptyMap(),
             0
         )

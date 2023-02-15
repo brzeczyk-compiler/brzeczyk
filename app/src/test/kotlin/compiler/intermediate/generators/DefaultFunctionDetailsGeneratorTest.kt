@@ -9,6 +9,7 @@ import compiler.intermediate.ControlFlowGraphBuilder
 import compiler.intermediate.FixedConstant
 import compiler.intermediate.IFTNode
 import compiler.intermediate.Register
+import compiler.intermediate.assertHasSameStructureAs
 import compiler.utils.Ref
 import compiler.utils.keyRefMapOf
 import kotlin.test.Test
@@ -38,7 +39,7 @@ class DefaultFunctionDetailsGeneratorTest {
         val expected = ControlFlowGraphBuilder(IFTNode.Call(functionLocation, emptyList(), callerSavedRegisters)).build()
         val result = fdg.genCall(listOf())
 
-        assert(expected.isIsomorphicTo(result.callGraph))
+        expected assertHasSameStructureAs result.callGraph
         assertEquals(null, result.result)
         assertEquals(null, result.secondResult)
     }
@@ -72,7 +73,7 @@ class DefaultFunctionDetailsGeneratorTest {
         expectedCFGBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, IFTNode.Call(functionLocation, argumentPassingRegisters.take(2), callerSavedRegisters))
         val expected = expectedCFGBuilder.build()
 
-        assert(expected.isIsomorphicTo(result.callGraph))
+        expected assertHasSameStructureAs result.callGraph
         assertEquals(null, result.result)
         assertEquals(null, result.secondResult)
     }
@@ -94,7 +95,7 @@ class DefaultFunctionDetailsGeneratorTest {
         val expectedResult = IFTNode.RegisterRead(Register.RAX)
         val expected = expectedCFGBuilder.build()
         val result = fdg.genCall(listOf())
-        assert(expected.isIsomorphicTo(result.callGraph))
+        expected assertHasSameStructureAs result.callGraph
         assertEquals(expectedResult, result.result)
         assertEquals(null, result.secondResult)
     }
@@ -153,7 +154,7 @@ class DefaultFunctionDetailsGeneratorTest {
         val expectedResult = IFTNode.RegisterRead(Register.RAX)
         val expected = expectedCFGBuilder.build()
 
-        assert(expected.isIsomorphicTo(result.callGraph))
+        expected assertHasSameStructureAs result.callGraph
         assertEquals(expectedResult, result.result)
         assertEquals(null, result.secondResult)
     }
@@ -222,7 +223,7 @@ class DefaultFunctionDetailsGeneratorTest {
             )
         )
         val expected = expectedCFGBuilder.build()
-        assert(expected.isIsomorphicTo(result.callGraph))
+        expected assertHasSameStructureAs result.callGraph
     }
 
     @Test

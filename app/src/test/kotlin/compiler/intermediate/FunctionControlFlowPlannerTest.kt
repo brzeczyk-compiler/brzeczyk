@@ -41,8 +41,7 @@ class FunctionControlFlowPlannerTest {
         return when (target) {
             is ControlFlowPlanner.AssignmentTarget.VariableTarget? -> {
                 val node = expressionNodes[Ref(expression)]?.get(Ref(target?.variable))
-                val nodeList = node?.let { listOf(it.value) } ?: emptyList()
-                ControlFlowGraph(nodeList, node?.value, refMapOf(), refMapOf(), refMapOf()).also {
+                ControlFlowGraph(node, refMapOf(), refMapOf(), refMapOf()).also {
                     if (accessNodeConsumer != null) {
                         accessNodeConsumer(it, expressionAccessNodes[Ref(expression)]!![Ref(target?.variable)]!!.value)
                     }
@@ -69,7 +68,9 @@ class FunctionControlFlowPlannerTest {
         }
     }
 
-    private fun test(program: Program) = ControlFlowPlanner(testDiagnostics).createGraphsForFunctions(
+    private val finalNode = IFTNode.NoOp()
+
+    private fun test(program: Program, function: Ref<Function>, loopBreakNodes: Sequence<IFTNode> = generateSequence { IFTNode.NoOp() }) = ControlFlowPlanner(testDiagnostics).createGraphsForFunctions(
         program,
         { expression, target, _, accessNodeConsumer -> getExpressionCFG(expression, target, accessNodeConsumer) },
         nameResolution,
@@ -78,10 +79,10 @@ class FunctionControlFlowPlannerTest {
         { variable, _ -> IFTNode.MemoryRead(IFTNode.MemoryLabel(variable.name)) },
         { node, variable, _ -> IFTNode.MemoryWrite(IFTNode.MemoryLabel(variable.name), node) },
         getDummyGeneratorDetailsGenerator,
-        TestArrayMemoryManagement()
-    )
-
-    private val mainNoOpNode = IFTNode.NoOp()
+        TestArrayMemoryManagement(),
+        { _ -> finalNode },
+        loopBreakNodes.iterator().let { { _ -> it.next() } }
+    ).toMap()[function]!!
 
     // czynność f() { }
 
@@ -90,10 +91,10 @@ class FunctionControlFlowPlannerTest {
         val function = Function("f", listOf(), Type.Unit, listOf())
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
-        val result = test(program)
+        val result = test(program, Ref(function))
 
-        val cfg = ControlFlowGraph(listOf(mainNoOpNode), mainNoOpNode, refMapOf(), refMapOf(), refMapOf())
-        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
+        val cfg = ControlFlowGraph(Ref(finalNode), refMapOf(), refMapOf(), refMapOf())
+        assertEquals(cfg, result)
     }
 
     // czynność f() { 123 }
@@ -107,10 +108,10 @@ class FunctionControlFlowPlannerTest {
 
         val node = addExpressionNode(value, null)
 
-        val result = test(program)
+        val result = test(program, Ref(function))
 
-        val cfg = ControlFlowGraph(listOf(mainNoOpNode, node), node, refMapOf(), refMapOf(), refMapOf())
-        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
+        val cfg = ControlFlowGraph(Ref(node), refMapOf(node to finalNode), refMapOf(), refMapOf())
+        assertEquals(cfg, result)
     }
 
     // czynność f() {
@@ -130,17 +131,16 @@ class FunctionControlFlowPlannerTest {
         val node1 = addExpressionNode(value1, null)
         val node2 = addExpressionNode(value2, null)
 
-        val result = test(program)
+        val result = test(program, Ref(function))
 
         val cfg = ControlFlowGraph(
-            listOf(mainNoOpNode, node1, node2),
-            node1,
-            refMapOf(node1 to node2),
+            Ref(node1),
+            refMapOf(node1 to node2, node2 to finalNode),
             refMapOf(),
             refMapOf()
         )
 
-        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
+        assertEquals(cfg, result)
     }
 
     // czynność f() { wart x: Liczba = 123 }
@@ -155,10 +155,10 @@ class FunctionControlFlowPlannerTest {
 
         val node = addExpressionNode(value, variable)
 
-        val result = test(program)
+        val result = test(program, Ref(function))
 
-        val cfg = ControlFlowGraph(listOf(mainNoOpNode, node), node, refMapOf(), refMapOf(), refMapOf())
-        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
+        val cfg = ControlFlowGraph(Ref(node), refMapOf(node to finalNode), refMapOf(), refMapOf())
+        assertEquals(cfg, result)
     }
 
     // czynność f() {
@@ -178,12 +178,13 @@ class FunctionControlFlowPlannerTest {
 
         val node = addExpressionNode(value, parameterVariable)
 
-        val result = test(program)
+        val result1 = test(program, Ref(function))
+        val result2 = test(program, Ref(nestedFunction))
 
-        val cfg = ControlFlowGraph(listOf(mainNoOpNode, node), node, refMapOf(), refMapOf(), refMapOf())
-        val nestedCfg = ControlFlowGraph(listOf(mainNoOpNode), mainNoOpNode, refMapOf(), refMapOf(), refMapOf())
-        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
-        nestedCfg assertHasSameStructureAs result.toMap()[Ref(nestedFunction)]!!
+        val cfg1 = ControlFlowGraph(Ref(node), refMapOf(node to finalNode), refMapOf(), refMapOf())
+        val cfg2 = ControlFlowGraph(Ref(finalNode), refMapOf(), refMapOf(), refMapOf())
+        assertEquals(cfg1, result1)
+        assertEquals(cfg2, result2)
     }
 
     // czynność f() {
@@ -203,10 +204,10 @@ class FunctionControlFlowPlannerTest {
 
         val node = addExpressionNode(value, variable)
 
-        val result = test(program)
+        val result = test(program, Ref(function))
 
-        val cfg = ControlFlowGraph(listOf(mainNoOpNode, node), node, refMapOf(), refMapOf(), refMapOf())
-        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
+        val cfg = ControlFlowGraph(Ref(node), refMapOf(node to finalNode), refMapOf(), refMapOf())
+        assertEquals(cfg, result)
     }
 
     // czynność f() { { 123 } }
@@ -221,10 +222,10 @@ class FunctionControlFlowPlannerTest {
 
         val node = addExpressionNode(value, null)
 
-        val result = test(program)
+        val result = test(program, Ref(function))
 
-        val cfg = ControlFlowGraph(listOf(mainNoOpNode, node), node, refMapOf(), refMapOf(), refMapOf())
-        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
+        val cfg = ControlFlowGraph(Ref(node), refMapOf(node to finalNode), refMapOf(), refMapOf())
+        assertEquals(cfg, result)
     }
 
     // czynność f() {
@@ -247,17 +248,16 @@ class FunctionControlFlowPlannerTest {
         val node2 = addExpressionNode(value1, null)
         val node3 = addExpressionNode(value2, null)
 
-        val result = test(program)
+        val result = test(program, Ref(function))
 
         val cfg = ControlFlowGraph(
-            listOf(mainNoOpNode, node1, node2, node3),
-            node1,
-            refMapOf(node2 to node3),
+            Ref(node1),
+            refMapOf(node2 to node3, node3 to finalNode),
             refMapOf(node1 to node2),
             refMapOf(node1 to node3)
         )
 
-        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
+        assertEquals(cfg, result)
     }
 
     // czynność f() {
@@ -284,17 +284,16 @@ class FunctionControlFlowPlannerTest {
         val node3 = addExpressionNode(value2, null)
         val node4 = addExpressionNode(value3, null)
 
-        val result = test(program)
+        val result = test(program, Ref(function))
 
         val cfg = ControlFlowGraph(
-            listOf(mainNoOpNode, node1, node2, node3, node4),
-            node1,
-            refMapOf(node2 to node4, node3 to node4),
+            Ref(node1),
+            refMapOf(node2 to node4, node3 to node4, node4 to finalNode),
             refMapOf(node1 to node2),
             refMapOf(node1 to node3)
         )
 
-        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
+        assertEquals(cfg, result)
     }
 
     // czynność f() {
@@ -318,17 +317,16 @@ class FunctionControlFlowPlannerTest {
         val node3 = addExpressionNode(value2, null)
         val loopBreakNode = IFTNode.NoOp()
 
-        val result = test(program)
+        val result = test(program, Ref(function), sequenceOf(loopBreakNode))
 
         val cfg = ControlFlowGraph(
-            listOf(mainNoOpNode, loopBreakNode, node1, node2, node3),
-            node1,
-            refMapOf(node2 to node1, loopBreakNode to node3),
+            Ref(node1),
+            refMapOf(node2 to node1, loopBreakNode to node3, node3 to finalNode),
             refMapOf(node1 to node2),
             refMapOf(node1 to loopBreakNode)
         )
 
-        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
+        assertEquals(cfg, result)
     }
 
     // czynność f() {
@@ -358,17 +356,16 @@ class FunctionControlFlowPlannerTest {
         val node4 = addExpressionNode(value2, null)
         val loopBreakNode = IFTNode.NoOp()
 
-        val result = test(program)
+        val result = test(program, Ref(function), sequenceOf(loopBreakNode))
 
         val cfg = ControlFlowGraph(
-            listOf(mainNoOpNode, loopBreakNode, node1, node2, node3, node4),
-            node1,
-            refMapOf(node3 to node1, loopBreakNode to node4),
+            Ref(node1),
+            refMapOf(node3 to node1, loopBreakNode to node4, node4 to finalNode),
             refMapOf(node1 to node2, node2 to loopBreakNode),
             refMapOf(node1 to loopBreakNode, node2 to node3)
         )
 
-        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
+        assertEquals(cfg, result)
     }
 
     // czynność f() {
@@ -398,17 +395,16 @@ class FunctionControlFlowPlannerTest {
         val node4 = addExpressionNode(value2, null)
         val loopBreakNode = IFTNode.NoOp()
 
-        val result = test(program)
+        val result = test(program, Ref(function), sequenceOf(loopBreakNode))
 
         val cfg = ControlFlowGraph(
-            listOf(mainNoOpNode, loopBreakNode, node1, node2, node3, node4),
-            node1,
-            refMapOf(node3 to node1, loopBreakNode to node4),
+            Ref(node1),
+            refMapOf(node3 to node1, loopBreakNode to node4, node4 to finalNode),
             refMapOf(node1 to node2, node2 to node1),
             refMapOf(node1 to loopBreakNode, node2 to node3)
         )
 
-        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
+        assertEquals(cfg, result)
     }
 
     // czynność f() {
@@ -442,17 +438,16 @@ class FunctionControlFlowPlannerTest {
         val node5 = addExpressionNode(value2, null)
         val loopBreakNode = IFTNode.NoOp()
 
-        val result = test(program)
+        val result = test(program, Ref(function), sequenceOf(loopBreakNode))
 
         val cfg = ControlFlowGraph(
-            listOf(mainNoOpNode, loopBreakNode, node1, node2, node3, node4, node5),
-            node1,
-            refMapOf(node4 to node1, loopBreakNode to node5),
+            Ref(node1),
+            refMapOf(node4 to node1, loopBreakNode to node5, node5 to finalNode),
             refMapOf(node1 to node2, node2 to loopBreakNode, node3 to node1),
             refMapOf(node1 to loopBreakNode, node2 to node3, node3 to node4)
         )
 
-        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
+        assertEquals(cfg, result)
     }
 
     // czynność f() {
@@ -500,24 +495,16 @@ class FunctionControlFlowPlannerTest {
         val innerLoopBreakNode = IFTNode.NoOp()
         val outerLoopBreakNode = IFTNode.NoOp()
 
-        val result = test(program)
+        val result = test(program, Ref(function), sequenceOf(outerLoopBreakNode, innerLoopBreakNode))
 
         val cfg = ControlFlowGraph(
-            listOf(
-                mainNoOpNode,
-                innerLoopBreakNode,
-                outerLoopBreakNode,
-                node1,
-                node2,
-                node3,
-                node4,
-                node5,
-                node6,
-                node7,
-                node8
+            Ref(node1),
+            refMapOf(
+                node6 to node3,
+                outerLoopBreakNode to node8,
+                innerLoopBreakNode to node7,
+                node8 to finalNode
             ),
-            node1,
-            refMapOf(node6 to node3, outerLoopBreakNode to node8, innerLoopBreakNode to node7),
             refMapOf(
                 node1 to node2,
                 node2 to node1,
@@ -536,7 +523,7 @@ class FunctionControlFlowPlannerTest {
             )
         )
 
-        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
+        assertEquals(cfg, result)
     }
 
     // czynność f() {
@@ -557,17 +544,16 @@ class FunctionControlFlowPlannerTest {
         val node1 = addExpressionNode(condition, null)
         val node2 = addExpressionNode(value, null)
 
-        val result = test(program)
+        val result = test(program, Ref(function))
 
         val cfg = ControlFlowGraph(
-            listOf(mainNoOpNode, node1, node2),
-            node1,
-            refMapOf(),
-            refMapOf(),
+            Ref(node1),
+            refMapOf(node2 to finalNode),
+            refMapOf(node1 to finalNode),
             refMapOf(node1 to node2)
         )
 
-        cfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
+        assertEquals(cfg, result)
     }
 
     // czynność f() { przerwij }
@@ -578,7 +564,7 @@ class FunctionControlFlowPlannerTest {
         val function = Function("f", listOf(), Type.Unit, listOf(loopBreak))
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
-        test(program)
+        test(program, Ref(function))
 
         assertEquals(listOf<Diagnostic>(ControlFlowDiagnostic.Errors.BreakOutsideOfLoop(loopBreak)), diagnostics)
     }
@@ -591,7 +577,7 @@ class FunctionControlFlowPlannerTest {
         val function = Function("f", listOf(), Type.Unit, listOf(loopContinuation))
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
-        test(program)
+        test(program, Ref(function))
 
         assertEquals(
             listOf<Diagnostic>(ControlFlowDiagnostic.Errors.ContinuationOutsideOfLoop(loopContinuation)),
@@ -614,7 +600,7 @@ class FunctionControlFlowPlannerTest {
 
         addExpressionNode(value, null)
 
-        test(program)
+        test(program, Ref(function))
 
         assertEquals(listOf<Diagnostic>(ControlFlowDiagnostic.Warnings.UnreachableStatement(evaluation)), diagnostics)
     }
@@ -638,7 +624,7 @@ class FunctionControlFlowPlannerTest {
         addExpressionNode(condition, null)
         addExpressionNode(value, null)
 
-        test(program)
+        test(program, Ref(function))
 
         assertEquals(listOf<Diagnostic>(ControlFlowDiagnostic.Warnings.UnreachableStatement(evaluation)), diagnostics)
     }
@@ -662,7 +648,7 @@ class FunctionControlFlowPlannerTest {
         addExpressionNode(condition, null)
         addExpressionNode(value, null)
 
-        test(program)
+        test(program, Ref(function))
 
         assertEquals(listOf<Diagnostic>(ControlFlowDiagnostic.Warnings.UnreachableStatement(evaluation)), diagnostics)
     }
@@ -688,7 +674,7 @@ class FunctionControlFlowPlannerTest {
         val genCall = Expression.FunctionCall("generator", emptyList(), null)
         val genCallResult = getDummyGeneratorDetailsGenerator(generator).genInitCall(emptyList())
 
-        expressionNodes[Ref(genCall)] = mutableMapOf(Ref(null) to Ref(genCallResult.callGraph.entryTreeRoot!!))
+        expressionNodes[Ref(genCall)] = mutableMapOf(Ref(null) to genCallResult.callGraph.entryTreeRoot!!)
         expressionAccessNodes[Ref(genCall)] = mutableMapOf(Ref(null) to Ref(genCallResult.result!!))
         nameResolution[Ref(genCall)] = Ref(generator)
 
@@ -705,8 +691,7 @@ class FunctionControlFlowPlannerTest {
         val function = Function("f", listOf(), Type.Unit, listOf(foreach))
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
-        val result = test(program)
-        val resultCfg = result.map { it.second }.first()
+        val resultCfg = test(program, Ref(function))
 
         val idRegister = Register()
         val stateRegister = Register()
@@ -738,7 +723,7 @@ class FunctionControlFlowPlannerTest {
                             IFTNode.DummyCallResult()
                         ).toCfg()
                 )
-                merge mainNoOpNode
+                merge finalNode
                 add ( // unreachable return tree
                     IFTNode.DummyCall(
                         generatorFinalize,
@@ -746,7 +731,7 @@ class FunctionControlFlowPlannerTest {
                         IFTNode.DummyCallResult(),
                         IFTNode.DummyCallResult()
                     )
-                        merge mainNoOpNode
+                        merge finalNode
                     )
             )
         expectedCfg assertHasSameStructureAs resultCfg
@@ -775,7 +760,7 @@ class FunctionControlFlowPlannerTest {
         val genCall = Expression.FunctionCall("generator", emptyList(), null)
         val genCallResult = getDummyGeneratorDetailsGenerator(generator).genInitCall(emptyList())
 
-        expressionNodes[Ref(genCall)] = mutableMapOf(Ref(null) to Ref(genCallResult.callGraph.entryTreeRoot!!))
+        expressionNodes[Ref(genCall)] = mutableMapOf(Ref(null) to genCallResult.callGraph.entryTreeRoot!!)
         expressionAccessNodes[Ref(genCall)] = mutableMapOf(Ref(null) to Ref(genCallResult.result!!))
         nameResolution[Ref(genCall)] = Ref(generator)
 
@@ -792,8 +777,7 @@ class FunctionControlFlowPlannerTest {
         val function = Function("f", listOf(), Type.Unit, listOf(foreach), isGenerator = true)
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
-        val result = test(program)
-        val resultCfg = result.map { it.second }.first()
+        val resultCfg = test(program, Ref(function))
 
         val stateRegister = Register()
         val frameMemoryAddress = IFTNode.Dummy(listOf("foreach frame pointer address", function, foreach))
@@ -826,7 +810,7 @@ class FunctionControlFlowPlannerTest {
                         )
                         merge IFTNode.MemoryWrite(frameMemoryAddress, IFTNode.Const(0))
                 )
-                merge mainNoOpNode
+                merge finalNode
                 add ( // unreachable return tree
                     IFTNode.DummyCall(
                         generatorFinalize,
@@ -835,7 +819,7 @@ class FunctionControlFlowPlannerTest {
                         IFTNode.DummyCallResult()
                     )
                         merge IFTNode.MemoryWrite(frameMemoryAddress, IFTNode.Const(0))
-                        merge mainNoOpNode
+                        merge finalNode
                     )
             )
         expectedCfg assertHasSameStructureAs resultCfg
@@ -876,7 +860,7 @@ class FunctionControlFlowPlannerTest {
         val genCall = Expression.FunctionCall("generator", emptyList(), null)
         val genCallResult = getDummyGeneratorDetailsGenerator(generator).genInitCall(emptyList())
 
-        expressionNodes[Ref(genCall)] = mutableMapOf(Ref(null) to Ref(genCallResult.callGraph.entryTreeRoot!!))
+        expressionNodes[Ref(genCall)] = mutableMapOf(Ref(null) to genCallResult.callGraph.entryTreeRoot!!)
         expressionAccessNodes[Ref(genCall)] = mutableMapOf(Ref(null) to Ref(genCallResult.result!!))
         nameResolution[Ref(genCall)] = Ref(generator)
 
@@ -928,8 +912,7 @@ class FunctionControlFlowPlannerTest {
         val function = Function("f", listOf(), Type.Unit, listOf(foreach))
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
-        val result = test(program)
-        val resultCfg = result.map { it.second }.first()
+        val resultCfg = test(program, Ref(function))
 
         val idRegister = Register()
         val stateRegister = Register()
@@ -968,7 +951,7 @@ class FunctionControlFlowPlannerTest {
                                         IFTNode.DummyCallResult(),
                                         IFTNode.DummyCallResult()
                                     )
-                                    merge mainNoOpNode
+                                    merge finalNode
                             )
                         ),
                     loopBreakNode // 15
@@ -979,7 +962,7 @@ class FunctionControlFlowPlannerTest {
                             IFTNode.DummyCallResult()
                         )
                 )
-                merge mainNoOpNode
+                merge finalNode
             ).let {
             val builder = ControlFlowGraphBuilder()
             builder.addAllFrom(it)
@@ -1007,14 +990,14 @@ class FunctionControlFlowPlannerTest {
             true
         )
         val program = Program(listOf(Program.Global.FunctionDefinition(generator)))
-        val result = test(program)
+        val result = test(program, Ref(generator))
 
         val expectedCFG = IFTNode.DummyCall(
             generator.copy(name = generator.name + "_yield"),
             listOf(IFTNode.Const(123)),
             IFTNode.DummyCallResult()
-        ) merge mainNoOpNode
-        expectedCFG assertHasSameStructureAs result.toMap()[Ref(generator)]!!
+        ) merge finalNode
+        expectedCFG assertHasSameStructureAs result
     }
 
     // czynność f() {
@@ -1034,21 +1017,21 @@ class FunctionControlFlowPlannerTest {
         val function = Function("f", listOf(), Type.Unit, listOf(variableDefinition, valueEvaluation))
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
-        val result = test(program)
+        val result = test(program, Ref(function))
 
         val expectedCfg = (
             IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0))
                 merge valueNode
                 merge IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("x")), Type.Array(Type.Number))
                 merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0))
-                merge mainNoOpNode
+                merge finalNode
                 add ( // unreachable return tree
                     IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("x")), Type.Array(Type.Number))
                         merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0))
-                        merge mainNoOpNode
+                        merge finalNode
                     )
             )
-        expectedCfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
+        expectedCfg assertHasSameStructureAs result
     }
 
     // czynność f() {
@@ -1078,7 +1061,7 @@ class FunctionControlFlowPlannerTest {
         val function = Function("f", listOf(), Type.Unit, listOf(blockX, valueEvaluation, blockY))
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
-        val result = test(program)
+        val result = test(program, Ref(function))
 
         val expectedCfg = (
             IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0))
@@ -1088,19 +1071,19 @@ class FunctionControlFlowPlannerTest {
                 merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("y"), IFTNode.Const(0))
                 merge IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("y")), Type.Array(Type.Number))
                 merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("y"), IFTNode.Const(0))
-                merge mainNoOpNode
+                merge finalNode
                 add ( // unreachable return tree - branch from block X
                     IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("x")), Type.Array(Type.Number))
                         merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0))
-                        merge mainNoOpNode
+                        merge finalNode
                     )
                 add ( // unreachable return tree - branch from block Y
                     IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("y")), Type.Array(Type.Number))
                         merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("y"), IFTNode.Const(0))
-                        merge mainNoOpNode
+                        merge finalNode
                     )
             )
-        expectedCfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
+        expectedCfg assertHasSameStructureAs result
     }
 
     // czynność f() {
@@ -1126,7 +1109,7 @@ class FunctionControlFlowPlannerTest {
         val function = Function("f", listOf(), Type.Unit, listOf(variableXDefinition, variableYDefinition, variableZDefinition, valueEvaluation))
         val program = Program(listOf(Program.Global.FunctionDefinition(function)))
 
-        val result = test(program)
+        val result = test(program, Ref(function))
 
         val expectedCfg = (
             IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0))
@@ -1139,7 +1122,7 @@ class FunctionControlFlowPlannerTest {
                 merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("y"), IFTNode.Const(0))
                 merge IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("x")), Type.Array(Type.Number))
                 merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0))
-                merge mainNoOpNode
+                merge finalNode
                 add ( // unreachable return tree
                     IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("z")), Type.Array(Type.Number))
                         merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("z"), IFTNode.Const(0))
@@ -1147,10 +1130,10 @@ class FunctionControlFlowPlannerTest {
                         merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("y"), IFTNode.Const(0))
                         merge IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("x")), Type.Array(Type.Number))
                         merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0))
-                        merge mainNoOpNode
+                        merge finalNode
                     )
             )
-        expectedCfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
+        expectedCfg assertHasSameStructureAs result
     }
 
     // czynność f() {
@@ -1172,7 +1155,7 @@ class FunctionControlFlowPlannerTest {
 
         val loopEndNoOpNode = IFTNode.NoOp()
 
-        val result = test(program)
+        val result = test(program, Ref(function))
 
         val expectedCfg = (
             mergeCFGsInLoop(
@@ -1181,12 +1164,12 @@ class FunctionControlFlowPlannerTest {
                     merge IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("x")), Type.Array(Type.Number))
                     merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0)),
                 loopEndNoOpNode
-                    merge mainNoOpNode
+                    merge finalNode
             )
                 add ( // unreachable return tree
                     IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("x")), Type.Array(Type.Number))
                         merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0))
-                        merge mainNoOpNode
+                        merge finalNode
                     )
                 add ( // unreachable break tree
                     IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("x")), Type.Array(Type.Number))
@@ -1199,7 +1182,7 @@ class FunctionControlFlowPlannerTest {
                         merge conditionNode
                     )
             )
-        expectedCfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
+        expectedCfg assertHasSameStructureAs result
     }
 
     // czynność f() {
@@ -1262,7 +1245,7 @@ class FunctionControlFlowPlannerTest {
 
         val loopEndNoOpNode = IFTNode.NoOp()
 
-        val result = test(program)
+        val result = test(program, Ref(function))
 
         val expectedCfg = (
             mergeCFGsInLoop(
@@ -1292,7 +1275,7 @@ class FunctionControlFlowPlannerTest {
                             )
                     ),
                 loopEndNoOpNode
-                    merge mainNoOpNode
+                    merge finalNode
             )
                 add ( // partially unreachable return tree
                     IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("t")), Type.Array(Type.Number))
@@ -1303,7 +1286,7 @@ class FunctionControlFlowPlannerTest {
                         merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("y"), IFTNode.Const(0))
                         merge IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("x")), Type.Array(Type.Number))
                         merge IFTNode.MemoryWrite(IFTNode.MemoryLabel("x"), IFTNode.Const(0))
-                        merge mainNoOpNode
+                        merge finalNode
                     )
                 add ( // partially unreachable break tree
                     IFTNode.DummyArrayRefCountDec(IFTNode.MemoryRead(IFTNode.MemoryLabel("t")), Type.Array(Type.Number))
@@ -1328,6 +1311,6 @@ class FunctionControlFlowPlannerTest {
                         merge loopConditionNode
                     )
             )
-        expectedCfg assertHasSameStructureAs result.toMap()[Ref(function)]!!
+        expectedCfg assertHasSameStructureAs result
     }
 }

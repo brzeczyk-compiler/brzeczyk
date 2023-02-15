@@ -29,7 +29,7 @@ import compiler.utils.refSetOf
 import java.util.Stack
 
 class ControlFlowPlanner(private val diagnostics: Diagnostics) {
-    private fun mapLinkType(list: List<Pair<IFTNode, CFGLinkType>?>, type: CFGLinkType) = list.map { it?.copy(second = type) }
+    private fun mapLinkType(list: List<Pair<Ref<IFTNode>, CFGLinkType>?>, type: CFGLinkType) = list.map { it?.copy(second = type) }
 
     private val makeArrayFromGeneratorFDG = ForeignFunctionDetailsGenerator(IFTNode.MemoryLabel("_\$make_array_from_generator"), 1)
 
@@ -97,9 +97,9 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
             builder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, epilogue.entryTreeRoot!!)
 
             for (node in body.treeRoots) {
-                if (body.conditionalFalseLinks.containsKey(Ref(node)) && !body.conditionalTrueLinks.containsKey(Ref(node)))
+                if (body.conditionalFalseLinks.containsKey(node) && !body.conditionalTrueLinks.containsKey(node))
                     builder.addLink(Pair(node, CFGLinkType.CONDITIONAL_TRUE), epilogue.entryTreeRoot)
-                if (!body.conditionalFalseLinks.containsKey(Ref(node)) && body.conditionalTrueLinks.containsKey(Ref(node)))
+                if (!body.conditionalFalseLinks.containsKey(node) && body.conditionalTrueLinks.containsKey(node))
                     builder.addLink(Pair(node, CFGLinkType.CONDITIONAL_FALSE), epilogue.entryTreeRoot)
             }
         } else
@@ -236,7 +236,7 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
 
         // second stage is to actually produce CFG
         val cfgBuilder = ControlFlowGraphBuilder()
-        var last = listOf<Pair<IFTNode, CFGLinkType>?>(null)
+        var last = listOf<Pair<Ref<IFTNode>, CFGLinkType>?>(null)
         var currentTemporaryRegisters = mutableKeyRefMapOf<NamedNode, Register>()
 
         fun ControlFlowGraphBuilder.addNextCFG(nextCFG: ControlFlowGraph) {
@@ -248,7 +248,7 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
         }
 
         fun ControlFlowGraphBuilder.addNextTree(nextTree: IFTNode) {
-            addNextCFG(ControlFlowGraphBuilder().apply { addLink(null, nextTree) }.build())
+            addNextCFG(ControlFlowGraphBuilder().apply { addLink(null, Ref(nextTree)) }.build())
         }
 
         fun makeReadNode(readableNode: NamedNode): IFTNode {
@@ -561,7 +561,9 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
         createReadFromVariable: (Variable, Function) -> IFTNode,
         createWriteToVariable: (IFTNode, Variable, Function) -> IFTNode,
         getGeneratorDetailsGenerator: (Function) -> GeneratorDetailsGenerator,
-        arrayMemoryManagement: ArrayMemoryManagement
+        arrayMemoryManagement: ArrayMemoryManagement,
+        makeFinalNode: (Function) -> IFTNode = { _ -> IFTNode.NoOp() },
+        makeLoopBreakNode: (Function) -> IFTNode = { _ -> IFTNode.NoOp() }
     ): List<Pair<Ref<Function>, ControlFlowGraph>> {
         val controlFlowGraphs = mutableListOf<Pair<Ref<Function>, ControlFlowGraph>>()
 
@@ -569,7 +571,7 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
 
         fun processFunction(function: Function) {
             val cfgBuilder = ControlFlowGraphBuilder()
-            var last = listOf<Pair<IFTNode, CFGLinkType>?>(null)
+            var last = listOf<Pair<Ref<IFTNode>, CFGLinkType>?>(null)
 
             fun addCfg(cfg: ControlFlowGraph): IFTNode? {
                 val entry = cfg.entryTreeRoot
@@ -581,7 +583,7 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                     last = cfg.finalTreeRoots
                 }
                 cfgBuilder.addAllFrom(cfg)
-                return entry
+                return entry?.value
             }
 
             fun addNode(node: IFTNode) {
@@ -607,8 +609,8 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                     if (treeHead == null || value.entryTreeRoot == null)
                         return
                     cfgBuilder.addAllFrom(value)
-                    value.finalTreeRoots.forEach { cfgBuilder.addLink(it, treeHead.value, false) }
-                    treeHead.value = value.entryTreeRoot
+                    value.finalTreeRoots.forEach { cfgBuilder.addLink(it, Ref(treeHead.value), false) }
+                    treeHead.value = value.entryTreeRoot.value
                 }
 
                 fun addToDestructionStructures(variable: Variable) {
@@ -635,23 +637,23 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                 // this function doesn't modify `last`, so it has to be done manually after use
                 fun addLinksFromLast(target: IFTNode) {
                     for (node in last)
-                        cfgBuilder.addLink(node, target)
+                        cfgBuilder.addLink(node, Ref(target))
                 }
 
                 fun addLoop(conditionEntry: IFTNode, generateLoopBody: (EscapeTreeHead, EscapeTreeHead) -> Unit) {
                     val conditionEnd = last
 
-                    val finalNoOp = IFTNode.NoOp()
-                    addDetachedNode(finalNoOp)
-                    val innerBreakTreeHead = EscapeTreeHead(finalNoOp)
+                    val finalNode = makeLoopBreakNode(function)
+                    addDetachedNode(finalNode)
+                    val innerBreakTreeHead = EscapeTreeHead(finalNode)
                     val innerContinueTreeHead = EscapeTreeHead(conditionEntry)
 
                     last = mapLinkType(conditionEnd, CFGLinkType.CONDITIONAL_TRUE)
                     generateLoopBody(innerBreakTreeHead, innerContinueTreeHead)
 
-                    last.forEach { cfgBuilder.addLink(it, conditionEntry) }
+                    last.forEach { cfgBuilder.addLink(it, Ref(conditionEntry)) }
                     last = mapLinkType(conditionEnd, CFGLinkType.CONDITIONAL_FALSE)
-                    addNode(finalNoOp)
+                    addNode(finalNode)
                 }
 
                 for (statement in block) {
@@ -808,7 +810,7 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                     addCfg(destructorsStack.pop())
             }
 
-            val returnTreeRoot = IFTNode.NoOp()
+            val returnTreeRoot = makeFinalNode(function)
             addDetachedNode(returnTreeRoot)
             processStatementBlock(function.body, EscapeTreeHead(returnTreeRoot), null, null)
             addNode(returnTreeRoot)

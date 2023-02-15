@@ -77,8 +77,8 @@ data class DefaultFunctionDetailsGenerator(
             displayElementAddress(),
             IFTNode.RegisterRead(Register.RBP)
         )
-        cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, savePreviousRbp)
-        cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, updateRbpAtDepth)
+        cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, Ref(savePreviousRbp))
+        cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, Ref(updateRbpAtDepth))
 
         return cfgBuilder.build()
     }

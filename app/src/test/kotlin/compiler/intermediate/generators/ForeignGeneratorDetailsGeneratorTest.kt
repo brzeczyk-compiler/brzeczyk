@@ -3,6 +3,7 @@ package compiler.intermediate.generators
 import compiler.intermediate.ControlFlowGraphBuilder
 import compiler.intermediate.IFTNode
 import compiler.intermediate.Register
+import compiler.intermediate.assertHasSameStructureAs
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -39,7 +40,7 @@ class ForeignGeneratorDetailsGeneratorTest {
         val expectedCFG = expectedCFGBuilder.build()
         val expectedFirstResult = IFTNode.RegisterRead(Register.RAX)
         val result = gdg.genInitCall(args)
-        assert(expectedCFG.isIsomorphicTo(result.callGraph))
+        expectedCFG assertHasSameStructureAs result.callGraph
         assertEquals(expectedFirstResult, result.result)
         assertNull(result.secondResult)
     }
@@ -63,7 +64,7 @@ class ForeignGeneratorDetailsGeneratorTest {
         val expectedFirstResult = IFTNode.RegisterRead(Register.RAX)
         val expectedSecondResult = IFTNode.RegisterRead(Register.RDX)
         val result = gdg.genResumeCall(argumentNode1, argumentNode2)
-        assert(expectedCFG.isIsomorphicTo(result.callGraph))
+        expectedCFG assertHasSameStructureAs result.callGraph
         assertEquals(expectedFirstResult, result.result)
         assertEquals(expectedSecondResult, result.secondResult)
     }
@@ -84,7 +85,7 @@ class ForeignGeneratorDetailsGeneratorTest {
 
         val expectedCFG = expectedCFGBuilder.build()
         val result = gdg.genFinalizeCall(argumentNode1)
-        assert(expectedCFG.isIsomorphicTo(result.callGraph))
+        expectedCFG assertHasSameStructureAs result.callGraph
         assertNull(result.result)
         assertNull(result.secondResult)
     }

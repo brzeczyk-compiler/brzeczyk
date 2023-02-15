@@ -47,7 +47,7 @@ object SysV64CallingConvention {
             stackMovement += toAdd
         }
 
-        if (moveArgsCFGBuilder.entryTreeRoot != null)
+        if (!moveArgsCFGBuilder.isEmpty)
             cfgBuilder.mergeUnconditionally(moveArgsCFGBuilder.build())
 
         // Add call instruction to actually call a given function

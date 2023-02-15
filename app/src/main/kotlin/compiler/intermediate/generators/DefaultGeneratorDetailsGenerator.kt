@@ -136,8 +136,8 @@ class DefaultGeneratorDetailsGenerator(
 
         // yield target
         val yieldTarget = IFTNode.LabeledNode(".yield", IFTNode.RegisterWrite(Register.RDX, IFTNode.StackPop()))
-        cfgBuilder.addAllFrom(ControlFlowGraphBuilder().apply { addSingleTree(yieldTarget) }.build())
-        cfgBuilder.addLink(Pair(yieldTarget, CFGLinkType.UNCONDITIONAL), restoreCalleeSavedRegistersCFG.entryTreeRoot!!, false)
+        cfgBuilder.mergeUnconditionally(ControlFlowGraphBuilder().apply { addSingleTree(yieldTarget) }.build())
+        cfgBuilder.addLink(Pair(Ref(yieldTarget), CFGLinkType.UNCONDITIONAL), restoreCalleeSavedRegistersCFG.entryTreeRoot!!, false)
 
         return cfgBuilder.build()
     }
@@ -189,7 +189,7 @@ class DefaultGeneratorDetailsGenerator(
 
             val callCFG = getGDGForNestedLoop(it.value).genFinalizeCall(getFramePointerReadNode()).callGraph
             cfgBuilder.addAllFrom(callCFG)
-            cfgBuilder.addLink(Pair(checkNode, CFGLinkType.CONDITIONAL_FALSE), callCFG.entryTreeRoot!!)
+            cfgBuilder.addLink(Pair(Ref(checkNode), CFGLinkType.CONDITIONAL_FALSE), callCFG.entryTreeRoot!!)
         }
 
         // decrease reference counters of all array variables (function parameters are not included)

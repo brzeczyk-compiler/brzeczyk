@@ -15,7 +15,10 @@ data class Function(
         val type: Type,
         val defaultValue: Expression?,
         override val location: LocationRange? = null,
-    ) : NamedNode, AstNode
+    ) : NamedNode, AstNode {
+        override fun toSimpleString() = "${this.name}: ${this.type}${if (this.defaultValue != null) " = ${this.defaultValue.toSimpleString()}" else ""}"
+        override fun toExtendedString() = "function parameter << ${this.toSimpleString()} >>"
+    }
 
     sealed class Implementation {
         data class Local(val body: StatementBlock) : Implementation()
@@ -34,4 +37,7 @@ data class Function(
         isGenerator: Boolean = false,
         location: LocationRange? = null
     ) : this(name, parameters, returnType, Implementation.Local(body), isGenerator, location)
+
+    override fun toSimpleString() = "czynność ${this.name}(${this.parameters.joinToString { it.toSimpleString() }}) -> ${this.returnType}"
+    override fun toExtendedString() = "function << ${this.toSimpleString()} >>"
 }

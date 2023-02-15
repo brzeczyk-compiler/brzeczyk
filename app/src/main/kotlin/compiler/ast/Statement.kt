@@ -74,4 +74,28 @@ sealed class Statement : AstNode {
         val value: Expression,
         override val location: LocationRange? = null,
     ) : Statement()
+
+    override fun toSimpleString() = "<<statement>>"
+
+    override fun toExtendedString() = when (this) {
+        is Assignment -> {
+            lvalue.let {
+                when (it) {
+                    is Assignment.LValue.Variable -> "assignment << ${it.name} = ${this.value.toSimpleString()} >>"
+                    is Assignment.LValue.ArrayElement -> "assignment << ${it.expression}[${it.index.toSimpleString()}] = ${this.value.toSimpleString()} >>"
+                }
+            }
+        }
+        is Block -> "{ ... }"
+        is Conditional -> "jeśli - zaś gdy - wpp block with the condition (${this.condition.toSimpleString()})"
+        is Evaluation -> "evaluation of << ${this.expression.toSimpleString()} >>"
+        is FunctionDefinition -> "definition of << ${this.function.toSimpleString()} >>"
+        is FunctionReturn -> "zwróć ${this.value}"
+        is Loop -> "dopóki (${this.condition}) { ... }"
+        is LoopBreak -> "przerwij"
+        is LoopContinuation -> "pomiń"
+        is VariableDefinition -> "definition of << ${this.variable.toSimpleString()} >>"
+        is ForeachLoop -> "otrzymując ${this.receivingVariable.toSimpleString()} od ${this.generatorCall.toSimpleString()} { ... }"
+        is GeneratorYield -> "przekaż ${this.value.toSimpleString()}"
+    }
 }

@@ -69,9 +69,21 @@ sealed interface Diagnostic {
 
     sealed class ResolutionDiagnostic(private val astNodes: List<AstNode>) : Diagnostic {
 
-        data class ObjectAssociatedToError(val message: String, val location: LocationRange?)
+        private data class ObjectAssociatedToError(private val node: AstNode) {
+            val message: String get() = StringBuilder().apply {
+                if (node.location != null) {
+                    append("At location ${node.location}")
+                } else {
+                    append("At virtual location")
+                }
 
-        private val associatedObjects get() = astNodes.map { ObjectAssociatedToError(it.toExtendedString(), it.location) }
+                append(" :: ")
+
+                append(node.toExtendedString())
+            }.toString()
+        }
+
+        private val associatedObjects get() = astNodes.map(::ObjectAssociatedToError)
 
         abstract val errorMessage: String
 

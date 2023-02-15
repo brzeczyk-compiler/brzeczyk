@@ -12,7 +12,6 @@ import compiler.ast.Statement
 import compiler.ast.StatementBlock
 import compiler.ast.Type
 import compiler.ast.Variable
-import compiler.ast.VariableOwner
 import compiler.diagnostics.Diagnostic.ResolutionDiagnostic.ControlFlowDiagnostic
 import compiler.diagnostics.Diagnostics
 import compiler.intermediate.FunctionDependenciesAnalyzer.createCallGraph
@@ -116,11 +115,11 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
         generatorDetailsGenerators: Map<Ref<Function>, GeneratorDetailsGenerator>,
         globalVariableAccessGenerator: VariableAccessGenerator
     ) = run {
-        val result = mutableKeyRefMapOf<VariableOwner, VariableAccessGenerator>()
+        val result = mutableKeyRefMapOf<Function?, VariableAccessGenerator>()
 
         result.putAll(functionDetailsGenerators)
         result.putAll(generatorDetailsGenerators)
-        result[Ref(VariablePropertiesAnalyzer.GlobalContext)] = globalVariableAccessGenerator
+        result[Ref(null)] = globalVariableAccessGenerator
         result
     }
 
@@ -152,7 +151,7 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                 .map { Ref(it.key.value as Variable) }.toSet()
         }
 
-        val variableAccessGenerators: Map<Ref<VariableOwner>, VariableAccessGenerator> =
+        val variableAccessGenerators: Map<Ref<Function?>, VariableAccessGenerator> =
             createVariableAccessGenerators(functionDetailsGenerators, generatorDetailsGenerators, globalVariablesAccessGenerator)
 
         // first stage is to decide which variable usages have to be realized via temporary registers

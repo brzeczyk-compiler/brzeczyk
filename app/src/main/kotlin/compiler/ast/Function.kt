@@ -9,7 +9,7 @@ data class Function(
     val implementation: Implementation,
     val isGenerator: Boolean,
     override val location: LocationRange? = null,
-) : NamedNode, AstNode, VariableOwner {
+) : NamedNode, AstNode {
     data class Parameter(
         override val name: String,
         val type: Type,

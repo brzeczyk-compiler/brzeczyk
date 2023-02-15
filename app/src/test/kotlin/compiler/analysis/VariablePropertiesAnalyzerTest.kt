@@ -83,7 +83,7 @@ class VariablePropertiesAnalyzerTest {
         val input = VariablePropertyInput(Program(listOf(VariableDefinition(variable))), refMapOf())
 
         val expectedResults = keyRefMapOf<AstNode, VariableProperties>(
-            variable to VariableProperties(VariablePropertiesAnalyzer.GlobalContext, refSetOf(), refSetOf()),
+            variable to VariableProperties(null, refSetOf(), refSetOf()),
         )
 
         checkAnalysisResults(input, expectedResults)
@@ -126,7 +126,7 @@ class VariablePropertiesAnalyzerTest {
 
         val expectedResults = keyRefMapOf<AstNode, VariableProperties>(
             parameterX to VariableProperties(function, refSetOf(), refSetOf()),
-            dummyVariableX to VariableProperties(VariablePropertiesAnalyzer.GlobalContext, refSetOf(), refSetOf()),
+            dummyVariableX to VariableProperties(null, refSetOf(), refSetOf()),
         )
 
         checkAnalysisResults(input, expectedResults)
@@ -369,7 +369,7 @@ class VariablePropertiesAnalyzerTest {
 
         val expectedResults = keyRefMapOf<AstNode, VariableProperties>(
             parameterX to VariableProperties(outer, refSetOf(inner), refSetOf()),
-            dummyVariableX to VariableProperties(VariablePropertiesAnalyzer.GlobalContext, refSetOf(), refSetOf()),
+            dummyVariableX to VariableProperties(null, refSetOf(), refSetOf()),
             variableY to VariableProperties(inner, refSetOf(), refSetOf()),
         )
 

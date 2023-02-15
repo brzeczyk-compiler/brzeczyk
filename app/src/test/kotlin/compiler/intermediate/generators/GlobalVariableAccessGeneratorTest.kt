@@ -18,9 +18,7 @@ class GlobalVariableAccessGeneratorTest {
         mutableKeyRefMapOf<AstNode, VariablePropertiesAnalyzer.VariableProperties>().apply {
             putAll(
                 varList.associate {
-                    Ref(it) to VariablePropertiesAnalyzer.VariableProperties(
-                        owner = VariablePropertiesAnalyzer.GlobalContext
-                    )
+                    Ref(it) to VariablePropertiesAnalyzer.VariableProperties(owner = null)
                 }
             )
         }.let {

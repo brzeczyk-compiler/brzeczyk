@@ -48,7 +48,7 @@ class ExpressionControlFlowPlannerTest {
             for (name in varNames) {
                 mutableVariableProperties[Ref(nameToVarMap[name]!!)] =
                     VariablePropertiesAnalyzer.MutableVariableProperties(
-                        if (name in globals) VariablePropertiesAnalyzer.GlobalContext else currentFunction
+                        if (name in globals) null else currentFunction
                     )
             }
             nameToParamMap = currentFunction.parameters.associateBy { it.name }

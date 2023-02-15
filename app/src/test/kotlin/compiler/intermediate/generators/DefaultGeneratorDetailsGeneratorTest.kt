@@ -166,7 +166,7 @@ class DefaultGeneratorDetailsGeneratorTest {
         assertEquals(Register.RBP, (left as IFTNode.RegisterRead).register)
 
         assertTrue { right is IFTNode.Const }
-        assertEquals(FixedConstant(memoryUnitSize.toLong()), (right as IFTNode.Const).value)
+        assertEquals(FixedConstant(MEMORY_UNIT_SIZE.toLong()), (right as IFTNode.Const).value)
     }
 
     @Test
@@ -174,7 +174,7 @@ class DefaultGeneratorDetailsGeneratorTest {
         val memVar = Variable(Variable.Kind.VALUE, "memVar", Type.Number, null)
         val displayElementAddress = IFTNode.Add(
             displayAddress,
-            IFTNode.Const((memoryUnitSize * depth).toLong())
+            IFTNode.Const((MEMORY_UNIT_SIZE * depth).toLong())
         )
 
         val gdg = DefaultGeneratorDetailsGenerator(
@@ -202,7 +202,7 @@ class DefaultGeneratorDetailsGeneratorTest {
         assertEquals(IFTNode.MemoryRead(displayElementAddress), left)
 
         assertTrue { right is IFTNode.Const }
-        assertEquals(FixedConstant(memoryUnitSize.toLong()), (right as IFTNode.Const).value)
+        assertEquals(FixedConstant(MEMORY_UNIT_SIZE.toLong()), (right as IFTNode.Const).value)
     }
 
     @Test
@@ -277,7 +277,7 @@ class DefaultGeneratorDetailsGeneratorTest {
         assertEquals(Register.RBP, (left as IFTNode.RegisterRead).register)
 
         assertTrue { right is IFTNode.Const }
-        assertEquals(FixedConstant(memoryUnitSize.toLong()), (right as IFTNode.Const).value)
+        assertEquals(FixedConstant(MEMORY_UNIT_SIZE.toLong()), (right as IFTNode.Const).value)
     }
 
     @Test
@@ -285,7 +285,7 @@ class DefaultGeneratorDetailsGeneratorTest {
         val memVar = Variable(Variable.Kind.VALUE, "memVar", Type.Number, null)
         val displayElementAddress = IFTNode.Add(
             displayAddress,
-            IFTNode.Const((memoryUnitSize * depth).toLong())
+            IFTNode.Const((MEMORY_UNIT_SIZE * depth).toLong())
         )
 
         val gdg = DefaultGeneratorDetailsGenerator(
@@ -315,7 +315,7 @@ class DefaultGeneratorDetailsGeneratorTest {
         assertEquals(IFTNode.MemoryRead(displayElementAddress), left)
 
         assertTrue { right is IFTNode.Const }
-        assertEquals(FixedConstant(memoryUnitSize.toLong()), (right as IFTNode.Const).value)
+        assertEquals(FixedConstant(MEMORY_UNIT_SIZE.toLong()), (right as IFTNode.Const).value)
     }
 
     @Test

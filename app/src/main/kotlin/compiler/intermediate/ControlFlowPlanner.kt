@@ -22,8 +22,8 @@ import compiler.intermediate.generators.ForeignFunctionDetailsGenerator
 import compiler.intermediate.generators.FunctionDetailsGenerator
 import compiler.intermediate.generators.GeneratorDetailsGenerator
 import compiler.intermediate.generators.GlobalVariableAccessGenerator
+import compiler.intermediate.generators.MEMORY_UNIT_SIZE
 import compiler.intermediate.generators.VariableAccessGenerator
-import compiler.intermediate.generators.memoryUnitSize
 import compiler.utils.Ref
 import compiler.utils.mutableKeyRefMapOf
 import compiler.utils.mutableRefSetOf
@@ -437,7 +437,7 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                     val resultReg = Register()
                     cfgBuilder.addNextTree(
                         IFTNode.RegisterWrite(
-                            resultReg, IFTNode.MemoryRead(IFTNode.Subtract(array, IFTNode.Const(memoryUnitSize.toLong()))),
+                            resultReg, IFTNode.MemoryRead(IFTNode.Subtract(array, IFTNode.Const(MEMORY_UNIT_SIZE.toLong()))),
                         )
                     )
                     cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountDecrement(array, expressionTypes[Ref(astNode.expression)]!!))
@@ -448,7 +448,7 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                     val arrayRegister = Register()
                     cfgBuilder.addNextTree(IFTNode.RegisterWrite(arrayRegister, makeCFGForSubtree(astNode.expression)))
                     val index = makeCFGForSubtree(astNode.index)
-                    val elementAddress = IFTNode.Add(IFTNode.RegisterRead(arrayRegister), IFTNode.Multiply(index, IFTNode.Const(memoryUnitSize.toLong())))
+                    val elementAddress = IFTNode.Add(IFTNode.RegisterRead(arrayRegister), IFTNode.Multiply(index, IFTNode.Const(MEMORY_UNIT_SIZE.toLong())))
                     val reg = Register()
                     cfgBuilder.addNextTree(
                         IFTNode.RegisterWrite(
@@ -525,7 +525,7 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                     val targetArrayType = expressionTypes[Ref(target.element.expression)]!! as Type.Array
                     val elementAddress = IFTNode.Add(
                         targetArray!!,
-                        IFTNode.Multiply(index!!, IFTNode.Const(memoryUnitSize.toLong()))
+                        IFTNode.Multiply(index!!, IFTNode.Const(MEMORY_UNIT_SIZE.toLong()))
                     )
                     if (targetArrayType.elementType is Type.Array) {
                         cfgBuilder.addNextCFG(

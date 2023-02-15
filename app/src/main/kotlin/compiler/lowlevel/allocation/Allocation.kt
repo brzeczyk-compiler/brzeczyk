@@ -1,7 +1,7 @@
 package compiler.lowlevel.allocation
 
 import compiler.intermediate.Register
-import compiler.intermediate.generators.memoryUnitSize
+import compiler.intermediate.generators.MEMORY_UNIT_SIZE
 import compiler.lowlevel.Addressing
 import compiler.lowlevel.Asmable
 import compiler.lowlevel.Instruction
@@ -111,7 +111,7 @@ class Allocation(private val allocator: PartialAllocation) {
                 return Result(
                     registerAllocation,
                     newLinearProgram,
-                    (spilledRegistersColoring.values.maxOrNull() ?: 0u) * memoryUnitSize,
+                    (spilledRegistersColoring.values.maxOrNull() ?: 0u) * MEMORY_UNIT_SIZE,
                 )
             }
 
@@ -177,7 +177,7 @@ class Allocation(private val allocator: PartialAllocation) {
         val newLinearProgram = mutableListOf<Asmable>()
 
         fun spilledRegisterAddress(register: Register): Addressing =
-            Addressing.Base(Register.RBP, Addressing.MemoryAddress.Const(-(spillMemoryRegionOffset + spillsColoring[register]!! * memoryUnitSize).toInt()))
+            Addressing.Base(Register.RBP, Addressing.MemoryAddress.Const(-(spillMemoryRegionOffset + spillsColoring[register]!! * MEMORY_UNIT_SIZE).toInt()))
 
         fun handleSpilledInstruction(spilledInstruction: SpilledInstruction) {
             spilledInstruction.spilledUsedRegisters.forEach {

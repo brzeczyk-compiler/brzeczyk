@@ -1,7 +1,7 @@
 package compiler.lowlevel.allocation
 
 import compiler.intermediate.Register
-import compiler.intermediate.generators.memoryUnitSize
+import compiler.intermediate.generators.MEMORY_UNIT_SIZE
 import compiler.lowlevel.Addressing
 import compiler.lowlevel.Instruction
 import compiler.lowlevel.Label
@@ -24,7 +24,7 @@ class AllocationTest {
     private val phRegs = listOf(phReg1, phReg2, phReg3, phReg4)
 
     private val variableBlockSize: ULong = 24U
-    private fun getSpillOffset(index: UInt) = -(variableBlockSize + index * memoryUnitSize).toInt()
+    private fun getSpillOffset(index: UInt) = -(variableBlockSize + index * MEMORY_UNIT_SIZE).toInt()
 
     @Test
     fun `test program which uses no registers`() {
@@ -147,7 +147,7 @@ class AllocationTest {
             ),
             result.code
         )
-        assertEquals(3u * memoryUnitSize, result.spilledOffset)
+        assertEquals(3u * MEMORY_UNIT_SIZE, result.spilledOffset)
     }
 
     @Test
@@ -233,7 +233,7 @@ class AllocationTest {
             ),
             result.code
         )
-        assertEquals(3u * memoryUnitSize, result.spilledOffset)
+        assertEquals(3u * MEMORY_UNIT_SIZE, result.spilledOffset)
     }
 
     @Test
@@ -322,6 +322,6 @@ class AllocationTest {
             ),
             result.code
         )
-        assertEquals(2u * memoryUnitSize, result.spilledOffset)
+        assertEquals(2u * MEMORY_UNIT_SIZE, result.spilledOffset)
     }
 }

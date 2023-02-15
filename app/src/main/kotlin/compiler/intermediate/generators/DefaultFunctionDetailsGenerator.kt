@@ -18,8 +18,10 @@ enum class VariableLocationType {
     REGISTER
 }
 
-const val memoryUnitSize: ULong = 8u
+const val MEMORY_UNIT_SIZE: ULong = 8u
+
 val calleeSavedRegistersWithoutRSPAndRBP = listOf(Register.RBX, Register.R12, Register.R13, Register.R14, Register.R15)
+
 const val DISPLAY_LABEL_IN_MEMORY = "display"
 
 // Function Details Generator consistent with SystemV AMD64 calling convention
@@ -47,7 +49,7 @@ data class DefaultFunctionDetailsGenerator(
         for ((variable, locationType) in variablesLocationTypes.entries) {
             when (locationType) {
                 VariableLocationType.MEMORY -> {
-                    variablesRegionSize += memoryUnitSize
+                    variablesRegionSize += MEMORY_UNIT_SIZE
                     variablesStackOffsets[variable] = variablesRegionSize
                 }
 
@@ -118,8 +120,8 @@ data class DefaultFunctionDetailsGenerator(
                 IFTNode.Const(
                     AlignedConstant(
                         requiredMemoryBelowRBP,
-                        stackAlignmentInBytes.toLong(),
-                        stackAlignmentInBytes - 2 * memoryUnitSize.toLong() // -2 to account return address and backed up rbp
+                        STACK_ALIGNMENT_IN_BYTES.toLong(),
+                        STACK_ALIGNMENT_IN_BYTES - 2 * MEMORY_UNIT_SIZE.toLong() // -2 to account return address and backed up rbp
                     )
                 )
             )
@@ -148,7 +150,7 @@ data class DefaultFunctionDetailsGenerator(
                     IFTNode.MemoryRead(
                         IFTNode.Add(
                             IFTNode.RegisterRead(Register.RBP), // add 2 to account old RBP and return address
-                            IFTNode.Const((param.index + 2) * memoryUnitSize.toLong())
+                            IFTNode.Const((param.index + 2) * MEMORY_UNIT_SIZE.toLong())
                         )
                     ),
                     true
@@ -274,7 +276,7 @@ data class DefaultFunctionDetailsGenerator(
     private fun displayElementAddress(): IFTNode {
         return IFTNode.Add(
             displayAddress,
-            IFTNode.Const((memoryUnitSize * depth).toLong())
+            IFTNode.Const((MEMORY_UNIT_SIZE * depth).toLong())
         )
     }
 

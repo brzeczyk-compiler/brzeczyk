@@ -17,7 +17,7 @@ object DefaultArrayMemoryManagement : ArrayMemoryManagement {
             Expression.ArrayAllocation.InitializationType.ONE_VALUE -> IFTNode.Add(size, IFTNode.Const(2))
             Expression.ArrayAllocation.InitializationType.ALL_VALUES -> IFTNode.Const(initialization.size + 2L)
         }
-        val sizeArg = IFTNode.Multiply(totalTableSize, IFTNode.Const(memoryUnitSize.toLong()))
+        val sizeArg = IFTNode.Multiply(totalTableSize, IFTNode.Const(MEMORY_UNIT_SIZE.toLong()))
 
         val mallocCall = mallocFDG.genCall(listOf(sizeArg))
         cfgBuilder.mergeUnconditionally(mallocCall.callGraph)
@@ -27,7 +27,7 @@ object DefaultArrayMemoryManagement : ArrayMemoryManagement {
         fun writeAt(index: Long, value: IFTNode) {
             cfgBuilder.addSingleTree(
                 IFTNode.MemoryWrite(
-                    IFTNode.Add(IFTNode.RegisterRead(temporaryResultRegister), IFTNode.Const(index * memoryUnitSize.toLong())),
+                    IFTNode.Add(IFTNode.RegisterRead(temporaryResultRegister), IFTNode.Const(index * MEMORY_UNIT_SIZE.toLong())),
                     value
                 )
             )
@@ -37,7 +37,7 @@ object DefaultArrayMemoryManagement : ArrayMemoryManagement {
         writeAt(1L, IFTNode.Subtract(totalTableSize, IFTNode.Const(2)))
         val publicArrayAddress = IFTNode.Add(
             IFTNode.RegisterRead(temporaryResultRegister),
-            IFTNode.Const(2 * memoryUnitSize.toLong())
+            IFTNode.Const(2 * MEMORY_UNIT_SIZE.toLong())
         )
 
         when (mode) {
@@ -66,7 +66,7 @@ object DefaultArrayMemoryManagement : ArrayMemoryManagement {
 
     override fun genRefCountIncrement(address: IFTNode): ControlFlowGraph {
         val cfgBuilder = ControlFlowGraphBuilder()
-        val refCountAddress = IFTNode.Subtract(address, IFTNode.Const(2 * memoryUnitSize.toLong()))
+        val refCountAddress = IFTNode.Subtract(address, IFTNode.Const(2 * MEMORY_UNIT_SIZE.toLong()))
         cfgBuilder.addSingleTree(
             IFTNode.MemoryWrite(refCountAddress, IFTNode.Add(IFTNode.Const(1), IFTNode.MemoryRead(refCountAddress)))
         )

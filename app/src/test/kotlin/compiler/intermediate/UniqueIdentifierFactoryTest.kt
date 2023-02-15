@@ -5,8 +5,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class UniqueIdentifierFactoryTest {
-    private val pref = UniqueIdentifierFactory.functionPrefix
-    private val sep = UniqueIdentifierFactory.levelSeparator
+    private val pref = UniqueIdentifierFactory.FUNCTION_PREFIX
+    private val sep = UniqueIdentifierFactory.LEVEL_SEPARATOR
 
     @Test
     fun `test basic`() {

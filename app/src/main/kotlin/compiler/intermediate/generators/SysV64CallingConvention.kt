@@ -7,7 +7,8 @@ import compiler.intermediate.Register
 
 val argPositionToRegister = listOf(Register.RDI, Register.RSI, Register.RDX, Register.RCX, Register.R8, Register.R9)
 val callerSavedRegisters = listOf(Register.RAX, Register.RCX, Register.RDX, Register.RSI, Register.RDI, Register.R8, Register.R9, Register.R10, Register.R11)
-const val stackAlignmentInBytes = 16
+
+const val STACK_ALIGNMENT_IN_BYTES = 16
 
 object SysV64CallingConvention {
     // numberOfReturnedArguments must be in range [0, 2]
@@ -26,13 +27,13 @@ object SysV64CallingConvention {
         var stackMovement = 0L
         for (arg in args.drop(argPositionToRegister.size).reversed()) {
             moveArgsCFGBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, IFTNode.StackPush(arg))
-            stackMovement += memoryUnitSize.toLong()
+            stackMovement += MEMORY_UNIT_SIZE.toLong()
         }
 
         val cfgBuilder = ControlFlowGraphBuilder()
         // Align stack
-        if (stackMovement % stackAlignmentInBytes != 0L) {
-            val toAdd = stackAlignmentInBytes - stackMovement % stackAlignmentInBytes
+        if (stackMovement % STACK_ALIGNMENT_IN_BYTES != 0L) {
+            val toAdd = STACK_ALIGNMENT_IN_BYTES - stackMovement % STACK_ALIGNMENT_IN_BYTES
             cfgBuilder.addLinksFromAllFinalRoots(
                 CFGLinkType.UNCONDITIONAL,
                 IFTNode.RegisterWrite(

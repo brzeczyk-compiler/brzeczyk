@@ -252,7 +252,7 @@ class DefaultFunctionDetailsGeneratorTest {
         assertEquals(Register.RBP, (left as IFTNode.RegisterRead).register)
 
         assertTrue { right is IFTNode.Const }
-        assertEquals(FixedConstant(memoryUnitSize.toLong()), (right as IFTNode.Const).value)
+        assertEquals(FixedConstant(MEMORY_UNIT_SIZE.toLong()), (right as IFTNode.Const).value)
     }
 
     @Test
@@ -262,7 +262,7 @@ class DefaultFunctionDetailsGeneratorTest {
         val depth: ULong = 5u
         val displayElementAddress = IFTNode.Add(
             displayAddress,
-            IFTNode.Const((memoryUnitSize * depth).toLong())
+            IFTNode.Const((MEMORY_UNIT_SIZE * depth).toLong())
         )
 
         val fdg = DefaultFunctionDetailsGenerator(
@@ -287,7 +287,7 @@ class DefaultFunctionDetailsGeneratorTest {
         assertEquals(IFTNode.MemoryRead(displayElementAddress), left)
 
         assertTrue { right is IFTNode.Const }
-        assertEquals(FixedConstant(memoryUnitSize.toLong()), (right as IFTNode.Const).value)
+        assertEquals(FixedConstant(MEMORY_UNIT_SIZE.toLong()), (right as IFTNode.Const).value)
     }
 
     @Test
@@ -353,7 +353,7 @@ class DefaultFunctionDetailsGeneratorTest {
         assertEquals(Register.RBP, (left as IFTNode.RegisterRead).register)
 
         assertTrue { right is IFTNode.Const }
-        assertEquals(FixedConstant(memoryUnitSize.toLong()), (right as IFTNode.Const).value)
+        assertEquals(FixedConstant(MEMORY_UNIT_SIZE.toLong()), (right as IFTNode.Const).value)
     }
 
     @Test
@@ -363,7 +363,7 @@ class DefaultFunctionDetailsGeneratorTest {
         val depth: ULong = 5u
         val displayElementAddress = IFTNode.Add(
             displayAddress,
-            IFTNode.Const((memoryUnitSize * depth).toLong())
+            IFTNode.Const((MEMORY_UNIT_SIZE * depth).toLong())
         )
 
         val fdg = DefaultFunctionDetailsGenerator(
@@ -390,7 +390,7 @@ class DefaultFunctionDetailsGeneratorTest {
         assertEquals(IFTNode.MemoryRead(displayElementAddress), left)
 
         assertTrue { right is IFTNode.Const }
-        assertEquals(FixedConstant(memoryUnitSize.toLong()), (right as IFTNode.Const).value)
+        assertEquals(FixedConstant(MEMORY_UNIT_SIZE.toLong()), (right as IFTNode.Const).value)
     }
 
     @Test

@@ -11,9 +11,9 @@ const val MAIN_FUNCTION_IDENTIFIER = "główna"
 class UniqueIdentifierFactory {
     companion object {
         // it might be handy to change these values with ease
-        const val functionPrefix = "fun"
-        const val levelSeparator = '$'
-        const val polishSignSymbol = '#' // added after polish signs are converted to allowed characters
+        const val FUNCTION_PREFIX = "fun"
+        const val LEVEL_SEPARATOR = '$'
+        const val POLISH_SIGN_SYMBOL = '#' // added after polish signs are converted to allowed characters
         val charactersAllowedByNasm = listOf('a'..'z', 'A'..'Z', '0'..'9').flatten() +
             listOf('_', '$', '#', '@', '~', '.', '?')
         val knownConversionsToAllowedCharacters = mapOf(
@@ -45,7 +45,7 @@ class UniqueIdentifierFactory {
             if (character in charactersAllowedByNasm) return listOf(character)
             if (character in knownConversionsToAllowedCharacters) return listOf(
                 knownConversionsToAllowedCharacters[character]!!,
-                polishSignSymbol // to make mangled names more readable
+                POLISH_SIGN_SYMBOL // to make mangled names more readable
             )
             throw IllegalCharacter(
                 """
@@ -54,7 +54,7 @@ class UniqueIdentifierFactory {
             """
             )
         }
-        val identifierBuilder = StringBuilder().append(prefix ?: functionPrefix).append(levelSeparator)
+        val identifierBuilder = StringBuilder().append(prefix ?: FUNCTION_PREFIX).append(LEVEL_SEPARATOR)
         current.forEach { convertToPlainASCII(it).forEach { character -> identifierBuilder.append(character) } }
         val identifier = identifierBuilder.toString()
         // at the time of the addition of this class to the codebase, this should not happen ($ and # are not allowed in function names)
@@ -64,7 +64,7 @@ class UniqueIdentifierFactory {
                 """
             Two identical function labels were generated.
             This means that the function naming convention is not consistent across all levels of compilation.
-            Are you allowing $levelSeparator or $polishSignSymbol in function names somewhere earlier on?
+            Are you allowing $LEVEL_SEPARATOR or $POLISH_SIGN_SYMBOL in function names somewhere earlier on?
             """
             )
 

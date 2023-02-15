@@ -162,7 +162,7 @@ class DefaultGeneratorDetailsGenerator(
         return if (index != -1)
             IFTNode.Subtract(
                 IFTNode.RegisterRead(base),
-                IFTNode.Const(SummedConstant((index + 1) * memoryUnitSize.toLong(), innerFDG.requiredMemoryBelowRBP))
+                IFTNode.Const(SummedConstant((index + 1) * MEMORY_UNIT_SIZE.toLong(), innerFDG.requiredMemoryBelowRBP))
             )
         else null
     }
@@ -262,5 +262,5 @@ class DefaultGeneratorDetailsGenerator(
     )
 
     // other values
-    private val frameSize = SummedConstant(nestedForeachLoops.size * memoryUnitSize.toLong(), innerFDG.requiredMemoryBelowRBP)
+    private val frameSize = SummedConstant(nestedForeachLoops.size * MEMORY_UNIT_SIZE.toLong(), innerFDG.requiredMemoryBelowRBP)
 }

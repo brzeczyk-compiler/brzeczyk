@@ -171,19 +171,19 @@ class LanguageTokensTest {
     }
 
     @Test fun `test whitespace and comments`() {
-        assertEquals(firstMatch(tokens, " "), TokenType.TO_IGNORE)
-        assertEquals(firstMatch(tokens, "     "), TokenType.TO_IGNORE)
-        assertEquals(firstMatch(tokens, "\t"), TokenType.TO_IGNORE)
-        assertEquals(firstMatch(tokens, "  \t  "), TokenType.TO_IGNORE)
-        assertEquals(firstMatch(tokens, "\t \t"), TokenType.TO_IGNORE)
-        assertEquals(firstMatch(tokens, "// no comment"), TokenType.TO_IGNORE)
-        assertEquals(firstMatch(tokens, "//   \t   \t "), TokenType.TO_IGNORE)
-        assertEquals(firstMatch(tokens, "// jeśli (x == 10 oraz (y * 3 != żółć) { asdf = xyz > 3 ? a + b : c % d; }"), TokenType.TO_IGNORE)
-        assertEquals(firstMatch(tokens, "// \taąbcćdeęfghijklłmnńoópqrsśtuvwxyzźżAĄBCĆDEĘFGHIJKLŁMNŃOÓPQRSŚTUVWXYZŹŻ0123456789{}(),.<>:;?/+=-_!%^&*|~"), TokenType.TO_IGNORE)
+        assertEquals(firstMatch(tokens, " "), TokenType.IGNORED)
+        assertEquals(firstMatch(tokens, "     "), TokenType.IGNORED)
+        assertEquals(firstMatch(tokens, "\t"), TokenType.IGNORED)
+        assertEquals(firstMatch(tokens, "  \t  "), TokenType.IGNORED)
+        assertEquals(firstMatch(tokens, "\t \t"), TokenType.IGNORED)
+        assertEquals(firstMatch(tokens, "// no comment"), TokenType.IGNORED)
+        assertEquals(firstMatch(tokens, "//   \t   \t "), TokenType.IGNORED)
+        assertEquals(firstMatch(tokens, "// jeśli (x == 10 oraz (y * 3 != żółć) { asdf = xyz > 3 ? a + b : c % d; }"), TokenType.IGNORED)
+        assertEquals(firstMatch(tokens, "// \taąbcćdeęfghijklłmnńoópqrsśtuvwxyzźżAĄBCĆDEĘFGHIJKLŁMNŃOÓPQRSŚTUVWXYZŹŻ0123456789{}(),.<>:;?/+=-_!%^&*|~"), TokenType.IGNORED)
 
-        assertNotEquals(firstMatch(tokens, "      E    "), TokenType.TO_IGNORE)
-        assertNotEquals(firstMatch(tokens, " \t \n"), TokenType.TO_IGNORE)
-        assertNotEquals(firstMatch(tokens, "// comments end with newline\n"), TokenType.TO_IGNORE)
-        assertNotEquals(firstMatch(tokens, "/* no multiline\n\tcomments allowed */"), TokenType.TO_IGNORE)
+        assertNotEquals(firstMatch(tokens, "      E    "), TokenType.IGNORED)
+        assertNotEquals(firstMatch(tokens, " \t \n"), TokenType.IGNORED)
+        assertNotEquals(firstMatch(tokens, "// comments end with newline\n"), TokenType.IGNORED)
+        assertNotEquals(firstMatch(tokens, "/* no multiline\n\tcomments allowed */"), TokenType.IGNORED)
     }
 }

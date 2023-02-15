@@ -119,7 +119,7 @@ object LanguageTokens {
             // Whitespace and comments
             // Technically not real tokens
             // Should be filtered out before syntax analysis
-            Pair(TokenType.TO_IGNORE, "([ \t]*)|(//[ \t\\l\\u\\d\\c„”]*)")
+            Pair(TokenType.IGNORED, "([ \t]*)|(//[ \t\\l\\u\\d\\c„”]*)")
         )
 
         return list.map {

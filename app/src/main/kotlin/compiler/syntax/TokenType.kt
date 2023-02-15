@@ -40,5 +40,5 @@ enum class TokenType {
     // Whitespace and comments
     // Technically not real tokens
     // Should be filtered out before syntax analysis
-    TO_IGNORE,
+    IGNORED,
 }

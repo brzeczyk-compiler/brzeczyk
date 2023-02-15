@@ -34,7 +34,7 @@ typedef void(*finalize_func_t)(generator_id_t);
 // input / output
 
 void print_int64(int64_t value) {
-    printf("%" PRId64 "\n", value);
+    wprintf(L"%" PRId64 "\n", value);
 }
 
 void print_string(uint64_t* address) {
@@ -49,7 +49,7 @@ void print_string(uint64_t* address) {
 
 int64_t read_int64() {
     int64_t value;
-    scanf("%" SCNd64, &value);
+    wscanf(L"%" SCNd64, &value);
     return value;
 }
 

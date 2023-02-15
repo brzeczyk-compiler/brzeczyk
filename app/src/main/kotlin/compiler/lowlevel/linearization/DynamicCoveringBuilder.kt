@@ -7,7 +7,8 @@ import compiler.utils.Ref
 import compiler.utils.mutableKeyRefMapOf
 
 typealias PatternChoices = Map<Ref<IFTNode>, Pattern>
-val matchValue: (Pattern, IFTNode) -> Pattern.Result? = { pattern, iftNode -> pattern.matchValue(iftNode) }
+
+private val matchValue: (Pattern, IFTNode) -> Pattern.Result? = { pattern, iftNode -> pattern.matchValue(iftNode) }
 
 // Assumes that every possible IFTNode has at least one viable covering with the passed instruction set
 class DynamicCoveringBuilder(private val instructionSet: List<Pattern>) : Covering {

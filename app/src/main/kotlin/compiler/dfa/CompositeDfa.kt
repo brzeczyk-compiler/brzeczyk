@@ -3,7 +3,7 @@ package compiler.dfa
 class CompositeDfa<S : Comparable<S>, R> (private val components: List<Pair<Dfa<S, *>, R>>) : Dfa<S, R> {
     class MultipleAcceptingComponentsException : Exception()
 
-    inner class State(private val componentStates: List<DfaState<S, *>?>) : DfaState<S, R> {
+    private inner class State(private val componentStates: List<DfaState<S, *>?>) : DfaState<S, R> {
         override val result: R?
             get() {
                 val notNullResults = componentStates.withIndex().filter { it.value?.result != null }

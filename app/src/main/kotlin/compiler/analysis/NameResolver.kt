@@ -19,7 +19,7 @@ import kotlin.math.max
 object NameResolver {
     class ResolutionFailed : CompilationFailed()
 
-    class NameOverloadState {
+    private class NameOverloadState {
         /*
         For each name we keep a NameOverloadState which consists of stacks of entities of a certain NamedNode type.
         The stack structure represents name overloading. The top of each stack represents the node of a particular type

@@ -16,7 +16,7 @@ import compiler.utils.Ref
 import compiler.utils.mutableRefSetOf
 
 object InitializationVerifier {
-    data class VerificationState(
+    private data class VerificationState(
         val initializedVariables: MutableSet<Ref<NamedNode>> = mutableRefSetOf(),
         val traversedFunctions: MutableSet<Ref<Function>> = mutableRefSetOf()
     ) {

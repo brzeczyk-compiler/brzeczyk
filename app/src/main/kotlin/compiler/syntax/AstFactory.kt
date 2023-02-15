@@ -23,7 +23,7 @@ typealias MutableGlobalBlock = MutableList<Program.Global>
 class AstFactory(private val diagnostics: Diagnostics) {
     class AstCreationFailed : CompilationFailed()
 
-    sealed class LowestAncestorBlock {
+    private sealed class LowestAncestorBlock {
         data class AncestorStatementBlock(val statementBlock: MutableStatementBlock, val previousStatement: Statement?) : LowestAncestorBlock()
         data class AncestorGlobalBlock(val globalBlock: MutableGlobalBlock, val previousGlobal: Program.Global?) : LowestAncestorBlock()
     }

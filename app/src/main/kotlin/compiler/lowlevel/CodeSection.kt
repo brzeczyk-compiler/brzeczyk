@@ -7,7 +7,7 @@ class CodeSection(
     private val mainFunctionLabel: String,
     private val ignoreMainReturnValue: Boolean,
     private val foreignIdentifiers: List<String>,
-    val functions: List<FunctionCode>
+    private val functions: List<FunctionCode>
 ) {
     data class FunctionCode(val label: String, val instructions: List<Asmable>, val registerAllocation: Map<Register, Register>)
 

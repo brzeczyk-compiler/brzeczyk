@@ -13,7 +13,7 @@ import kotlin.collections.HashSet
 
 class RegisterGraph private constructor(
     livenessGraphs: Liveness.LivenessGraphs,
-    val selfColoredRegisters: HashSet<Register>,
+    private val selfColoredRegisters: HashSet<Register>,
     availableColors: HashSet<Register>
 ) {
 

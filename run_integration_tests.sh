@@ -92,5 +92,6 @@ for tested_program in $(find . -path "./tests/*.bzz"); do
 done
 
 echo
-# exit code for CI
-exit $((FAILED_TO_COMPILE + FAILED_CASES))
+
+# exit code
+((FAILED_TO_COMPILE + FAILED_CASES == 0))

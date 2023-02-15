@@ -11,8 +11,6 @@ object InstructionSet {
         VALUE, UNCONDITIONAL, CONDITIONAL
     }
 
-    private val ALL_CONTEXTS = setOf(Context.VALUE, Context.UNCONDITIONAL, Context.CONDITIONAL)
-
     // Pattern implementation that uses IFTPattern to match simple trees
     // The constructor takes the IFTPattern instance, set of contexts in which we want to match it (value, conditional, unconditional)
     // and a function that given a list of input registers, an output register, the context in which the pattern was matched
@@ -151,6 +149,7 @@ object InstructionSet {
                 )
             ) {
                 _, _, _, args ->
+                @Suppress("UNCHECKED_CAST")
                 listOf(
                     Instruction.InPlaceInstruction.CallL(
                         args["label"] as String,
@@ -167,6 +166,7 @@ object InstructionSet {
                 )
             ) {
                 inRegisters, _, _, args ->
+                @Suppress("UNCHECKED_CAST")
                 listOf(
                     Instruction.InPlaceInstruction.CallR(
                         inRegisters[0],
@@ -177,6 +177,7 @@ object InstructionSet {
             },
             InstructionPattern(IFTPattern.Return(IFTPattern.AnyArgument("usedRegs"))) {
                 _, _, _, args ->
+                @Suppress("UNCHECKED_CAST")
                 listOf(
                     Instruction.TerminalInstruction.Ret(args["usedRegs"] as Collection<Register>)
                 )

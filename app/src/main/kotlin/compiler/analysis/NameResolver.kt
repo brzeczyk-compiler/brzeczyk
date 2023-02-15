@@ -170,8 +170,8 @@ object NameResolver {
         }
 
         // Additionally compute static function depth of the program
-        var currentStaticDepth: Int = 0
-        var maxStaticDepth: Int = 0
+        var currentStaticDepth = 0
+        var maxStaticDepth = 0
 
         // Core function
 

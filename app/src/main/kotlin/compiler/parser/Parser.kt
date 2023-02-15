@@ -129,9 +129,8 @@ class Parser<S : Comparable<S>>(
 
                 // Consult the parsing table in order to decide what to do.
                 // A null lookahead symbol corresponds to the end of input.
-                val action = parseActions[Triple(dfa, state, lookahead?.symbol)]
 
-                when (action) {
+                when (val action = parseActions[Triple(dfa, state, lookahead?.symbol)]) {
                     is ParserAction.Shift -> {
                         // We assume that
                         // (1) the parsing table never tells to do Shift at the end of input, and that

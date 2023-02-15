@@ -230,9 +230,7 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
 
         gatherVariableUsageInfo(expression, refSetOf()).let {
             if (target is AssignmentTarget.ArrayElementTarget) {
-                gatherVariableUsageInfo(target.element.index, it).let {
-                    gatherVariableUsageInfo(target.element.expression, it)
-                }
+                gatherVariableUsageInfo(target.element.expression, gatherVariableUsageInfo(target.element.index, it))
             }
         }
 
@@ -302,58 +300,53 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                     }
                 }
 
-                is Expression.BinaryOperation -> when (astNode.kind) {
-                    Expression.BinaryOperation.Kind.AND, Expression.BinaryOperation.Kind.OR -> {
-                        val (rightLinkType, shortCircuitLinkType, shortCircuitValue) = when (astNode.kind) {
-                            Expression.BinaryOperation.Kind.AND -> Triple(CFGLinkType.CONDITIONAL_TRUE, CFGLinkType.CONDITIONAL_FALSE, 0L)
-                            Expression.BinaryOperation.Kind.OR -> Triple(CFGLinkType.CONDITIONAL_FALSE, CFGLinkType.CONDITIONAL_TRUE, 1L)
-                            else -> throw Exception() // unreachable state
-                        }
-
-                        cfgBuilder.addNextTree(makeCFGForSubtree(astNode.leftOperand))
-                        val lastAfterLeft = last
-                        val resultTemporaryRegister = Register()
-
-                        last = mapLinkType(lastAfterLeft, rightLinkType)
-                        val rightResultNode = makeCFGForSubtree(astNode.rightOperand)
-                        cfgBuilder.addNextTree(IFTNode.RegisterWrite(resultTemporaryRegister, rightResultNode))
-                        val lastAfterRight = last
-
-                        last = mapLinkType(lastAfterLeft, shortCircuitLinkType)
-                        val shortCircuitResultNode = IFTNode.Const(shortCircuitValue)
-                        cfgBuilder.addNextTree(IFTNode.RegisterWrite(resultTemporaryRegister, shortCircuitResultNode))
-                        val lastAfterShortCircuit = last
-
-                        invalidatedVariables[Ref(astNode)]!!.forEach { currentTemporaryRegisters.remove(it) }
-                        last = lastAfterRight + lastAfterShortCircuit
-                        IFTNode.RegisterRead(resultTemporaryRegister)
+                is Expression.BinaryOperation -> if (astNode.kind in listOf(Expression.BinaryOperation.Kind.AND, Expression.BinaryOperation.Kind.OR)) {
+                    val (rightLinkType, shortCircuitLinkType, shortCircuitValue) = when (astNode.kind) {
+                        Expression.BinaryOperation.Kind.AND -> Triple(CFGLinkType.CONDITIONAL_TRUE, CFGLinkType.CONDITIONAL_FALSE, 0L)
+                        Expression.BinaryOperation.Kind.OR -> Triple(CFGLinkType.CONDITIONAL_FALSE, CFGLinkType.CONDITIONAL_TRUE, 1L)
+                        else -> throw Exception() // unreachable state
                     }
 
-                    else -> {
-                        val leftSubtreeNode = makeCFGForSubtree(astNode.leftOperand)
-                        val rightSubtreeNode = makeCFGForSubtree(astNode.rightOperand)
-                        when (astNode.kind) {
-                            Expression.BinaryOperation.Kind.AND,
-                            Expression.BinaryOperation.Kind.OR -> throw Exception() // unreachable state
-                            Expression.BinaryOperation.Kind.IFF -> IFTNode.LogicalIff(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.XOR -> IFTNode.LogicalXor(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.ADD -> IFTNode.Add(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.SUBTRACT -> IFTNode.Subtract(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.MULTIPLY -> IFTNode.Multiply(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.DIVIDE -> IFTNode.Divide(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.MODULO -> IFTNode.Modulo(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.BIT_AND -> IFTNode.BitAnd(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.BIT_OR -> IFTNode.BitOr(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.BIT_XOR -> IFTNode.BitXor(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.BIT_SHIFT_LEFT -> IFTNode.BitShiftLeft(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.BIT_SHIFT_RIGHT -> IFTNode.BitShiftRight(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.EQUALS -> IFTNode.Equals(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.NOT_EQUALS -> IFTNode.NotEquals(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.LESS_THAN -> IFTNode.LessThan(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.LESS_THAN_OR_EQUALS -> IFTNode.LessThanOrEquals(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.GREATER_THAN -> IFTNode.GreaterThan(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.GREATER_THAN_OR_EQUALS -> IFTNode.GreaterThanOrEquals(leftSubtreeNode, rightSubtreeNode)
-                        }
+                    cfgBuilder.addNextTree(makeCFGForSubtree(astNode.leftOperand))
+                    val lastAfterLeft = last
+                    val resultTemporaryRegister = Register()
+
+                    last = mapLinkType(lastAfterLeft, rightLinkType)
+                    val rightResultNode = makeCFGForSubtree(astNode.rightOperand)
+                    cfgBuilder.addNextTree(IFTNode.RegisterWrite(resultTemporaryRegister, rightResultNode))
+                    val lastAfterRight = last
+
+                    last = mapLinkType(lastAfterLeft, shortCircuitLinkType)
+                    val shortCircuitResultNode = IFTNode.Const(shortCircuitValue)
+                    cfgBuilder.addNextTree(IFTNode.RegisterWrite(resultTemporaryRegister, shortCircuitResultNode))
+                    val lastAfterShortCircuit = last
+
+                    invalidatedVariables[Ref(astNode)]!!.forEach { currentTemporaryRegisters.remove(it) }
+                    last = lastAfterRight + lastAfterShortCircuit
+                    IFTNode.RegisterRead(resultTemporaryRegister)
+                } else {
+                    val leftSubtreeNode = makeCFGForSubtree(astNode.leftOperand)
+                    val rightSubtreeNode = makeCFGForSubtree(astNode.rightOperand)
+                    when (astNode.kind) {
+                        Expression.BinaryOperation.Kind.AND, Expression.BinaryOperation.Kind.OR -> throw Exception() // unreachable state
+                        Expression.BinaryOperation.Kind.IFF -> IFTNode.LogicalIff(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.XOR -> IFTNode.LogicalXor(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.ADD -> IFTNode.Add(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.SUBTRACT -> IFTNode.Subtract(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.MULTIPLY -> IFTNode.Multiply(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.DIVIDE -> IFTNode.Divide(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.MODULO -> IFTNode.Modulo(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.BIT_AND -> IFTNode.BitAnd(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.BIT_OR -> IFTNode.BitOr(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.BIT_XOR -> IFTNode.BitXor(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.BIT_SHIFT_LEFT -> IFTNode.BitShiftLeft(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.BIT_SHIFT_RIGHT -> IFTNode.BitShiftRight(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.EQUALS -> IFTNode.Equals(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.NOT_EQUALS -> IFTNode.NotEquals(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.LESS_THAN -> IFTNode.LessThan(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.LESS_THAN_OR_EQUALS -> IFTNode.LessThanOrEquals(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.GREATER_THAN -> IFTNode.GreaterThan(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.GREATER_THAN_OR_EQUALS -> IFTNode.GreaterThanOrEquals(leftSubtreeNode, rightSubtreeNode)
                     }
                 }
 

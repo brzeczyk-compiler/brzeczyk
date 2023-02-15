@@ -234,17 +234,17 @@ class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
                 }
 
                 is Expression.UnaryOperation -> {
-                    when (expression.kind) {
+                    return when (expression.kind) {
                         Expression.UnaryOperation.Kind.NOT -> {
                             checkExpression(expression.operand, Type.Boolean)
-                            return Type.Boolean
+                            Type.Boolean
                         }
 
                         Expression.UnaryOperation.Kind.PLUS,
                         Expression.UnaryOperation.Kind.MINUS,
                         Expression.UnaryOperation.Kind.BIT_NOT -> {
                             checkExpression(expression.operand, Type.Number)
-                            return Type.Number
+                            Type.Number
                         }
                     }
                 }
@@ -329,7 +329,8 @@ class TypeChecker(private val nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
                 is Expression.FunctionCall,
                 is Expression.UnaryOperation,
                 is Expression.BinaryOperation,
-                is Expression.Conditional -> {
+                is Expression.Conditional,
+                is Expression.ArrayGeneration -> {
                     // TODO: some of these could be considered as constant
                     // in case of change, update Expression.getValueOfLiteral as well
                     report(TypeCheckingError.NonConstantExpression(expression))

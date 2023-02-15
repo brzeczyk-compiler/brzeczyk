@@ -36,7 +36,6 @@ class FunctionControlFlowPlannerTest {
     private fun getExpressionCFG(
         expression: Expression,
         target: ControlFlowPlanner.AssignmentTarget?,
-        function: Function,
         accessNodeConsumer: ((ControlFlowGraph, IFTNode) -> Unit)?
     ): ControlFlowGraph {
         return when (target) {
@@ -72,7 +71,7 @@ class FunctionControlFlowPlannerTest {
 
     private fun test(program: Program) = ControlFlowPlanner(testDiagnostics).createGraphsForFunctions(
         program,
-        this::getExpressionCFG,
+        { expression, target, _, accessNodeConsumer -> getExpressionCFG(expression, target, accessNodeConsumer) },
         nameResolution,
         defaultParameterValues,
         functionReturnedValueVariables,

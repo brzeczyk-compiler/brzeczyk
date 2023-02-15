@@ -25,7 +25,7 @@ sealed class Statement : AstNode {
         val value: Expression,
         override val location: LocationRange? = null,
     ) : Statement() {
-        sealed class LValue() {
+        sealed class LValue {
             data class Variable(val name: String) : LValue()
             data class ArrayElement(val expression: Expression, val index: Expression) : LValue()
         }

@@ -310,7 +310,7 @@ class DefaultFunctionDetailsGeneratorTest {
 
     @Test
     fun `test gen read indirect from register fails`() {
-        val regVar: Variable = Variable(Variable.Kind.VALUE, "regVar", Type.Number, null)
+        val regVar = Variable(Variable.Kind.VALUE, "regVar", Type.Number, null)
 
         val fdg = DefaultFunctionDetailsGenerator(
             listOf(),
@@ -326,7 +326,7 @@ class DefaultFunctionDetailsGeneratorTest {
 
     @Test
     fun `test gen write direct to memory`() {
-        val memVar: Variable = Variable(Variable.Kind.VALUE, "memVar", Type.Number, null)
+        val memVar = Variable(Variable.Kind.VALUE, "memVar", Type.Number, null)
 
         val fdg = DefaultFunctionDetailsGenerator(
             listOf(),
@@ -358,7 +358,7 @@ class DefaultFunctionDetailsGeneratorTest {
 
     @Test
     fun `test gen write indirect to memory`() {
-        val memVar: Variable = Variable(Variable.Kind.VALUE, "memVar", Type.Number, null)
+        val memVar = Variable(Variable.Kind.VALUE, "memVar", Type.Number, null)
         val displayAddress = IFTNode.MemoryLabel("display")
         val depth: ULong = 5u
         val displayElementAddress = IFTNode.Add(
@@ -395,7 +395,7 @@ class DefaultFunctionDetailsGeneratorTest {
 
     @Test
     fun `test gen write direct to register`() {
-        val regVar: Variable = Variable(Variable.Kind.VALUE, "regVar", Type.Number, null)
+        val regVar = Variable(Variable.Kind.VALUE, "regVar", Type.Number, null)
 
         val fdg = DefaultFunctionDetailsGenerator(
             listOf(),
@@ -415,7 +415,7 @@ class DefaultFunctionDetailsGeneratorTest {
 
     @Test
     fun `test gen write indirect to register fails`() {
-        val regVar: Variable = Variable(Variable.Kind.VALUE, "regVar", Type.Number, null)
+        val regVar = Variable(Variable.Kind.VALUE, "regVar", Type.Number, null)
 
         val fdg = DefaultFunctionDetailsGenerator(
             listOf(),

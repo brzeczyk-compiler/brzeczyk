@@ -32,7 +32,7 @@ class GrammarAnalysis<S : Comparable<S>> {
             for ((leftSideSymbol, rightSideDfa) in grammar.productions) {
                 if (state == rightSideDfa.startState) {
                     nullable.add(leftSideSymbol)
-                    conditionalSets[leftSideSymbol]?.let { stateQueue.addAll(it.filter { visited.add(it) }) }
+                    conditionalSets[leftSideSymbol]?.let { set -> stateQueue.addAll(set.filter { visited.add(it) }) }
                     conditionalSets[leftSideSymbol]?.clear()
                 }
             }

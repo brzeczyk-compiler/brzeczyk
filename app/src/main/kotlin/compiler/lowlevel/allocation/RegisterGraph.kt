@@ -187,7 +187,7 @@ class RegisterGraph private constructor(
     private fun Register.toNode() = Node(this)
 
     private fun Map<Register, Set<Register>>.asMutableNodeGraph() =
-        this.mapValues { it.value.map { it.toNode() }.toHashSet() }.mapKeys { it.key.toNode() }.run { HashMap(this) }
+        this.mapValues { entry -> entry.value.map { it.toNode() }.toHashSet() }.mapKeys { it.key.toNode() }.run { HashMap(this) }
 
     private fun MutableMap<Node, HashSet<Node>>.removeNode(node: Node) {
         getValue(node).forEach { getValue(it).remove(node) }

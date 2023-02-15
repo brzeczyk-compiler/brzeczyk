@@ -197,7 +197,7 @@ class VariablePropertiesAnalyzerTest {
     @Test
     fun `test write to variable at same level`() {
         val variableX = Variable(Variable.Kind.VALUE, "x", Type.Number, Expression.NumberLiteral(123))
-        val assignmentToX = Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(124))
+        val assignmentToX = Assignment(Assignment.LValue.Variable("x"), Expression.NumberLiteral(124))
         val outer = Function(
             "zewnętrzna", listOf(), Type.Unit,
             listOf(Statement.VariableDefinition(variableX), assignmentToX)
@@ -223,7 +223,7 @@ class VariablePropertiesAnalyzerTest {
     @Test
     fun `test write to function parameter`() {
         val parameterX = Function.Parameter("x", Type.Number, null)
-        val assignmentToX = Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(124))
+        val assignmentToX = Assignment(Assignment.LValue.Variable("x"), Expression.NumberLiteral(124))
         val outer = Function(
             "zewnętrzna", listOf(parameterX), Type.Unit,
             listOf(assignmentToX)
@@ -285,7 +285,7 @@ class VariablePropertiesAnalyzerTest {
     @Test
     fun `test write to variable in inner function`() {
         val variableX = Variable(Variable.Kind.VALUE, "x", Type.Number, Expression.NumberLiteral(123))
-        val assignmentToX = Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(124))
+        val assignmentToX = Assignment(Assignment.LValue.Variable("x"), Expression.NumberLiteral(124))
         val inner = Function(
             "wewnętrzna", listOf(), Type.Unit,
             listOf(assignmentToX)
@@ -317,7 +317,7 @@ class VariablePropertiesAnalyzerTest {
     @Test
     fun `test write to function parameter in inner function`() {
         val parameterX = Function.Parameter("x", Type.Number, null)
-        val assignmentToX = Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(124))
+        val assignmentToX = Assignment(Assignment.LValue.Variable("x"), Expression.NumberLiteral(124))
         val inner = Function(
             "wewnętrzna", listOf(), Type.Unit,
             listOf(assignmentToX)
@@ -436,9 +436,9 @@ class VariablePropertiesAnalyzerTest {
         val variableYOuter = Variable(Variable.Kind.VALUE, "y", Type.Number, readFromX)
         val variableYInner = Variable(Variable.Kind.VALUE, "y", Type.Number, readFromX)
         val variableYInnerDeep = Variable(Variable.Kind.VALUE, "y", Type.Number, readFromX)
-        val assignmentToXOuter = Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(122))
-        val assignmentToXInner = Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(124))
-        val assignmentToXInnerDeep = Assignment(Statement.Assignment.LValue.Variable("x"), Expression.NumberLiteral(125))
+        val assignmentToXOuter = Assignment(Assignment.LValue.Variable("x"), Expression.NumberLiteral(122))
+        val assignmentToXInner = Assignment(Assignment.LValue.Variable("x"), Expression.NumberLiteral(124))
+        val assignmentToXInnerDeep = Assignment(Assignment.LValue.Variable("x"), Expression.NumberLiteral(125))
         val innerDeep = Function(
             "wewnętrzna_zagnieżdżona", listOf(), Type.Unit,
             listOf(assignmentToXInnerDeep, Statement.VariableDefinition(variableYInnerDeep))

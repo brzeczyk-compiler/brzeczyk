@@ -16,24 +16,11 @@ class ControlFlowGraphBuilderTest {
     private val secondNode = IFTNode.Dummy()
     private val conditionalTrueNode = IFTNode.Dummy()
     private val conditionalFalseNode = IFTNode.Dummy()
-    private val afterConditionalNode = IFTNode.Dummy()
 
     private val simpleCFG = ControlFlowGraph(
         treeRoots = listOf(entryNode, secondNode, conditionalTrueNode, conditionalFalseNode),
         entryTreeRoot = entryNode,
         unconditionalLinks = refMapOf(entryNode to secondNode),
-        conditionalTrueLinks = refMapOf(secondNode to conditionalTrueNode),
-        conditionalFalseLinks = refMapOf(secondNode to conditionalFalseNode)
-    )
-
-    private val simpleCFGWithExtraFinalNode = ControlFlowGraph(
-        treeRoots = listOf(entryNode, secondNode, conditionalTrueNode, conditionalFalseNode, afterConditionalNode),
-        entryTreeRoot = entryNode,
-        unconditionalLinks = refMapOf(
-            entryNode to secondNode,
-            conditionalTrueNode to afterConditionalNode,
-            conditionalFalseNode to afterConditionalNode
-        ),
         conditionalTrueLinks = refMapOf(secondNode to conditionalTrueNode),
         conditionalFalseLinks = refMapOf(secondNode to conditionalFalseNode)
     )

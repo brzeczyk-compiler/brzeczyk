@@ -11,7 +11,7 @@ The language does not really have anything out of ordinary and it's mostly C-lik
 
 - nested functions able to access outer variables,
 - dynamically allocated arrays with automatic reference counting,
-- generator functions, allowing to pause execution and pass a value to the caller.
+- generator functions, allowing to pause the execution and pass a value to the caller.
 
 The compiler is written from scratch and produces x86_64 assembly code.
 
@@ -41,43 +41,21 @@ czynność główna() {
 
 ## What?
 
-The following table lists all language keywords and their corresponding meanings.
+The following table lists all of the language's keywords and their corresponding meanings.
 
-Keyword     | Meaning
--------     | -------
-`zm`        | variable
-`wart`      | value
-`stała`     | constant
-`jeśli`     | if
-`zaś gdy`   | and when; *else if*
-`wpp`       | otherwise; *else*
-`dopóki`    | while
-`przerwij`  | stop; *break*
-`pomiń`     | skip; *continue*
-`czynność`  | function
-`zwróć`     | return
-`zakończ`   | finish; *return unit*
-`zewnętrzna`| external
-`jako`      | as
-`ciąg`      | sequence; *array*
-`dla`       | for
-`wewnątrz`  | inside; *in*
-`długość`   | length
-`przekaźnik`| relay; *generator*
-`przekaż`   | pass; *yield*
-`otrzymując`| receiving; *for*
-`od`        | from; *in*
-`Liczba`    | number; *integer*
-`Czy`       | whether; *boolean*
-`Nic`       | nothing; *unit*
-`prawda`    | truth; *true*
-`fałsz`     | falsity; *false*
-`nic`       | nothing; *unit*
-`nie`       | not
-`lub`       | or
-`oraz`      | and
-`wtw`       | if and only if
-`albo`      | either; *xor*
+Keyword    | Meaning             | Keyword      | Meaning               | Keyword  | Meaning
+-----------|---------------------|--------------|-----------------------|----------|--------------------
+`zm`       | variable            | `zakończ`    | finish; *return unit* | `Liczba` | number; *integer*
+`wart`     | value               | `zewnętrzna` | external              | `Czy`    | whether; *boolean*
+`stała`    | constant            | `jako`       | as                    | `Nic`    | nothing; *unit*
+`jeśli`    | if                  | `ciąg`       | sequence; *array*     | `prawda` | truth; *true*
+`zaś gdy`  | and when; *else if* | `dla`        | for                   | `fałsz`  | falsity; *false*
+`wpp`      | otherwise; *else*   | `wewnątrz`   | inside; *in*          | `nic`    | nothing; *unit*
+`dopóki`   | while               | `długość`    | length                | `nie`    | not
+`przerwij` | stop; *break*       | `przekaźnik` | relay; *generator*    | `lub`    | or
+`pomiń`    | skip; *continue*    | `przekaż`    | pass; *yield*         | `oraz`   | and
+`czynność` | function            | `otrzymując` | receiving; *for*      | `wtw`    | if and only if
+`zwróć`    | return              | `od`         | from; *in*            | `albo`   | either; *xor*
 
 (Note that the characters such as `ą` and `ź` cannot be replaced.)
 
@@ -95,8 +73,8 @@ To compile the language's standard library, use `cc -c stdlib/stdlib.c`.
 
 To package the compiler as a standalone program, use `./gradlew install`.
 The result can be found in `app/build/install/app`.
-To easily run the packaged compiler from project root, use `./run.sh`.
+To easily run the packaged compiler from the project root, use `./run.sh`.
 
-By default, the compiler expects the input file name as a single argument and produces executable `a.out` file as a result.
+By default, the compiler expects a single argument with input file name and produces executable `a.out` file as a result.
 The standard library is expected at `stdlib.o` in the current working directory.
-Use `./run.sh --help` to see all options.
+Use `./run.sh --help` to see all the options.

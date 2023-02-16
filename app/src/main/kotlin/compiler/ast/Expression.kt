@@ -149,7 +149,7 @@ sealed class Expression : AstNode {
 
     override fun toSimpleString(): String = when (this) {
         is BinaryOperation -> "${this.leftOperand.toSimpleString()} ${this.kind} ${this.rightOperand.toSimpleString()}"
-        is BooleanLiteral -> this.value.toString()
+        is BooleanLiteral -> if (this.value) "prawda" else "fałsz"
         is Conditional -> "${this.condition.toSimpleString()} ? ${this.resultWhenTrue.toSimpleString()} : ${this.resultWhenFalse.toSimpleString()}"
         is FunctionCall -> "${this.name}(${this.arguments.joinToString { it.toSimpleString() }})"
         is NumberLiteral -> this.value.toString()

@@ -21,6 +21,6 @@ data class Variable(
         }
     }
 
-    override fun toSimpleString() = "${this.kind} ${this.name}: ${this.type}${if (this.value != null) "= ${this.value.toSimpleString()}" else ""}"
+    override fun toSimpleString() = "${this.kind} ${this.name}: ${this.type}${if (this.value != null) " = ${this.value.toSimpleString()}" else ""}"
     override fun toExtendedString() = "variable << ${this.toSimpleString()} >>"
 }

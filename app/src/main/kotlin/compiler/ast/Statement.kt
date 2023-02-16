@@ -87,7 +87,7 @@ sealed class Statement : AstNode {
             }
         }
         is Block -> "{ ... }"
-        is Conditional -> "jeśli - zaś gdy - wpp block with the condition (${this.condition.toSimpleString()})"
+        is Conditional -> "jeśli block with the condition (${this.condition.toSimpleString()})"
         is Evaluation -> "evaluation of << ${this.expression.toSimpleString()} >>"
         is FunctionDefinition -> "definition of << ${this.function.toSimpleString()} >>"
         is FunctionReturn -> "zwróć ${this.value}"

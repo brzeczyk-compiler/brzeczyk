@@ -2,12 +2,12 @@
 
 [ˈbʒɛ̃n͇ʧ̑ɨk]
 
-A simple programming language with very *polished* syntax.
+A simple programming language with a very *polished* syntax.
 
-Implemented by students at Theoretical Computer Science Department of Jagiellonian University
-as the project for *Compilers* course in the 2022/23 winter semester.
+Implemented by students at the Theoretical Computer Science Department of the Jagiellonian University
+during the *Compilers* course in the 2022/23 winter semester.
 
-The language does not really have anything out of ordinary and it's mostly C-like, with a few somewhat interesting (compared to C) features:
+The language is mostly C-like, with a few somewhat interesting (compared to C) features:
 
 - nested functions able to access outer variables,
 - dynamically allocated arrays with automatic reference counting,
@@ -59,7 +59,7 @@ Keyword    | Meaning             | Keyword      | Meaning               | Keywor
 
 (Note that the characters such as `ą` and `ź` cannot be replaced.)
 
-See `tests` directory for more examples.
+See [tests/](tests/) for more examples.
 
 ## Building, testing and running
 

@@ -1,5 +1,6 @@
 package compiler.intermediate
 
+import compiler.utils.Ref
 import io.mockk.mockk
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -43,8 +44,8 @@ class ProgramControlFlowPlannerTest {
         )
 
         val expected = ControlFlowGraphBuilder(prologue)
-        expected.addLink(Pair(prologue, CFGLinkType.UNCONDITIONAL), middleNode)
-        expected.addLink(Pair(middleNode, CFGLinkType.UNCONDITIONAL), epilogue)
+        expected.addLink(Pair(Ref(prologue), CFGLinkType.UNCONDITIONAL), Ref(middleNode))
+        expected.addLink(Pair(Ref(middleNode), CFGLinkType.UNCONDITIONAL), Ref(epilogue))
 
         assertEquals(expected.build(), result)
     }
@@ -61,10 +62,10 @@ class ProgramControlFlowPlannerTest {
         val node4F = IFTNode.MemoryLabel("node4F")
 
         val bodyCFGBuilder = ControlFlowGraphBuilder(node1)
-        bodyCFGBuilder.addLink(Pair(node1, CFGLinkType.CONDITIONAL_TRUE), node2)
-        bodyCFGBuilder.addLink(Pair(node2, CFGLinkType.CONDITIONAL_FALSE), node3)
-        bodyCFGBuilder.addLink(Pair(node3, CFGLinkType.CONDITIONAL_FALSE), node4F)
-        bodyCFGBuilder.addLink(Pair(node3, CFGLinkType.CONDITIONAL_TRUE), node4T)
+        bodyCFGBuilder.addLink(Pair(Ref(node1), CFGLinkType.CONDITIONAL_TRUE), Ref(node2))
+        bodyCFGBuilder.addLink(Pair(Ref(node2), CFGLinkType.CONDITIONAL_FALSE), Ref(node3))
+        bodyCFGBuilder.addLink(Pair(Ref(node3), CFGLinkType.CONDITIONAL_FALSE), Ref(node4F))
+        bodyCFGBuilder.addLink(Pair(Ref(node3), CFGLinkType.CONDITIONAL_TRUE), Ref(node4T))
 
         val result = controlFlowPlanner.attachPrologueAndEpilogue(
             bodyCFGBuilder.build(),
@@ -73,15 +74,15 @@ class ProgramControlFlowPlannerTest {
         )
 
         val expected = ControlFlowGraphBuilder(prologue)
-        expected.addLink(Pair(prologue, CFGLinkType.UNCONDITIONAL), node1)
+        expected.addLink(Pair(Ref(prologue), CFGLinkType.UNCONDITIONAL), Ref(node1))
         expected.addAllFrom(bodyCFGBuilder.build())
 
         // fill missing conditional links
-        expected.addLink(Pair(node1, CFGLinkType.CONDITIONAL_FALSE), epilogue)
-        expected.addLink(Pair(node2, CFGLinkType.CONDITIONAL_TRUE), epilogue)
+        expected.addLink(Pair(Ref(node1), CFGLinkType.CONDITIONAL_FALSE), Ref(epilogue))
+        expected.addLink(Pair(Ref(node2), CFGLinkType.CONDITIONAL_TRUE), Ref(epilogue))
         // link from both return branches to epilogue
-        expected.addLink(Pair(node4T, CFGLinkType.UNCONDITIONAL), epilogue)
-        expected.addLink(Pair(node4F, CFGLinkType.UNCONDITIONAL), epilogue)
+        expected.addLink(Pair(Ref(node4T), CFGLinkType.UNCONDITIONAL), Ref(epilogue))
+        expected.addLink(Pair(Ref(node4F), CFGLinkType.UNCONDITIONAL), Ref(epilogue))
 
         assertEquals(expected.build(), result)
     }

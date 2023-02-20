@@ -136,8 +136,8 @@ class DefaultGeneratorDetailsGenerator(
 
         // yield target
         val yieldTarget = IFTNode.LabeledNode(".yield", IFTNode.RegisterWrite(Register.RDX, IFTNode.StackPop()))
-        cfgBuilder.addAllFrom(ControlFlowGraphBuilder().apply { addSingleTree(yieldTarget) }.build())
-        cfgBuilder.addLink(Pair(yieldTarget, CFGLinkType.UNCONDITIONAL), restoreCalleeSavedRegistersCFG.entryTreeRoot!!, false)
+        cfgBuilder.mergeUnconditionally(ControlFlowGraphBuilder().apply { addSingleTree(yieldTarget) }.build())
+        cfgBuilder.addLink(Pair(Ref(yieldTarget), CFGLinkType.UNCONDITIONAL), restoreCalleeSavedRegistersCFG.entryTreeRoot!!, false)
 
         return cfgBuilder.build()
     }
@@ -162,7 +162,7 @@ class DefaultGeneratorDetailsGenerator(
         return if (index != -1)
             IFTNode.Subtract(
                 IFTNode.RegisterRead(base),
-                IFTNode.Const(SummedConstant((index + 1) * memoryUnitSize.toLong(), innerFDG.requiredMemoryBelowRBP))
+                IFTNode.Const(SummedConstant((index + 1) * MEMORY_UNIT_SIZE.toLong(), innerFDG.requiredMemoryBelowRBP))
             )
         else null
     }
@@ -189,7 +189,7 @@ class DefaultGeneratorDetailsGenerator(
 
             val callCFG = getGDGForNestedLoop(it.value).genFinalizeCall(getFramePointerReadNode()).callGraph
             cfgBuilder.addAllFrom(callCFG)
-            cfgBuilder.addLink(Pair(checkNode, CFGLinkType.CONDITIONAL_FALSE), callCFG.entryTreeRoot!!)
+            cfgBuilder.addLink(Pair(Ref(checkNode), CFGLinkType.CONDITIONAL_FALSE), callCFG.entryTreeRoot!!)
         }
 
         // decrease reference counters of all array variables (function parameters are not included)
@@ -262,5 +262,5 @@ class DefaultGeneratorDetailsGenerator(
     )
 
     // other values
-    private val frameSize = SummedConstant(nestedForeachLoops.size * memoryUnitSize.toLong(), innerFDG.requiredMemoryBelowRBP)
+    private val frameSize = SummedConstant(nestedForeachLoops.size * MEMORY_UNIT_SIZE.toLong(), innerFDG.requiredMemoryBelowRBP)
 }

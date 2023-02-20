@@ -9,6 +9,7 @@ import compiler.intermediate.ControlFlowGraphBuilder
 import compiler.intermediate.FixedConstant
 import compiler.intermediate.IFTNode
 import compiler.intermediate.Register
+import compiler.intermediate.assertHasSameStructureAs
 import compiler.utils.Ref
 import compiler.utils.keyRefMapOf
 import kotlin.test.Test
@@ -38,7 +39,7 @@ class DefaultFunctionDetailsGeneratorTest {
         val expected = ControlFlowGraphBuilder(IFTNode.Call(functionLocation, emptyList(), callerSavedRegisters)).build()
         val result = fdg.genCall(listOf())
 
-        assert(expected.isIsomorphicTo(result.callGraph))
+        expected assertHasSameStructureAs result.callGraph
         assertEquals(null, result.result)
         assertEquals(null, result.secondResult)
     }
@@ -72,7 +73,7 @@ class DefaultFunctionDetailsGeneratorTest {
         expectedCFGBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, IFTNode.Call(functionLocation, argumentPassingRegisters.take(2), callerSavedRegisters))
         val expected = expectedCFGBuilder.build()
 
-        assert(expected.isIsomorphicTo(result.callGraph))
+        expected assertHasSameStructureAs result.callGraph
         assertEquals(null, result.result)
         assertEquals(null, result.secondResult)
     }
@@ -94,7 +95,7 @@ class DefaultFunctionDetailsGeneratorTest {
         val expectedResult = IFTNode.RegisterRead(Register.RAX)
         val expected = expectedCFGBuilder.build()
         val result = fdg.genCall(listOf())
-        assert(expected.isIsomorphicTo(result.callGraph))
+        expected assertHasSameStructureAs result.callGraph
         assertEquals(expectedResult, result.result)
         assertEquals(null, result.secondResult)
     }
@@ -153,7 +154,7 @@ class DefaultFunctionDetailsGeneratorTest {
         val expectedResult = IFTNode.RegisterRead(Register.RAX)
         val expected = expectedCFGBuilder.build()
 
-        assert(expected.isIsomorphicTo(result.callGraph))
+        expected assertHasSameStructureAs result.callGraph
         assertEquals(expectedResult, result.result)
         assertEquals(null, result.secondResult)
     }
@@ -222,7 +223,7 @@ class DefaultFunctionDetailsGeneratorTest {
             )
         )
         val expected = expectedCFGBuilder.build()
-        assert(expected.isIsomorphicTo(result.callGraph))
+        expected assertHasSameStructureAs result.callGraph
     }
 
     @Test
@@ -252,7 +253,7 @@ class DefaultFunctionDetailsGeneratorTest {
         assertEquals(Register.RBP, (left as IFTNode.RegisterRead).register)
 
         assertTrue { right is IFTNode.Const }
-        assertEquals(FixedConstant(memoryUnitSize.toLong()), (right as IFTNode.Const).value)
+        assertEquals(FixedConstant(MEMORY_UNIT_SIZE.toLong()), (right as IFTNode.Const).value)
     }
 
     @Test
@@ -262,7 +263,7 @@ class DefaultFunctionDetailsGeneratorTest {
         val depth: ULong = 5u
         val displayElementAddress = IFTNode.Add(
             displayAddress,
-            IFTNode.Const((memoryUnitSize * depth).toLong())
+            IFTNode.Const((MEMORY_UNIT_SIZE * depth).toLong())
         )
 
         val fdg = DefaultFunctionDetailsGenerator(
@@ -287,7 +288,7 @@ class DefaultFunctionDetailsGeneratorTest {
         assertEquals(IFTNode.MemoryRead(displayElementAddress), left)
 
         assertTrue { right is IFTNode.Const }
-        assertEquals(FixedConstant(memoryUnitSize.toLong()), (right as IFTNode.Const).value)
+        assertEquals(FixedConstant(MEMORY_UNIT_SIZE.toLong()), (right as IFTNode.Const).value)
     }
 
     @Test
@@ -310,7 +311,7 @@ class DefaultFunctionDetailsGeneratorTest {
 
     @Test
     fun `test gen read indirect from register fails`() {
-        val regVar: Variable = Variable(Variable.Kind.VALUE, "regVar", Type.Number, null)
+        val regVar = Variable(Variable.Kind.VALUE, "regVar", Type.Number, null)
 
         val fdg = DefaultFunctionDetailsGenerator(
             listOf(),
@@ -326,7 +327,7 @@ class DefaultFunctionDetailsGeneratorTest {
 
     @Test
     fun `test gen write direct to memory`() {
-        val memVar: Variable = Variable(Variable.Kind.VALUE, "memVar", Type.Number, null)
+        val memVar = Variable(Variable.Kind.VALUE, "memVar", Type.Number, null)
 
         val fdg = DefaultFunctionDetailsGenerator(
             listOf(),
@@ -353,17 +354,17 @@ class DefaultFunctionDetailsGeneratorTest {
         assertEquals(Register.RBP, (left as IFTNode.RegisterRead).register)
 
         assertTrue { right is IFTNode.Const }
-        assertEquals(FixedConstant(memoryUnitSize.toLong()), (right as IFTNode.Const).value)
+        assertEquals(FixedConstant(MEMORY_UNIT_SIZE.toLong()), (right as IFTNode.Const).value)
     }
 
     @Test
     fun `test gen write indirect to memory`() {
-        val memVar: Variable = Variable(Variable.Kind.VALUE, "memVar", Type.Number, null)
+        val memVar = Variable(Variable.Kind.VALUE, "memVar", Type.Number, null)
         val displayAddress = IFTNode.MemoryLabel("display")
         val depth: ULong = 5u
         val displayElementAddress = IFTNode.Add(
             displayAddress,
-            IFTNode.Const((memoryUnitSize * depth).toLong())
+            IFTNode.Const((MEMORY_UNIT_SIZE * depth).toLong())
         )
 
         val fdg = DefaultFunctionDetailsGenerator(
@@ -390,12 +391,12 @@ class DefaultFunctionDetailsGeneratorTest {
         assertEquals(IFTNode.MemoryRead(displayElementAddress), left)
 
         assertTrue { right is IFTNode.Const }
-        assertEquals(FixedConstant(memoryUnitSize.toLong()), (right as IFTNode.Const).value)
+        assertEquals(FixedConstant(MEMORY_UNIT_SIZE.toLong()), (right as IFTNode.Const).value)
     }
 
     @Test
     fun `test gen write direct to register`() {
-        val regVar: Variable = Variable(Variable.Kind.VALUE, "regVar", Type.Number, null)
+        val regVar = Variable(Variable.Kind.VALUE, "regVar", Type.Number, null)
 
         val fdg = DefaultFunctionDetailsGenerator(
             listOf(),
@@ -415,7 +416,7 @@ class DefaultFunctionDetailsGeneratorTest {
 
     @Test
     fun `test gen write indirect to register fails`() {
-        val regVar: Variable = Variable(Variable.Kind.VALUE, "regVar", Type.Number, null)
+        val regVar = Variable(Variable.Kind.VALUE, "regVar", Type.Number, null)
 
         val fdg = DefaultFunctionDetailsGenerator(
             listOf(),

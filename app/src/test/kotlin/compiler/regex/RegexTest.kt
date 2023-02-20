@@ -189,8 +189,8 @@ class RegexTest {
     }
 
     private fun <T : Comparable<T>> assertOrdered(desiredOrder: List<T>) {
-        for (i in 0..(desiredOrder.size - 1)) {
-            for (j in 0..(desiredOrder.size - 1)) {
+        for (i in desiredOrder.indices) {
+            for (j in desiredOrder.indices) {
                 if (i > j) assertTrue(desiredOrder[i] > desiredOrder[j])
                 else if (i < j) assertTrue(desiredOrder[i] < desiredOrder[j])
             }
@@ -198,8 +198,8 @@ class RegexTest {
     }
 
     private fun <T> assertAllNotEqual(elements: List<T>) {
-        for (i in 0..(elements.size - 1)) {
-            for (j in 0..(elements.size - 1)) {
+        for (i in elements.indices) {
+            for (j in elements.indices) {
                 if (i != j) assertNotEquals(elements[i], elements[j])
             }
         }

@@ -8,7 +8,9 @@ import compiler.ast.Program
 import compiler.ast.Statement
 import compiler.ast.Type
 import compiler.ast.Variable
+import compiler.diagnostics.Diagnostic
 import compiler.diagnostics.Diagnostics
+import compiler.intermediate.MAIN_FUNCTION_IDENTIFIER
 import compiler.utils.Ref
 
 class ProgramAnalyzer(private val diagnostics: Diagnostics) {
@@ -20,6 +22,7 @@ class ProgramAnalyzer(private val diagnostics: Diagnostics) {
         val functionReturnedValueVariables: Map<Ref<Function>, Variable>,
         val variableProperties: Map<Ref<AstNode>, VariablePropertiesAnalyzer.VariableProperties>,
         val foreachLoopsInGenerators: Map<Ref<Function>, List<Ref<Statement.ForeachLoop>>>,
+        val callGraph: Map<Ref<Function>, Set<Ref<Function>>>,
         val staticDepth: Int,
     )
 
@@ -32,6 +35,7 @@ class ProgramAnalyzer(private val diagnostics: Diagnostics) {
         InitializationVerifier.verifyAccessedVariablesAreInitialized(program, nameResolution, defaultParameterMapping, diagnostics)
         val functionReturnedValueVariables = ReturnValueVariableCreator.createDummyVariablesForFunctionReturnValue(program)
         val variableProperties = VariablePropertiesAnalyzer.calculateVariableProperties(program, nameResolution, defaultParameterMapping, functionReturnedValueVariables, argumentResolution.accessedDefaultValues, diagnostics)
+        val callGraph = FunctionDependenciesAnalyzer.createCallGraph(program, nameResolution)
         val foreachLoopsInGenerators = GeneratorAnalyzer.listForeachLoopsInGenerators(program)
 
         return ProgramProperties(
@@ -42,7 +46,20 @@ class ProgramAnalyzer(private val diagnostics: Diagnostics) {
             functionReturnedValueVariables,
             variableProperties,
             foreachLoopsInGenerators,
+            callGraph,
             nameResolutionResult.programStaticDepth,
         )
+    }
+
+    fun extractMainFunction(program: Program): Function? {
+        val mainFunction = (
+            program.globals.find {
+                it is Program.Global.FunctionDefinition && it.function.name == MAIN_FUNCTION_IDENTIFIER && it.function.isLocal && !it.function.isGenerator
+            } as Program.Global.FunctionDefinition?
+            )?.function
+        if (mainFunction == null) {
+            diagnostics.report(Diagnostic.ResolutionDiagnostic.MainFunctionNotFound)
+        }
+        return mainFunction
     }
 }

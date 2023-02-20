@@ -1,17 +1,13 @@
 package compiler.intermediate
 
-import compiler.analysis.VariablePropertiesAnalyzer
+import compiler.analysis.ProgramAnalyzer
 import compiler.ast.AstNode
-import compiler.ast.Expression
 import compiler.ast.Function
 import compiler.ast.NamedNode
 import compiler.ast.Program
 import compiler.ast.Statement
 import compiler.ast.StatementBlock
 import compiler.ast.Type
-import compiler.ast.Variable
-import compiler.diagnostics.Diagnostic
-import compiler.diagnostics.Diagnostics
 import compiler.intermediate.generators.DISPLAY_LABEL_IN_MEMORY
 import compiler.intermediate.generators.DefaultFunctionDetailsGenerator
 import compiler.intermediate.generators.DefaultGeneratorDetailsGenerator
@@ -22,9 +18,8 @@ import compiler.intermediate.generators.GeneratorDetailsGenerator
 import compiler.intermediate.generators.VariableLocationType
 import compiler.utils.Ref
 import compiler.utils.mutableKeyRefMapOf
-import compiler.utils.refSetOf
 
-object FunctionDependenciesAnalyzer {
+object DetailsGeneratorsBuilder {
     fun createUniqueIdentifiers(program: Program, allowInconsistentNamingErrors: Boolean): Map<Ref<Function>, UniqueIdentifier> {
         val uniqueIdentifiers = mutableKeyRefMapOf<Function, UniqueIdentifier>()
         val identifierFactory = UniqueIdentifierFactory()
@@ -44,8 +39,14 @@ object FunctionDependenciesAnalyzer {
 
         fun analyze(node: AstNode, pathSoFar: String? = null) {
             when (node) {
-                is Program.Global.FunctionDefinition -> { analyze(node.function, pathSoFar) }
-                is Statement.FunctionDefinition -> { analyze(node.function, pathSoFar) }
+                is Program.Global.FunctionDefinition -> {
+                    analyze(node.function, pathSoFar)
+                }
+
+                is Statement.FunctionDefinition -> {
+                    analyze(node.function, pathSoFar)
+                }
+
                 is Function -> if (node.isLocal) {
                     val newPrefix = nameFunction(node, pathSoFar)
                     var blockNumber = 0
@@ -55,17 +56,21 @@ object FunctionDependenciesAnalyzer {
                             is Statement.Block -> {
                                 handleNestedBlock(statement.block)
                             }
+
                             is Statement.Conditional -> {
                                 handleNestedBlock(statement.actionWhenTrue)
                                 handleNestedBlock(statement.actionWhenFalse ?: listOf())
                             }
+
                             is Statement.Loop -> {
                                 handleNestedBlock(statement.action)
                             }
+
                             else -> analyze(statement, newPrefix)
                         }
                     }
                 }
+
                 else -> {}
             }
         }
@@ -73,24 +78,9 @@ object FunctionDependenciesAnalyzer {
         return uniqueIdentifiers
     }
 
-    fun extractMainFunction(program: Program, diagnostics: Diagnostics): Function? {
-        val mainFunction = (
-            program.globals.find {
-                it is Program.Global.FunctionDefinition && it.function.name == MAIN_FUNCTION_IDENTIFIER && it.function.isLocal && !it.function.isGenerator
-            } as Program.Global.FunctionDefinition?
-            )?.function
-        if (mainFunction == null) {
-            diagnostics.report(Diagnostic.ResolutionDiagnostic.MainFunctionNotFound)
-        }
-        return mainFunction
-    }
-
-    fun createCallablesDetailsGenerators(
+    fun createDetailsGenerators(
         program: Program,
-        nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>,
-        variableProperties: Map<Ref<AstNode>, VariablePropertiesAnalyzer.VariableProperties>,
-        foreachLoopsInGenerators: Map<Ref<Function>, List<Ref<Statement.ForeachLoop>>>,
-        functionReturnedValueVariables: Map<Ref<Function>, Variable>,
+        programProperties: ProgramAnalyzer.ProgramProperties,
         allowInconsistentNamingErrors: Boolean = false
     ): Pair<Map<Ref<Function>, FunctionDetailsGenerator>, Map<Ref<Function>, GeneratorDetailsGenerator>> {
         val functionDGs = mutableKeyRefMapOf<Function, FunctionDetailsGenerator>()
@@ -106,7 +96,7 @@ object FunctionDependenciesAnalyzer {
             fun calculateVariableLocationTypes(): Map<Ref<NamedNode>, VariableLocationType> {
                 val variableLocationTypes = mutableKeyRefMapOf<NamedNode, VariableLocationType>()
 
-                variableProperties
+                programProperties.variableProperties
                     .filter { (_, properties) -> Ref(properties.owner) == Ref(function) }
                     .forEach { (variable, properties) ->
                         variableLocationTypes[Ref(variable.value as NamedNode)] =
@@ -119,7 +109,7 @@ object FunctionDependenciesAnalyzer {
                 return variableLocationTypes
             }
 
-            val getGDGForNestedLoop = { foreachLoop: Statement.ForeachLoop -> generatorDGs[nameResolution[Ref(foreachLoop.generatorCall)]!!]!! }
+            val getGDGForNestedLoop = { foreachLoop: Statement.ForeachLoop -> generatorDGs[programProperties.nameResolution[Ref(foreachLoop.generatorCall)]!!]!! }
 
             if (function.isGenerator) {
                 generatorDGs[Ref(function)] = when (function.implementation) {
@@ -140,7 +130,7 @@ object FunctionDependenciesAnalyzer {
                             depth,
                             calculateVariableLocationTypes(),
                             IFTNode.MemoryLabel(DISPLAY_LABEL_IN_MEMORY),
-                            foreachLoopsInGenerators[Ref(function)]!!,
+                            programProperties.foreachLoopsInGenerators[Ref(function)]!!,
                             getGDGForNestedLoop
                         )
                     }
@@ -157,7 +147,7 @@ object FunctionDependenciesAnalyzer {
                     is Function.Implementation.Local -> {
                         DefaultFunctionDetailsGenerator(
                             function.parameters,
-                            functionReturnedValueVariables[Ref(function)],
+                            programProperties.functionReturnedValueVariables[Ref(function)],
                             IFTNode.MemoryLabel(identifier),
                             depth,
                             calculateVariableLocationTypes(),
@@ -193,104 +183,5 @@ object FunctionDependenciesAnalyzer {
         program.globals.forEach { if (it is Program.Global.FunctionDefinition) processFunction(it.function, 0u) }
 
         return Pair(functionDGs, generatorDGs)
-    }
-
-    fun createCallGraph(ast: Program, nameResolution: Map<Ref<AstNode>, Ref<NamedNode>>): Map<Ref<Function>, Set<Ref<Function>>> {
-
-        val functionCalls = mutableKeyRefMapOf<Function, Set<Ref<Function>>>()
-
-        fun getCalledFunctions(global: Program.Global): Set<Ref<Function>> {
-            fun getCalledFunctions(expression: Expression?): Set<Ref<Function>> = when (expression) {
-                is Expression.BooleanLiteral -> refSetOf()
-                is Expression.NumberLiteral -> refSetOf()
-                is Expression.UnitLiteral -> refSetOf()
-                is Expression.Variable -> refSetOf()
-                null -> refSetOf()
-
-                is Expression.FunctionCall -> refSetOf(nameResolution[Ref(expression)]!!.value as Function) +
-                    expression.arguments.map { getCalledFunctions(it.value) }.fold(emptySet(), Set<Ref<Function>>::plus)
-
-                is Expression.UnaryOperation -> getCalledFunctions(expression.operand)
-
-                is Expression.BinaryOperation -> getCalledFunctions(expression.leftOperand) +
-                    getCalledFunctions(expression.rightOperand)
-
-                is Expression.Conditional -> getCalledFunctions(expression.condition) +
-                    getCalledFunctions(expression.resultWhenTrue) +
-                    getCalledFunctions(expression.resultWhenFalse)
-
-                is Expression.ArrayLength -> getCalledFunctions(expression.expression)
-                is Expression.ArrayElement -> getCalledFunctions(expression.expression) + getCalledFunctions(expression.index)
-                is Expression.ArrayAllocation -> getCalledFunctions(expression.size) + expression.initialization.flatMap { getCalledFunctions(it) }
-                is Expression.ArrayGeneration -> getCalledFunctions(expression.generatorCall)
-            }
-
-            fun getCalledFunctions(statement: Statement): Set<Ref<Function>> {
-                fun getCalledFunctions(list: List<Statement>?): Set<Ref<Function>> =
-                    if (list === null) refSetOf() else list.map { getCalledFunctions(it) }.fold(emptySet(), Set<Ref<Function>>::plus)
-
-                return when (statement) {
-                    is Statement.LoopBreak -> refSetOf()
-                    is Statement.LoopContinuation -> refSetOf()
-
-                    is Statement.FunctionDefinition -> {
-                        functionCalls[Ref(statement.function)] = getCalledFunctions(statement.function.body)
-                        return statement.function.parameters.map { getCalledFunctions(it.defaultValue) }.fold(emptySet(), Set<Ref<Function>>::plus)
-                    }
-
-                    is Statement.Evaluation -> getCalledFunctions(statement.expression)
-
-                    is Statement.VariableDefinition -> getCalledFunctions(statement.variable.value)
-
-                    is Statement.Assignment -> getCalledFunctions(statement.value)
-
-                    is Statement.Block -> getCalledFunctions(statement.block)
-
-                    is Statement.FunctionReturn -> getCalledFunctions(statement.value)
-
-                    is Statement.Conditional -> getCalledFunctions(statement.condition) +
-                        getCalledFunctions(statement.actionWhenTrue) +
-                        getCalledFunctions(statement.actionWhenFalse)
-
-                    is Statement.Loop -> getCalledFunctions(statement.condition) +
-                        getCalledFunctions(statement.action)
-
-                    is Statement.ForeachLoop -> getCalledFunctions(statement.generatorCall) +
-                        getCalledFunctions(statement.action)
-
-                    is Statement.GeneratorYield -> getCalledFunctions(statement.value)
-                }
-            }
-
-            return when (global) {
-                is Program.Global.VariableDefinition -> refSetOf()
-
-                is Program.Global.FunctionDefinition -> {
-                    functionCalls[Ref(global.function)] = global.function.body.map { getCalledFunctions(it) }.fold(emptySet(), Set<Ref<Function>>::plus)
-                    return refSetOf()
-                }
-            }
-        }
-
-        ast.globals.forEach { getCalledFunctions(it) }
-
-        val allFunctions = functionCalls.keys
-        var previousPartialTransitiveFunctionCalls: Map<Ref<Function>, Set<Ref<Function>>>
-        var nextPartialTransitiveFunctionCalls = functionCalls
-
-        fun getAllCallsOfChildren(calls: Map<Ref<Function>, Set<Ref<Function>>>, function: Function) =
-            calls[Ref(function)]!!.map { calls[it]!! }.fold(emptySet(), Set<Ref<Function>>::plus)
-
-        repeat(allFunctions.size) {
-            previousPartialTransitiveFunctionCalls = nextPartialTransitiveFunctionCalls
-            nextPartialTransitiveFunctionCalls = mutableKeyRefMapOf()
-            allFunctions.forEach {
-                nextPartialTransitiveFunctionCalls[it] =
-                    previousPartialTransitiveFunctionCalls[it]!! +
-                    getAllCallsOfChildren(previousPartialTransitiveFunctionCalls, it.value)
-            }
-        }
-
-        return nextPartialTransitiveFunctionCalls
     }
 }

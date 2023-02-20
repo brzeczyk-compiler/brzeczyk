@@ -12,18 +12,16 @@ import compiler.ast.Statement
 import compiler.ast.StatementBlock
 import compiler.ast.Type
 import compiler.ast.Variable
-import compiler.ast.VariableOwner
 import compiler.diagnostics.Diagnostic.ResolutionDiagnostic.ControlFlowDiagnostic
 import compiler.diagnostics.Diagnostics
-import compiler.intermediate.FunctionDependenciesAnalyzer.createCallGraph
 import compiler.intermediate.generators.ArrayMemoryManagement
 import compiler.intermediate.generators.DefaultArrayMemoryManagement
 import compiler.intermediate.generators.ForeignFunctionDetailsGenerator
 import compiler.intermediate.generators.FunctionDetailsGenerator
 import compiler.intermediate.generators.GeneratorDetailsGenerator
 import compiler.intermediate.generators.GlobalVariableAccessGenerator
+import compiler.intermediate.generators.MEMORY_UNIT_SIZE
 import compiler.intermediate.generators.VariableAccessGenerator
-import compiler.intermediate.generators.memoryUnitSize
 import compiler.utils.Ref
 import compiler.utils.mutableKeyRefMapOf
 import compiler.utils.mutableRefSetOf
@@ -31,7 +29,7 @@ import compiler.utils.refSetOf
 import java.util.Stack
 
 class ControlFlowPlanner(private val diagnostics: Diagnostics) {
-    private fun mapLinkType(list: List<Pair<IFTNode, CFGLinkType>?>, type: CFGLinkType) = list.map { it?.copy(second = type) }
+    private fun mapLinkType(list: List<Pair<Ref<IFTNode>, CFGLinkType>?>, type: CFGLinkType) = list.map { it?.copy(second = type) }
 
     private val makeArrayFromGeneratorFDG = ForeignFunctionDetailsGenerator(IFTNode.MemoryLabel("_\$make_array_from_generator"), 1)
 
@@ -42,7 +40,6 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
         generatorDetailsGenerators: Map<Ref<Function>, GeneratorDetailsGenerator>
     ): List<Pair<Ref<Function>, ControlFlowGraph>> {
         val globalVariableAccessGenerator = GlobalVariableAccessGenerator(programProperties.variableProperties)
-        val callGraph = createCallGraph(program, programProperties.nameResolution)
 
         fun partiallyAppliedCreateGraphForExpression(expression: Expression, target: AssignmentTarget?, currentFunction: Function, accessNodeConsumer: ((ControlFlowGraph, IFTNode) -> Unit)?): ControlFlowGraph {
             return createGraphForExpression(
@@ -52,7 +49,7 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                 programProperties.nameResolution,
                 programProperties.expressionTypes,
                 programProperties.variableProperties,
-                callGraph,
+                programProperties.callGraph,
                 functionDetailsGenerators,
                 generatorDetailsGenerators,
                 programProperties.argumentResolution,
@@ -100,9 +97,9 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
             builder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, epilogue.entryTreeRoot!!)
 
             for (node in body.treeRoots) {
-                if (body.conditionalFalseLinks.containsKey(Ref(node)) && !body.conditionalTrueLinks.containsKey(Ref(node)))
+                if (body.conditionalFalseLinks.containsKey(node) && !body.conditionalTrueLinks.containsKey(node))
                     builder.addLink(Pair(node, CFGLinkType.CONDITIONAL_TRUE), epilogue.entryTreeRoot)
-                if (!body.conditionalFalseLinks.containsKey(Ref(node)) && body.conditionalTrueLinks.containsKey(Ref(node)))
+                if (!body.conditionalFalseLinks.containsKey(node) && body.conditionalTrueLinks.containsKey(node))
                     builder.addLink(Pair(node, CFGLinkType.CONDITIONAL_FALSE), epilogue.entryTreeRoot)
             }
         } else
@@ -116,11 +113,11 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
         generatorDetailsGenerators: Map<Ref<Function>, GeneratorDetailsGenerator>,
         globalVariableAccessGenerator: VariableAccessGenerator
     ) = run {
-        val result = mutableKeyRefMapOf<VariableOwner, VariableAccessGenerator>()
+        val result = mutableKeyRefMapOf<Function?, VariableAccessGenerator>()
 
         result.putAll(functionDetailsGenerators)
         result.putAll(generatorDetailsGenerators)
-        result[Ref(VariablePropertiesAnalyzer.GlobalContext)] = globalVariableAccessGenerator
+        result[Ref(null)] = globalVariableAccessGenerator
         result
     }
 
@@ -152,7 +149,7 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                 .map { Ref(it.key.value as Variable) }.toSet()
         }
 
-        val variableAccessGenerators: Map<Ref<VariableOwner>, VariableAccessGenerator> =
+        val variableAccessGenerators: Map<Ref<Function?>, VariableAccessGenerator> =
             createVariableAccessGenerators(functionDetailsGenerators, generatorDetailsGenerators, globalVariablesAccessGenerator)
 
         // first stage is to decide which variable usages have to be realized via temporary registers
@@ -233,15 +230,13 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
 
         gatherVariableUsageInfo(expression, refSetOf()).let {
             if (target is AssignmentTarget.ArrayElementTarget) {
-                gatherVariableUsageInfo(target.element.index, it).let {
-                    gatherVariableUsageInfo(target.element.expression, it)
-                }
+                gatherVariableUsageInfo(target.element.expression, gatherVariableUsageInfo(target.element.index, it))
             }
         }
 
         // second stage is to actually produce CFG
         val cfgBuilder = ControlFlowGraphBuilder()
-        var last = listOf<Pair<IFTNode, CFGLinkType>?>(null)
+        var last = listOf<Pair<Ref<IFTNode>, CFGLinkType>?>(null)
         var currentTemporaryRegisters = mutableKeyRefMapOf<NamedNode, Register>()
 
         fun ControlFlowGraphBuilder.addNextCFG(nextCFG: ControlFlowGraph) {
@@ -253,7 +248,7 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
         }
 
         fun ControlFlowGraphBuilder.addNextTree(nextTree: IFTNode) {
-            addNextCFG(ControlFlowGraphBuilder().apply { addLink(null, nextTree) }.build())
+            addNextCFG(ControlFlowGraphBuilder().apply { addLink(null, Ref(nextTree)) }.build())
         }
 
         fun makeReadNode(readableNode: NamedNode): IFTNode {
@@ -305,58 +300,53 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                     }
                 }
 
-                is Expression.BinaryOperation -> when (astNode.kind) {
-                    Expression.BinaryOperation.Kind.AND, Expression.BinaryOperation.Kind.OR -> {
-                        val (rightLinkType, shortCircuitLinkType, shortCircuitValue) = when (astNode.kind) {
-                            Expression.BinaryOperation.Kind.AND -> Triple(CFGLinkType.CONDITIONAL_TRUE, CFGLinkType.CONDITIONAL_FALSE, 0L)
-                            Expression.BinaryOperation.Kind.OR -> Triple(CFGLinkType.CONDITIONAL_FALSE, CFGLinkType.CONDITIONAL_TRUE, 1L)
-                            else -> throw Exception() // unreachable state
-                        }
-
-                        cfgBuilder.addNextTree(makeCFGForSubtree(astNode.leftOperand))
-                        val lastAfterLeft = last
-                        val resultTemporaryRegister = Register()
-
-                        last = mapLinkType(lastAfterLeft, rightLinkType)
-                        val rightResultNode = makeCFGForSubtree(astNode.rightOperand)
-                        cfgBuilder.addNextTree(IFTNode.RegisterWrite(resultTemporaryRegister, rightResultNode))
-                        val lastAfterRight = last
-
-                        last = mapLinkType(lastAfterLeft, shortCircuitLinkType)
-                        val shortCircuitResultNode = IFTNode.Const(shortCircuitValue)
-                        cfgBuilder.addNextTree(IFTNode.RegisterWrite(resultTemporaryRegister, shortCircuitResultNode))
-                        val lastAfterShortCircuit = last
-
-                        invalidatedVariables[Ref(astNode)]!!.forEach { currentTemporaryRegisters.remove(it) }
-                        last = lastAfterRight + lastAfterShortCircuit
-                        IFTNode.RegisterRead(resultTemporaryRegister)
+                is Expression.BinaryOperation -> if (astNode.kind in listOf(Expression.BinaryOperation.Kind.AND, Expression.BinaryOperation.Kind.OR)) {
+                    val (rightLinkType, shortCircuitLinkType, shortCircuitValue) = when (astNode.kind) {
+                        Expression.BinaryOperation.Kind.AND -> Triple(CFGLinkType.CONDITIONAL_TRUE, CFGLinkType.CONDITIONAL_FALSE, 0L)
+                        Expression.BinaryOperation.Kind.OR -> Triple(CFGLinkType.CONDITIONAL_FALSE, CFGLinkType.CONDITIONAL_TRUE, 1L)
+                        else -> throw Exception() // unreachable state
                     }
 
-                    else -> {
-                        val leftSubtreeNode = makeCFGForSubtree(astNode.leftOperand)
-                        val rightSubtreeNode = makeCFGForSubtree(astNode.rightOperand)
-                        when (astNode.kind) {
-                            Expression.BinaryOperation.Kind.AND,
-                            Expression.BinaryOperation.Kind.OR -> throw Exception() // unreachable state
-                            Expression.BinaryOperation.Kind.IFF -> IFTNode.LogicalIff(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.XOR -> IFTNode.LogicalXor(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.ADD -> IFTNode.Add(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.SUBTRACT -> IFTNode.Subtract(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.MULTIPLY -> IFTNode.Multiply(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.DIVIDE -> IFTNode.Divide(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.MODULO -> IFTNode.Modulo(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.BIT_AND -> IFTNode.BitAnd(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.BIT_OR -> IFTNode.BitOr(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.BIT_XOR -> IFTNode.BitXor(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.BIT_SHIFT_LEFT -> IFTNode.BitShiftLeft(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.BIT_SHIFT_RIGHT -> IFTNode.BitShiftRight(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.EQUALS -> IFTNode.Equals(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.NOT_EQUALS -> IFTNode.NotEquals(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.LESS_THAN -> IFTNode.LessThan(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.LESS_THAN_OR_EQUALS -> IFTNode.LessThanOrEquals(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.GREATER_THAN -> IFTNode.GreaterThan(leftSubtreeNode, rightSubtreeNode)
-                            Expression.BinaryOperation.Kind.GREATER_THAN_OR_EQUALS -> IFTNode.GreaterThanOrEquals(leftSubtreeNode, rightSubtreeNode)
-                        }
+                    cfgBuilder.addNextTree(makeCFGForSubtree(astNode.leftOperand))
+                    val lastAfterLeft = last
+                    val resultTemporaryRegister = Register()
+
+                    last = mapLinkType(lastAfterLeft, rightLinkType)
+                    val rightResultNode = makeCFGForSubtree(astNode.rightOperand)
+                    cfgBuilder.addNextTree(IFTNode.RegisterWrite(resultTemporaryRegister, rightResultNode))
+                    val lastAfterRight = last
+
+                    last = mapLinkType(lastAfterLeft, shortCircuitLinkType)
+                    val shortCircuitResultNode = IFTNode.Const(shortCircuitValue)
+                    cfgBuilder.addNextTree(IFTNode.RegisterWrite(resultTemporaryRegister, shortCircuitResultNode))
+                    val lastAfterShortCircuit = last
+
+                    invalidatedVariables[Ref(astNode)]!!.forEach { currentTemporaryRegisters.remove(it) }
+                    last = lastAfterRight + lastAfterShortCircuit
+                    IFTNode.RegisterRead(resultTemporaryRegister)
+                } else {
+                    val leftSubtreeNode = makeCFGForSubtree(astNode.leftOperand)
+                    val rightSubtreeNode = makeCFGForSubtree(astNode.rightOperand)
+                    when (astNode.kind) {
+                        Expression.BinaryOperation.Kind.AND, Expression.BinaryOperation.Kind.OR -> throw Exception() // unreachable state
+                        Expression.BinaryOperation.Kind.IFF -> IFTNode.LogicalIff(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.XOR -> IFTNode.LogicalXor(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.ADD -> IFTNode.Add(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.SUBTRACT -> IFTNode.Subtract(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.MULTIPLY -> IFTNode.Multiply(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.DIVIDE -> IFTNode.Divide(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.MODULO -> IFTNode.Modulo(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.BIT_AND -> IFTNode.BitAnd(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.BIT_OR -> IFTNode.BitOr(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.BIT_XOR -> IFTNode.BitXor(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.BIT_SHIFT_LEFT -> IFTNode.BitShiftLeft(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.BIT_SHIFT_RIGHT -> IFTNode.BitShiftRight(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.EQUALS -> IFTNode.Equals(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.NOT_EQUALS -> IFTNode.NotEquals(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.LESS_THAN -> IFTNode.LessThan(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.LESS_THAN_OR_EQUALS -> IFTNode.LessThanOrEquals(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.GREATER_THAN -> IFTNode.GreaterThan(leftSubtreeNode, rightSubtreeNode)
+                        Expression.BinaryOperation.Kind.GREATER_THAN_OR_EQUALS -> IFTNode.GreaterThanOrEquals(leftSubtreeNode, rightSubtreeNode)
                     }
                 }
 
@@ -437,7 +427,7 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                     val resultReg = Register()
                     cfgBuilder.addNextTree(
                         IFTNode.RegisterWrite(
-                            resultReg, IFTNode.MemoryRead(IFTNode.Subtract(array, IFTNode.Const(memoryUnitSize.toLong()))),
+                            resultReg, IFTNode.MemoryRead(IFTNode.Subtract(array, IFTNode.Const(MEMORY_UNIT_SIZE.toLong()))),
                         )
                     )
                     cfgBuilder.addNextCFG(arrayMemoryManagement.genRefCountDecrement(array, expressionTypes[Ref(astNode.expression)]!!))
@@ -448,7 +438,7 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                     val arrayRegister = Register()
                     cfgBuilder.addNextTree(IFTNode.RegisterWrite(arrayRegister, makeCFGForSubtree(astNode.expression)))
                     val index = makeCFGForSubtree(astNode.index)
-                    val elementAddress = IFTNode.Add(IFTNode.RegisterRead(arrayRegister), IFTNode.Multiply(index, IFTNode.Const(memoryUnitSize.toLong())))
+                    val elementAddress = IFTNode.Add(IFTNode.RegisterRead(arrayRegister), IFTNode.Multiply(index, IFTNode.Const(MEMORY_UNIT_SIZE.toLong())))
                     val reg = Register()
                     cfgBuilder.addNextTree(
                         IFTNode.RegisterWrite(
@@ -525,7 +515,7 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                     val targetArrayType = expressionTypes[Ref(target.element.expression)]!! as Type.Array
                     val elementAddress = IFTNode.Add(
                         targetArray!!,
-                        IFTNode.Multiply(index!!, IFTNode.Const(memoryUnitSize.toLong()))
+                        IFTNode.Multiply(index!!, IFTNode.Const(MEMORY_UNIT_SIZE.toLong()))
                     )
                     if (targetArrayType.elementType is Type.Array) {
                         cfgBuilder.addNextCFG(
@@ -571,7 +561,9 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
         createReadFromVariable: (Variable, Function) -> IFTNode,
         createWriteToVariable: (IFTNode, Variable, Function) -> IFTNode,
         getGeneratorDetailsGenerator: (Function) -> GeneratorDetailsGenerator,
-        arrayMemoryManagement: ArrayMemoryManagement
+        arrayMemoryManagement: ArrayMemoryManagement,
+        makeFinalNode: (Function) -> IFTNode = { _ -> IFTNode.NoOp() },
+        makeLoopBreakNode: (Function) -> IFTNode = { _ -> IFTNode.NoOp() }
     ): List<Pair<Ref<Function>, ControlFlowGraph>> {
         val controlFlowGraphs = mutableListOf<Pair<Ref<Function>, ControlFlowGraph>>()
 
@@ -579,7 +571,7 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
 
         fun processFunction(function: Function) {
             val cfgBuilder = ControlFlowGraphBuilder()
-            var last = listOf<Pair<IFTNode, CFGLinkType>?>(null)
+            var last = listOf<Pair<Ref<IFTNode>, CFGLinkType>?>(null)
 
             fun addCfg(cfg: ControlFlowGraph): IFTNode? {
                 val entry = cfg.entryTreeRoot
@@ -591,7 +583,7 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                     last = cfg.finalTreeRoots
                 }
                 cfgBuilder.addAllFrom(cfg)
-                return entry
+                return entry?.value
             }
 
             fun addNode(node: IFTNode) {
@@ -617,8 +609,8 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                     if (treeHead == null || value.entryTreeRoot == null)
                         return
                     cfgBuilder.addAllFrom(value)
-                    value.finalTreeRoots.forEach { cfgBuilder.addLink(it, treeHead.value, false) }
-                    treeHead.value = value.entryTreeRoot
+                    value.finalTreeRoots.forEach { cfgBuilder.addLink(it, Ref(treeHead.value), false) }
+                    treeHead.value = value.entryTreeRoot.value
                 }
 
                 fun addToDestructionStructures(variable: Variable) {
@@ -645,23 +637,23 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                 // this function doesn't modify `last`, so it has to be done manually after use
                 fun addLinksFromLast(target: IFTNode) {
                     for (node in last)
-                        cfgBuilder.addLink(node, target)
+                        cfgBuilder.addLink(node, Ref(target))
                 }
 
                 fun addLoop(conditionEntry: IFTNode, generateLoopBody: (EscapeTreeHead, EscapeTreeHead) -> Unit) {
                     val conditionEnd = last
 
-                    val finalNoOp = IFTNode.NoOp()
-                    addDetachedNode(finalNoOp)
-                    val innerBreakTreeHead = EscapeTreeHead(finalNoOp)
+                    val finalNode = makeLoopBreakNode(function)
+                    addDetachedNode(finalNode)
+                    val innerBreakTreeHead = EscapeTreeHead(finalNode)
                     val innerContinueTreeHead = EscapeTreeHead(conditionEntry)
 
                     last = mapLinkType(conditionEnd, CFGLinkType.CONDITIONAL_TRUE)
                     generateLoopBody(innerBreakTreeHead, innerContinueTreeHead)
 
-                    last.forEach { cfgBuilder.addLink(it, conditionEntry) }
+                    last.forEach { cfgBuilder.addLink(it, Ref(conditionEntry)) }
                     last = mapLinkType(conditionEnd, CFGLinkType.CONDITIONAL_FALSE)
-                    addNode(finalNoOp)
+                    addNode(finalNode)
                 }
 
                 for (statement in block) {
@@ -818,7 +810,7 @@ class ControlFlowPlanner(private val diagnostics: Diagnostics) {
                     addCfg(destructorsStack.pop())
             }
 
-            val returnTreeRoot = IFTNode.NoOp()
+            val returnTreeRoot = makeFinalNode(function)
             addDetachedNode(returnTreeRoot)
             processStatementBlock(function.body, EscapeTreeHead(returnTreeRoot), null, null)
             addNode(returnTreeRoot)

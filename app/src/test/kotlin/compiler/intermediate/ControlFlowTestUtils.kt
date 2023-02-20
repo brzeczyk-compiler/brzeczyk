@@ -91,37 +91,37 @@ infix fun ControlFlowGraph.assertHasSameStructureAs(cfg: ControlFlowGraph) {
 
     assertEquals(this.treeRoots.size, cfg.treeRoots.size)
 
-    fun dfs(left: IFTNode, right: IFTNode) {
-        left assertHasSameStructureAs right
+    fun dfs(left: Ref<IFTNode>, right: Ref<IFTNode>) {
+        left.value assertHasSameStructureAs right.value
 
-        if (this.unconditionalLinks.containsKey(Ref(left))) {
-            assertTrue(cfg.unconditionalLinks.containsKey(Ref(right)))
-            val leftNext = this.unconditionalLinks[Ref(left)]!!.value
-            val rightNext = cfg.unconditionalLinks[Ref(right)]!!.value
-            if (nodeMap.containsKey(Ref(leftNext))) {
-                assertSame(nodeMap[Ref(leftNext)]!!, rightNext)
+        if (this.unconditionalLinks.containsKey(left)) {
+            assertTrue(cfg.unconditionalLinks.containsKey(right))
+            val leftNext = this.unconditionalLinks[left]!!
+            val rightNext = cfg.unconditionalLinks[right]!!
+            if (nodeMap.containsKey(leftNext)) {
+                assertSame(nodeMap[leftNext]!!, rightNext.value)
             } else {
                 dfs(leftNext, rightNext)
             }
         }
 
-        if (this.conditionalTrueLinks.containsKey(Ref(left))) {
-            assertTrue(cfg.conditionalTrueLinks.containsKey(Ref(right)))
-            val leftNext = this.conditionalTrueLinks[Ref(left)]!!.value
-            val rightNext = cfg.conditionalTrueLinks[Ref(right)]!!.value
-            if (nodeMap.containsKey(Ref(leftNext))) {
-                assertSame(nodeMap[Ref(leftNext)]!!, rightNext)
+        if (this.conditionalTrueLinks.containsKey(left)) {
+            assertTrue(cfg.conditionalTrueLinks.containsKey(right))
+            val leftNext = this.conditionalTrueLinks[left]!!
+            val rightNext = cfg.conditionalTrueLinks[right]!!
+            if (nodeMap.containsKey(leftNext)) {
+                assertSame(nodeMap[leftNext]!!, rightNext.value)
             } else {
                 dfs(leftNext, rightNext)
             }
         }
 
-        if (this.conditionalFalseLinks.containsKey(Ref(left))) {
-            assertTrue(cfg.conditionalFalseLinks.containsKey(Ref(right)))
-            val leftNext = this.conditionalFalseLinks[Ref(left)]!!.value
-            val rightNext = cfg.conditionalFalseLinks[Ref(right)]!!.value
-            if (nodeMap.containsKey(Ref(leftNext))) {
-                assertSame(nodeMap[Ref(leftNext)]!!, rightNext)
+        if (this.conditionalFalseLinks.containsKey(left)) {
+            assertTrue(cfg.conditionalFalseLinks.containsKey(right))
+            val leftNext = this.conditionalFalseLinks[left]!!
+            val rightNext = cfg.conditionalFalseLinks[right]!!
+            if (nodeMap.containsKey(leftNext)) {
+                assertSame(nodeMap[leftNext]!!, rightNext.value)
             } else {
                 dfs(leftNext, rightNext)
             }

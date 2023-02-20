@@ -55,8 +55,7 @@ class ColoringAllocationTest {
             groupBy({ register[it.first] }, { register[it.second] }).mapValues { it.value.toMutableSet() }.toMutableMap()
                 .apply {
                     verticesToRegisters.values.forEach { putIfAbsent(it, hashSetOf()) }
-                }
-                .apply {
+
                     forEach { (key, value) ->
                         value.forEach { get(it)!!.add(key) }
                     }

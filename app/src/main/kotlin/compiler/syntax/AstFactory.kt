@@ -23,7 +23,7 @@ typealias MutableGlobalBlock = MutableList<Program.Global>
 class AstFactory(private val diagnostics: Diagnostics) {
     class AstCreationFailed : CompilationFailed()
 
-    sealed class LowestAncestorBlock {
+    private sealed class LowestAncestorBlock {
         data class AncestorStatementBlock(val statementBlock: MutableStatementBlock, val previousStatement: Statement?) : LowestAncestorBlock()
         data class AncestorGlobalBlock(val globalBlock: MutableGlobalBlock, val previousGlobal: Program.Global?) : LowestAncestorBlock()
     }
@@ -317,15 +317,15 @@ class AstFactory(private val diagnostics: Diagnostics) {
 
         var it = 0
         while (it < children.size) {
-            if (it + 1 < children.size && children[it + 1].token() == TokenType.ASSIGNMENT) {
+            it += if (it + 1 < children.size && children[it + 1].token() == TokenType.ASSIGNMENT) {
                 val name = extractIdentifier(children[it] as ParseTree.Branch)
                 val value = processExpression(children[it + 2], ancestorBlock)
                 arguments.add(Expression.FunctionCall.Argument(name, value, combineLocations(children[it], children[it + 2])))
-                it += 4
+                4
             } else {
                 val value = processExpression(children[it], ancestorBlock)
                 arguments.add(Expression.FunctionCall.Argument(null, value, children[it].location))
-                it += 2
+                2
             }
         }
 
@@ -453,7 +453,7 @@ class AstFactory(private val diagnostics: Diagnostics) {
                 val auxGeneratorName = getUniqueLabel()
                 val generatorReturnType = processType(children[1])
 
-                val manyGenerations = processManyIterations(children[4], ancestorBlock).reversed().toMutableList()
+                val manyGenerations = processManyIterations(children[4]).reversed().toMutableList()
 
                 val auxGeneratorsCondition: MutableStatementBlock = mutableListOf()
                 val generationCondition =
@@ -655,7 +655,7 @@ class AstFactory(private val diagnostics: Diagnostics) {
         )
     }
 
-    private fun processManyIterations(parseTree: ParseTree<Symbol>, ancestorBlock: LowestAncestorBlock): List<Pair<IterationResult, MutableStatementBlock>> {
+    private fun processManyIterations(parseTree: ParseTree<Symbol>): List<Pair<IterationResult, MutableStatementBlock>> {
         val children = (parseTree as ParseTree.Branch).getFilteredChildren()
         return children.map {
             val auxGenerators: MutableStatementBlock = mutableListOf()

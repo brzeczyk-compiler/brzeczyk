@@ -10,7 +10,6 @@ import compiler.ast.Program.Global
 import compiler.ast.Statement
 import compiler.ast.Type
 import compiler.ast.Variable
-import compiler.ast.VariableOwner
 import compiler.diagnostics.Diagnostic.ResolutionDiagnostic.VariablePropertiesError.AssignmentToFunctionParameter
 import compiler.diagnostics.Diagnostics
 import compiler.utils.Ref
@@ -21,16 +20,14 @@ import compiler.utils.refSetOf
 
 object VariablePropertiesAnalyzer {
 
-    object GlobalContext : VariableOwner
-
     data class VariableProperties(
-        var owner: VariableOwner = GlobalContext,
+        var owner: Function? = null,
         val accessedIn: Set<Ref<Function>> = refSetOf(),
         val writtenIn: Set<Ref<Function>> = refSetOf(),
     )
 
     data class MutableVariableProperties(
-        var owner: VariableOwner = GlobalContext,
+        var owner: Function? = null,
         val accessedIn: MutableSet<Ref<Function>> = mutableRefSetOf(),
         val writtenIn: MutableSet<Ref<Function>> = mutableRefSetOf(),
     )
@@ -56,11 +53,11 @@ object VariablePropertiesAnalyzer {
             when (node) {
                 is Statement.Evaluation -> analyzeVariables(node.expression, currentFunction)
                 is Statement.VariableDefinition -> {
-                    mutableVariableProperties[Ref(node.variable)] = MutableVariableProperties(currentFunction ?: GlobalContext)
+                    mutableVariableProperties[Ref(node.variable)] = MutableVariableProperties(currentFunction)
                     analyzeVariables(node.variable, currentFunction)
                 }
                 is Global.VariableDefinition -> {
-                    mutableVariableProperties[Ref(node.variable)] = MutableVariableProperties(currentFunction ?: GlobalContext)
+                    mutableVariableProperties[Ref(node.variable)] = MutableVariableProperties(currentFunction)
                     analyzeVariables(node.variable, currentFunction)
                 }
                 is Statement.FunctionDefinition -> analyzeVariables(node.function, currentFunction)
@@ -92,7 +89,7 @@ object VariablePropertiesAnalyzer {
                     .forEach { analyzeVariables(it, currentFunction) }
                 is Statement.FunctionReturn -> analyzeVariables(node.value, currentFunction)
                 is Statement.ForeachLoop -> {
-                    mutableVariableProperties[Ref(node.receivingVariable)] = MutableVariableProperties(currentFunction ?: GlobalContext)
+                    mutableVariableProperties[Ref(node.receivingVariable)] = MutableVariableProperties(currentFunction)
                     analyzeVariables(node.generatorCall, currentFunction)
                     node.action.forEach { analyzeVariables(it, currentFunction) }
                 }
@@ -119,7 +116,7 @@ object VariablePropertiesAnalyzer {
                         if (it.defaultValue != null) {
                             // scope of the inner function has not begun yet
                             analyzeVariables(it.defaultValue, currentFunction)
-                            mutableVariableProperties[Ref(defaultParameterMapping[Ref(it)]!!)] = MutableVariableProperties(currentFunction ?: GlobalContext)
+                            mutableVariableProperties[Ref(defaultParameterMapping[Ref(it)]!!)] = MutableVariableProperties(currentFunction)
                         }
                     }
                     node.body.forEach { analyzeVariables(it, node) }
@@ -155,7 +152,7 @@ object VariablePropertiesAnalyzer {
         val defaultParametersDummyVariablesProperties = defaultParameterMapping.map { paramToVariable ->
             val accessedIn = accessedDefaultValues.filter { paramToVariable.key in it.value }.map { functionCallsOwnership[it.key]!! }.toSet()
             val owner = mutableVariableProperties[Ref(paramToVariable.value)]!!.owner
-            val writtenIn = if (owner != GlobalContext) refSetOf(owner as Function) else refSetOf()
+            val writtenIn = if (owner != null) refSetOf(owner) else refSetOf()
             Ref(paramToVariable.value) to VariableProperties(owner, accessedIn, writtenIn)
         }.toList()
 

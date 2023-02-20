@@ -9,6 +9,7 @@ import compiler.intermediate.ControlFlowGraphBuilder
 import compiler.intermediate.FixedConstant
 import compiler.intermediate.IFTNode
 import compiler.intermediate.Register
+import compiler.intermediate.assertHasSameStructureAs
 import compiler.utils.Ref
 import compiler.utils.keyRefMapOf
 import kotlin.test.Test
@@ -66,7 +67,7 @@ class DefaultGeneratorDetailsGeneratorTest {
         val expectedCFG = expectedCFGBuilder.build()
         val expectedFirstResult = IFTNode.RegisterRead(Register.RAX)
         val result = gdg.genInitCall(args)
-        assert(expectedCFG.isIsomorphicTo(result.callGraph))
+        expectedCFG assertHasSameStructureAs result.callGraph
         assertEquals(expectedFirstResult, result.result)
         assertNull(result.secondResult)
     }
@@ -100,7 +101,7 @@ class DefaultGeneratorDetailsGeneratorTest {
         val expectedFirstResult = IFTNode.RegisterRead(Register.RAX)
         val expectedSecondResult = IFTNode.RegisterRead(Register.RDX)
         val result = gdg.genResumeCall(argumentNode1, argumentNode2)
-        assert(expectedCFG.isIsomorphicTo(result.callGraph))
+        expectedCFG assertHasSameStructureAs result.callGraph
         assertEquals(expectedFirstResult, result.result)
         assertEquals(expectedSecondResult, result.secondResult)
     }
@@ -131,7 +132,7 @@ class DefaultGeneratorDetailsGeneratorTest {
 
         val expectedCFG = expectedCFGBuilder.build()
         val result = gdg.genFinalizeCall(argumentNode1)
-        assert(expectedCFG.isIsomorphicTo(result.callGraph))
+        expectedCFG assertHasSameStructureAs result.callGraph
         assertNull(result.result)
         assertNull(result.secondResult)
     }
@@ -166,7 +167,7 @@ class DefaultGeneratorDetailsGeneratorTest {
         assertEquals(Register.RBP, (left as IFTNode.RegisterRead).register)
 
         assertTrue { right is IFTNode.Const }
-        assertEquals(FixedConstant(memoryUnitSize.toLong()), (right as IFTNode.Const).value)
+        assertEquals(FixedConstant(MEMORY_UNIT_SIZE.toLong()), (right as IFTNode.Const).value)
     }
 
     @Test
@@ -174,7 +175,7 @@ class DefaultGeneratorDetailsGeneratorTest {
         val memVar = Variable(Variable.Kind.VALUE, "memVar", Type.Number, null)
         val displayElementAddress = IFTNode.Add(
             displayAddress,
-            IFTNode.Const((memoryUnitSize * depth).toLong())
+            IFTNode.Const((MEMORY_UNIT_SIZE * depth).toLong())
         )
 
         val gdg = DefaultGeneratorDetailsGenerator(
@@ -202,7 +203,7 @@ class DefaultGeneratorDetailsGeneratorTest {
         assertEquals(IFTNode.MemoryRead(displayElementAddress), left)
 
         assertTrue { right is IFTNode.Const }
-        assertEquals(FixedConstant(memoryUnitSize.toLong()), (right as IFTNode.Const).value)
+        assertEquals(FixedConstant(MEMORY_UNIT_SIZE.toLong()), (right as IFTNode.Const).value)
     }
 
     @Test
@@ -277,7 +278,7 @@ class DefaultGeneratorDetailsGeneratorTest {
         assertEquals(Register.RBP, (left as IFTNode.RegisterRead).register)
 
         assertTrue { right is IFTNode.Const }
-        assertEquals(FixedConstant(memoryUnitSize.toLong()), (right as IFTNode.Const).value)
+        assertEquals(FixedConstant(MEMORY_UNIT_SIZE.toLong()), (right as IFTNode.Const).value)
     }
 
     @Test
@@ -285,7 +286,7 @@ class DefaultGeneratorDetailsGeneratorTest {
         val memVar = Variable(Variable.Kind.VALUE, "memVar", Type.Number, null)
         val displayElementAddress = IFTNode.Add(
             displayAddress,
-            IFTNode.Const((memoryUnitSize * depth).toLong())
+            IFTNode.Const((MEMORY_UNIT_SIZE * depth).toLong())
         )
 
         val gdg = DefaultGeneratorDetailsGenerator(
@@ -315,7 +316,7 @@ class DefaultGeneratorDetailsGeneratorTest {
         assertEquals(IFTNode.MemoryRead(displayElementAddress), left)
 
         assertTrue { right is IFTNode.Const }
-        assertEquals(FixedConstant(memoryUnitSize.toLong()), (right as IFTNode.Const).value)
+        assertEquals(FixedConstant(MEMORY_UNIT_SIZE.toLong()), (right as IFTNode.Const).value)
     }
 
     @Test

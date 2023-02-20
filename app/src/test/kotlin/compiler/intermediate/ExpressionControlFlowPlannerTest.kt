@@ -9,10 +9,10 @@ import compiler.ast.Type
 import compiler.ast.Variable
 import compiler.intermediate.generators.FunctionDetailsGenerator
 import compiler.intermediate.generators.GeneratorDetailsGenerator
+import compiler.intermediate.generators.MEMORY_UNIT_SIZE
 import compiler.intermediate.generators.VariableAccessGenerator
 import compiler.intermediate.generators.argPositionToRegister
 import compiler.intermediate.generators.callerSavedRegisters
-import compiler.intermediate.generators.memoryUnitSize
 import compiler.utils.Ref
 import compiler.utils.keyRefMapOf
 import compiler.utils.mutableKeyRefMapOf
@@ -48,7 +48,7 @@ class ExpressionControlFlowPlannerTest {
             for (name in varNames) {
                 mutableVariableProperties[Ref(nameToVarMap[name]!!)] =
                     VariablePropertiesAnalyzer.MutableVariableProperties(
-                        if (name in globals) VariablePropertiesAnalyzer.GlobalContext else currentFunction
+                        if (name in globals) null else currentFunction
                     )
             }
             nameToParamMap = currentFunction.parameters.associateBy { it.name }
@@ -724,7 +724,7 @@ class ExpressionControlFlowPlannerTest {
         val expectedCfgElement = (
             IFTNode.DummyArrayAllocation(5.toConst(), listOf(6.toConst()), type, Expression.ArrayAllocation.InitializationType.ONE_VALUE)
                 merge IFTNode.RegisterWrite(arrayTempRegister, address)
-                merge IFTNode.RegisterWrite(resultRegister, IFTNode.MemoryRead(IFTNode.Add(IFTNode.RegisterRead(arrayTempRegister), IFTNode.Multiply(3.toConst(), memoryUnitSize.toInt().toConst()))))
+                merge IFTNode.RegisterWrite(resultRegister, IFTNode.MemoryRead(IFTNode.Add(IFTNode.RegisterRead(arrayTempRegister), IFTNode.Multiply(3.toConst(), MEMORY_UNIT_SIZE.toInt().toConst()))))
                 merge IFTNode.DummyArrayRefCountDec(IFTNode.RegisterRead(arrayTempRegister), type)
                 merge IFTNode.RegisterRead(resultRegister)
             )
@@ -732,7 +732,7 @@ class ExpressionControlFlowPlannerTest {
 
         val expectedCfgLength = (
             IFTNode.DummyArrayAllocation(5.toConst(), listOf(6.toConst()), type, Expression.ArrayAllocation.InitializationType.ONE_VALUE)
-                merge IFTNode.RegisterWrite(resultRegister, IFTNode.MemoryRead(IFTNode.Subtract(address, memoryUnitSize.toInt().toConst())))
+                merge IFTNode.RegisterWrite(resultRegister, IFTNode.MemoryRead(IFTNode.Subtract(address, MEMORY_UNIT_SIZE.toInt().toConst())))
                 merge IFTNode.DummyArrayRefCountDec(address, type)
                 merge IFTNode.RegisterRead(resultRegister)
             )

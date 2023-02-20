@@ -35,8 +35,4 @@ object E2eTestUtils {
     fun assertProgramCorrect(program: String) {
         assertProgramGeneratesDiagnostics(program, listOf(), Diagnostic::class)
     }
-
-    fun <T : Diagnostic> assertNoDiagnosticsOfType(program: String, errorType: KClass<T>) {
-        assertProgramGeneratesDiagnostics(program, listOf(), errorType)
-    }
 }

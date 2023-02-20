@@ -4,6 +4,7 @@ import compiler.intermediate.CFGLinkType
 import compiler.intermediate.ControlFlowGraphBuilder
 import compiler.intermediate.IFTNode
 import compiler.intermediate.Register
+import compiler.intermediate.assertHasSameStructureAs
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -19,7 +20,7 @@ class ForeignFunctionDetailsGeneratorTest {
         val expected = ControlFlowGraphBuilder(IFTNode.Call(foreignLabel, emptyList(), callerSavedRegisters)).build()
         val result = fdg.genCall(listOf())
 
-        assert(expected.isIsomorphicTo(result.callGraph))
+        expected assertHasSameStructureAs result.callGraph
         assertEquals(null, result.result)
     }
 
@@ -43,7 +44,7 @@ class ForeignFunctionDetailsGeneratorTest {
         expectedCFGBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, IFTNode.Call(foreignLabel, argumentPassingRegisters.take(2), callerSavedRegisters))
         val expected = expectedCFGBuilder.build()
 
-        assert(expected.isIsomorphicTo(result.callGraph))
+        expected assertHasSameStructureAs result.callGraph
         assertEquals(null, result.result)
     }
 
@@ -56,7 +57,7 @@ class ForeignFunctionDetailsGeneratorTest {
         val expectedResult = IFTNode.RegisterRead(Register.RAX)
         val expected = expectedCFGBuilder.build()
         val result = fdg.genCall(listOf())
-        assert(expected.isIsomorphicTo(result.callGraph))
+        expected assertHasSameStructureAs result.callGraph
         assertEquals(expectedResult, result.result)
     }
 
@@ -70,7 +71,7 @@ class ForeignFunctionDetailsGeneratorTest {
         val expectedSecondResult = IFTNode.RegisterRead(Register.RDX)
         val expected = expectedCFGBuilder.build()
         val result = fdg.genCall(listOf())
-        assert(expected.isIsomorphicTo(result.callGraph))
+        expected assertHasSameStructureAs result.callGraph
         assertEquals(expectedResult, result.result)
         assertEquals(expectedSecondResult, result.secondResult)
     }
@@ -118,7 +119,7 @@ class ForeignFunctionDetailsGeneratorTest {
         val expectedResult = IFTNode.RegisterRead(Register.RAX)
         val expected = expectedCFGBuilder.build()
 
-        assert(expected.isIsomorphicTo(result.callGraph))
+        expected assertHasSameStructureAs result.callGraph
         assertEquals(expectedResult, result.result)
     }
 }

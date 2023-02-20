@@ -93,7 +93,7 @@ class LinearizationTest {
 
     @Test
     fun `empty graph`() {
-        val cfg = ControlFlowGraph(listOf(), null, refMapOf(), refMapOf(), refMapOf())
+        val cfg = ControlFlowGraph(null, refMapOf(), refMapOf(), refMapOf())
 
         val result = linearization.linearize(cfg)
 
@@ -103,7 +103,7 @@ class LinearizationTest {
     @Test
     fun `single node`() {
         val node = newNode()
-        val cfg = ControlFlowGraph(listOf(node), node, refMapOf(), refMapOf(), refMapOf())
+        val cfg = ControlFlowGraph(Ref(node), refMapOf(), refMapOf(), refMapOf())
 
         val result = linearization.linearize(cfg)
 
@@ -116,8 +116,7 @@ class LinearizationTest {
         val node2 = newNode()
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2),
-            node1,
+            Ref(node1),
             refMapOf(node1 to node2),
             refMapOf(),
             refMapOf()
@@ -139,8 +138,7 @@ class LinearizationTest {
         val node = newNode()
 
         val cfg = ControlFlowGraph(
-            listOf(node),
-            node,
+            Ref(node),
             refMapOf(node to node),
             refMapOf(),
             refMapOf()
@@ -165,8 +163,7 @@ class LinearizationTest {
         val node3 = newNode()
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2, node3),
-            node1,
+            Ref(node1),
             refMapOf(node2 to node3),
             refMapOf(node1 to node2),
             refMapOf(node1 to node3)
@@ -192,8 +189,7 @@ class LinearizationTest {
         val node3 = newNode()
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2, node3),
-            node1,
+            Ref(node1),
             refMapOf(),
             refMapOf(node1 to node2),
             refMapOf(node1 to node3)
@@ -221,8 +217,7 @@ class LinearizationTest {
         val node5 = newNode()
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2, node3, node4, node5),
-            node1,
+            Ref(node1),
             refMapOf(),
             refMapOf(node1 to node2, node3 to node4),
             refMapOf(node1 to node3, node3 to node5)
@@ -250,8 +245,7 @@ class LinearizationTest {
         val node2 = newNode()
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2),
-            node1,
+            Ref(node1),
             refMapOf(),
             refMapOf(node1 to node1),
             refMapOf(node1 to node2)
@@ -275,8 +269,7 @@ class LinearizationTest {
         val node2 = newNode()
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2),
-            node1,
+            Ref(node1),
             refMapOf(),
             refMapOf(node1 to node2),
             refMapOf(node1 to node1)
@@ -301,8 +294,7 @@ class LinearizationTest {
         val node3 = newNode()
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2, node3),
-            node1,
+            Ref(node1),
             refMapOf(node2 to node1),
             refMapOf(node1 to node2),
             refMapOf(node1 to node3)
@@ -330,8 +322,7 @@ class LinearizationTest {
         val node3 = newNode()
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2, node3),
-            node1,
+            Ref(node1),
             refMapOf(node2 to node1),
             refMapOf(node1 to node3),
             refMapOf(node1 to node2)
@@ -359,8 +350,7 @@ class LinearizationTest {
         val node3 = newNode()
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2, node3),
-            node1,
+            Ref(node1),
             refMapOf(),
             refMapOf(node1 to node2, node2 to node2),
             refMapOf(node1 to node3, node2 to node1)
@@ -390,8 +380,7 @@ class LinearizationTest {
         val node4 = newNode()
 
         val cfg = ControlFlowGraph(
-            listOf(node1, node2, node3, node4),
-            node1,
+            Ref(node1),
             refMapOf(node3 to node2),
             refMapOf(node1 to node2, node2 to node3),
             refMapOf(node1 to node4, node2 to node1)
@@ -420,8 +409,7 @@ class LinearizationTest {
         val labeledNode = IFTNode.LabeledNode(".dummyLabel", node)
 
         val cfg = ControlFlowGraph(
-            listOf(labeledNode),
-            labeledNode,
+            Ref(labeledNode),
             emptyMap(),
             emptyMap(),
             emptyMap()
@@ -444,8 +432,7 @@ class LinearizationTest {
         val labeledNode = IFTNode.LabeledNode(".dummyLabel", node)
 
         val cfg = ControlFlowGraph(
-            listOf(labeledNode),
-            labeledNode,
+            Ref(labeledNode),
             refMapOf(labeledNode to labeledNode),
             refMapOf(),
             refMapOf()
@@ -470,8 +457,7 @@ class LinearizationTest {
         val node2 = newNode()
 
         val cfg = ControlFlowGraph(
-            listOf(node1, noOpNode, node2),
-            node1,
+            Ref(node1),
             refMapOf(node1 to noOpNode, noOpNode to node2),
             refMapOf(),
             refMapOf()
@@ -497,8 +483,7 @@ class LinearizationTest {
         val node2 = newNode()
 
         val cfg = ControlFlowGraph(
-            listOf(node1, noOpNode1, noOpNode2, noOpNode3, node2),
-            node1,
+            Ref(node1),
             refMapOf(node1 to noOpNode1, noOpNode1 to noOpNode2, noOpNode2 to noOpNode3, noOpNode3 to node2),
             refMapOf(),
             refMapOf()
@@ -522,8 +507,7 @@ class LinearizationTest {
         val node2 = newNode()
 
         val cfg = ControlFlowGraph(
-            listOf(node1, noOpNode, node2),
-            node1,
+            Ref(node1),
             refMapOf(node1 to noOpNode, noOpNode to node2, node2 to noOpNode),
             refMapOf(),
             refMapOf()

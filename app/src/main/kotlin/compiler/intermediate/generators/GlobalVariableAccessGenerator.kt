@@ -19,7 +19,7 @@ class GlobalVariableAccessGenerator(variableProperties: Map<Ref<AstNode>, Variab
     private val offsets = mutableKeyRefMapOf<NamedNode, Long>().apply {
         this.putAll(
             variableProperties
-                .filter { it.value.owner === VariablePropertiesAnalyzer.GlobalContext }
+                .filter { it.value.owner == null }
                 .filter { (it.key.value as Variable).kind != Variable.Kind.CONSTANT }
                 .asIterable().sortedBy { (it.key.value as Variable).name }
                 .mapIndexed { index, value ->

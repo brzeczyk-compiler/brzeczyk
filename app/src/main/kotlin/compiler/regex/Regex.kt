@@ -2,7 +2,7 @@ package compiler.regex
 
 import java.util.Objects
 
-const val EQUALS = 0
+private const val EQUALS = 0
 
 sealed class Regex<A : Comparable<A>> : Comparable<Regex<A>> {
     // Regex parametrized by alphabet type <A>

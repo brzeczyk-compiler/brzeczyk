@@ -25,7 +25,7 @@ sealed class Statement : AstNode {
         val value: Expression,
         override val location: LocationRange? = null,
     ) : Statement() {
-        sealed class LValue() {
+        sealed class LValue {
             data class Variable(val name: String) : LValue()
             data class ArrayElement(val expression: Expression, val index: Expression) : LValue()
         }
@@ -74,4 +74,28 @@ sealed class Statement : AstNode {
         val value: Expression,
         override val location: LocationRange? = null,
     ) : Statement()
+
+    override fun toSimpleString() = "<<statement>>"
+
+    override fun toExtendedString() = when (this) {
+        is Assignment -> {
+            lvalue.let {
+                when (it) {
+                    is Assignment.LValue.Variable -> "assignment << ${it.name} = ${this.value.toSimpleString()} >>"
+                    is Assignment.LValue.ArrayElement -> "assignment << ${it.expression}[${it.index.toSimpleString()}] = ${this.value.toSimpleString()} >>"
+                }
+            }
+        }
+        is Block -> "{ ... }"
+        is Conditional -> "jeśli block with the condition (${this.condition.toSimpleString()})"
+        is Evaluation -> "evaluation of << ${this.expression.toSimpleString()} >>"
+        is FunctionDefinition -> "definition of << ${this.function.toSimpleString()} >>"
+        is FunctionReturn -> "zwróć ${this.value}"
+        is Loop -> "dopóki (${this.condition}) { ... }"
+        is LoopBreak -> "przerwij"
+        is LoopContinuation -> "pomiń"
+        is VariableDefinition -> "definition of << ${this.variable.toSimpleString()} >>"
+        is ForeachLoop -> "otrzymując ${this.receivingVariable.toSimpleString()} od ${this.generatorCall.toSimpleString()} { ... }"
+        is GeneratorYield -> "przekaż ${this.value.toSimpleString()}"
+    }
 }

@@ -87,10 +87,7 @@ class Linearization(private val covering: Covering) {
             }
         }
 
-        dfs(cfg.entryTreeRoot, "")
-        cfg.treeRoots
-            .filterIsInstance<IFTNode.LabeledNode>()
-            .forEach { if (Ref(it) !in labels) dfs(it, "") }
+        dfs(cfg.entryTreeRoot.value, "")
 
         return instructions.filter { it !is Label || it.label in usedLabels }
     }

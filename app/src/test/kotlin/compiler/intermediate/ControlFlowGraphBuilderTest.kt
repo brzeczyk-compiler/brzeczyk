@@ -1,9 +1,9 @@
 package compiler.intermediate
 
+import compiler.utils.Ref
 import compiler.utils.refMapOf
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertSame
 
 class ControlFlowGraphBuilderTest {
@@ -16,24 +16,10 @@ class ControlFlowGraphBuilderTest {
     private val secondNode = IFTNode.Dummy()
     private val conditionalTrueNode = IFTNode.Dummy()
     private val conditionalFalseNode = IFTNode.Dummy()
-    private val afterConditionalNode = IFTNode.Dummy()
 
     private val simpleCFG = ControlFlowGraph(
-        treeRoots = listOf(entryNode, secondNode, conditionalTrueNode, conditionalFalseNode),
-        entryTreeRoot = entryNode,
+        entryTreeRoot = Ref(entryNode),
         unconditionalLinks = refMapOf(entryNode to secondNode),
-        conditionalTrueLinks = refMapOf(secondNode to conditionalTrueNode),
-        conditionalFalseLinks = refMapOf(secondNode to conditionalFalseNode)
-    )
-
-    private val simpleCFGWithExtraFinalNode = ControlFlowGraph(
-        treeRoots = listOf(entryNode, secondNode, conditionalTrueNode, conditionalFalseNode, afterConditionalNode),
-        entryTreeRoot = entryNode,
-        unconditionalLinks = refMapOf(
-            entryNode to secondNode,
-            conditionalTrueNode to afterConditionalNode,
-            conditionalFalseNode to afterConditionalNode
-        ),
         conditionalTrueLinks = refMapOf(secondNode to conditionalTrueNode),
         conditionalFalseLinks = refMapOf(secondNode to conditionalFalseNode)
     )
@@ -42,35 +28,19 @@ class ControlFlowGraphBuilderTest {
     fun `test pass entryTreeRoot in constructor`() {
         val cfg = ControlFlowGraphBuilder(entryNode).build()
 
-        assertSame(cfg.entryTreeRoot, entryNode)
-        assertEquals(cfg.treeRoots, listOf<IFTNode>(entryNode))
+        assertSame(cfg.entryTreeRoot?.value, entryNode)
         assertEquals(cfg.unconditionalLinks, emptyMap())
         assertEquals(cfg.conditionalFalseLinks, emptyMap())
         assertEquals(cfg.conditionalTrueLinks, emptyMap())
     }
 
     @Test
-    fun `test setEntryTreeRoot`() {
-        val cfgBuilder = ControlFlowGraphBuilder()
-        cfgBuilder.setEntryTreeRoot(entryNode)
-
-        val cfg = cfgBuilder.build()
-        assertEquals(ControlFlowGraphBuilder(entryNode).build(), cfg)
-    }
-
-    @Test
-    fun `test setEntryTreeRoot when already specified`() {
-        val cfgBuilder = ControlFlowGraphBuilder(entryNode)
-        assertFailsWith<IncorrectControlFlowGraphError> { cfgBuilder.setEntryTreeRoot(entryNode) }
-    }
-
-    @Test
     fun `test addLink`() {
         val cfgBuilder = ControlFlowGraphBuilder()
-        cfgBuilder.addLink(null, entryNode)
-        cfgBuilder.addLink(Pair(entryNode, CFGLinkType.UNCONDITIONAL), secondNode)
-        cfgBuilder.addLink(Pair(secondNode, CFGLinkType.CONDITIONAL_TRUE), conditionalTrueNode)
-        cfgBuilder.addLink(Pair(secondNode, CFGLinkType.CONDITIONAL_FALSE), conditionalFalseNode)
+        cfgBuilder.addLink(null, Ref(entryNode))
+        cfgBuilder.addLink(Pair(Ref(entryNode), CFGLinkType.UNCONDITIONAL), Ref(secondNode))
+        cfgBuilder.addLink(Pair(Ref(secondNode), CFGLinkType.CONDITIONAL_TRUE), Ref(conditionalTrueNode))
+        cfgBuilder.addLink(Pair(Ref(secondNode), CFGLinkType.CONDITIONAL_FALSE), Ref(conditionalFalseNode))
 
         val cfg = cfgBuilder.build()
         assertEquals(simpleCFG, cfg)
@@ -97,7 +67,7 @@ class ControlFlowGraphBuilderTest {
         val cfgBuilder = ControlFlowGraphBuilder(entryNode)
         cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.UNCONDITIONAL, secondNode)
         cfgBuilder.addLinksFromAllFinalRoots(CFGLinkType.CONDITIONAL_TRUE, conditionalTrueNode)
-        cfgBuilder.addLink(Pair(secondNode, CFGLinkType.CONDITIONAL_FALSE), conditionalFalseNode)
+        cfgBuilder.addLink(Pair(Ref(secondNode), CFGLinkType.CONDITIONAL_FALSE), Ref(conditionalFalseNode))
         assertEquals(simpleCFG, cfgBuilder.build())
     }
 
@@ -105,10 +75,10 @@ class ControlFlowGraphBuilderTest {
     fun `test addAllFrom without modifying entryTreeRoot`() {
         val cfgBuilder = ControlFlowGraphBuilder(entryNode)
         val remainingThreeNodes = ControlFlowGraphBuilder(secondNode)
-        remainingThreeNodes.addLink(Pair(secondNode, CFGLinkType.CONDITIONAL_TRUE), conditionalTrueNode)
-        remainingThreeNodes.addLink(Pair(secondNode, CFGLinkType.CONDITIONAL_FALSE), conditionalFalseNode)
+        remainingThreeNodes.addLink(Pair(Ref(secondNode), CFGLinkType.CONDITIONAL_TRUE), Ref(conditionalTrueNode))
+        remainingThreeNodes.addLink(Pair(Ref(secondNode), CFGLinkType.CONDITIONAL_FALSE), Ref(conditionalFalseNode))
         cfgBuilder.addAllFrom(remainingThreeNodes.build())
-        cfgBuilder.addLink(Pair(entryNode, CFGLinkType.UNCONDITIONAL), secondNode)
+        cfgBuilder.addLink(Pair(Ref(entryNode), CFGLinkType.UNCONDITIONAL), Ref(secondNode))
 
         val cfg = cfgBuilder.build()
         assertEquals(simpleCFG, cfg)
@@ -119,8 +89,8 @@ class ControlFlowGraphBuilderTest {
         val cfgBuilder = ControlFlowGraphBuilder(entryNode)
 
         val remaining = ControlFlowGraphBuilder(secondNode)
-        remaining.addLink(Pair(secondNode, CFGLinkType.CONDITIONAL_TRUE), conditionalTrueNode)
-        remaining.addLink(Pair(secondNode, CFGLinkType.CONDITIONAL_FALSE), conditionalFalseNode)
+        remaining.addLink(Pair(Ref(secondNode), CFGLinkType.CONDITIONAL_TRUE), Ref(conditionalTrueNode))
+        remaining.addLink(Pair(Ref(secondNode), CFGLinkType.CONDITIONAL_FALSE), Ref(conditionalFalseNode))
         cfgBuilder.mergeUnconditionally(remaining.build())
 
         val cfg = cfgBuilder.build()
@@ -130,7 +100,7 @@ class ControlFlowGraphBuilderTest {
     @Test
     fun `test mergeConditionally`() {
         val cfgBuilder = ControlFlowGraphBuilder(entryNode)
-        cfgBuilder.addLink(Pair(entryNode, CFGLinkType.UNCONDITIONAL), secondNode)
+        cfgBuilder.addLink(Pair(Ref(entryNode), CFGLinkType.UNCONDITIONAL), Ref(secondNode))
 
         cfgBuilder.mergeConditionally(
             ControlFlowGraphBuilder(conditionalTrueNode).build(),

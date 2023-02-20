@@ -6,7 +6,7 @@ import compiler.ast.Type
 import compiler.diagnostics.Diagnostics
 import compiler.input.ReaderInput
 import compiler.intermediate.ControlFlowPlanner
-import compiler.intermediate.FunctionDependenciesAnalyzer
+import compiler.intermediate.DetailsGeneratorsBuilder
 import compiler.lexer.Lexer
 import compiler.lowlevel.AsmFile
 import compiler.lowlevel.CodeSection
@@ -52,7 +52,7 @@ class Compiler(val diagnostics: Diagnostics) {
             val tokens = lexer.process(ReaderInput(input))
 
             val tokensAsLeaves: Sequence<ParseTree<Symbol>> = tokens
-                .filter { it.category != TokenType.TO_IGNORE }
+                .filter { it.category != TokenType.IGNORED }
                 .map { ParseTree.Leaf(it.location, Symbol.Terminal(it.category), it.content) }
 
             val parseTree = parser.process(tokensAsLeaves)
@@ -63,16 +63,15 @@ class Compiler(val diagnostics: Diagnostics) {
 
             val programProperties = programAnalyzer.analyze(program)
 
-            val (functionDetailsGenerators, generatorDetailsGenerators) = FunctionDependenciesAnalyzer.createCallablesDetailsGenerators(
-                program,
-                programProperties.nameResolution,
-                programProperties.variableProperties,
-                programProperties.foreachLoopsInGenerators,
-                programProperties.functionReturnedValueVariables,
-                diagnostics.hasAnyErrors()
-            ) // TODO: it probably shouldn't be FunctionDependenciesAnalyzer responsible for this
+            val mainFunction = programAnalyzer.extractMainFunction(program)
 
-            val mainFunction = FunctionDependenciesAnalyzer.extractMainFunction(program, diagnostics) // TODO: and neither for this
+            // Intermediate
+
+            val (functionDetailsGenerators, generatorDetailsGenerators) = DetailsGeneratorsBuilder.createDetailsGenerators(
+                program,
+                programProperties,
+                diagnostics.hasAnyErrors()
+            )
 
             val bareFunctionControlFlowGraphs = controlFlowPlanner.createGraphsForProgram(
                 program,

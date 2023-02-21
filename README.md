@@ -11,7 +11,7 @@ The language is mostly C-like, with a few somewhat interesting (compared to C) f
 
 - nested functions able to access outer variables,
 - dynamically allocated arrays with automatic reference counting,
-- generator functions, allowing to pause the execution and pass a value to the caller.
+- generator functions, allowing to pause their execution and pass values to the caller.
 
 The compiler is written from scratch and produces x86_64 assembly code.
 

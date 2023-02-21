@@ -39,7 +39,7 @@ czynność główna() {
 }
 ```
 
-## What?
+## Deciphering
 
 The following table lists all of the language's keywords and their corresponding meanings.
 
